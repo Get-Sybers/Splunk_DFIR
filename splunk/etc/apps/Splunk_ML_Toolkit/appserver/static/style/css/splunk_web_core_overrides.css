@@ -1,0 +1,18 @@
+/*
+ * These styles fix and override the styles from swc web_v2
+ */
+ /* Fix the alerts indentation */
+.alerts {
+    padding: initial !important;
+}
+
+/* Fix the searchbar indentation */
+.search-bar-input.shared-searchbarinput {
+    padding-bottom: initial !important;
+    margin-left: initial !important;
+}
+
+/* Fix the Alerts & Reports (Classic -> Scheduled Training) page indentation */
+.table-caption-inner {
+    padding: initial !important;
+}

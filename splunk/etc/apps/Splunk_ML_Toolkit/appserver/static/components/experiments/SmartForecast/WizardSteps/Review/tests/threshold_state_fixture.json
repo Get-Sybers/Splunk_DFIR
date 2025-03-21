@@ -1,0 +1,56 @@
+{
+    "CRM": {
+        "dayString": "Sunday, September 6, 2015",
+        "panelState": "violation",
+        "signString": "greater",
+        "thresholds": {
+            "upperThreshold": 90
+        },
+        "violations": {
+            "lowBound": 2,
+            "violation": 2,
+            "uppBound": 2
+        },
+        "unit": "days",
+        "forecastValue": 90
+    },
+    "CloudDrive": {
+        "dayString": "Saturday, September 5, 2015",
+        "panelState": "calc",
+        "signString": "greater",
+        "thresholds": {
+            "upperThreshold": 80
+        },
+        "violations": {
+            "lowBound": 2,
+            "violation": 1,
+            "uppBound": 1
+        },
+        "unit": "days",
+        "forecastValue": 80
+    },
+    "Expenses": {
+        "dayString": "",
+        "panelState": "setThreshold",
+        "signString": "",
+        "thresholds": {},
+        "violations": {},
+        "unit": ""
+    },
+    "ITOps": {
+        "dayString": "",
+        "panelState": "setThreshold",
+        "signString": "",
+        "thresholds": {},
+        "violations": {},
+        "unit": ""
+    },
+    "ERP": {
+        "dayString": "",
+        "panelState": "setThreshold",
+        "signString": "",
+        "thresholds": {},
+        "violations": {},
+        "unit": ""
+    }
+}

@@ -1,0 +1,204 @@
+{
+    "combinedDistributions": {
+        "{\"v\":\"1\",\"source\":\"si_groups_mapping\",\"atf_day_of_week\":\"Tuesday\",\"atf_hour_of_day\":\"0\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_groups_mapping",
+                "atf_day_of_week": "Tuesday",
+                "atf_hour_of_day": "0"
+            },
+            "outlierCount": 1
+        },
+        "{\"v\":\"1\",\"source\":\"si_groups_mapping\",\"atf_day_of_week\":\"Tuesday\",\"atf_hour_of_day\":\"1\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_groups_mapping",
+                "atf_day_of_week": "Tuesday",
+                "atf_hour_of_day": "1"
+            },
+            "outlierCount": 1
+        },
+        "{\"v\":\"1\",\"source\":\"si_kpi_elements_cti_asgi\",\"atf_day_of_week\":\"Monday\",\"atf_hour_of_day\":\"2\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_kpi_elements_cti_asgi",
+                "atf_day_of_week": "Monday",
+                "atf_hour_of_day": "2"
+            },
+            "outlierCount": 1
+        },
+        "{\"v\":\"1\",\"source\":\"si_groups_mapping\",\"atf_day_of_week\":\"Monday\",\"atf_hour_of_day\":\"3\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_groups_mapping",
+                "atf_day_of_week": "Monday",
+                "atf_hour_of_day": "3"
+            },
+            "outlierCount": 1
+        },
+        "{\"v\":\"1\",\"source\":\"si_kpi_elements_cti_asgi\",\"atf_day_of_week\":\"Monday\",\"atf_hour_of_day\":\"3\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_kpi_elements_cti_asgi",
+                "atf_day_of_week": "Monday",
+                "atf_hour_of_day": "3"
+            },
+            "outlierCount": 0
+        }
+    },
+    "combinedDistributionsMergedTime": {
+        "{\"v\":\"1\",\"source\":\"si_kpi_elements_sgi\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_kpi_elements_sgi"
+            },
+            "outlierCount": 10
+        },
+        "{\"v\":\"1\",\"source\":\"si_groups_mapping\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_groups_mapping"
+            },
+            "outlierCount": 4
+        },
+        "{\"v\":\"1\",\"source\":\"si_kpi_elements_cti_asgi\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_kpi_elements_cti_asgi"
+            },
+            "outlierCount": 2
+        },
+        "{\"v\":\"1\",\"source\":\"si_active_agents\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_active_agents"
+            },
+            "outlierCount": 0
+        },
+        "{\"v\":\"1\",\"source\":\"si_call_volume\"}": {
+            "key": {
+                "v": "1",
+                "source": "si_call_volume"
+            },
+            "outlierCount": 0
+        }
+    },
+    "splitFieldValues": [
+        {
+            "key": "v",
+            "value": {
+                "{\"v\":\"1\"}": {
+                    "key": {
+                        "v": "1"
+                    },
+                    "outlierCount": 16
+                }
+            }
+        },
+        {
+            "key": "source",
+            "value": {
+                "{\"source\":\"si_kpi_elements_sgi\"}": {
+                    "key": {
+                        "source": "si_kpi_elements_sgi"
+                    },
+                    "outlierCount": 10
+                },
+                "{\"source\":\"si_groups_mapping\"}": {
+                    "key": {
+                        "source": "si_groups_mapping"
+                    },
+                    "outlierCount": 4
+                },
+                "{\"source\":\"si_kpi_elements_cti_asgi\"}": {
+                    "key": {
+                        "source": "si_kpi_elements_cti_asgi"
+                    },
+                    "outlierCount": 2
+                },
+                "{\"source\":\"si_active_agents\"}": {
+                    "key": {
+                        "source": "si_active_agents"
+                    },
+                    "outlierCount": 0
+                },
+                "{\"source\":\"si_call_volume\"}": {
+                    "key": {
+                        "source": "si_call_volume"
+                    },
+                    "outlierCount": 0
+                }
+            }
+        },
+        {
+            "key": "atf_day_of_week",
+            "value": {
+                "{\"atf_day_of_week\":\"Monday\"}": {
+                    "key": {
+                        "atf_day_of_week": "Monday"
+                    },
+                    "outlierCount": 4
+                },
+                "{\"atf_day_of_week\":\"Sunday\"}": {
+                    "key": {
+                        "atf_day_of_week": "Sunday"
+                    },
+                    "outlierCount": 4
+                },
+                "{\"atf_day_of_week\":\"Wednesday\"}": {
+                    "key": {
+                        "atf_day_of_week": "Wednesday"
+                    },
+                    "outlierCount": 4
+                },
+                "{\"atf_day_of_week\":\"Tuesday\"}": {
+                    "key": {
+                        "atf_day_of_week": "Tuesday"
+                    },
+                    "outlierCount": 2
+                },
+                "{\"atf_day_of_week\":\"Saturday\"}": {
+                    "key": {
+                        "atf_day_of_week": "Saturday"
+                    },
+                    "outlierCount": 1
+                }
+            }
+        },
+        {
+            "key": "atf_hour_of_day",
+            "value": {
+                "{\"atf_hour_of_day\":\"3\"}": {
+                    "key": {
+                        "atf_hour_of_day": "3"
+                    },
+                    "outlierCount": 2
+                },
+                "{\"atf_hour_of_day\":\"9\"}": {
+                    "key": {
+                        "atf_hour_of_day": "9"
+                    },
+                    "outlierCount": 2
+                },
+                "{\"atf_hour_of_day\":\"0\"}": {
+                    "key": {
+                        "atf_hour_of_day": "0"
+                    },
+                    "outlierCount": 1
+                },
+                "{\"atf_hour_of_day\":\"1\"}": {
+                    "key": {
+                        "atf_hour_of_day": "1"
+                    },
+                    "outlierCount": 1
+                },
+                "{\"atf_hour_of_day\":\"2\"}": {
+                    "key": {
+                        "atf_hour_of_day": "2"
+                    },
+                    "outlierCount": 1
+                }
+            }
+        }
+    ]
+}

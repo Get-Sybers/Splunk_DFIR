@@ -1,0 +1,8 @@
+1. Objective:
+Call Center data from:
+https://www.splunk.com/blog/2018/01/19/cyclical-statistical-forecasts-and-anomalies-part-1.html
+https://www.splunk.com/blog/2018/02/05/cyclical-statistical-forecasts-and-anomalies-part-2.html
+https://www.splunk.com/blog/2018/03/20/cyclical-statistical-forecasts-and-anomalies-part-3.html
+
+
+2. License: Splunk Owned

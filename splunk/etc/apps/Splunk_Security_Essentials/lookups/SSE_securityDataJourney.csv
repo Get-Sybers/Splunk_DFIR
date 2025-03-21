@@ -1,0 +1,128 @@
+data_source,data_source_category,data_source_categories,dsid,eventtypeId,securityDataJourney_data_source,securityDataJourney
+Email,Email Access/Open,Email > Email Access/Open,DS001MAIL,DS001MAIL-ET01Access,full email logs,Level_2
+Email,Incoming Messages,Email > Incoming Messages,DS001MAIL,DS001MAIL-ET02Receive,full email logs,Level_2
+Email,Outgoing Messages,Email > Outgoing Messages,DS001MAIL,DS001MAIL-ET03Send,full email logs,Level_2
+DNS,Paired DNS Queries and Responses,DNS > Paired DNS Queries and Responses,DS002DNS,DS002DNS-ET01Query,DNS (external),Level_2
+DNS,DNS Queries,DNS > DNS Queries,DS002DNS,DS002DNS-ET01QueryRequest,DNS (external),Level_2
+DNS,DNS Responses,DNS > DNS Responses,DS002DNS,DS002DNS-ET01QueryResponse,DNS (external),Level_2
+Authentication,Successful Authentication,Authentication > Successful Authentication,DS003Authentication,DS003Authentication-ET01Success,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Successful Default Authentication,Authentication > Successful Default Authentication,DS003Authentication,DS003Authentication-ET01SuccessDefault,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Successful Insecure Authentication,Authentication > Successful Insecure Authentication,DS003Authentication,DS003Authentication-ET01SuccessInsecure,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Failed Authentication,Authentication > Failed Authentication,DS003Authentication,DS003Authentication-ET02Failure,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Authentication with Failed Two Factor,Authentication > Authentication with Failed Two Factor,DS003Authentication,DS003Authentication-ET02FailureBadFactor,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Authentication with an Unknown Failure,Authentication > Authentication with an Unknown Failure,DS003Authentication,DS003Authentication-ET02FailureError,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Authentication,Authentication Against Unknown Accounts,Authentication > Authentication Against Unknown Accounts,DS003Authentication,DS003Authentication-ET02FailureUnknownAccount,"Directory Servcies (MS-AD, Azure AD, SSO, etc.)",Level_1
+Anti-Virus or Anti-Malware,Malware Detected,Anti-Virus or Anti-Malware > Malware Detected,DS004EndPointAntiMalware,DS004EndPointAntiMalware-ET01SigDetected,Anti-Virus,Level_1
+Anti-Virus or Anti-Malware,Malware Definition Updates,Anti-Virus or Anti-Malware > Malware Definition Updates,DS004EndPointAntiMalware,DS004EndPointAntiMalware-ET02UpdatedSig,Anti-Virus,Level_1
+Anti-Virus or Anti-Malware,Detection Engine Updated,Anti-Virus or Anti-Malware > Detection Engine Updated,DS004EndPointAntiMalware,DS004EndPointAntiMalware-ET03UpdatedEng,Anti-Virus,Level_1
+Web Proxy,Proxy Requests,Web Proxy > Proxy Requests,DS005WebProxyRequest,DS005WebProxyRequest-ET01Requested,Firewall (f),Level_2
+Web Proxy,Application Awareness,Web Proxy > Application Awareness,DS005WebProxyRequest,DS005WebProxyRequest-ET01RequestedWebAppAware,Firewall (f),Level_2
+User Activity Audit,List Activity,User Activity Audit > List Activity,DS006UserActivity,DS006UserActivity-ET01List,Directory Services (+ enrichment),Level_2
+User Activity Audit,Read Activity,User Activity Audit > Read Activity,DS006UserActivity,DS006UserActivity-ET02Read,Directory Services (+ enrichment),Level_2
+User Activity Audit,Create Activity,User Activity Audit > Create Activity,DS006UserActivity,DS006UserActivity-ET03Create,Directory Services (+ enrichment),Level_2
+User Activity Audit,Update Activity,User Activity Audit > Update Activity,DS006UserActivity,DS006UserActivity-ET04Update,Directory Services (+ enrichment),Level_2
+User Activity Audit,Delete Activity,User Activity Audit > Delete Activity,DS006UserActivity,DS006UserActivity-ET05Delete,Directory Services (+ enrichment),Level_2
+User Activity Audit,Search events,User Activity Audit > Search events,DS006UserActivity,DS006UserActivity-ET06Search,Directory Services (+ enrichment),Level_2
+User Activity Audit,Execute As Events,User Activity Audit > Execute As Events,DS006UserActivity,DS006UserActivity-ET07ExecuteAs,Directory Services (+ enrichment),Level_2
+Generic Audit Log,Clearing Audit Log,Generic Audit Log > Clearing Audit Log,DS007AuditTrail,DS007AuditTrail-ET01Clear,Audit Trails,Level_2
+Generic Audit Log,Altering Audit Log,Generic Audit Log > Altering Audit Log,DS007AuditTrail,DS007AuditTrail-ET02Alter,Audit Trails,Level_2
+Generic Audit Log,Time Sync Events,Generic Audit Log > Time Sync Events,DS007AuditTrail,DS007AuditTrail-ET03TimeSync,Audit Trails,Level_2
+HR System,Joined Users,HR System > Joined Users,DS008HRMasterData,DS008HRMasterData-ET01Joined,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+HR System,Separation Notice Given,HR System > Separation Notice Given,DS008HRMasterData,DS008HRMasterData-ET02SeparationNotice,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+HR System,Immediate Separate Events,HR System > Immediate Separate Events,DS008HRMasterData,DS008HRMasterData-ET03SeperationImmediate,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+HR System,Identity Record,HR System > Identity Record,DS008HRMasterData,DS008HRMasterData-ET01Identity,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+HR System,Identity Record,HR System > Identity Record,DS008HRMasterData,DS008HRMasterData-ET01Asset,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+HR System,Events from Expired Identity,HR System > Events from Expired Identity,DS008HRMasterData,DS008HRMasterData-ET01ExpiredIdentity,Identity Data HR Data (Service/NHA/Admin/etc),Level_3
+Endpoint Detection and Response,Object Change,Endpoint Detection and Response > Object Change,DS009EndPointIntel,DS009EndPointIntel-ET01ObjectChange,Client EDR (alerts only),Level_1
+Endpoint Detection and Response,Process Launch,Endpoint Detection and Response > Process Launch,DS009EndPointIntel,DS009EndPointIntel-ET01ProcessLaunch,Client EDR (alerts only),Level_1
+Endpoint Detection and Response,Process Launch with CLI,Endpoint Detection and Response > Process Launch with CLI,DS009EndPointIntel,DS009EndPointIntel-ET03ProcessLaunchwithCLI,Server EDR (Full logs),Level_3
+Endpoint Detection and Response,Process Launch with Executable Hash,Endpoint Detection and Response > Process Launch with Executable Hash,DS009EndPointIntel,DS009EndPointIntel-ET04ProcessLaunchWithHash,Server EDR (Full logs),Level_3
+Endpoint Detection and Response,Object Change on Removable Storage,Endpoint Detection and Response > Object Change on Removable Storage,DS009EndPointIntel,DS009EndPointIntel-ET05ObjectChangeRemovableStorage,Server EDR (Full logs),Level_3
+Endpoint Detection and Response,Listening Port(s),Endpoint Detection and Response > Listening Port(s),DS009EndPointIntel,DS009EndPointIntel-ET06ListeningPorts,Server EDR (Full logs),Level_3
+Endpoint Detection and Response,Service Launch,Endpoint Detection and Response > Service Launch,DS009EndPointIntel,DS009EndPointIntel-ET07Service,Server EDR (Full logs),Level_3
+Network Communication,Basic Traffic Logs,Network Communication > Basic Traffic Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET01Traffic,"Firewall (Basic logs, cloud firewall)",Level_1
+Network Communication,Allowed - Basic Traffic Logs,Network Communication > Allowed - Basic Traffic Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET01TrafficAllowed,"Firewall (Basic logs, cloud firewall)",Level_1
+Network Communication,Blocked - Basic Traffic Logs,Network Communication > Blocked - Basic Traffic Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET01TrafficBlocked,"Firewall (Basic logs, cloud firewall)",Level_1
+Network Communication,Application-aware Traffic Logs,Network Communication > Application-aware Traffic Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET01TrafficAppAware,Firewall (f),Level_2
+Network Communication,State Logs,Network Communication > State Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET02State,Firewall (f),Level_2
+Network Communication,User-aware Traffic Logs,Network Communication > User-aware Traffic Logs,DS010NetworkCommunication,DS010NetworkCommunication-ET03UserAware,Firewall (f),Level_2
+Malware Analysis,Malware Analysis Results,Malware Analysis > Malware Analysis Results,DS011MalwareDetonation,DS011MalwareDetonation-ET01Detection,Sandbox,Level_3
+IDS or IPS,IDS or IPS Alerts,IDS or IPS > IDS or IPS Alerts,DS012NetworkIntrusionDetection,DS012NetworkIntrusionDetection-ET01SigDetection,Firewall (f),Level_2
+Ticket Management,Ticket Status,Ticket Management > Ticket Status,DS013TicketManagement,DS013TicketManagement-ET01,Case management,Level_2
+Ticket Management,Low Level Correlated Events,Ticket Management > Low Level Correlated Events,DS013TicketManagement,DS013TicketManagement-ET02LowLevelEvents,Case management,Level_2
+Web Server,Web server access logs,Web Server > Web server access logs,DS014WebServer,DS014WebServer-ET01Access,Web Server Logs,Level_4
+Web Server,Internal Knowledge Systems,Web Server > Internal Knowledge Systems,DS014WebServer,DS014WebServer-ET02InternalKnowledgeManagement,Web Server Logs,Level_4
+Web Server,Source Code Systems,Web Server > Source Code Systems,DS014WebServer,DS014WebServer-ET03SourceCode,Web Server Logs,Level_4
+Configuration Management,General Config Management Logs,Configuration Management > General Config Management Logs,DS015ConfigurationManagement,DS015ConfigurationManagement-ET01General,Audit Trails,Level_2
+DLP,DLP Violations,DLP > DLP Violations,DS016DataLossPrevention,DS016DataLossPrevention-ET01Violation,DLP,Level_4
+Physical Security,Access logs,Physical Security > Access logs,DS017PhysicalSecurity,DS017PhysicalSecurity-ET01Access,"Physical Security (Badge Reader, Security Cameras)",Level_4
+Vulnerability Detection,Vuln Detected,Vulnerability Detection > Vuln Detected,DS018VulnerabilityDetection,DS018VulnerabilityDetection-ET01SigDetected,Vulnerability Scanner (normalized),Level_2
+Patch Management,Patch Applied,Patch Management > Patch Applied,DS019PatchManagement,DS019PatchManagement-Applied,Vulnerability Scanner,Level_1
+Patch Management,System eligible for patch,Patch Management > System eligible for patch,DS019PatchManagement,DS019PatchManagement-Eligible,Vulnerability Scanner,Level_1
+Patch Management,Patch Failed,Patch Management > Patch Failed,DS019PatchManagement,DS019PatchManagement-Failed,Vulnerability Scanner,Level_1
+Host-based IDS,HIDS Event Detected,Host-based IDS > HIDS Event Detected,DS020HostIntrustionDetection,DS020HostIntrustionDetection-ET01SigDetected,Client EDR (alerts only),Level_1
+Telephony,CDR Log,Telephony > CDR Log,DS021Telephony,DS021Telephony-ET01CDR,"Physical Security (Badge Reader, Security Cameras)",Level_4
+Host Performance,Host Performance,Host Performance > Host Performance,DS022HostPerformance,DS022HostPerformance-ET01General,Application Logs,Level_2
+Crash Reporting,Crash Report,Crash Reporting > Crash Report,DS023CrashReporting,DS023CrashReporting-ET01General,Application Logs,Level_2
+App Server,App Server Logs,App Server > App Server Logs,DS024ApplicationServer,DS024ApplicationServer-ET01General,Application Logs,Level_2
+IP Address Assignment,IP Address Assignment,IP Address Assignment > IP Address Assignment,DS025IPAddressAssignment,DS025IPAddressAssignment-ET01General,DHCP,Level_2
+Web Application Firewall,Web Application Firewall Alert Logs,Web Application Firewall > Web Application Firewall Alert Logs,DS026WebApplicationFW,DS026WebApplicationFW-ET01General,waf logs,Level_4
+Backup,Backup Logs,Backup > Backup Logs,DS027EndpointBackup,DS027EndpointBackup-ET01General,Audit Trails,Level_2
+Nework Device Association,Nework Device Association,Nework Device Association > Nework Device Association,DS028NetworkDeviceAssociation,DS028NetworkDeviceAssociation-ET01General,NAC,Level_4
+Database System Logs and Metrics,Database System Logs and Metrics,Database System Logs and Metrics > Database System Logs and Metrics,DS029DatabaseServer,DS029DatabaseServer-ET01General,Database Monitoring,Level_3
+Application Load Balancer,Application Load Balancer,Application Load Balancer > Application Load Balancer,DS031ApplicationLoadBalancer,DS031ApplicationLoadBalancer-ET01General,DNS (external),Level_2
+DNS Global Load Balancer,DNS Global Load Balancer,DNS Global Load Balancer > DNS Global Load Balancer,DS032DNSGlobalLoadBalancer,DS032DNSGlobalLoadBalancer-ET01General,DNS (external),Level_2
+System Logs,System Logs,System Logs > System Logs,DS033SystemLogs,DS033SystemLogs-ET01General,"Server logs (Sysmon, CLI, Powershell)",Level_3
+Application Data,Application Logs,Application Data > Application Logs,DS034ApplicationLogs,DS034ApplicationLogs-ET01General,Application Logs,Level_2
+Network Flow Data,Network Flow Data,Network Flow Data > Network Flow Data,DS035NetworkFlow,DS035NetworkFlow-ET01General,transaction logs,Level_4
+Cloud Infrastructure Data,Cloud Infrastructure Compute Audit Logs,Cloud Infrastructure Data > Cloud Infrastructure Compute Audit Logs,DS036CloudInfrastructure,DS036CloudInfrastructure-ET01Compute,Cloud Server logs,Level_2
+Cloud Infrastructure Data,Cloud Infrastructure Storage Audit Logs,Cloud Infrastructure Data > Cloud Infrastructure Storage Audit Logs,DS036CloudInfrastructure,DS036CloudInfrastructure-ET02Storage,Cloud Server logs,Level_2
+Cloud Infrastructure Data,Cloud Infrastructure Traffic Logs,Cloud Infrastructure Data > Cloud Infrastructure Traffic Logs,DS036CloudInfrastructure,DS036CloudInfrastructure-ET03Traffic,Cloud Server logs,Level_2
+Cloud Infrastructure Data,Cloud Infrastructure Authentication Logs,Cloud Infrastructure Data > Cloud Infrastructure Authentication Logs,DS036CloudInfrastructure,DS036CloudInfrastructure-ET04Authentication,Cloud Server logs,Level_2
+Change Events Data,Change Logs,Change Events Data > Change Logs,DS037Change,DS037Change-ET01Change,Database Monitoring,Level_3
+Change Events Data,Account Change Logs,Change Events Data > Account Change Logs,DS037Change,DS037Change-ET02ChangeAccount,Database Monitoring,Level_3
+Change Events Data,Auditing Change Logs,Change Events Data > Auditing Change Logs,DS037Change,DS037Change-ET02ChangeAuditing,Database Monitoring,Level_3
+Change Events Data,Network Change Logs,Change Events Data > Network Change Logs,DS037Change,DS037Change-ET02ChangeNetwork,Database Monitoring,Level_3
+Threat Activity Data,Threat Activity Events,Threat Activity Data > Threat Activity Events,DS038ThreatIntel,DS038ThreatIntel-ET01IOCDetected,Threat List (curated/paid for),Level_3
+Inventory Data,Compute Inventory,Inventory Data > Compute Inventory,DS039ComputeInventory,DS039ComputeInventory-ET01Inventory,"Asset and Identity Data Basic (UID, categories, priorities + CMDB)",Level_2
+Inventory Data,Compute Inventory Default Account,Inventory Data > Compute Inventory Default Account,DS039ComputeInventory,DS039ComputeInventory-ET01InventoryDefaultUser,"Asset and Identity Data Basic (UID, categories, priorities + CMDB)",Level_2
+Inventory Data,Compute Inventory Clear Text Password,Inventory Data > Compute Inventory Clear Text Password,DS039ComputeInventory,DS039ComputeInventory-ET01InventoryCleartext_Passwords,"Asset and Identity Data Basic (UID, categories, priorities + CMDB)",Level_2
+Risk Modifiers,Risk Modifiers,Risk Modifiers > Risk Modifiers,DS040RiskModifiers,DS040RiskModifiers-ET01Risk,"Security Alerts from ES, EDR",Level_1
+Vendor-Specific Data,Salesforce Event Log File,Vendor-Specific Data > Salesforce Event Log File,VendorSpecific,VendorSpecific-sfdc-elf,Application Logs,Level_2
+Vendor-Specific Data,Windows Security Logs,Vendor-Specific Data > Windows Security Logs,VendorSpecific,VendorSpecific-winsec,Server (Critical assets),Level_1
+Vendor-Specific Data,Domain Controller's Windows Security Logs,Vendor-Specific Data > Domain Controller's Windows Security Logs,VendorSpecific,VendorSpecific-winsec-domaincontroller,Server (Critical assets),Level_1
+Vendor-Specific Data,Microsoft Powershell Logs,Vendor-Specific Data > Microsoft Powershell Logs,VendorSpecific,VendorSpecific-winsec-powershell,"Server logs (Sysmon, CLI, Powershell)",Level_3
+Vendor-Specific Data,Microsoft Sysmon Logs,Vendor-Specific Data > Microsoft Sysmon Logs,VendorSpecific,VendorSpecific-winsec-sysmon,"Server logs (Sysmon, CLI, Powershell)",Level_3
+Vendor-Specific Data,Microsoft IIS Logs,Vendor-Specific Data > Microsoft IIS Logs,VendorSpecific,VendorSpecific-ms-iis,Web Server Logs,Level_4
+Vendor-Specific Data,Microsoft System EventLog,Vendor-Specific Data > Microsoft System EventLog,VendorSpecific,VendorSpecific-win-system,Server (Critical assets),Level_4
+Vendor-Specific Data,Microsoft Windows Print Service,Vendor-Specific Data > Microsoft Windows Print Service,VendorSpecific,VendorSpecific-win-printservice,Printer,Level_4
+Vendor-Specific Data,Microsoft Windows Task Scheduler,Vendor-Specific Data > Microsoft Windows Task Scheduler,VendorSpecific,VendorSpecific-win-taskscheduler,Server (Critical assets),Level_4
+Vendor-Specific Data,OSQuery,Vendor-Specific Data > OSQuery,VendorSpecific,VendorSpecific-osquery,"Server logs (Sysmon, CLI, Powershell)",Level_3
+Vendor-Specific Data,AWS Cloudtrail,Vendor-Specific Data > AWS Cloudtrail,VendorSpecific,VendorSpecific-aws-cloudtrail,Cloud Server logs,Level_2
+Vendor-Specific Data,AWS CloudWatch Kubernetes Audit,Vendor-Specific Data > AWS CloudWatch Kubernetes Audit,VendorSpecific,VendorSpecific-aws-cloudwatch-eks,Cloud Server logs,Level_2
+Vendor-Specific Data,AWS Config,Vendor-Specific Data > AWS Config,VendorSpecific,VendorSpecific-aws-config,Cloud Server logs,Level_2
+Vendor-Specific Data,AWS Description,Vendor-Specific Data > AWS Description,VendorSpecific,VendorSpecific-aws-description,Cloud Server logs,Level_2
+Vendor-Specific Data,AWS S3 Access Logs,Vendor-Specific Data > AWS S3 Access Logs,VendorSpecific,VendorSpecific-aws-s3-access,Cloud Server logs,Level_2
+Vendor-Specific Data,Amazon Security Hub,Vendor-Specific Data > Amazon Security Hub,VendorSpecific,VendorSpecific-aws-securityhub,Cloud Server logs,Level_2
+Vendor-Specific Data,Amazon VPC Flow,Vendor-Specific Data > Amazon VPC Flow,VendorSpecific,VendorSpecific-aws-vpcflow,"Firewall (Basic logs, cloud firewall)",Level_1
+Vendor-Specific Data,GCP Audit,Vendor-Specific Data > GCP Audit,VendorSpecific,VendorSpecific-gcp-audit,Cloud Server logs,Level_2
+Vendor-Specific Data,GCP Kubernetes Audit,Vendor-Specific Data > GCP Kubernetes Audit,VendorSpecific,VendorSpecific-gcp-gke-audit,Cloud Server logs,Level_2
+Vendor-Specific Data,GCP Logs,Vendor-Specific Data > GCP Logs,VendorSpecific,VendorSpecific-gcp,Cloud Server logs,Level_2
+Vendor-Specific Data,Google Gmail,Vendor-Specific Data > Google Gmail,VendorSpecific,VendorSpecific-google-gmail,full email logs,Level_4
+Vendor-Specific Data,Google Gdrive,Vendor-Specific Data > Google Gdrive,VendorSpecific,VendorSpecific-google-drive,file auditing logs,Level_3
+Vendor-Specific Data,Google Calendar,Vendor-Specific Data > Google Calendar,VendorSpecific,VendorSpecific-google-calendar,Cloud Server logs,Level_2
+Vendor-Specific Data,Azure Audit,Vendor-Specific Data > Azure Audit,VendorSpecific,VendorSpecific-azure-audit,Cloud Server logs,Level_2
+Vendor-Specific Data,Azure AD Audit,Vendor-Specific Data > Azure AD Audit,VendorSpecific,VendorSpecific-azure-ad-audit,Cloud Server logs,Level_2
+Vendor-Specific Data,Azure Kubernetes Audit,Vendor-Specific Data > Azure Kubernetes Audit,VendorSpecific,VendorSpecific-azure-aks-audit,Cloud Server logs,Level_2
+Vendor-Specific Data,Kubernetes,Vendor-Specific Data > Kubernetes,VendorSpecific,VendorSpecific-kubernetes,Cloud Server logs,Level_2
+Vendor-Specific Data,Zoom,Vendor-Specific Data > Zoom,VendorSpecific,VendorSpecific-zoom,chat logs,Level_4
+Vendor-Specific Data,Zeek,Vendor-Specific Data > Zeek,VendorSpecific,VendorSpecific-zeek,transaction logs,Level_4
+Vendor-Specific Data,CircleCI,Vendor-Specific Data > CircleCI,VendorSpecific,VendorSpecific-circleci,Custom Application Logs,Level_4
+Vendor-Specific Data,F5 Big-Ip,Vendor-Specific Data > F5 Big-Ip,VendorSpecific,VendorSpecific-f5bigip,Firewall (f),Level_2
+Vendor-Specific Data,Cisco IOS,Vendor-Specific Data > Cisco IOS,VendorSpecific,VendorSpecific-cisco-ios,Firewall (f),Level_2
+Vendor-Specific Data,Cerner EMR,Vendor-Specific Data > Cerner EMR,VendorSpecific,VendorSpecific-Cerner,Database Query Records,Level_4
+Vendor-Specific Data,Any Logs in Splunk,Vendor-Specific Data > Any Logs in Splunk,VendorSpecific,VendorSpecific-AnySplunk,Server (Critical assets),Level_1
+Vendor-Specific Data,Splunk's Internal Logs,Vendor-Specific Data > Splunk's Internal Logs,VendorSpecific,VendorSpecific-SplunkInternal,Server (Critical assets),Level_1
+Vendor-Specific Data,Box Audit Logs,Vendor-Specific Data > Box Audit Logs,VendorSpecific,VendorSpecific-Box,file auditing logs,Level_3
+Vendor-Specific Data,Okta,Vendor-Specific Data > Okta,VendorSpecific,VendorSpecific-Okta,SAML,Level_4
+Vendor-Specific Data,Crowdstrike Logs,Vendor-Specific Data > Crowdstrike Logs,VendorSpecific,VendorSpecific-Crowdstrike,Client EDR (full logs),Level_3

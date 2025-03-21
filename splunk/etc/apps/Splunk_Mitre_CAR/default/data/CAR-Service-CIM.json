@@ -1,0 +1,238 @@
+{
+    "modelName": "CAR-Service",
+    "displayName": "CAR Service",
+    "description": "CAR Service Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Service",
+            "displayName": "CAR Service",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "command_line",
+                    "displayName": "command_line",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for command_line"
+                    }
+                },
+                {
+                    "fieldName": "exe",
+                    "displayName": "exe",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for exe"
+                    }
+                },
+                {
+                    "fieldName": "fqdn",
+                    "displayName": "fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for fqdn"
+                    }
+                },
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "image_path",
+                    "displayName": "image_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for image_path"
+                    }
+                },
+                {
+                    "fieldName": "name",
+                    "displayName": "name",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for name"
+                    }
+                },
+                {
+                    "fieldName": "pid",
+                    "displayName": "pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for pid"
+                    }
+                },
+                {
+                    "fieldName": "ppid",
+                    "displayName": "ppid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for ppid"
+                    }
+                },
+                {
+                    "fieldName": "uid",
+                    "displayName": "uid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for uid"
+                    }
+                },
+                {
+                    "fieldName": "user",
+                    "displayName": "user",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Service_create",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "create",
+                            "displayName": "create",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for create",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(create) OR create=\"\", \"unknown\", create)"
+                },
+                {
+                    "calculationID": "CAR_Service_delete",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "delete",
+                            "displayName": "delete",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for delete",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(delete) OR delete=\"\", \"unknown\", delete)"
+                },
+                {
+                    "calculationID": "CAR_Service_pause",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "pause",
+                            "displayName": "pause",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for pause",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(pause) OR pause=\"\", \"unknown\", pause)"
+                },
+                {
+                    "calculationID": "CAR_Service_start",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "start",
+                            "displayName": "start",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for start",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(start) OR start=\"\", \"unknown\", start)"
+                },
+                {
+                    "calculationID": "CAR_Service_stop",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "stop",
+                            "displayName": "stop",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for stop",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(stop) OR stop=\"\", \"unknown\", stop)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

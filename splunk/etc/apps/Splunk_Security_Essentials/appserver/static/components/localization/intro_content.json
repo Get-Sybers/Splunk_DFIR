@@ -1,0 +1,408 @@
+{
+    "Features": {
+        "journey": {"type": "dashboard", "link": "journey", "name": "Security Data Journey", "description": "Splunk's security experts analyzed a typical path that Splunk customers take through their Splunk Journey and formed it into six maturity stages. These will help you understand what data to ingest when, and what challenges and milestones are typically faced as organizations move forward.",
+            "tour": [
+                {"image": "Journey-Slide1.png", "text": "The Security Data Journey walks you though the path that we typically see newer customers walk as the mature. It details each stage with milestones and common challenges."},
+                {"image": "Journey-Slide2.png", "text": "The Journey also includes the data sources that we commonly seen at each stage of the journey for users pursuing Security Monitoring."},
+                {"image": "Journey-Slide3.png", "text": "Drag the slider-bar on the right side to view the details for other stages of the Journey."},
+                {"image": "Contents-Slide3.png", "text": "All of the content in Splunk Security Essentials is oriented towards this journey, so that if you're just getting started you can limit yourself to just Stage one."}
+            ]},
+        "data_source": {"type": "dashboard", "link": "data_source", "name": "Data Source Onboarding Guides", "description": "Nine data source onboarding guides that are simple enough to use, but also blessed by Splunk's professional services. These will tell you not only how to ingest data into Splunk, but also how to configure the systems in order to send the right data in the first place!",
+            "tour": [
+                {"image": "data_source-Slide1.png", "text": "This app contains 9 Data Source Onboarding Guides. You can find the full list at the top of the page."},
+                {"image": "data_source-Slide1.png", "text": "You can also choose to look at the categories below, and find a variety of products that Splunk commonly sees for each type of data."},
+                {"image": "data_source-Slide2.png", "text": "That data onboarding guides are written by Splunk field engineers, working in conjunction with Splunk Professional Services to make them as easy to use as possible while supporting your long term growth."},
+                {"image": "data_source-Slide3.png", "text": "You will see a variety of Splunk recommendations, usually with download-able apps or conf files."},
+                {"image": "data_source-Slide4.png", "text": "These guides step beyond just Splunk though, telling you how to configure the products to generate the data required to fire our detections."}
+            ]},
+        "data_source_check": {"type": "dashboard", "link": "data_source_check", "name": "Data Source Check", "description": "The data source check dashboard will look in your environment not just for the expected data, but also for the actual field extractions used by the free searches in Splunk Security Essentials, and provide you a list of checkboxes for what searches you can use.",
+            "tour": [
+                {"image": "data_source_check-Slide1.png", "text": "The Data Source Check dashboard tells you what searches would be ready to run in your environment. Click Start Searches to get started."},
+                {"image": "data_source_check-Slide2.png", "text": "The dashboard will launch 60+ pre-req tests. Each is really quick -- the whole set should take less than 10 minutes and won't overwhelm your Splunk."},
+                {"image": "data_source_check-Slide3.png", "text": "As the searches run, you will get back Green Checks or Red Explanation Points. A green check indicates that the pre-req test found the exact data, sourcetypes, and fields that the detection is expecting."},
+                {"image": "data_source_check-Slide4.png", "text": "If you've run the dashboard checks in the past, you can always re-run them on your current data, or you can click Retrieve Result to pull back your last result."}
+            ]},
+        "security_posture_dashboards": {"type": "dashboard", "link": "data_source_check", "name": "Security Posture Dashboards", "description": "Once you complete the Data Source Check, you can click \"Create Posture Dashboards\" in the upper right corner. That will let you create up to 50 dashboard panels looking at your actual data, and following Splunk best practices!",
+            "tour": [
+                {"image": "data_source_check-Slide4.png", "text": "The Security Posture dashboards only run on the data you have in your system, so make sure you run the Data Source Check searches first (or if you've run them before, click Retrieve Last Result."},
+                {"image": "data_source_check-Slide5.png", "text": "Once the checks are in place, you can click Create Posture Dashboards."},
+                {"image": "data_source_check-Slide6.png", "text": "There are three dashboards you can choose. Within each, some panels are enabled by default, some disabled, and some unavailable as you don't have the required data."},
+                {"image": "data_source_check-Slide7.png", "text": "If you want to see the intended result, you can click Use Demo Datasets and all the dashboards will use CSV demo data."},
+                {"image": "data_source_check-Slide8.png", "text": "After clicking Create Dashboards, you will get a link to each dashboard. They'll also be added to navigation."},
+                {"image": "data_source_check-Slide9.png", "text": "These are SimpleXML dashboards using Splunk best practices (with post-processing and using accelerated data models if possible). That makes them easy to customize, or copy-paste into your dashboards."}
+            ]},
+        "#prescriptive_content": {"type": "pageguide", "id": "prescriptive_content", "name": "Prescriptive Content Recommendations", "description": "Splunk Security Essentials will help you track what data is present in your environment, what detections you're currently running, and what else you can do with your existing investment in Splunk!"},
+        "#advanced_users": {"type": "pageguide", "id": "advanced_users", "name": "Advanced Content", "description": "Splunk Security Essentials has a wealth of advanced security content and a list of all of Splunk's Security Content, complete with a mapping to popular frameworks like MITRE ATT&CK and the Kill Chain. Explore all of our content."},
+        "#basic_users": {"type": "pageguide", "id": "basic_users", "name": "Security Detection Basics", "description": "After looking at some of our most popular content, take a step further and get a list of all of Splunk's Getting Started content."},
+        "!datainventory": {"type": "setup", "link": "data_inventory", "name": "Data Inventory", "id": "data_inventory_complete", "description": "Data Source Categories use standardized searches to find data configured with the tags that are used in Splunk's Common Information Model. You can also add custom products that either don't match the Common Information Model, or mark that you have products you expect to add in the future.",
+            "tour": [
+                {"image": "data_inventory-Slide1.png", "text": "The Data Inventory dashboard allows you to configure what products you have in your environment. Products have a variety of metadata (sourcetypes, event volume, CIM compliance) and are connected with data source categories, allowing the app to show you what content can be turned on with your present data."},
+                {"image": "data_inventory-Slide2.png", "text": "Here's an example of several data source categories, under the EDR data source. DSCs are detailed categories that have been proven out through thousands of professional services engagements."},
+                {"image": "data_inventory-Slide3.png", "text": "When you first open this page, it will prompt you to use the automated scans. If you install SSE on your production search head, most of the work from this page is automated!"},
+                {"image": "data_inventory-Slide4.png", "text": "There are four automated introspection steps that pulls a variety of data."},
+                {"image": "data_inventory-Slide5.png", "text": "For any sources or sourcetypes that are uncommon, you can tell the app what product it is."},
+                {"image": "data_inventory-Slide6.png", "text": "If you have a product that wasn't detected, or you aren't installing this app on your production search head, you can always manually add products by clicking Add Product. If you don't have data for a DSC, you can say No Data Present."}
+            ]},
+        "!searchmapping": {"type": "setup", "link": "bookmarked_content", "name": "Correlation Search Introspection and Mapping", "id": "search_mapping_complete", "description": "Tracking what content you have active is key to so much Splunk Security Essentials functionality (enriching the MITRE ATT&CK Matrix, guiding you to the right content, integrations with Splunk Enterprise Security, Risk-based Alerting, the Data Availability Dashboard). This can be accomplished through bookmarking (set status Implemented), but it's often easier to configure via Correlation Search Introspection on the Bookmarked Content dashboard.",
+            "tour": [
+                {"image": "manage_bookmarks-Slide1.png", "text": "Splunk Security Essentials uses bookmarking to track what content is active in your environment, or to just help you remember what content you want to deploy."},
+                {"image": "search_mapping-Slide1.png", "text": "To make the process of recording your active content easier if you've installed this app on your production search head, it contains a Correlation Search Introspection feature which walks you through marking active content."},
+                {"image": "search_mapping-Slide2.png", "text": "This introspection will pull a list of all of your enabled local scheduled searches that have an action associated with them. It will also automatically enable any directly enabled ES, ESCU, or SSE content."},
+                {"image": "search_mapping-Slide3.png", "text": "For most content, the introspection will provide you with the option to indicate that a search is not a security detection, search through all of the out-of-the-box content contained in the app, or create new custom content in the app. Any of these will help you accurately map data source, MITRE, and other metadata for your content."},
+                {"image": "search_mapping-Slide4.png", "text": "Splunk Security Essentials includes a search engine to help you search the app and map any detection search to all of the out-of-the-box content."},
+                {"image": "search_mapping-Slide5.png", "text": "For content that doesn't exist in Splunk out-of-the-box, you can create custom content. Custom content shows everywhere throughout the app, just like normal Splunk content."},
+                {"image": "search_mapping-Slide6.png", "text": "You can even define all of the same metadata content (such as MITRE ATT&CK, Kill Chain, data source categories, etc.). You can also add all the normal descriptive fields (how to respond, known false positives, etc.)."},
+                {"image": "search_mapping-Slide7.png", "text": "If you don't have Splunk Security Essentials on your production environment, you can always individually mark content as installed, or bookmarked."}
+            ]},
+        "!enabledsources": {"type": "setup", "name": "Enabled Products", "id": "check_enabled_content_sources", "description": "In the app configuration, you can include / exclude different sources of content, allowing you to filter out Splunk solutions you might not own, or avoid seeing the free content from Splunk Security Essentials. Most users will leave this at the default settings.",
+            "tour": [
+                {"image": "enabledsources_Slide1.png", "text": "Find the Configuration menu in the navigation."},
+                {"image": "enabledsources_Slide2.png", "text": "Under Enabled Sources you can turn on or off different apps. This will apply globally across the app."}
+            ]},
+        "!dataavailabilitybaseline": {"type": "setup", "name": "Enable Data Availability Baseline", "id": "check_data_availability", "description": "In the app configuration, you can enable the daily scheduled search.",
+            "tour": [
+                {"image": "enabledsources_Slide1.png", "text": "Find the Configuration menu in the navigation."},
+                {"image": "scheduled_searches-Slide1.png", "text": "Under Enabled Sources you can turn on or off different apps. This will apply globally across the app."}
+            ]},
+        "!mltkpresent": {"type": "setup", "name": "Check for Machine Learning Toolkit", "id": "check_mltk_present", "description": "The Splunk Machine Learning Toolkit enables the automatic baselining functionality for the data availability dashboard, and also detections in Splunk Enterprise Security Content Update.",
+            "tour": [
+                {"image": "splunk_ml_toolkit-Slide1.png", "text": "This app requires the use of Splunk's Machine Learning Toolkit, which you can find on Splunkbase."},
+                {"image": "splunk_ml_toolkit-Slide2.png", "text": "Also on Splunkbase, required by the Splunk Machine Learning Toolkit itself, is Python for Scientific Computing from Splunkbase. Ensure that you have the version of the app that is specific for your environment (32 bit Linux, 64 bit Linux, Windows, or Mac)."}
+            ]},
+        "!esintegration": {"type": "setup", "name": "Check for ES Integration", "id": "check_es_integration", "description": "Assuming that you have ES in your environment, Splunk Security Essentials can push MITRE ATT&CK and Kill Chain attributions to the Incident Review dashboard, along with raw searches of index=risk or index=notable. Just configure the ES Integration in the system config menu.",
+            "tour": [
+                {"image": "enabledsources_Slide1.png", "text": "Find the Configuration menu in the navigation."},
+                {"image": "esintegration-Slide1.png", "text": "Click Update ES and the app will push MITRE and Kill Chain configurations into the ES Incident Review dashboard."}
+            ]},
+        "contents": {"type": "dashboard", "link": "contents", "name": "Security Contents Page", "description": "The Security Contents Page is the main landing page for Splunk Security Essentials, providing a complete list of content and the ability to drill-down into any individual item. It's the kicking off point for viewing all content in the app, and has a wealth of filters to help you hone in on exactly what you want.",
+            "tour": [
+                {"image": "Contents-Slide1.png", "text": "Welcome to Splunk Security Essentials! This tour will provide you with a basic introduction to the Security Content Page. If you want additional information on the Security Data Journey Levels, click on the Security Data Journey page from the Data dropdown."},
+                {"image": "Contents-Slide2.png", "text": "Use the filters below to find capabilities most relevant to you. For example, you can use the Security Data Journey filter to group content by Level."},
+                {"image": "Contents-Slide3.png", "text": "There are several other filters you can use to find the right content for you. Filter on specific data sources you already have in Splunk. For example, see some immediate detections you can deploy by filtering on the specific data source, such as, \"Azure\"."},
+                {"image": "Contents-Slide4.png", "text": "In order to focus on the exact examples you want, adjust filters by hitting the edit button on the filter bar. Don't worry - all the settings you configure will be retained every time you open the page in this browser."},
+                {"image": "Contents-Slide5.png", "text": "Splunk Security Essentials is not just about the filters... it's about the different examples to help with your specific use cases. Scroll down below to see what examples match the filters you've configured and how to start getting value with Splunk."},
+                {"image": "Contents-Slide6.png", "text": "Use the legend to understand the different tags located on each content widget."},
+                {"image": "Contents-Slide7.png", "text": "Click into an example to get more detail. With the examples that only need Splunk Enterprise, you'll also be able to view the full search string, along with detailed documentation. That's it for this tour! Start exploring the examples and see how to get the most from your data with Splunk."}
+            ]},
+        "content_overview": {"type": "dashboard", "link": "content_overview", "name": "Analytics Advisor Content Overview", "description": "The Analytics Advisor dashboards are designed to help you understand what content you might want to deploy inside of Splunk based on the content you already have and the data that's present in your environment. You will find a number of visualizations geared toward simplifying the process of selecting content, and a drilldown to the Security Contents Page to start bookmarking and deploying it. There are also paired dashboards for MITRE ATT&CK and the Kill Chain, with purpose-built visualizations for those industry-standard models!",
+            "tour": [
+                {"image": "content_overview-Slide1.png", "text": "The Content Overview dashboard is the centerpiece of the Analytics Advisor suite. This dashboard takes into account what data you have in your environment, what searches are active, and helps you see what content you can use next."},
+                {"image": "content_overview-Slide2.png", "text": "Each number in these dashboards represents a piece of content. In order to guide you through the dashboard, follow the headlines 1, 2 and 3 to find the content. You can also go directly to the full details for each piece of content by clicking the green button under heading 3."},
+                {"image": "content_overview-Slide3.png", "text": "Any content labeled Active means that you have content (detections, correlations etc.) enabled in your environment."},
+                {"image": "content_overview-Slide4.png", "text": "Any content labeled Available means that you have content that can be enabled with data already in Splunk."},
+                {"image": "content_overview-Slide5.png", "text": "Any content labeled Needs data means that the data to support the content is missing in Splunk. "},
+                {"image": "content_overview-Slide6.png", "text": "The Available Content panel shows on a high level and how your environment stacks up against the content available. You can switch between the tabs to change the visualisation and change the Split by field to show different dimensions. Everything in this panel is clickable and will allow you to drill down further."},
+                {"image": "content_overview-Slide7.png", "text": "The Selected Content panel contains further filters that allow you to drill into individual pieces of content. "},
+                {"image": "content_overview-Slide8.png", "text": "The View Content panel allows you to go directly to the view full details of the selection inside the Security Essentials general content page. "},
+                {"image": "data_inventory-Slide1.png", "text": "These dashboards build on the Data Inventory and Correlation Search Introspection, so if you haven't configured those yet, make sure to visit those pages."}
+            ]},
+        "mitre_overview": {"type": "dashboard", "link": "mitre_overview", "name": "Analytics Advisor MITRE ATT&CK Framework", "description": "The Analytics Advisor dashboards are designed to help you understand what content you might want to deploy inside of Splunk based on the content you already have and the data that's present in your environment. The MITRE ATT&CK Overview dashboard even includes a customized MITRE ATT&CK Matrix that shows your level of coverage on MITRE ATT&CK while letting you filter for the data you have in the environment, or the threat groups that target you.",
+            "tour": [
+                {"image": "mitre_overview-Slide1.png", "text": "Like the Analytics Advisor Content Overview dashboard, the MITRE ATT&CK Framework dashboard takes into account the data and active content in your environment to help you choose new and better content. See that dashboard for a full tour of the three steps in this dashboard."},
+                {"image": "mitre_overview-Slide2.png", "text": "The MITRE ATT&CK Matrix tab shows the coverage in your environment against all techniques. By default the app will color the matrix based on all content (Total), but you can adjust the filters to show just what content is currently enabled in your environment (Active), what content is available to start using with your data (Available), or what content you could use if you ingested more data into Splunk (Needs Data)."},
+                {"image": "mitre_overview-Slide3.png", "text": "You can also get insight into the threat groups that target you by selecting those a group. The app will add a red icon for each technique associated with that threat group. If you don't track a specific group, you can also filter for only the techniques popular with many groups."},
+                {"image": "mitre_overview-Slide4.png", "text": "Finally, you can also highlight a specific data source directly in the matrix. This allows you to show the incremental value you'd get by adding an additional data source to your environment."},
+                {"image": "mitre_overview-Slide5.png", "text": "The Chart View tab shows on a high level and how your environment stacks up against the content available and the MITRE ATT&CK Framework specifically. You can switch between the tabs to change the visualisation and change the Split by field to show different dimensions. Everything in this panel is clickable and will allow you to drill down further. "},
+                {"image": "mitre_overview-Slide6.png", "text": "The Selected Content panel contains further filters that allow you to drill into individual pieces of content. "},
+                {"image": "content_overview-Slide8.png", "text": "The View Content panel allows you to go directly to the view full details of the selection inside the Security Essentials general content page. "},
+                {"image": "data_inventory-Slide1.png", "text": "These dashboards build on the Data Inventory and Correlation Search Introspection, so if you haven't configured those yet, make sure to visit those pages."}
+            ]},
+        "kill_chain_overview": {"type": "dashboard", "link": "kill_chain_overview", "name": "Analytics Advisor Cyber Kill Chain", "description": "The Analytics Advisor dashboards are designed to help you understand what content you might want to deploy inside of Splunk based on the content you already have and the data that's present in your environment. The Kill Chain Overview dashboard even includes a custom vizualization designed to show what content is tied to different parts of the Kill Chain.",
+            "tour": [
+                {"image": "kill_chain_overview-Slide1.png", "text": "Like the Analytics Advisor Content Overview dashboard, the Kill Chain Oveview dashboard takes into account the data and active content in your environment to help you choose new and better content. See that dashboard for a full tour of the three steps in this dashboard."},
+                {"image": "content_overview-Slide2.png", "text": "Each number in these dashboards represents a piece of content. In order to guide you through the dashboard, follow the headlines 1, 2 and 3 to find the content. You can also go directly to the full details for each piece of content by clicking the green button under heading 3."},
+                {"image": "content_overview-Slide3.png", "text": "Any content labelled Active means that you have content (detections, correlations etc.) enabled in your environment."},
+                {"image": "content_overview-Slide4.png", "text": "Any content labelled Available means that you have content that can be enabled with data already in Splunk."},
+                {"image": "content_overview-Slide5.png", "text": "Any content labelled Needs data means that the data to support the content is missing in Splunk. "},
+                {"image": "kill_chain_overview-Slide2.png", "text": "The Kill Chain tab shows the coverage in your environment against the Kill Chain steps. You can adjust what numbers are displayed in the visualisation to show Active/Available content."},
+                {"image": "kill_chain_overview-Slide3.png", "text": "The Chart View tab shows on a high level and how your environment stacks up against the content available and the Cyber Kill Chain specifically. You can switch between the tabs to change the visualisation and change the Split by field to show different dimensions. Everything in this panel is clickable and will allow you to drill down further. "},
+                {"image": "content_overview-Slide7.png", "text": "The Selected Content panel contains further filters that allow you to drill into individual pieces of content."},
+                {"image": "content_overview-Slide8.png", "text": "The View Content panel allows you to go directly to the view full details of the selection inside the Security Essentials general content page."},
+                {"image": "data_inventory-Slide1.png", "text": "These dashboards build on the Data Inventory and Correlation Search Introspection, so if you haven't configured those yet, make sure to visit those pages."}
+            ]},
+        "bookmark_export": {"type": "dashboard", "link": "bookmarked_content", "name": "Manage Bookmarks - Export", "description": "From the Manage Bookmarks dashboard, you will get a list of all the content that you have active in your environment (even custom content!) along with content that you wish to deploy. From this page, you can click the Export button and get an output in XLSX, CSV, or most importantly you can get a print-to-PDF export that can include all of the documentation, line-by-line search documentation, and even a demo screenshot!",
+            "tour": [
+                {"image": "manage_bookmarks-Slide1.png", "text": "The Manage Bookmark dashboard lets you track content in your environment, including content that you've just bookmarked, or content that you've marked as successfully implemented."},
+                {"image": "manage_bookmarks-Slide2.png", "text": "To export a list of this content, click the Export button in the upper right hand corner. "},
+                {"image": "manage_bookmarks-Slide3.png", "text": "There are multiple export options. Most are very straightforward."},
+                {"image": "manage_bookmarks-Slide4.png", "text": "The most detailed export is the Print-to-PDF, where by default we want to include as much detail as we can. You can opt to disable this detail if you don't need it. (The app will remember what you selected.)"},
+                {"image": "manage_bookmarks-Slide5.png", "text": "Print-to-PDF works by generating a printable page, and letting you save as PDF via your browser. This works best in Chrome."}
+            ]},
+        "sse_cim_compliance": {"type": "dashboard", "link": "sse_cim_compliance", "name": "CIM Compliance Check", "description": "As a part of Data Inventory introspection, Splunk Security Essentials checks your data against a series of Common Information Model checks. This dashboard will show you the results.",
+            "tour": [
+                {"image": "sse_cim_compliance-Slide1.png", "text": "The Common Information Model (CIM) Compliance Check dashboard is intended to check to see if your data aligns to Splunk's CIM. This is a common set of fields that can be shared across products, allowing you to know that a field like src_ip will bring back results regardless of what the original data looks like."},
+                {"image": "sse_cim_compliance-Slide2.png", "text": "You will see a list of the products that you've configured in Splunk Security Essentials broken out by data source category (e.g., Successful Authentication), and the CIM compliance status of each key field for that DSC."},
+                {"image": "sse_cim_compliance-Slide3.png", "text": "If you expand the row, you'll also be able to see the actual values returned when searching that data."},
+                {"image": "data_inventory-Slide1.png", "text": "This dashboard builds on the Data Inventory introspection, so if you haven't configured that yet, make sure to visit that page."}
+            ]},
+        "example_item": {"type": "dashboard", "link": "showcase_simple_search?ml_toolkit.dataset=Basic%20Brute%20Force%20-%20Demo", "name": "Example Content - Basic Brute Force Detection", "description": "There are 120+ detection searches native to Splunk Security Essentials. From any of those, you can click Save Scheduled Search to enable the search. Have Splunk Enterprise Security? Don't worry -- we'll directly integrate with ES. Click here for an example item.",
+            "tour": [
+                {"image": "example_item-Slide2.png", "text": "When looking at Security Content, we've tried to provide as much context as possible, so you can understand the impact of an example, how it works, adapt it to the particulars of your environment, and to handle the alerts that will be sent afterward."},
+                {"image": "example_item-Slide3.png", "text": "In the boxes at the top, you can find high-level details, including the ever-important 'Data Source' links. You can follow the 'Data Source' links for several popular technologies, not just a list of technologies that provide those data sources. Also, there's detailed installation documentation that will help you get up and running!"},
+                {"image": "example_item-Slide4.png", "text": "Beneath the boxes there's other contextual data, including how to implement and respond, as well as, other examples and related Splunk capabilities."},
+                {"image": "example_item-Slide5.png", "text": "The default shows the types of results you will see from a search. If you want to get more technical, use the \"Line-by-Line SPL Documentation\" to see or help implement the search string."},
+                {"image": "example_item-Slide6.png", "text": "In SPL mode, you'll be able to see the pre-requisite checks that make sure you have the right data on boarded, get the \"Open in Search\" buttons, and be able to click \"Schedule Saved Search\" to save this search right from the app."},
+                {"image": "example_item-Slide7.png", "text": "One last item for the overview, in the upper right-hand corner is a list of what searches are available for each example. Often, there's just a demo and a live version, but some examples might have three or four different versions."}
+            ]},
+        "sse_data_availability": {"type": "dashboard", "link": "sse_data_availability", "name": "Data Availability", "description": "Splunk Security Essentials includes a machine-learning driven dashboard that tracks the typical data ingest latency of the products configured in SSE (effectively: how slow is typical for the logs). When a log source slows down, it will color code it, and you can click on it to see what detections are at risk for issue.",
+            "tour": [
+                {"image": "data_availability-Slide1.png", "text": "The Data Availability dashboard shows you the products in your environment, and the most recent latency seen from each of them."},
+                {"image": "data_availability-Slide2.png", "text": "If you click on a product, it will tell you what detections depend on it along with the expected latency."},
+                {"image": "data_availability-Slide3.png", "text": "The dashboard will also throw a variety of errors in case you have any configuration issues."}
+            ]},
+        "mitre_focused_content_recommendation": {"type": "dashboard", "link": "mitre_focused_content_recommendation", "name": "MITRE ATT&CK-based Content Recommendations", "description": "With an understanding of what data you have, you can specify the types of security concerns you're facing and then use MITRE ATT&CK to filter for the Splunk content related to MITRE Techniques that are associated with many different threat groups.",
+            "tour": [
+                {"image": "mitre_content_recommendation-Slide1.png", "text": "Select a category of issue that you are concerned about. If desired, you can also adjust the default filters for data availability and popularity."},
+                {"image": "mitre_content_recommendation-Slide2.png", "text": "You will be greeted by a list of content that is tied to ATT&CK techniques MITRE reports as being popular with many threat groups."},
+                {"image": "data_inventory-Slide1.png", "text": "This dashboard is built on the Data Inventory and Correlation Search Introspection, so if you haven't configured those yet, make sure to visit those pages."}
+            ]},
+        "rba_content_recommendation": {"type": "dashboard", "link": "rba_content_recommendation", "name": "RBA Content Recommendations", "description": "With an understanding of what data you have, you can specify the types of security concerns you're facing and then get a set of recommended content that will help with your roll-out of Risk-based Alerting.",
+            "tour": [
+                {"image": "rba_content_recommendation-Slide1.png", "text": "The Risk-based Alerting Content Recommendation dashboard is intended to provide you with a quick view of content related to a single category, that you can run with the data in your Splunk today. To start, select a category at the bottom -- you'll see how many pieces of content you already have deployed, and how many are available with your existing data."},
+                {"image": "rba_content_recommendation-Slide2.png", "text": "With one (or more) categories selected, the dashboard will then show you all of the content that you can leverage. You can click through to any of these to enable them, bookmark them, or more."},
+                {"image": "data_inventory-Slide1.png", "text": "This dashboard is built on the Data Inventory and Correlation Search Introspection, so if you haven't configured those yet, make sure to visit those pages."}
+            ]},
+        "analyze_es_risk": {"type": "dashboard", "link": "analyze_es_risk", "name": "Analyze ES Risk Attributions", "description": "Risk-based Alerting is all oriented towards aggregating risky events. This dashboard looks at the content in the ES Risk Framework with out-of-the-box Risk aggregations. It also includes a customized MITRE ATT&CK Matrix based on your search filters, letting you see what techniques have been seen against a particular user, host, or network.",
+            "tour": [
+                {"image": "es_risk-Slide0.png", "text": "The Analyze ES Risk Attributions dashboard helps you understand the data provided by the Splunk Enterprise Security's Risk Analysis Framework. Most users will arrive here via a drilldown from a user or system, populating that user/system in the search box and focusing the analysis accordingly. That said, you can enter any search string to use the dashboard to analyze a network or even your entire organization."},
+                {"image": "es_risk-Slide1.png", "text": "Customers who get the most value out of ES Risk often use MITRE ATT&CK, which is why we provide a series of system-wide ATT&CK metrics on the left, and then on the number of hits per tactic for your provided user/system."},
+                {"image": "es_risk-Slide2.png", "text": "Beneath that, you will find a customized MITRE ATT&CK Matrix for this user/system, showing you which techniques have fired for the data you've selected in the search."},
+                {"image": "es_risk-Slide3.png", "text": "Aggregating risk attributions is the core strength of this dashboard. You'll next see a series of charts that aggregate risk by various metrics."},
+                {"image": "es_risk-Slide4.png", "text": "Finally, you'll see a straightforward sum of risk by object, which will let you see which objects are experiencing the greatest amount of risk."}
+            ]},
+        "mitreattack": {"type": "link", "link": "https://attack.mitre.org/matrices/enterprise/", "name": "MITRE ATT&CK Matrix", "description": "MITRE is a not-for-profit Federally Funded Research and Development Center (FFRDC), which has created a framework for referring to the tactics, tools, and techniques used by attackers, based on open citation and independent research. It is a key component guiding security detective controls for security organizations around the globe."},
+        "socbuilding_gartner": {"type": "link", "link": "https://www.gartner.com/doc/3479617", "name": "Gartner: How to Plan, Design, Operate and Evolve a SOC"},
+        "socbuilding_infosecplaybook": {"type": "link", "link": "https://www.amazon.com/Crafting-InfoSec-Playbook-Security-Monitoring/dp/1491949406", "name": "Book: Crafting the InfoSec Playbook"},
+        "socbuilding_mitre": {"type": "link", "link": "https://www.mitre.org/sites/default/files/publications/pr-13-1028-mitre-10-strategies-cyber-ops-center.pdf", "name": "MITRE: Ten Strategies of a World-Class Cybersecurity Operations Center"},
+        "socbuilding_confWorkday": {"type": "link", "link": "https://conf.splunk.com/files/2016/slides/maturing-workdays-soc-with-splunk.pdf", "name": ".conf Preso: Maturing Workday's SOC with Splunk"},
+        "socbuilding_gartnerIntelDrivenSOC": {"type": "link", "link": "https://www.gartner.com/doc/3160820/characteristics-intelligencedriven-security-operations-center", "name": "Gartner: The Five Characteristics of an Intelligence Driven Security Operations Center"},
+        "hunting_gartnerFiveWs": {"type": "link", "link": "https://www.sans.org/reading-room/whitepapers/analyst/who-what-where-when-effective-threat-hunting-36785", "name": "Gartner: The Who, What, Where, When, Why and How of Effective Threat Hunting"},
+        "socbuilding_confESFrameworks": {"type": "link", "link": "https://conf.splunk.com/files/2016/slides/exploring-the-frameworks-of-splunk-enterprise-security.pdf", "name": ".conf Preso: Exploring the Frameworks of Splunk Enterprise Security"},
+        "socbuilding_csis": {"type": "link", "link": "https://www.csis.org/analysis/recruiting-and-retaining-cybersecurity-ninjas", "name": "CSIS: Recruiting and Retaining Cybersecurity Ninjas"},
+        "socbuilding_splunk": {"type": "link", "link": "https://www.splunk.com/pdfs/technical-briefs/building-a-soc-with-splunk-tech-brief.pdf", "name": "Splunk: Building a SOC with Splunk"},
+        "how_search_works": {"type": "link", "link": "https://www.davidveuve.com/searchdeepdive", "name": "Splunk Search Deep Dive - a collection of .conf talks"}
+    },
+    "PageGuides": {
+        "content": {
+            "name": "Find Content",
+            "description": "You can do lots with Splunk for security -- these guides will help you quickly find the right content.",
+            "enabled": true,
+			"order": 1,
+            "icon": "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png",
+            "items": {
+                "basic_users": {
+                    "name": "Security Detection Basics",
+                    "description": "When you're getting started with Security Detections, you don't need to be overwhelmed with everything that Splunk can do. This guide helps you view the key content that drives the most value, and also suggests pages and docs that provide the context to help accelerate success.",
+                    "enabled": true,
+					"order": 1,
+                    "localStorageActions": [
+                        {"description": "Default to show content from just stage one of the Security Data Journey", "param": "sse-journey-Multiple", "value": "[\"Stage_1\"]"},
+                        {"description": "Start with the content for Security Monitoring", "param": "sse-usecase-Multiple", "value": "[\"Security_Monitoring\"]"},
+                        {"description": "Show just featured content", "param": "sse-highlight-Multiple", "value": "[\"Yes\"]"},
+                        {"description": "Set basic filters to be enabled by default", "param": "sse-enabledFilters", "value": "[\"journey\",\"usecase\",\"category\",\"datasource\",\"highlight\"]"}
+                    ],
+                    "useUseCaseList": true,
+                    "other_recommended_text": "As you interact with the app, you might also find the following pages helpful:",
+                    "other_recommended_features": ["journey", "data_source", "data_source_check", "security_posture_dashboards", "#prescriptive_content"]
+
+                },
+                "advanced_users": {
+                    "name": "Advanced Detection Content",
+                    "description": "For those who have their SIEM basics under control, this guide shows you far more security content, and also recommends additional capabilities such as leveraging MITRE ATT&CK to help you view the right information.",
+                    "enabled": true,
+					"order": 2,
+                    "localStorageActions": [
+                        {"description": "Default to show content from all stages of the Security Data Journey", "param": "sse-journey-Multiple", "value": "[\"Stage_1\",\"Stage_2\",\"Stage_3\",\"Stage_4\",\"Stage_5\",\"Stage_6\"]"},
+                        {"description": "Start with the content for Security Monitoring", "param": "sse-usecase-Multiple", "value": "[\"Security_Monitoring\",\"Advanced_Threat_Detection\",\"Insider_Threat\",\"Security_Monitoring\",\"Application_Security\"]"},
+                        {"description": "Show all content, not just featured content", "param": "sse-highlight-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_tactic_display-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_technique_display-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_threat_groups-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show only content that has included SPL", "param": "sse-hasSearch-Multiple", "value": "[\"Yes\"]"},
+                        {"description": "Set advanced filters to be enabled by default", "param": "sse-enabledFilters", "value": "[\"journey\",\"usecase\",\"category\",\"datasource\",\"highlight\",\"mitre_tactic_display\",\"mitre_technique_display\",\"mitre_threat_groups\",\"hasSearch\"]"}
+                    ],
+                    "useUseCaseList": true,
+                    "other_recommended_text": "These resources can help you be successful:",
+                    "other_recommended_features": ["mitreattack", "mitre_focused_content_recommendation"]
+                },
+                "hunt": {
+                    "name": "Hunting Content",
+                    "description": "Users focused on hunting rather than building out alerts are more likely to want noisy searches, and more likely to want focus on MITRE ATT&CK. This guide will set up the system to that you get the maximum value.",
+                    "enabled": false,
+					"order": 3,
+                    "localStorageActions": [
+                        {"description": "Default to show content from all stages of the Security Data Journey", "param": "sse-journey-Multiple", "value": "[\"Stage_1\",\"Stage_2\",\"Stage_3\",\"Stage_4\",\"Stage_5\",\"Stage_6\"]"},
+                        {"description": "Start with the content for Security Monitoring", "param": "sse-usecase-Multiple", "value": "[\"Security_Monitoring\",\"Advanced_Threat_Detection\",\"Insider_Threat\",\"Security_Monitoring\",\"Application_Security\"]"},
+                        {"description": "Show all content, not just featured content", "param": "sse-highlight-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_tactic_display-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_technique_display-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "", "param": "sse-mitre_threat_groups-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show only content that has included SPL", "param": "sse-hasSearch-Multiple", "value": "[\"Yes\"]"},
+                        {"description": "Set advanced filters to be enabled by default", "param": "sse-enabledFilters", "value": "[\"journey\",\"usecase\",\"category\",\"datasource\",\"highlight\",\"mitre_tactic_display\",\"mitre_technique_display\",\"mitre_threat_groups\",\"hasSearch\"]"}
+                    ],
+                    "nextFeatures": ["contents"],
+                    "other_recommended_text": "These resources can help you be successful:",
+                    "other_recommended_features": ["mitreattack", "mitre_focused_content_recommendation", "hunting_gartnerFiveWs"]
+                },
+                "prescriptive_content": {
+                    "name": "Prescriptive Content Recommendations",
+                    "description": "This app contains data and search introspection that we can leverage to provide very prescriptive recommendations. It requires a bit more setup, but provides concrete recommendations.",
+                    "enabled": true,
+					"order": 4,
+                    "prereqs": ["!enabledsources", "!datainventory", "!searchmapping"],
+                    "nextFeatures": ["content_overview"],
+                    "other_recommended_text": "You might also find the following pages helpful:",
+                    "other_recommended_features": ["contents", "mitre_focused_content_recommendation", "mitre_overview", "kill_chain_overview"]
+                },
+                "rba_content": {
+                    "name": "Risk-Based Alerting Content",
+                    "description": "If you are getting started with Risk-based Alerting, you can use this guide to help you focus your energies by deploying the best RBA content. Unfamiliar with RBA? Check out the link in the pre-requisites section.",
+                    "enabled": true,
+                    "useUseCaseList": true,
+                    "prereqs": ["!datainventory", "!searchmapping", "!esintegration"],
+                    "other_recommended_features": ["mitre_overview", "analyze_es_risk", "rba_content_recommendation", "mitre_focused_content_recommendation", "mitreattack"],
+					"order": 5
+                }
+            }
+        },
+        "measure_environment": {
+            "name": "Measure",
+            "description": "Users have a variety of reporting and measurement needs that they have to manually perform today. These guides will show you how this app can help make that reporting easier.",
+            "enabled": true,
+			"order": 4,
+            "icon": "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png",
+            "items": {
+                "justify_data_source": {
+                    "name": "Justify New Data Sources via MITRE ATT&CK",
+                    "description": "If you want to get a new data source in, MITRE ATT&CK can often provide a neutral industry-recognized way to show what that data would do for you. This guide will walk you through the configuration of this app, and then the dashboard that enables that functionality.",
+                    "enabled": true,
+                    "nextFeatures": ["mitre_focused_content_recommendation"],
+					"order": 1
+                },
+                "document_content": {
+                    "name": "Document Your Deployed Content",
+                    "description": "Building out reports for management or auditors on what content is deployed can be time consuming, particularly for those who don't build a lot of reports like that. Splunk Security Essentials can generate CSV, PDF, and XLSX reports showing you what content you have in your environment, that can help you complete these tasks faster.",
+                    "enabled": true,
+                    "prereqs": ["!searchmapping"],
+                    "nextFeatures": ["bookmark_export"],
+					"order": 2
+                },
+                "connect_content_to_data": {
+                    "name": "Connect Deployed Content to Data Volumes",
+                    "description": "Some users are asked what they get for their money, particularly with expensive data sources. While this app is mostly focused on detection of bad things, as opposed to investigation, analysis, or taking action, it does build up a library of what detections are active, what data sources they're connected to, and what the volume of those data sources is. This guide walks you through that process.",
+                    "enabled": false,
+					"order": 3
+                }
+            }
+        },
+        "education": {
+            "name": "Learn",
+            "description": "Whether we're talking about Splunk or Security, there is always more to learn. This is particularly daunting if you're just getting started! These guides help you learn quicker by pointing you at the most useful and most accessible information.",
+            "enabled": true,
+			"order": 2,
+            "icon": "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png",
+            "items": {
+                "learn_splunk": {
+                    "name": "Learn Splunk",
+                    "description": "In order to master Splunk, you must master Splunk's Search Processing Language (SPL). This guide points you to some of searches that have the most useful documentation that helps new-comers learn SPL best.",
+                    "enabled": true,
+					"order": 1,
+                    "localStorageActions": [
+                        {"description": "Default to show content from all stages of the Security Data Journey", "param": "sse-journey-Multiple", "value": "[\"Stage_1\",\"Stage_2\",\"Stage_3\",\"Stage_4\",\"Stage_5\",\"Stage_6\"]"},
+                        {"description": "Show content from all use cases", "param": "sse-usecase-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show content from all categories", "param": "sse-category-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show all content, not just featured content", "param": "sse-highlight-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show content tagged with Useful Documentation", "param": "sse-advancedtags-Multiple", "value": "[\"Useful SPL Documentation\"]"},
+                        {"description": "Set advanced filters to be enabled by default", "param": "sse-enabledFilters", "value": "[\"journey\",\"usecase\",\"category\",\"datasource\",\"highlight\",\"advancedtags\"]"}
+                    ],
+                    "nextFeatures": ["contents"],
+                    "other_recommended_features": ["how_search_works"]
+                },
+                "learn_security": {
+                    "name": "Learn Security",
+                    "description": "If you're new to security itself, it can be difficult to even understand the content recommendations made. This guide points you to content that has the best written explanations and documentation, targeted specifically at folks just getting started.",
+                    "enabled": true,
+					"order": 2,
+                    "localStorageActions": [
+                        {"description": "Default to show content from all stages of the Security Data Journey", "param": "sse-journey-Multiple", "value": "[\"Stage_1\",\"Stage_2\",\"Stage_3\",\"Stage_4\",\"Stage_5\",\"Stage_6\"]"},
+                        {"description": "Show content from all use cases", "param": "sse-usecase-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show content from all categories", "param": "sse-category-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show all content, not just featured content", "param": "sse-highlight-Multiple", "value": "[\"ALL\"]"},
+                        {"description": "Show content tagged with Useful Documentation", "param": "sse-advancedtags-Multiple", "value": "[\"Autobahn\"]"},
+                        {"description": "Set advanced filters to be enabled by default", "param": "sse-enabledFilters", "value": "[\"journey\",\"usecase\",\"category\",\"datasource\",\"highlight\",\"advancedtags\"]"}
+                    ],
+                    "nextFeatures": ["contents"],
+                    "other_recommended_features": ["#basic_users", "journey"]
+                },
+                "security_journey": {
+                    "name": "Security Journey",
+                    "description": "For those trying to figure out how to build their security monitoring practice on Splunk, it can be useful to consult a guide for that. There are many available resources for building a SOC, or SIEM, or Monitoring Practice, and this guide will point you to a few.",
+                    "enabled": true,
+                    "order": 3,
+                    "nextFeatures": ["journey"],
+                    "other_recommended_text": "Here are a variety of (mostly) third party resources that can help your process:",
+                    "other_recommended_features": ["socbuilding_gartner", "socbuilding_infosecplaybook", "socbuilding_mitre", "socbuilding_confWorkday", "socbuilding_gartnerIntelDrivenSOC",  "socbuilding_confESFrameworks", "socbuilding_csis", "socbuilding_splunk" ]
+                },
+                "data_onboarding_guides": {
+                    "name": "Data Onboarding Guides",
+                    "description": "Getting data in can be tricky, and there are lots of ways to do it. This app contains documentation created in late 2017 for several of the products most popular with Splunk users that show not just how to ingest the data, but how to configure the products to generate the right kind of data.",
+                    "enabled": true,
+                    "nextFeatures": ["data_source"],
+					"order": 4
+                }
+
+            }
+        },
+        "productionalize": {
+            "name": "Help Deploy",
+            "description": "Building a SIEM can be lots of work! It's not the goal of this app to deploy content, but it does have a few capabilities designed to help make SIEM easier.",
+            "enabled": true,
+			"order": 3,
+            "icon": "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png",
+            "items": {
+                "operationalize_mitre_attack": {
+                    "name": "Operationalize MITRE ATT&CK",
+                    "description": "If you are orienting your security environment, you're in luck (particularly if you use Splunk Enterprise Security). This app contains a wealth of MITRE ATT&CK integrations, and this guide will help walk you through them.",
+                    "enabled": true,
+                    "prereqs": ["!enabledsources", "!datainventory", "!searchmapping", "!esintegration"],
+                    "nextFeatures": ["mitre_overview", "analyze_es_risk", "mitre_focused_content_recommendation", "#advanced_users"],
+                    "other_recommended_features": ["mitreattack"],
+					"order": 1
+                },
+                "monitor_system_health": {
+                    "name": "Monitor Data Ingest",
+                    "description": "There are many methods build for admins to help monitor data availability, but often fewer for users. This guide will help you with the configuration required and then point you to a dashboard built just for security users.",
+                    "enabled": true,
+                    "prereqs": ["!enabledsources", "!datainventory", "!searchmapping"],
+                    "nextFeatures": ["sse_data_availability"],
+					"order": 2
+                },
+                "deploy_security_content": {
+                    "name": "Deploy Content to your Environment",
+                    "description": "As you look at the content native to Splunk Security Essentials, you can directly enable them by saving them directly from the app. If you use Enterprise Security, you will also get full integrations with Risk Entries and/or Notable Events.",
+                    "localStorageActions": [
+                        {"description": "Turn on SPL Mode, so that we show the Schedule Search buttons.", "param": "sse-splMode", "value": "true"}
+                    ],
+                    "nextFeatures": ["contents", "example_item"],
+                    "enabled": true,
+					"order": 4
+                },
+                "auto_dashboarding": {
+                    "name": "Automatically Generate Dashboards",
+                    "description": "This guide will show you how to ask Splunk Security to look at what data you have in your environment, and then create a set of dashboards that look at your live data, all following Splunk's best practices for dashboard creation.",
+                    "enabled": true,
+                    "nextFeatures": ["security_posture_dashboards"],
+					"order": 3
+                },
+                "track_cim_compliance": {
+                    "name": "Analyze CIM Compliance",
+                    "description": "Splunk's Common Information Model (CIM) prescribes a common set of fields, and sometimes specific values, allowing products to easily speak the same language and allowing your users to more quickly adopt content written to expect CIM. This guide will help you track the CIM compliance of your security products.",
+                    "prereqs": ["!datainventory"],
+                    "nextFeatures": ["sse_cim_compliance"],
+                    "enabled": true,
+					"order": 5
+                }
+            }
+        }
+    }
+}

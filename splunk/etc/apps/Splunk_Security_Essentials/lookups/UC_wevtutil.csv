@@ -1,0 +1,11 @@
+_time,host,Image,CommandLine,EventCode
+"2017-06-26T04:36:54.000+0000",we8105desk,wevtutil.exe,"wevtutil cl System",1
+"2017-06-26T04:36:54.000+0000",we8105desk,wevtutil.exe,"wevtutil cl Setup",1
+"2017-06-26T04:36:54.000+0000",we8105desk,wevtutil.exe,"wevtutil cl Security",1
+"2017-06-26T04:36:54.000+0000",we8105desk,wevtutil.exe,"wevtutil cl Application",1
+"2017-06-26T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",1
+"2017-06-26T04:36:54.000+0000",we1149srv,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -Embedding",1
+"2017-06-26T04:36:54.000+0000",we1149srv,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",1
+"2017-06-26T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",1
+"2017-06-26T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\system32\w32tm.exe""  /stripchart /computer:we9041srv.waynecorpinc.local /dataonly /samples:1",1
+"2017-06-26T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\system32\PING.EXE""  we9041srv.waynecorpinc.local /n 2",1

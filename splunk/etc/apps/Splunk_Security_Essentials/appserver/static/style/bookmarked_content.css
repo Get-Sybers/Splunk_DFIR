@@ -1,0 +1,301 @@
+#box_main {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .box_item {
+    background: white;
+    border: 1px solid black;
+    padding: 5px;
+    height: 100px;
+    margin: 0 5px;
+    flex-grow: 1;
+  }
+  
+  .box_number {
+      font-size: 5em;
+      margin-right: -50%;
+  }
+  .mitreTactic {
+      border: 1px solid gray;
+      background-color: white;
+      color: black;
+      margin-bottom: 10px;
+  }
+  
+  .mitreTactic.active {
+      border: 1px solid blue;
+      background-color: lightblue;
+  }
+  
+  
+  .mitreTechnique {
+      border: 1px solid gray;
+      background-color: white;
+      color: black;
+      margin-bottom: 10px;
+  }
+  
+  .mitreTechnique.active {
+      border: 1px solid gray;
+      background-color: lightblue;
+  }
+  
+  
+  .dataSourceSelection {
+      border: 1px solid gray;
+      background-color: white;
+      color: black;
+      margin-bottom: 10px;
+  }
+  
+  .dataSourceSelection.active {
+      border: 1px solid blue;
+      background-color: lightblue;
+  }
+  
+  
+  .dscSelection {
+      border: 1px solid gray;
+      background-color: white;
+      color: black;
+      margin-bottom: 10px;
+  }
+  
+  .dscSelection.active {
+      border: 1px solid gray;
+      background-color: lightblue;
+  }
+  
+  
+  #bookmarkNavContainer {
+      height: 35px;
+      width: 220px;
+      font-size: 13px;
+      line-height: 35px;
+      padding-left: 10px;
+      padding-right: 10px;
+      margin-left: 10px;
+      background-color: #d3d3d3;
+      display: inline-block;
+      float: right;
+      text-align: center;
+  }
+  
+  #main_table>thead>tr>th {
+      position: static;
+  }
+  
+  .box-for-data-source-boxes {
+      position: relative;
+  }
+  
+  .dataSourceBox {
+      /*width: 275px;*/
+      width: 90%;
+      display: inline-block;
+      border: 1px gray solid;
+      background-color: white;
+      padding: 5px;
+      margin: 10px;
+      vertical-align: top;
+  }
+  
+  .data_source_column {
+      width: 305px;
+      display: inline-block;
+      vertical-align: top;
+  }
+  
+  .tooltip-arrow {
+      display: none;
+  }
+  
+  #main_table_body .name {
+      font-size: 11pt;
+  }
+  
+  #bookmarkrow {
+      background-color: #f0f2f3
+  }
+  
+  .dvbanner {
+      font-size: 15px
+  }
+  
+  .panel-title {
+      height: 2.1em
+  }
+  /* 
+  #bookmark_printable_table {
+      display: none;
+  }
+  
+  .printonly {
+      display: none;
+  } */
+  
+  #bottomTextBlock {
+      display: block;
+      height: 200px;
+      width: 100%;
+      /*background-color: rgb(238, 238, 238); */
+      text-align: right;
+  }
+  
+  .edit-export-pdf {
+      display: none !important;
+  }
+  
+  .edit-schedule-pdf {
+      display: none !important;
+  }
+  /* 
+  @media print {
+      #row2 .dashboard-cell {
+          width: 210px !important;
+          display: inline-block !important;
+      }
+      .tooltip {
+          display: none !important;
+      }
+      .dashboard-title::before {
+          content: "Splunk Security Essentials ";
+      }
+      #bookmarkNavContainer {
+          display: none;
+      }
+      #footer {
+          display: none;
+      }
+      .tableexpand {
+          display: none;
+      }
+      .tableChangeStatus {
+          display: none;
+      }
+      .dashboard-view-controls {
+          display: none;
+      }
+      .editCustomUseCaseIcons {
+          display: none;
+      }
+      .printandexporticons {
+          display: none;
+      }
+      #bookmark_table {
+          display: none;
+      }
+      #bookmark_printable_table {
+          display: block;
+      }
+      .prop-name {
+          border-top: 1px solid gray !important;
+      }
+      .prop-value {
+          border-top: 1px solid gray !important;
+      }
+      #bookmark_printable_table h1 {
+          page-break-before: always;
+          break-before: always;
+      }
+      .dvexpand thead {
+          display: table-row-group !important;
+      }
+      body .dvexpand td {
+          display: inline-block !important;
+      }
+      body td {
+          word-break: normal !important;
+      }
+      .printonly {
+          display: block
+      }
+      .breakbeforethis {
+          page-break-before: always;
+          break-before: always;
+      }
+      .linebylinespl td {
+          border: 1px solid darkgray !important;
+          padding-left: 4px;
+          padding-right: 4px;
+      }
+      .splside {
+          font-family: "Courier New", monospace;
+          white-space: pre;
+          width: 50% !important;
+          white-space: pre-wrap;
+          
+          white-space: -moz-pre-wrap;
+          
+          white-space: -pre-wrap;
+          
+          white-space: -o-pre-wrap;
+          
+          word-wrap: break-word;
+          
+      }
+      .docside {
+          width: 50% !important;
+      }
+      .donotbreak {
+          page-break-inside: avoid;
+      }
+      #bottomTextBlock {
+          display: none !important;
+      }
+  } */
+  
+  /* This is for the content mapping modal */
+  #contentList  .row {
+      display: flex;
+    }
+    
+  #contentList  .column {
+      flex: 50%;
+  }
+  #contentList  .column {
+      padding:10px !important;
+  }
+  .ssecolumn {
+      display: inline-block;
+      margin-right: 15px;
+      margin-top: 5px;
+      margin-bottom: 5px;
+  }
+  .tooltiplabel {
+      border: dashed #bbb;
+      border-width: 0 0 1px;
+      font-weight: bolder;
+  }
+
+
+  .box {
+    float: left;
+    width: 13%;
+
+    padding: 15px;
+
+    border: 1px solid;
+    margin: 5px;
+    background-color: white;
+  }
+  .box h2 {
+    min-height: 50px;
+    margin-bottom: 0;
+  }
+
+  div.box>p {
+      font-size: 72px;
+  }
+.container {
+    background-color: #f3f4f5;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    text-align: center;
+}
+
+.edit-other {
+    visibility: hidden !important;
+}

@@ -1,0 +1,72 @@
+{
+    "Property Descriptions": {
+        "title": "Cluster Houses by Property Descriptions",
+        "type": "smart_clustering",
+        "searchStages": [
+            {
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource",
+                "searchString": "| inputlookup housing.csv | table median_house_value,distance_to_employment_center,crime_rate",
+                "type": "spl"
+            },
+            {
+                "algorithm": "KMeans",
+                "algorithmParams": {
+                    "k": 4
+                },
+                "featureVariables": [],
+                "role": "main",
+                "targetVariables": [
+                    "median_house_value",
+                    "crime_rate",
+                    "distance_to_employment_center"
+                ],
+                "type": "fit",
+                "modelName": "example_property_descriptions"
+            }
+        ]
+    },
+    "Mortgage Loans": {
+        "title": "Cluster Mortgage Loans",
+        "type": "smart_clustering",
+        "searchStages": [
+            {
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource",
+                "searchString": "| inputlookup mortgage_loan_ny.csv | eval Adjustable_rate_loans(%)=if('Adjustable_rate_loans(%)'==\"NA\" OR 'Adjustable_rate_loans(%)'==\"NA*\", 0, 'Adjustable_rate_loans(%)') | convert auto(*) as *",
+                "type": "spl"
+            },
+            {
+                "type": "fit",
+                "role": "preprocessing",
+                "algorithm": "PCA",
+                "featureVariables": [
+                    "Adjustable_rate_loans(%)",
+                    "Contract_interest_rate(%)",
+                    "Effective_interest_rate(%)",
+                    "Initial_fees_and_charges(%)",
+                    "Loan_to_price_ratio(%)",
+                    "Purchase_price",
+                    "Term_to_maturity",
+                    "Year"
+                ],
+                "algorithmParams": {
+                    "k": 3
+                }
+            },
+            {
+                "algorithm": "KMeans",
+                "algorithmParams": {
+                    "k": 3
+                },
+                "featureVariables": [],
+                "role": "main",
+                "targetVariables": ["PC_1", "PC_2", "PC_3"],
+                "type": "fit",
+                "modelName": "example_mortgage_loans"
+            }
+        ]
+    }
+}

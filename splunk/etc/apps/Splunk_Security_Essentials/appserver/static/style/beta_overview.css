@@ -1,0 +1,21 @@
+.beta-tile {
+    padding: 10px;
+    margin: 5px;
+    text-align: center;
+    width: 200px;
+    height: 215px;
+    display: inline-block;
+    vertical-align: top;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid lightgray;
+    cursor: pointer;
+}
+
+.beta-tile:hover {
+    box-shadow: 0 0 3px #9ecaed;
+}
+
+.beta-tile>img {
+    width: 175px;
+}

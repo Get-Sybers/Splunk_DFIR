@@ -1,0 +1,292 @@
+<dashboard script="runPageScript.js" version="1.1">
+  <label>Data Inventory Overview</label>
+  <search id="inventory_base">
+    <query>
+        | inputlookup data_inventory_products_lookup
+| search NOT status IN("searching","needsConfirmation", "blocked","pending")
+| rex field=basesearch "^\s*(?&lt;basesearch&gt;.*?)\s*$$"
+| eval basesearch=if(like(basesearch, "(%") AND like(basesearch, "%)"), basesearch, "(" . basesearch . ")")
+| makemv delim="|" eventtypeId
+| mvexpand eventtypeId
+| rename eventtypeId as data_source_categories
+| eval Product = vendorName . " " . productName
+| makemv delim="|" data_source_categories
+| mvexpand data_source_categories
+| rex field=data_source_categories "^(?&lt;ds&gt;[^-]*)"
+| eval eventtypeId=data_source_categories
+| sseidenrichment type=datasourceid field=ds
+| sseidenrichment type=dscid field=data_source_categories
+| eval data_source_categories = data_source . " &gt; " . data_source_category
+| fields *
+      </query>
+    <earliest>-24h@h</earliest>
+    <latest>now</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <row>
+    <panel>
+      <single>
+        <title>Data Sources With Data Observed</title>
+        <search base="inventory_base">
+          <query>| stats dc(data_source) AS count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Data Source Categories With Data Observed</title>
+        <search base="inventory_base">
+          <query>| stats dc(data_source_categories) AS count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Products With Data Observed</title>
+        <search base="inventory_base">
+          <query>| stats dc(Product) AS count</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+   <row>
+    <panel>
+      <title>Products by Data Source</title>
+      <chart>
+        <search base="inventory_base">
+          <query>| chart limit=100 count OVER data_source BY Product</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleX.text">Data Sources</option>
+        <option name="charting.axisTitleY.text">Products</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.axisLabelsY.majorUnit">1</option>
+        <option name="charting.drilldown">none</option>
+        <option name="height">606</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.seriesColors">[#57BAD1, #97B944, #D2B630, #F0943B, #CD675D, #937AB1] </option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>All Data Source Categories found in Data Inventory</title>
+      <table>
+        <search base="inventory_base">
+          <query>| spath input=cim_detail 
+| eval total=0, success=0 
+| foreach *.*.success 
+    [| eval success=if('&lt;&lt;FIELD&gt;&gt;'/('&lt;&lt;FIELD&gt;&gt;'+'&lt;&lt;MATCHSEG1&gt;&gt;.&lt;&lt;MATCHSEG2&gt;&gt;.failure')&gt;0.8, success+1, success) 
+    | eval total=total+1
+        ] 
+| eval cim_coverage=100*round(success/total,4) 
+| eval data_source=mvindex(split(eventtypeId,"-"),0) 
+
+| rex field=basesearch max_match=0 "sourcetype=(\"|)(?&lt;sourcetype&gt;[^\"\s]*)(|\")"
+
+| table data_source data_source_category vendorName productName status coverage_level daily_host_volume eventsize daily_event_volume cim_coverage basesearch sourcetype 
+| rename "data_source" as "Data Source" "data_source_category" as "Data Source Category" basesearch as "Search Used for Analysis" "daily_event_volume" as "Typical Events Per Day" daily_host_volume as "Avg. # of Hosts Seen" eventsize as "Avg. Event Size (b)", status AS "Data Inventory Status", vendorName AS Vendor, productName AS Product, coverage_level AS "Coverage Level", cim_coverage AS "CIM Coverage"
+| sort 0 "Data Source" "Data Source Category"
+</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Typical Events Per Day">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. Event Size (b)">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. # of Hosts Seen">
+          <option name="precision">1</option>
+        </format>
+        <format type="number" field="Coverage Level">
+          <option name="unit">%</option>
+        </format>
+        <format type="number" field="CIM Coverage">
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Products by Data Source Category</title>
+      <table>
+        <search base="inventory_base">
+          <query>| stats values(*) as * by data_source_categories
+| table  data_source data_source_categories Product basesearch daily_event_volume daily_host_volume
+| eventstats sum(daily*) AS daily* by data_source_categories
+| rename "data_source" as "Data Source" "data_source_categories" as "Data Source Categories" basesearch as "Search Used for Analysis" "daily_event_volume" as "Typical Events Per Day" daily_host_volume as "Avg. # of Hosts Seen"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Typical Events Per Day">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. Event Size (b)">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. # of Hosts Seen">
+          <option name="precision">1</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Data Status by Product</title>
+      <table>
+        <search base="inventory_base">
+          <query>| stats values(*) as * by Product
+| table Product data_source data_source_categories eventsize daily_* status basesearch
+| rename "data_source" as "Data Source" "data_source_categories" as "Data Source Categories" basesearch as "Search Used for Analysis" "daily_event_volume" as "Typical Events Per Day" daily_host_volume as "Avg. # of Hosts Seen" eventsize as "Avg. Event Size (b)", status AS "Data Inventory Status"</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Typical Events Per Day">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. Event Size (b)">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Avg. # of Hosts Seen">
+          <option name="precision">1</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Sourcetypes by Data Source Category</title>
+      <table>
+        <search>
+          <query>| inputlookup data_inventory_eventtypes_lookup
+| search NOT status IN("failure")
+| rex field=basesearch "^\s*(?&lt;basesearch&gt;.*?)\s*$$"
+| eval data_source=mvindex(split(eventtypeId,"-"),0)
+| eval sourcetype=spath(search_result,"{}.sourcetype")
+| sseidenrichment type=datasourceid field=data_source
+| sseidenrichment type=dscid field=eventtypeId
+| eval data_source_categories = data_source . " &gt; " . data_source_category
+
+| join type=outer eventtypeId [
+| inputlookup data_inventory_products_lookup
+| search daily_host_volume!=""
+| makemv delim="|" eventtypeId
+| mvexpand eventtypeId
+| rex field=basesearch max_match=0 "sourcetype=(\"|)(?&lt;sourcetype&gt;[^\"\s]*)(|\")" 
+| table productId vendorName basesearch eventtypeId sourcetype
+]
+
+| table data_source data_source_categories sourcetype basesearch
+| rename "data_source" as "Data Source" "data_source_categories" as "Data Source Categories" basesearch as "Search Used for Analysis"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Sourcetypes by Data Source Category</title>
+      <table>
+        <search>
+          <query>| inputlookup data_inventory_eventtypes_lookup
+| search NOT status IN("failure")
+| rex field=basesearch "^\s*(?&lt;basesearch&gt;.*?)\s*$$"
+| eval data_source=mvindex(split(eventtypeId,"-"),0)
+| eval sourcetype=spath(search_result,"{}.sourcetype")
+| sseidenrichment type=datasourceid field=data_source
+| sseidenrichment type=dscid field=eventtypeId
+| eval data_source_categories = data_source . " &gt; " . data_source_category
+
+| join type=outer eventtypeId [
+| inputlookup data_inventory_products_lookup
+| search daily_host_volume!=""
+| makemv delim="|" eventtypeId
+| mvexpand eventtypeId
+| rex field=basesearch max_match=0 "sourcetype=(\"|)(?&lt;sourcetype&gt;[^\"\s]*)(|\")" 
+| table productId vendorName basesearch eventtypeId sourcetype
+]
+
+| table data_source data_source_categories sourcetype basesearch
+| rename "data_source" as "Data Source" "data_source_categories" as "Data Source Categories" basesearch as "Search Used for Analysis"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Event age by Index and Retention Time</title>
+      <table>
+        <search>
+          <query>| dbinspect index=*
+| stats min(startEpoch) AS _time,max(endEpoch) AS latestEvent BY index
+| reltime
+| rename _time AS earliestEvent, reltime AS "Oldest Event"
+| convert ctime(earliestEvent),ctime(latestEvent)
+|join index [
+| rest splunk_server=local /services/admin/indexes
+| eval frozenTimePeriodInDays=frozenTimePeriodInSecs/60/60/24
+| eval maxHotSpanDays=maxHotSpanSecs/60/60/24
+| eval "Retention Cold"=round(frozenTimePeriodInDays/30,0)
+| eval "Retention Warm"=round(maxHotSpanDays/30,0)
+| eval maxHotSpanDays=maxHotSpanSecs/60/60/24
+| rename title as index
+| table index,"Retention Cold" "Retention Warm"
+]</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

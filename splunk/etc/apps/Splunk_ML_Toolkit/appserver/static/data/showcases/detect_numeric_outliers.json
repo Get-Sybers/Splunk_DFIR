@@ -1,0 +1,131 @@
+{
+    "Server Response Time": {
+        "title": "Detect Outliers in Server Response Time",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup hostperf.csv | eval _time=strptime(_time, \"%Y-%m-%dT%H:%M:%S.%3Q%z\") | timechart span=10m max(rtmax) as responsetime | head 1000",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "outlierFields": ["responsetime"],
+                "thresholdMethod": "MAD",
+                "thresholdMultiplier": 20,
+                "windowSize": 200,
+                "useCurrentPoint": true
+            }
+        ]
+    },
+    "Employee Logins (prediction errors)": {
+        "title": "Detect Outliers in Number of Logins (vs. Predicted Value)",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup logins.csv | predict logins as prediction algorithm=LLP future_timespan=150 holdback=0 | where prediction!=\"\" AND logins!=\"\" | eval residual = prediction - logins",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "outlierFields": ["residual"],
+                "thresholdMethod": "MAD",
+                "thresholdMultiplier": 9,
+                "windowSize": 72,
+                "useCurrentPoint": true
+            }
+        ]
+    },
+    "Supermarket Purchases": {
+        "title": "Detect Outliers in Supermarket Purchases",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup supermarket.csv | head 1000",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "outlierFields": ["quantity"],
+                "thresholdMethod": "stdev",
+                "thresholdMultiplier": 5
+            }
+        ]
+    },
+    "Power Plant Humidity": {
+        "title": "Detect Outliers in Power Plant Humidity",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup power_plant.csv",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "outlierFields": ["Humidity"],
+                "thresholdMethod": "stdev",
+                "thresholdMultiplier": 3
+            }
+        ]
+    },
+    "Call Center Cyclical": {
+        "title": "Detect Cyclical Outliers in Call Center Data",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "type": "spl",
+                "searchString": "| inputlookup call_center.csv\n| eval _time=strptime(_time, \"%Y-%m-%dT%H:%M:%S\") \n| eval HourOfDay=strftime(_time, \"%H\")\n| eval DayOfWeek=strftime(_time, \"%A\")",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "thresholdMethod": "stdev",
+                "thresholdMultiplier": 2,
+                "useCurrentPoint": true,
+                "outlierFields": ["count"],
+                "splitByFields": ["DayOfWeek", "source", "HourOfDay"]
+            }
+        ]
+    },
+    "Logins Cyclical": {
+        "title": "Detect Cyclical Outliers in Logins",
+        "type": "detect_numeric_outliers",
+        "searchStages": [
+            {
+                "type": "spl",
+                "searchString": "| inputlookup cyclical_business_process.csv\n| bin _time span=15m\n| eval _time=strptime(_time, \"%Y-%m-%dT%H:%M:%S\") \n| eval HourOfDay=strftime(_time, \"%H\")\n| eval DayOfWeek=strftime(_time, \"%A\")",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "outlierdetection",
+                "thresholdMethod": "stdev",
+                "thresholdMultiplier": 2,
+                "useCurrentPoint": true,
+                "windowSize": 2,
+                "outlierFields": ["logons"],
+                "splitByFields": ["HourOfDay", "DayOfWeek"]
+            }
+        ]
+    }
+}

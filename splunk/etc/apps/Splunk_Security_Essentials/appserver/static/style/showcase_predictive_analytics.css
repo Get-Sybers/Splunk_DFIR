@@ -1,0 +1,21 @@
+.input-text #binNumberControl input,
+.input-text #holdbackControl input,
+.input-text #futureTimespanControl input,
+.input-text #periodValueControl input{
+    width: 100px;
+}
+
+.fieldset .input-text {
+    width: 140px;
+}
+.fieldset div.input-text-long {
+    width: 300px;
+}
+
+.fieldset div.input-text-long input {
+    width: 50px;
+}
+.form-inline .form-group {
+    display: inline-block;
+    vertical-align: top;
+}

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "$id": "experiment_history_schema.json",
+  "properties": {
+    "experimentId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}[0-9a-f]{4}4[0-9a-f]{3}[89ab][0-9a-f]{3}[0-9a-f]{12}$"
+    },
+    "from_schedule": {
+      "type": "boolean"
+    },
+    "sid": {
+      "type": "string"
+    },
+    "searchStages": {
+      "$ref": "experiment_schema.json#/properties/searchStages"
+    },
+    "description": {
+      "$ref": "experiment_schema.json#/properties/description"
+    },
+    "notes": {
+      "$ref": "experiment_schema.json#/properties/notes"
+    }
+  },
+  "additionalProperties": false,
+  "patternProperties": {
+    "^stats_":
+      {
+        "oneOf": [
+          { "type": "number" },
+          {
+            "type": "string",
+            "maxLength": 0
+          },
+          {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                { "type": "number" },
+                {
+                  "type": "string",
+                  "maxLength": 0
+                }
+              ]
+            }
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "oneOf": [
+                    { "type": "number" },
+                    {
+                      "type": "string",
+                      "maxLength": 0
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+  },
+  "required": [
+    "experimentId",
+    "from_schedule",
+    "sid",
+    "searchStages",
+    "description",
+    "notes"
+  ]
+}

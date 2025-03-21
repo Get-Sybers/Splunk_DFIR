@@ -1,0 +1,517 @@
+<form version="1.1" script="runPageScript.js">
+  <label>Ransomware Content Browser</label>
+  <description>We have have created a visual representation of the lifecycle of a ransomware attack focusing on the most common pathways we see in reported ransomware incidents. It’s not an exhaustive description of every possible pathway but serves as a start for you to plan your defences.</description>
+  <search id="descriptions_base">
+    <query>
+| inputlookup ransomware_content_browser_descriptions.csv
+| lookup ransomware_content_browser_cert_nz.csv "Phase" AS title OUTPUTNEW "Pathway start" AS phase
+| lookup ransomware_content_browser_cert_nz.csv "Pathway start" AS title
+| rename Phase AS stage
+| eval phase=if(type="phase", title, phase)
+| eval stage=if(type="stage", title, stage)
+| rename value AS description
+| table stage phase description type
+| stats 
+values(eval(if(type="stage", description, null()))) AS description_stage
+values(eval(if(type="phase", description, null()))) AS description_phase
+values(stage) AS stage
+BY phase
+      | search phase="$phase$"
+      </query>
+    <done>
+      <condition match="$job.doneProgress$=1">
+        <set token="description_phase">$result.description_phase$</set>
+        <set token="description_stage">$result.description_stage$</set>
+        <set token="stage">$result.stage$</set>
+        <eval token="ready">now()</eval>
+      </condition>
+    </done>
+  </search>
+  <search id="content_base">
+    <query>
+
+``` This adds all detections and other content from SSE ```
+| sseanalytics
+| table id name description mitre_id dashboard
+| eval Phase=null()
+| foreach "Command and control" "Data exfiltration" "Destroy backups"  "Email" "Encrypt data" "Exploit vulnerability" "Internet-exposed service" "Lateral movement" "Malicious document" "Malware" "Password guessing" "Phishing" "Privilege escalation" "Valid credentials" exfiltration Password Encryption vulnerability "External Remote Services" vpn citrix rdp destruction "delete backup" "Valid accounts" T1078 T1573 T1005 T1039 T1560 T1567 T1490 T1133 T1018 T1046 T1110 T1190 T1485 T1561 T1021 T1550 T1204 T1587.001 T1588.001 T1608.001 T1566
+[
+| eval AliasPhase=case(
+"&lt;&lt;FIELD&gt;&gt;"="T1573", "Command and control",
+"&lt;&lt;FIELD&gt;&gt;"="T1005", "Data exfiltration",
+"&lt;&lt;FIELD&gt;&gt;"="T1039", "Data exfiltration",
+"&lt;&lt;FIELD&gt;&gt;"="T1560", "Data exfiltration",
+"&lt;&lt;FIELD&gt;&gt;"="T1567", "Data exfiltration",
+"&lt;&lt;FIELD&gt;&gt;"="T1485", "Destroy backups",
+"&lt;&lt;FIELD&gt;&gt;"="T1561", "Destroy backups",
+"&lt;&lt;FIELD&gt;&gt;"="T1490", "Destroy backups|Encrypt data",
+"&lt;&lt;FIELD&gt;&gt;"="T1486", "Destroy backups|Encrypt data",
+"&lt;&lt;FIELD&gt;&gt;"="T1190", "Exploit vulnerability",
+"&lt;&lt;FIELD&gt;&gt;"="T1078", "Lateral movement|Phishing|Valid credentials",
+"&lt;&lt;FIELD&gt;&gt;"="T1018", "Lateral movement",
+"&lt;&lt;FIELD&gt;&gt;"="T1046", "Lateral movement",
+"&lt;&lt;FIELD&gt;&gt;"="T1021", "Lateral movement",
+"&lt;&lt;FIELD&gt;&gt;"="T1550", "Lateral movement",
+"&lt;&lt;FIELD&gt;&gt;"="T1204", "Malicious document",
+"&lt;&lt;FIELD&gt;&gt;"="T1587.001", "Malware",
+"&lt;&lt;FIELD&gt;&gt;"="T1588.001", "Malware",
+"&lt;&lt;FIELD&gt;&gt;"="T1608.001", "Malware",
+"&lt;&lt;FIELD&gt;&gt;"="T1110", "Password guessing",
+"&lt;&lt;FIELD&gt;&gt;"="T1566", "Phishing",
+"&lt;&lt;FIELD&gt;&gt;"="T1133", "Exploit vulnerability|Internet-exposed service|Valid credentials",
+"&lt;&lt;FIELD&gt;&gt;"="exfiltration", "Data exfiltration",
+"&lt;&lt;FIELD&gt;&gt;"="Password", "Password guessing",
+"&lt;&lt;FIELD&gt;&gt;"="Encryption", "Encrypt data",
+"&lt;&lt;FIELD&gt;&gt;"="vulnerability", "Exploit vulnerability",
+"&lt;&lt;FIELD&gt;&gt;"="External Remote Services", "Internet-exposed service",
+"&lt;&lt;FIELD&gt;&gt;"="vpn", "Internet-exposed service",
+"&lt;&lt;FIELD&gt;&gt;"="citrix", "Internet-exposed service",
+"&lt;&lt;FIELD&gt;&gt;"="rdp", "Internet-exposed service",
+"&lt;&lt;FIELD&gt;&gt;"="destruction", "Destroy backups",
+"&lt;&lt;FIELD&gt;&gt;"="delete backup", "Destroy backups",
+"&lt;&lt;FIELD&gt;&gt;"="Valid accounts", "Valid credentials",
+1=1, "&lt;&lt;FIELD&gt;&gt;"
+)
+
+| eval Phase=mvappend(
+if(like(lower(name),"%".lower("&lt;&lt;FIELD&gt;&gt;")."%") OR like(lower(description),"%".lower("&lt;&lt;FIELD&gt;&gt;")."%") OR like(lower(mitre_id),"%".lower("&lt;&lt;FIELD&gt;&gt;")."%"), AliasPhase, null()), Phase
+)
+]
+| where isnotnull(Phase)
+| eval Phase=mvmap(Phase,split(Phase,"|"))
+| eval Phase=mvdedup(Phase)
+| fields - AliasPhase
+| eval Type="Detection"
+| rename name AS Name, description AS Description, mitre_id AS Technique
+
+``` This adds all content from the Splunk blogs website ```
+| append [
+|inputlookup ransomware_content_browser_blogs.csv
+| eval Type="Blog"
+| rename "title" AS Name
+| rename "description" AS Description
+| rename "phase" AS Phase
+| rename "uri_blog" AS dashboard
+| rename date AS Date
+| rename Author AS Presenter
+| table Name Description Type Phase Critical_Control Presenter Date dashboard
+]
+
+``` This adds all content from the Splunk SOAR playbook repository ```
+| append [
+|inputlookup ransomware_content_browser_playbooks.csv
+| eval Type="Playbook"
+| rename "title" AS Name
+| rename "description" AS Description
+| rename "phase" AS Phase
+| rename "link" AS dashboard
+| rename date AS Date
+| rename author AS Presenter
+| table Name Description Type Phase Presenter Date dashboard
+]
+
+``` This adds all content from the Splunk conf website ```
+| append [
+| inputlookup ransomware_content_browser_conf.csv 
+| rename "title" AS Name 
+| rename "description" AS Description 
+| rename "phase" AS Phase 
+| rename "link" AS dashboard 
+| rename date AS Date
+| rename type AS Type
+| table Name Description Type Phase Date Presenter dashboard
+]
+
+``` This adds all content from Splunkbase ```
+| append [
+| inputlookup ransomware_content_browser_apps.csv 
+| eval Type="App/Add-on"
+| rename "title" AS Name 
+| rename "description" AS Description 
+| rename "phase" AS Phase 
+| rename date AS Date
+| rename author AS Presenter
+| table Name Description Type Phase Date Presenter dashboard
+]
+
+``` This attaches Critical Controls from the Phases ```
+| lookup ransomware_content_browser_cert_nz.csv "Pathway start" AS Phase OUTPUT "Critical Control"
+| lookup ransomware_content_browser_cert_nz.csv "Pathway end" AS Phase OUTPUTNEW "Critical Control"
+| eval "Critical_Control"=mvdedup(mvmap('Critical Control',split('Critical Control',", ")))
+
+
+``` This adds all content from the web capture form ```
+| append [
+|inputlookup ransomware_content_browser
+| rename "title" AS Name
+| rename "description" AS Description
+| rename "type" AS Type
+| rename "phase" AS Phase
+| rename "location" AS dashboard
+| table Name Description Type Phase "Critical_Control" dashboard
+
+]
+
+| eval dashboard=case(
+Type="detection", "/app/Splunk_Security_Essentials/".dashboard,
+Type="conf" AND len(dashboard)&lt;10, "https://conf.splunk.com/watch/conf-online.html?search=".dashboard,
+1=1, dashboard
+)
+
+| table Name Description Type Date Presenter Phase "Critical_Control" Technique dashboard
+| rename Presenter AS Creator
+    </query>
+  </search>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <html>
+          <i>
+          <a href="https://www.cert.govt.nz/it-specialists/guides/how-ransomware-happens-and-how-to-stop-it/" target="_blank">Read more about the CERT NZ Lifecycle of a ransomware incident</a>
+        </i>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+            <div class="tactic tactic_initial_access">
+               <div class="tactic_title">
+            <h2>Initial Access</h2>
+          </div>
+               <div class="tactic_description">Attacker looks for a way into  the network</div>
+               <div class="col1">
+                  <div class="phase" id="phase_phishing">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="38%" y="50%" text-anchor="middle" fill="black" font-size="16px" font-family="Arial" dy=".3em" style="text-align:center;width:140px;">Phishing</text>
+                     </svg>
+                  </div>
+                  <div class="phase" id="phase_password_guessing">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="65" text-anchor="middle">Password</tspan>
+                           <tspan x="64" text-anchor="middle" dy="20">guessing</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase" id="phase_exploit_vulnerability">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="36%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Exploit</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">vulnerability</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase" id="phase_email">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="38%" y="50%" text-anchor="middle" fill="black" font-size="16px" font-family="Arial" dy=".3em" style="text-align:center;width:200px;">Email</text>
+                     </svg>
+                  </div>
+               </div>
+               <div class="col2">
+                  <div class="phase" id="phase_valid_credentials">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Valid</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">credentials</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="60" height="110"/>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="60" height="110"/>
+                  </div>
+                  <div class="phase" id="phase_malicious_document">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Malicious</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">document</tspan>
+                        </text>
+                     </svg>
+                  </div>
+               </div>
+               <div class="col3">
+                  <div class="phase_spacer">
+                     <svg width="125" height="55"/>
+                  </div>
+                  <div class="phase" id="phase_internet-exposed_service">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="50%" y="30%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Internet-</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">exposed</tspan>
+                           <tspan x="59" text-anchor="middle" dy="20">service</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="125" height="55"/>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="60" height="110"/>
+                  </div>
+                  <div class="phase" id="phase_malware">
+                     <svg width="160" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="38%" y="50%" text-anchor="middle" fill="black" font-size="16px" font-family="Arial" dy=".3em" style="text-align:center;width:200px;">Malware</text>
+                     </svg>
+                  </div>
+               </div>
+            </div>
+            <div class="tactic tactic_consolidation_and_preparation">
+               <div class="tactic_title">
+            <h2>Consolidation And Preparation</h2>
+          </div>
+               <div class="tactic_description">Attacker attempts to gain access to  all devices</div>
+               <div class="col1">
+                  <div class="phase_spacer">
+                     <svg width="240" height="165"/>
+                  </div>
+                  <div class="phase" id="phase_command_and_control">
+                     <svg width="160" height="110">
+                        <circle cx="100" cy="55" r="50"/>
+                        <text x="30%" y="30%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="102" text-anchor="middle">Command</tspan>
+                           <tspan x="102" text-anchor="middle" dy="20">and</tspan>
+                           <tspan x="99" text-anchor="middle" dy="20">control</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="240" height="165"/>
+                  </div>
+               </div>
+               <div class="col2">
+                  <div class="phase_spacer">
+                     <svg width="125" height="85"/>
+                  </div>
+                  <div class="phase" id="phase_lateral_movement">
+                     <svg width="140" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Lateral</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">movement</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="125" height="25"/>
+                  </div>
+                  <div class="phase" id="phase_privilege_escalation">
+                     <svg width="140" height="110">
+                        <circle cx="60" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="62" text-anchor="middle">Privilege</tspan>
+                           <tspan x="62" text-anchor="middle" dy="20">escalation</tspan>
+                        </text>
+                     </svg>
+                  </div>
+               </div>
+               <div class="phase_spacer">
+                  <svg width="140" height="85"/>
+               </div>
+               <div class="phase_spacer">
+                  <svg width="140" height="25"/>
+               </div>
+            </div>
+            <div class="tactic tactic_impact_on_target">
+               <div class="tactic_title">
+            <h2>Impact On Target</h2>
+          </div>
+               <div class="tactic_description">Attacker steals and encrypts  data, then demands ransom</div>
+               <div class="col1">
+                <div class="phase_spacer">
+                     <svg width="160" height="20"/>
+                  </div>
+                  <div class="phase" id="phase_data_exfiltration">
+                     <svg width="160" height="110">
+                        <circle cx="100" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="102" text-anchor="middle">Data</tspan>
+                           <tspan x="102" text-anchor="middle" dy="20">exfiltration</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="160" height="25"/>
+                  </div>
+                  <div class="phase" id="phase_destroy_backups">
+                     <svg width="160" height="110">
+                        <circle cx="100" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="102" text-anchor="middle">Destroy</tspan>
+                           <tspan x="100" text-anchor="middle" dy="20">backups</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="240" height="25"/>
+                  </div>
+                  <div class="phase" id="phase_encrypt_data">
+                     <svg width="160" height="110">
+                        <circle cx="100" cy="55" r="50"/>
+                        <text x="30%" y="38%" text-anchor="middle" dominant-baseline="central" fill="black" font-size="16px" font-family="Arial" dy=".3em">
+                           <tspan x="102" text-anchor="middle">Encrypt</tspan>
+                           <tspan x="100" text-anchor="middle" dy="20">data</tspan>
+                        </text>
+                     </svg>
+                  </div>
+                  <div class="phase_spacer">
+                     <svg width="160" height="30"/>
+                  </div>
+               </div>
+            </div>
+         </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Ransomware Content List</title>
+      <input type="dropdown" token="type">
+        <label>Content Type</label>
+        <choice value="*">Any</choice>
+        <choice value="detection">Detection</choice>
+        <choice value="App/Add-on">Splunk App/Add-On</choice>
+        <choice value="conf">.conf talk</choice>
+        <choice value="blog">Blog</choice>
+        <choice value="whitepaper">White Paper/Ebook</choice>
+        <choice value="presentation">Presentation</choice>
+        <choice value="playbook">Playbook</choice>
+        <choice value="response">Response Template</choice>
+        <choice value="threatintel">Threat Intel/Data</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="dropdown" token="phase">
+        <label>Phase</label>
+        <choice value="*">Any</choice>
+        <fieldForLabel>Phase</fieldForLabel>
+        <fieldForValue>Phase</fieldForValue>
+        <search>
+          <query>| inputlookup ransomware_content_browser_cert_nz.csv 
+    | table "Pathway start" "Critical_Control" Technique 
+    | rename "Pathway start" AS Phase 
+    | stats count by Phase
+    | sort Phase</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="dropdown" token="control">
+        <label>Critical Control</label>
+        <choice value="*">Any</choice>
+        <fieldForLabel>Critical_Control</fieldForLabel>
+        <fieldForValue>Critical_Control</fieldForValue>
+        <search>
+          <query>| inputlookup ransomware_content_browser_cert_nz.csv 
+
+| eval "Critical_Control"=split('Critical Control',", ")
+    | stats count by  "Critical_Control" | sort "Critical_Control"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <html>
+        <div class="descriptions">
+          <div class="stage_descriptions">
+            <h1>Stage</h1>
+              <div class="">
+                <div class="stage_title">
+                  <h2>$stage$</h2>
+                </div>
+                <div class="stage_description">
+                    
+                </div>
+              </div>
+           </div>
+           <div class="phase_descriptions">
+              <h1>Phase</h1>
+              <div class="">
+                <div class="phase_title">
+                  <h2>$phase$</h2>
+                </div>
+                <div class="phase_description">
+                    
+                </div>
+              </div>
+           </div>
+        </div>
+         
+      </html>
+    </panel>
+    <panel>
+      <title>Total content by Type</title>
+      <table>
+        <search base="content_base">
+          <query>| chart count OVER Phase BY Type</query>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">heatmap</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+        <condition match="$click.name2$ == &quot;Phase&quot;">
+        </condition>
+        <condition match="$click.name2$ != &quot;Phase&quot;">
+            <set token="form.type">$click.name2$</set>
+            <set token="form.phase">$row.Phase$</set>
+        </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Content items in selection</title>
+        <search base="content_selection">
+          <query>| stats count
+| fields count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="underLabel">Content Items</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Content in selection</title>
+      <input type="text" token="searchfilter" searchWhenChanged="true">
+        <label>Search</label>
+        <default></default>
+      </input>
+      <table>
+        <title>Click to open content in new tab</title>
+        <search base="content_base" id="content_selection">
+          <query>| fillnull value="*" Critical_Control | search Type="$type$" Phase="$phase$" Critical_Control="$control$"
+          | where like(lower(Name),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Presenter'),"%".lower("$searchfilter$")."%")
+          | rename Critical_Control AS "Critical Control"</query>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <format type="color" field="Type">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <fields>["Name","Description","Type","Date","Creator","Phase","Critical Control","Technique"]</fields>
+        <drilldown>
+          <link target="_blank">$row.dashboard|n$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,19 @@
+Image,ParentImage,"_time",host,sha1
+"C:\mytools\fgdump.exe","C:\Windows\System32\cmd.exe","1472083329.000000",se8105desk,DAFDBAEBE3B8D66DBEFA8D86C5DD7E436892759F
+"C:\mytools\fgdump.exe","C:\Windows\System32\cmd.exe","1472083329.000000",se8105desk,DAFDBAEBE3B8D66DBEFA8D86C5DD7E436892759F
+"C:\mytools\WinMgmtSvc.exe","c:\Windows\System32\services.exe","1472083131.000000",se8105desk,B79BFC443444956D427ECE89A4EF9659E09F17C4
+"C:\Windows\System32\at.exe","C:\Windows\System32\cmd.exe","1472083142.000000",se8105desk,0959070711D0E87CEAA82213AFF06A7B3ABB1C5D
+"C:\mytools\nc.exe","C:\Windows\System32\cmd.exe","1472083139.000000",se8105desk,C5E19C02A9A1362C67EA87C1E049CE9056425788
+"C:\mytools\hping.exe","C:\Windows\System32\cmd.exe","1472083148.000000",se8105desk,BC8F700316EF635AAF2431A1D3A310D017A2890B
+"C:\mytools\console.exe","C:\Windows\System32\cmd.exe","1472083139.000000",se8105desk,4D71EC138CC5921F7074D4413DB7CF52A0A56504
+"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe","C:\Windows\System32\cmd.exe","1472083139.000000",se8105desk,4445BC58D64BCE3322F80690AF5405876D01C0AC
+"C:\Windows\System32\sc.exe","C:\Windows\System32\cmd.exe","1472083138.000000",se8105desk,2F2F92B1394C4842D959E3324CA8FABD4E8A23CA
+"C:\Windows\System32\net.exe","C:\Windows\System32\cmd.exe","1472083138.000000",se8105desk,9A544E2094273741AA2D3E7EA0AF303AF2B587EA
+"C:\Windows\System32\quser.exe","C:\Windows\System32\cmd.exe","1472083137.000000",se8105desk,1BEA7DCCB6A64B6E199CAC69498E5F89FC44D176
+"C:\Windows\System32\tasklist.exe","C:\Windows\System32\cmd.exe","1472083136.000000",se8105desk,430AA43010EEF3CD43ED445777F3D5CCF6BC4C27
+"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe","C:\Windows\System32\cmd.exe","1472083136.000000",se8105desk,4445BC58D64BCE3322F80690AF5405876D01C0AC
+"C:\Windows\System32\ipconfig.exe","C:\Windows\System32\cmd.exe","1472083135.000000",se8105desk,EA18043FEDAF888F04C07F71F2006F3F479C0B41
+"C:\Users\administrator\Roaming\Temp\scvhost.exe","C:\Windows\System32\cmd.exe","1472083135.000000",se8105desk,65DF73D77324D008C83C3E57B445DF0FD43A3A51
+"C:\Users\administrator\Roaming\Temp\svchost.exe","C:\Windows\System32\cmd.exe","1472082604.000000",se8105desk,4B31C8978B08FE1116B44E9F15BD28C337B24CAC
+"C:\Program Files (x86)\Adobe\Reader 11.0\Reader\AdobeCollabSync.exe","C:\Program Files (x86)\Adobe\Reader 11.0\Reader\AcroRd32.exe","1472058661.000000",se8105desk,8107CC72B2D3D9375D92DB9E256719BFA6976096
+"C:\Windows\System32\cmd.exe","C:\Windows\System32\services.exe","1472082304.000000",se8105desk,EE8CBF12D87C4D388F09B4F69BED2E91682920B5

@@ -1,0 +1,8 @@
+
+
+[]
+access = read : [ * ], write: [admin, sc_admin]
+export = systen
+
+[checklist]
+export = system

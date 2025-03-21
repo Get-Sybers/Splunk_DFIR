@@ -1,0 +1,569 @@
+"_time",dest,status,signature,"signature_id"
+"2017-05-23T00:01:44.000+0000","bob-PC",failure,"""Security Update for Windows Server 2003 x64 Edition (KB4012598)"".",KB4012598
+"2017-05-23T00:01:44.000+0000","alice-PC",failure,"""Security Update for Windows Server 2003 x64 Edition (KB4012598)"".",KB4012598
+"2017-05-23T00:01:44.000+0000","duncan",failure,"""Security Update for Windows Server 7 (KB4012212)"".",KB4012212
+"2017-05-23T00:01:44.000+0000","duncan_wkstn",failure,"""Security Update for Windows 7 (KB4012212)"".",KB4012212
+"2017-05-23T00:01:44.000+0000","ron_wkstn",installed,"""Update for Windows Server 2003 x64 Edition (KB4012598)"".",KB4012598
+"2017-05-23T00:01:44.000+0000","daftpunk-PC",installed,"""Update for Windows Server 2003 x64 Edition (KB4012598)"".",KB4012598
+"2017-05-23T00:01:44.000+0000","george_wkstn",installed,"""Update for Windows Server 2008 Server 7 (KB4012212)"".",KB4012212
+"2017-05-23T00:01:44.000+0000","ferguson-PC",installed,"""Update for Windows Server 2008 Server 7 (KB4012212)"".",KB4012212
+"2017-05-24T02:21:55.000+0000","ryan_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-24T02:16:55.000+0000","exch-mbx-san-00-a",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-24T02:21:55.000+0000","gilbert_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-24T02:16:55.000+0000","carl_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-24T02:11:55.000+0000","bennett_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-24T02:11:55.000+0000","shayne_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-24T02:06:54.000+0000","coredev-006",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-24T02:06:54.000+0000","eric_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-24T02:01:54.000+0000","exch-cas-cup-01",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-24T02:01:54.000+0000","dwayne_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-24T01:56:54.000+0000","bart_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-24T01:56:54.000+0000","roman_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-24T01:51:53.000+0000","bruno_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-24T01:46:53.000+0000","brendan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-24T01:51:53.000+0000","donald_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-24T01:46:53.000+0000","wade_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-24T01:41:53.000+0000","elvin_wkstn",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-24T01:41:53.000+0000","lindsay_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-24T01:36:52.000+0000","abraham_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-24T01:31:52.000+0000","kim_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-24T01:31:52.000+0000","sam_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-24T01:26:52.000+0000","charles_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-24T01:26:52.000+0000","abraham_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-24T01:21:52.000+0000","clint_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-24T01:21:52.000+0000","jedimaster_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-24T01:16:51.000+0000","acme-004",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-24T01:16:51.000+0000","exch-mbx-cup-00",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-24T01:11:51.000+0000","abel_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-24T01:11:51.000+0000","corey_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-24T01:06:51.000+0000","acme-006",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-24T01:01:50.000+0000","exch-hub-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-24T01:06:51.000+0000","coredev-005",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-24T01:01:50.000+0000","joan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-24T00:56:50.000+0000","jamie_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-24T00:56:50.000+0000","acme-001",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)"".",KB982632
+"2017-05-24T00:51:50.000+0000","reggie_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-24T00:51:50.000+0000","ian_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-24T00:46:49.000+0000","exch-mbx-san-01",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-24T00:41:49.000+0000","martin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-24T00:41:49.000+0000","dustin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-24T00:36:49.000+0000","clayton_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-24T00:31:49.000+0000","gerald_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-24T00:36:49.000+0000","coredev-005",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-24T00:31:49.000+0000","tyrone_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-24T00:26:48.000+0000","clyde_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-24T00:26:48.000+0000","darrell_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-24T00:21:48.000+0000","james_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-24T00:16:48.000+0000","prod-mfs-004",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-24T00:21:48.000+0000","kurtis_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-24T00:16:48.000+0000","ops-sys-004",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-24T00:11:47.000+0000","hank_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB975929)"".",KB975929
+"2017-05-24T00:11:47.000+0000","exch-mbx-cup-01-a",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-24T00:06:47.000+0000","bill_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-24T00:01:47.000+0000","simon_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-24T00:06:47.000+0000","coredev-003",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-24T00:01:47.000+0000","exch-mbx-den-00-b",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T23:56:47.000+0000","exch-mbx-san-00",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T23:56:47.000+0000","se-004",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T23:51:46.000+0000","cont_jfrench_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T23:46:46.000+0000","jason_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T23:51:46.000+0000","elisha_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T23:46:46.000+0000","busdev-005",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T23:41:46.000+0000","dustin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T23:41:46.000+0000","host-003",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T23:36:45.000+0000","neil_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T23:31:45.000+0000","dean_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T23:36:45.000+0000","brock_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T23:31:45.000+0000","sebastian_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T23:26:45.000+0000","dana_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T23:26:45.000+0000","alfred_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T23:21:45.000+0000","ext-cas-den-01",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T23:16:44.000+0000","exch-hub-den-01",failure,"""Update for Windows Server 2008 x64 Edition (KB981793)"".",KB981793
+"2017-05-23T23:21:44.000+0000","clark_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T23:16:44.000+0000","admin_hax0r_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T23:11:44.000+0000","kurt_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T23:11:44.000+0000","ops-sys-006",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T23:06:44.000+0000","travis_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T23:01:43.000+0000","sandy_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T23:06:44.000+0000","alton_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T23:01:43.000+0000","host-001",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T22:56:43.000+0000","prod-pos-001",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T22:56:43.000+0000","carmen_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T22:51:43.000+0000","gary_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975562)"".",KB975562
+"2017-05-23T22:46:42.000+0000","jfrost_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T22:51:43.000+0000","same-ad",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T22:46:42.000+0000","wyatt_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T22:41:42.000+0000","neal_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T22:41:42.000+0000","alfonso_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T22:31:42.000+0000","exch-mbx-pla-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T22:36:42.000+0000","bob_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T22:31:41.000+0000","kasey_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T22:26:41.000+0000","byron_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T22:21:41.000+0000","lucas_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T22:16:41.000+0000","colby_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T22:16:41.000+0000","leon_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T22:11:40.000+0000","berry_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T22:11:40.000+0000","noah_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T22:06:40.000+0000","wesley_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T22:01:40.000+0000","dominic_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T22:06:40.000+0000","wayne_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T22:01:40.000+0000","patricia_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T21:56:39.000+0000","jordan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-23T21:56:39.000+0000","kevin_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T21:51:39.000+0000","prod-pos-006",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975562)"".",KB975562
+"2017-05-23T21:46:39.000+0000","prod-pos-001",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T21:51:39.000+0000","sebastian_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T21:46:39.000+0000","floyd_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T21:41:39.000+0000","fred_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T21:41:39.000+0000","admin_hax0r_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T21:36:38.000+0000","sendmail-den-01",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T21:31:38.000+0000","clair_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T21:36:38.000+0000","joan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T21:31:38.000+0000","prod-pos-003",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T21:26:38.000+0000","alvin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB975929)"".",KB975929
+"2017-05-23T21:26:38.000+0000","travis_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T21:21:37.000+0000","acme-004",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975562)"".",KB975562
+"2017-05-23T21:16:37.000+0000","host-004",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T21:21:37.000+0000","elton_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T21:16:37.000+0000","sean_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T21:11:37.000+0000","duncan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T21:11:37.000+0000","tracy_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T21:06:37.000+0000","lamont_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T21:01:36.000+0000","jamie_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T21:06:37.000+0000","francis_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T21:01:36.000+0000","lamont_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980232)""",KB980232
+"2017-05-23T20:56:36.000+0000","shannon_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T20:56:36.000+0000","hector_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979309)""",KB979309
+"2017-05-23T20:51:36.000+0000","lee_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T20:46:35.000+0000","splunkldap_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T20:51:36.000+0000","phil_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T20:46:35.000+0000","ivan_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T20:41:35.000+0000","charles_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T20:41:35.000+0000","murray_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T20:36:35.000+0000","glenn_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T20:36:35.000+0000","blair_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T20:31:34.000+0000","carson_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T20:31:34.000+0000","moshe_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T20:26:34.000+0000","moshe_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T20:26:34.000+0000","monty_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T20:21:34.000+0000","chester_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T20:16:34.000+0000","perry_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T20:21:34.000+0000","sam_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975560)""",KB975560
+"2017-05-23T20:16:34.000+0000","albert_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T20:11:33.000+0000","lloyd_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T20:11:33.000+0000","brian_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T20:06:33.000+0000","boris_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T20:01:33.000+0000","keith_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T20:06:33.000+0000","gilbert_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T20:01:33.000+0000","francis_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T19:56:32.000+0000","neville_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T19:56:32.000+0000","isaac_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T19:51:32.000+0000","larry_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T19:51:32.000+0000","ethan_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T19:46:32.000+0000","se-002",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T19:46:32.000+0000","terry_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T19:41:32.000+0000","exch-hub-den-01",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T19:41:32.000+0000","warren_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T19:36:31.000+0000","bruce_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T19:36:31.000+0000","host-002",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T19:31:31.000+0000","cameron_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T19:31:31.000+0000","owen_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T19:26:31.000+0000","leslie_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T19:26:31.000+0000","irvin_wkstn",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T19:21:30.000+0000","dwayne_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T19:21:30.000+0000","abel_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T19:16:30.000+0000","elton_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T19:16:30.000+0000","lane_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T19:11:30.000+0000",ex2010,installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T19:11:30.000+0000","bennett_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T19:06:30.000+0000","howard_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T19:06:29.000+0000","alton_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T19:01:29.000+0000","felipe_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T19:01:29.000+0000","andrew_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T18:56:29.000+0000","harvey_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T18:51:29.000+0000","exch-mbx-pla-00-b",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T18:51:29.000+0000","mario_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975562)"".",KB975562
+"2017-05-23T18:46:28.000+0000","howard_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T18:46:28.000+0000","gilbert_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T18:41:28.000+0000","blaine_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T18:41:28.000+0000","ashley_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T18:36:28.000+0000","se-004",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T18:36:28.000+0000","ray_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T18:31:27.000+0000","chauncey_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T18:31:27.000+0000","carmine_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T18:26:27.000+0000","roger_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T18:26:27.000+0000","se-001",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T18:21:27.000+0000","mitch_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T18:21:27.000+0000","brendan_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)"".",KB982632
+"2017-05-23T18:16:26.000+0000","glenn_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T18:16:27.000+0000","neville_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T18:11:26.000+0000","admin_hax0r_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T18:11:26.000+0000","curtis_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T18:06:26.000+0000","brad_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T18:06:26.000+0000","eric_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T18:01:26.000+0000","brad_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)"".",KB980195
+"2017-05-23T18:01:26.000+0000","eric_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T17:56:25.000+0000","prod-mfs-001",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T17:56:25.000+0000","exch-hub-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-23T17:51:25.000+0000","quincy_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975560)""",KB975560
+"2017-05-23T17:51:25.000+0000","se-002",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T17:46:25.000+0000","zane_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T17:46:25.000+0000","chet_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T17:41:24.000+0000","exch-mbx-pla-01-a",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T17:41:24.000+0000","bernard_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T17:36:24.000+0000","harry_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T17:36:24.000+0000","exch-mbx-san-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T17:31:24.000+0000","se-003",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T17:31:24.000+0000","lucas_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T17:26:24.000+0000","albert_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T17:26:24.000+0000","lane_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T17:21:23.000+0000","lane_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T17:21:23.000+0000","lee_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T17:16:23.000+0000","kim_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T17:16:23.000+0000","csco-ironport-esa-san-01",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T17:11:23.000+0000","marcus_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T17:11:23.000+0000","craig_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T17:06:22.000+0000","exch-mbx-cup-01",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T17:06:22.000+0000","leo_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T17:01:22.000+0000",host0201,failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T17:01:22.000+0000","ryan_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T16:56:22.000+0000","ops-sys-001",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T16:56:22.000+0000","ethan_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T16:51:22.000+0000","keith_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T16:51:21.000+0000","prod-mfs-001",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T16:46:21.000+0000","nathan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T16:46:21.000+0000","ryan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T16:41:21.000+0000","gordon_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980232)""",KB980232
+"2017-05-23T16:41:21.000+0000","exch-mbx-san-00-a",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T16:36:21.000+0000","prod-mfs-001",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T16:36:21.000+0000","karl_wkstn",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T16:31:20.000+0000","exch-hub-cup-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T16:31:20.000+0000","tim_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T16:21:20.000+0000","lucas_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T16:21:20.000+0000","prod-mfs-003",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T16:16:19.000+0000","exch-cas-pla-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T16:16:19.000+0000","courtney_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T16:11:19.000+0000","vaughn_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T16:11:19.000+0000","perry_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T16:06:19.000+0000","vincent_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T16:06:19.000+0000","grant_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T16:01:19.000+0000","tom_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T16:01:19.000+0000","exch-mbx-san-01-b",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T15:56:18.000+0000","irvin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T15:56:18.000+0000","lamont_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980232)""",KB980232
+"2017-05-23T15:51:18.000+0000","hector_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T15:46:18.000+0000","bert_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T15:51:18.000+0000","dante_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T15:46:18.000+0000","lorenzo_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T15:41:17.000+0000","se-003",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T15:41:17.000+0000","exch-cas-den-01",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T15:36:17.000+0000","bill_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T15:31:17.000+0000","marcelo_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T15:36:17.000+0000","admin_hax0r_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T15:31:17.000+0000","shayne_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T15:26:17.000+0000","donovan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T15:26:16.000+0000","felipe_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T15:21:16.000+0000","harvey_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T15:16:16.000+0000","omar_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T15:21:16.000+0000","dennis_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T15:16:16.000+0000","hank_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T15:11:16.000+0000","fred_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T15:06:15.000+0000","lorenzo_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T15:01:15.000+0000","exch-cas-pla-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T15:01:15.000+0000","exch-cas-den-01",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T14:56:15.000+0000","trevor_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T14:56:15.000+0000","derrick_wkstn",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T14:51:14.000+0000","ops-sys-006",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T14:46:14.000+0000","avery_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T14:51:14.000+0000","pete_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T14:46:14.000+0000","bert_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980232)""",KB980232
+"2017-05-23T14:41:14.000+0000","cecil_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T14:41:14.000+0000","chauncey_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T14:36:14.000+0000","trevor_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T14:31:13.000+0000","exch-mbx-pla-00-b",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T14:36:14.000+0000","wade_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T14:31:13.000+0000","phil_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T14:26:13.000+0000","alonso_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T14:26:13.000+0000","edgar_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T14:21:13.000+0000","exch-mbx-cup-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T14:16:12.000+0000","derrick_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T14:21:13.000+0000","norman_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T14:16:12.000+0000","busdev-002",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980232)""",KB980232
+"2017-05-23T14:11:12.000+0000","xavier_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T14:11:12.000+0000","ethan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T14:06:12.000+0000","alan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T14:06:12.000+0000","hodamin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T14:01:11.000+0000","exch-hub-pla-01",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T13:56:11.000+0000","exch-cas-san-01",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)"".",KB980195
+"2017-05-23T13:56:11.000+0000","noel_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T13:51:11.000+0000","cont_jflyby_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-23T13:46:11.000+0000","ray_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T13:51:11.000+0000","sam_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)""",KB978506
+"2017-05-23T13:46:11.000+0000",ex2010,installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T13:41:10.000+0000","dustin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T13:41:10.000+0000","paul_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T13:36:10.000+0000","ryan_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T13:31:10.000+0000","noel_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T13:36:10.000+0000","cont_bbrohax0r_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T13:31:10.000+0000","ray_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T13:26:09.000+0000","antony_wkstn",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T13:26:09.000+0000","gary_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T13:21:09.000+0000","louis_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T13:21:09.000+0000","alex_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T13:16:09.000+0000","win-5k02cfozada",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T13:16:09.000+0000","sidney_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T13:11:09.000+0000","erin_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T13:11:09.000+0000","exch-cas-cup-01",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T13:06:08.000+0000","elvin_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T13:06:08.000+0000","ron_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T13:01:08.000+0000","myles_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB975929)"".",KB975929
+"2017-05-23T13:01:08.000+0000","brendan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T12:56:08.000+0000","dante_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T12:51:07.000+0000","cedric_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T12:51:07.000+0000","ext-cas-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979482)"".",KB979482
+"2017-05-23T12:46:07.000+0000","courtney_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T12:46:07.000+0000","corey_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T12:41:07.000+0000","francis_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T12:41:07.000+0000","homer_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T12:36:06.000+0000","lane_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T12:36:06.000+0000","moshe_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T12:31:06.000+0000","courtney_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T12:31:06.000+0000","kerry_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)""",KB978506
+"2017-05-23T12:26:06.000+0000","jfrost_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T12:26:06.000+0000","exch-mbx-den-01-b",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978542)"".",KB978542
+"2017-05-23T12:21:06.000+0000","prod-mfs-004",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)""",KB980195
+"2017-05-23T12:21:06.000+0000","win-5k02cfozada",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T12:16:05.000+0000","kurt_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T12:16:05.000+0000","bennett_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T12:11:05.000+0000",ex2010,installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T12:11:05.000+0000","richard_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T12:06:05.000+0000","busdev-001",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T12:06:05.000+0000","arnold_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T12:01:04.000+0000","prod-pos-001",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T12:01:04.000+0000","pete_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T11:56:04.000+0000","busdev-005",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)""",KB978506
+"2017-05-23T11:56:04.000+0000","clayton_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T11:51:04.000+0000","sam_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T11:51:04.000+0000","melvin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T11:46:04.000+0000","prod-mfs-004",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T11:46:04.000+0000","elvin_wkstn",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T11:41:03.000+0000","ops-sys-006",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T11:36:03.000+0000","colby_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T11:36:03.000+0000","carol_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T11:31:03.000+0000","ross_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T11:31:03.000+0000","hank_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T11:26:02.000+0000","berry_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T11:26:02.000+0000","owen_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T11:21:02.000+0000","tim_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T11:21:02.000+0000","tyrone_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T11:16:02.000+0000","exch-mbx-san-00-b",failure,"""Update for Windows Server 2008 x64 Edition (KB975929)"".",KB975929
+"2017-05-23T11:16:02.000+0000","ops-sys-004",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T11:11:02.000+0000","carl_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T11:11:01.000+0000","rogue_admin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T11:06:01.000+0000","acme-004",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T11:06:01.000+0000","wayne_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T11:01:01.000+0000","host-005",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T11:01:01.000+0000","ivan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T10:56:01.000+0000","neil_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T10:56:01.000+0000","exch-cas-den-01",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T10:51:00.000+0000","ralph_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T10:51:00.000+0000","luke_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB981793)"".",KB981793
+"2017-05-23T10:46:00.000+0000","justin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T10:46:00.000+0000","kerry_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T10:41:00.000+0000","aaron_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB980218)""",KB980218
+"2017-05-23T10:41:00.000+0000","prod-pos-003",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T10:36:00.000+0000","gavin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975560)""",KB975560
+"2017-05-23T10:35:59.000+0000","aaron_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T10:30:59.000+0000","ross_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T10:30:59.000+0000","dana_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975560)""",KB975560
+"2017-05-23T10:25:59.000+0000","felipe_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T10:25:59.000+0000","luke_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T10:20:59.000+0000","marty_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979309)""",KB979309
+"2017-05-23T10:20:59.000+0000","coredev-001",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T10:15:58.000+0000","garrett_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T10:15:58.000+0000","donovan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T10:10:58.000+0000","exch-mbx-cup-00-b",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T10:05:58.000+0000","dana_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T10:05:58.000+0000","jerry_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T10:00:57.000+0000","exch-mbx-cup-00-b",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T09:55:57.000+0000","se-002",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T09:55:57.000+0000","murray_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)"".",KB979911
+"2017-05-23T09:50:57.000+0000","robin_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)""",KB978506
+"2017-05-23T09:50:57.000+0000","sidney_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T09:45:56.000+0000","darryl_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T09:45:57.000+0000","alfred_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T09:40:56.000+0000","exch-mbx-cup-00-a",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T09:40:56.000+0000","exch-mbx-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T09:35:56.000+0000","host-003",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T09:35:56.000+0000","exch-mbx-san-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T09:30:56.000+0000","martin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB981793)"".",KB981793
+"2017-05-23T09:30:56.000+0000","grant_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T09:25:55.000+0000","elisha_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T09:25:55.000+0000","keith_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)"".",KB980195
+"2017-05-23T09:20:55.000+0000","splunkldap_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T09:15:55.000+0000","host-005",failure,"""Update for Windows Server 2008 x64 Edition (KB981793)"".",KB981793
+"2017-05-23T09:15:55.000+0000","jordan_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T09:10:55.000+0000","marco_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T09:10:54.000+0000","roger_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T09:05:54.000+0000","jbernt_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T09:05:54.000+0000","lynn_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T09:00:54.000+0000","calvin_wkstn",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T09:00:54.000+0000","hodamin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T08:55:54.000+0000","bryce_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T08:55:54.000+0000","exch-mbx-cup-01-a",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T08:50:53.000+0000","exch-mbx-cup-01",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)""",KB978506
+"2017-05-23T08:50:53.000+0000","lyndon_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T08:45:53.000+0000","karl_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T08:45:53.000+0000","stacy_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T08:40:53.000+0000","glenn_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T08:35:52.000+0000","carl_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979683)""",KB979683
+"2017-05-23T08:35:52.000+0000","raul_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T08:30:52.000+0000","joshua_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T08:30:52.000+0000","lamont_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T08:25:52.000+0000","clint_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)""",KB980195
+"2017-05-23T08:25:52.000+0000","exch-mbx-pla-00-b",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T08:20:52.000+0000","lawrence_wkstn",installed,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)""",KB979099
+"2017-05-23T08:20:51.000+0000","hugh_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T08:15:51.000+0000","rupert_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T08:15:51.000+0000","aldo_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T08:10:51.000+0000","harold_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T08:10:51.000+0000","curtis_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T08:05:51.000+0000","alfred_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975560)"".",KB975560
+"2017-05-23T08:02:12.000+0000","tyrone_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB981332)"".",KB981332
+"2017-05-23T08:02:12.000+0000","dan_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T07:57:12.000+0000","csco-ironport-esa-den-01",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T07:57:12.000+0000","jim_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T07:57:12.000+0000","james_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T07:57:12.000+0000","exch-hub-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979482)"".",KB979482
+"2017-05-23T07:52:11.000+0000","dante_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T07:52:11.000+0000","clayton_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979482)"".",KB979482
+"2017-05-23T07:47:11.000+0000","donald_wkstn",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T07:47:11.000+0000","leon_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T07:42:11.000+0000","exch-mbx-pla-00-a",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T07:42:11.000+0000","leon_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T07:37:10.000+0000","gregg_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T07:37:10.000+0000","gabriel_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T07:32:10.000+0000","busdev-004",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-23T07:32:10.000+0000","lyndon_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T07:27:10.000+0000","tom_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T07:27:10.000+0000","francis_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T07:22:10.000+0000","jamie_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T07:22:10.000+0000","dan_wkstn",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T07:17:09.000+0000","lyndon_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)"".",KB982632
+"2017-05-23T07:17:09.000+0000","same-ad3",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T07:12:09.000+0000","exch-mbx-den-01-b",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T07:12:09.000+0000",host0167,failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T07:07:09.000+0000","exch-hub-den-01",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T07:07:09.000+0000","eric_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T07:02:08.000+0000","marvin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T06:52:08.000+0000","mitch_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T06:52:08.000+0000","dennis_wkstn",failure,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)"".",KB982535
+"2017-05-23T06:47:07.000+0000","chad_wkstn",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T06:47:08.000+0000","busdev-008",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T06:42:07.000+0000","sendmail-den-01",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T06:42:07.000+0000","derrick_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978601)"".",KB978601
+"2017-05-23T06:37:07.000+0000","bruno_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T06:37:07.000+0000","host-002",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T06:32:07.000+0000","francis_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T06:32:07.000+0000","elliot_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T06:27:06.000+0000","acme-001",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T06:27:06.000+0000","myles_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T06:22:06.000+0000","wayne_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T06:22:06.000+0000",host0201,failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T06:17:06.000+0000","exch-mbx-den-00",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T06:12:05.000+0000","busdev-004",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T06:12:05.000+0000","lucas_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)"".",KB980302
+"2017-05-23T06:07:05.000+0000","ray_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T06:07:05.000+0000","prod-mfs-003",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T06:02:05.000+0000","louis_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T06:02:05.000+0000","exch-mbx-pla-01",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T05:57:05.000+0000","adrian_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)""",KB982381
+"2017-05-23T05:57:05.000+0000","lloyd_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)"".",KB978262
+"2017-05-23T05:52:04.000+0000","antony_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB975562)""",KB975562
+"2017-05-23T05:52:04.000+0000","alton_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T05:47:04.000+0000","clair_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T05:47:04.000+0000","xavier_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T05:42:04.000+0000","donte_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T05:42:04.000+0000","acme-002",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T05:37:03.000+0000","exch-mbx-pla-00",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T05:37:03.000+0000","exch-mbx-cup-00",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978251)"".",KB978251
+"2017-05-23T05:32:03.000+0000","rogue_admin_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)"".",KB980195
+"2017-05-23T05:32:03.000+0000","rupert_wkstn",installed,"""Microsoft .NET Framework 3.5 SP1 Security Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB979911)""",KB979911
+"2017-05-23T05:27:03.000+0000","murray_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T05:27:03.000+0000","coredev-005",failure,"""Update for Rights Management Services Client for Windows Server 2008 x64 Edition (KB979099)"".",KB979099
+"2017-05-23T05:22:03.000+0000","michael_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T05:22:02.000+0000","bart_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T05:17:02.000+0000","bennett_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB976662)"".",KB976662
+"2017-05-23T05:17:02.000+0000","jess_wkstn",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)""",KB980182
+"2017-05-23T05:12:02.000+0000","lamont_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T05:12:02.000+0000","edward_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T05:07:02.000+0000","exch-cas-den-01",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T05:07:02.000+0000","marco_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979482)"".",KB979482
+"2017-05-23T05:02:01.000+0000","exch-mbx-pla-00",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)"".",KB982632
+"2017-05-23T04:57:01.000+0000","exch-mbx-cup-01",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T04:57:01.000+0000","marc_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979559)"".",KB979559
+"2017-05-23T04:52:01.000+0000","exch-mbx-cup-01-a",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979482)""",KB979482
+"2017-05-23T04:52:01.000+0000","franklin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T04:47:00.000+0000","martin_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T04:47:01.000+0000","ken_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB977165)""",KB977165
+"2017-05-23T04:42:00.000+0000","ops-sys-001",installed,"""Microsoft .NET Framework 3.5 SP1 Update for Windows Vista SP1 and Windows Server 2008 for x64-based Systems (KB982535)""",KB982535
+"2017-05-23T04:42:00.000+0000","leon_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T04:37:00.000+0000","tim_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T04:37:00.000+0000","bart_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T04:32:00.000+0000","prod-mfs-006",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T04:32:00.000+0000","marcus_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T04:26:59.000+0000","sean_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T04:26:59.000+0000","prod-pos-006",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T04:21:59.000+0000","ext-cas-san-01",installed,"""Update for Windows Server 2008 x64 Edition (KB975929)""",KB975929
+"2017-05-23T04:21:59.000+0000","robin_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB979306)"".",KB979306
+"2017-05-23T04:16:59.000+0000","zachary_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB973917)"".",KB973917
+"2017-05-23T04:11:59.000+0000","exch-mbx-den-00",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979559)""",KB979559
+"2017-05-23T04:11:58.000+0000","blake_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T04:06:58.000+0000","exch-mbx-den-01-a",installed,"""Update for Windows Server 2008 x64 Edition (KB979306)""",KB979306
+"2017-05-23T04:06:58.000+0000","coredev-001",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T04:01:58.000+0000","desmond_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T04:01:58.000+0000","elliot_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB974145)""",KB974145
+"2017-05-23T03:56:58.000+0000","clint_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T03:51:57.000+0000","patricia_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB976662)""",KB976662
+"2017-05-23T03:46:57.000+0000","lesley_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)"".",KB982632
+"2017-05-23T03:46:57.000+0000","andrea_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T03:41:57.000+0000","bill_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980232)"".",KB980232
+"2017-05-23T03:36:56.000+0000","exch-mbx-pla-01",installed,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)""",KB978207
+"2017-05-23T03:36:56.000+0000","maria_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T03:31:56.000+0000","elliot_wkstn",failure,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB978506)"".",KB978506
+"2017-05-23T03:31:56.000+0000","alton_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB973917)""",KB973917
+"2017-05-23T03:26:56.000+0000","exch-cas-san-01",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T03:26:56.000+0000","jake_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T03:21:56.000+0000","felipe_wkstn",installed,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB978262)""",KB978262
+"2017-05-23T03:21:56.000+0000","claude_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB971468)"".",KB971468
+"2017-05-23T03:16:55.000+0000","chase_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB981793)"".",KB981793
+"2017-05-23T03:16:55.000+0000","homer_wkstn",installed,"""Update for Windows Server 2008 x64 Edition (KB981793)""",KB981793
+"2017-05-23T03:11:55.000+0000","kieth_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB971468)""",KB971468
+"2017-05-23T03:11:55.000+0000","chester_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB977165)"".",KB977165
+"2017-05-23T03:06:55.000+0000","se-004",installed,"""Security Update for Windows Server 2008 x64 Edition (KB979309)""",KB979309
+"2017-05-23T03:06:55.000+0000","jacob_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB978207)"".",KB978207
+"2017-05-23T03:01:54.000+0000","ivan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T03:01:54.000+0000","neville_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978338)""",KB978338
+"2017-05-23T02:56:54.000+0000","neville_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978251)""",KB978251
+"2017-05-23T02:56:54.000+0000","tristan_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB980218)"".",KB980218
+"2017-05-23T02:51:54.000+0000","kurtis_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T02:51:54.000+0000","floyd_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB980182)"".",KB980182
+"2017-05-23T02:46:54.000+0000","sidney_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T02:41:53.000+0000","blair_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T02:41:53.000+0000","oliver_wkstn",failure,"""Cumulative Security Update for Internet Explorer 8 for Windows Server 2008 x64 Edition (KB982381)"".",KB982381
+"2017-05-23T02:36:53.000+0000","franklin_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T02:36:53.000+0000","herbert_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979683)"".",KB979683
+"2017-05-23T02:31:53.000+0000","drew_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB974145)"".",KB974145
+"2017-05-23T02:31:53.000+0000","same-ad3",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978601)""",KB978601
+"2017-05-23T02:26:52.000+0000","patricia_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB980302)""",KB980302
+"2017-05-23T02:26:52.000+0000","carey_wkstn",failure,"""Update for Windows Server 2008 x64 Edition (KB975929)"".",KB975929
+"2017-05-23T02:21:52.000+0000","hodamin_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332
+"2017-05-23T02:21:52.000+0000","exch-mbx-den-00-b",failure,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)"".",KB890830
+"2017-05-23T02:16:52.000+0000","ben_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB975562)"".",KB975562
+"2017-05-23T02:16:52.000+0000","conrad_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB978542)""",KB978542
+"2017-05-23T02:11:52.000+0000","simon_wkstn",installed,"""Windows Malicious Software Removal Tool x64 - April 2010 (KB890830)""",KB890830
+"2017-05-23T02:11:51.000+0000","myles_wkstn",failure,"""Cumulative Security Update for ActiveX Killbits for Windows Server 2008 x64 Edition (KB980195)"".",KB980195
+"2017-05-23T02:06:51.000+0000","gordon_wkstn",installed,"""Update for Internet Explorer 8 Compatibility View List for Windows Server 2008 x64 Edition (KB982632)""",KB982632
+"2017-05-23T02:06:51.000+0000","miles_wkstn",failure,"""Security Update for Windows Server 2008 x64 Edition (KB978338)"".",KB978338
+"2017-05-23T02:01:51.000+0000","exch-cas-den-01",failure,"""Security Update for Windows Server 2008 x64 Edition (KB979309)"".",KB979309
+"2017-05-23T02:01:51.000+0000","owen_wkstn",installed,"""Security Update for Windows Server 2008 x64 Edition (KB981332)""",KB981332

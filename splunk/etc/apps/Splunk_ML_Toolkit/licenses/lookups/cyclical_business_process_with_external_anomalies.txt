@@ -1,0 +1,6 @@
+1. Objective:
+Random time series data (logons) for 5 weeks with random anomalies and a randomly upward trend.
+Designed to make it easy to show off charting and math - things like timewrap and anomaly detection.
+Also includes a number of external anomalies created in a 3rd search.
+
+2. License: Splunk Owned

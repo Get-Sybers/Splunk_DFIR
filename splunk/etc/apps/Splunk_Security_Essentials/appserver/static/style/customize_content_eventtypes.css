@@ -1,0 +1,219 @@
+
+.showcase {
+    border-bottom-left-radius: 18px;
+    border-top-left-radius: 18px;
+    border-bottom-right-radius: 18px;
+    border-top-right-radius: 18px;
+    margin-bottom: 10px;
+    border: 1px solid darkgray;
+    padding-left: 20px;
+}
+
+.showcase.completed{
+    border: 2px solid green;
+}
+.showcase.BadDataSource{
+    border: 4px solid red;
+}
+
+.customize-related{
+    margin: 10px;
+    border: 1px solid gray;
+    padding-left: 10px;
+
+}
+
+.datasource {
+    margin: 10px;
+    border: 1px solid gray;
+    padding-left: 10px;
+}
+.eventtype {
+    border: 1px solid gray;
+    background-color: white;
+    color: black;
+    margin-bottom: 10px;
+}
+
+.eventtype.active {
+    border: 1px solid gray;
+    background-color: lightblue;
+}
+.eventtype.nobrainer {
+    border: 1px solid blue;
+}
+
+.newdatasource {
+    border: 1px solid gray;
+    background-color: white;
+    color: black;
+    margin-bottom: 10px;
+}
+
+.newdatasource.active {
+    border: 1px solid gray;
+    background-color: lightblue;
+}
+.newdatasource.nobrainer {
+    border: 1px solid blue;
+}
+
+.customize-mitre {
+    margin: 10px;
+    border: 1px solid gray;
+    padding-left: 10px;
+}
+.mitre_selected{
+    padding-bottom: 30px;
+}
+.mitre {
+    border: 1px solid gray;
+    background-color: white;
+    color: black;
+    margin-bottom: 10px;
+}
+
+.mitreTactic {
+    border: 1px solid gray;
+    background-color: white;
+    color: black;
+    margin-bottom: 10px;
+}
+
+.mitreTactic.active {
+    border: 1px solid blue;
+    background-color: lightblue;
+}
+
+
+.mitreTechnique {
+    border: 1px solid gray;
+    background-color: white;
+    color: black;
+    margin-bottom: 10px;
+}
+
+.mitre.active {
+    border: 1px solid gray;
+    background-color: lightblue;
+}
+.mitreTechnique.active {
+    border: 1px solid gray;
+    background-color: lightblue;
+}
+
+
+/*
+
+table.elementDetail{
+    width: 800px;
+    display: inline-block;
+    clear: both;
+}
+.baseSearch {
+    width: 200px;
+}
+.errorCode {
+    display: none;
+}
+#startSearchesDiv{
+    width: 30%; 
+    float:right; 
+    text-align:center; 
+    vertical-align: center;
+}
+.foundation_container {
+
+}
+.ds_main_panel {
+    margin-left: 321px;
+    margin-right: 321px;
+    border: 1px solid gray;
+    min-height: 718px;
+    height: 100%;
+    padding-left: 8px;
+    
+}
+.ds_datasource_panel{
+    min-width: 140px;
+    display: inline-block;
+    height: 100%;
+}
+.ds_datasource{
+    height: 28px;
+    width: 320px;
+    border: 1px solid gray;
+}
+.ds_datasource_active{
+    background-color: #e2e2e2
+}
+.ds_status {
+    width: 24px;
+    height: 100%;
+    height: 18px;
+    line-height: 18px;
+}
+.ds_datasource_left .ds_status {
+    float: left;
+}
+.ds_datasource_right .ds_status {
+    float: right;
+}
+.ds_main {
+    height: 100%;
+    display: inline-block;
+}
+.ds_header h3 {
+    overflow: hide;
+    line-height: 12px;
+}
+.ds_dropdown {
+    width: 20px;
+    height: 60px;
+    overflow: none;
+    float: left;
+    height: 100%;
+    background-color: gray;
+    vertical-align: middle;
+    line-height: 60px;
+    margin: 0; 
+    padding: 0;
+    text-align: center;
+}
+.ds_dropdown i {
+    font-size: 16pt;
+    color: white;
+}
+.ds_lowermain {
+    display: none;
+}
+.et_lowerMain {
+    display: none;
+}
+.et_status {
+    width: 60px;
+    height: 100%;
+    float: left;
+    height: 63px;
+    position: relative;
+}
+.et_select {
+    width: 60px;
+    height: 100%;
+    float: left;
+    height: 63px;
+    background-color: white;
+}
+.df_eventtype {
+    clear: both;
+}
+.et_main{
+    margin-left:85px;
+}
+.elementStatus{
+    position: relative;
+}
+.ds_main h2 {
+    margin-top: 2px;
+    margin-top: 2px;
+}*/

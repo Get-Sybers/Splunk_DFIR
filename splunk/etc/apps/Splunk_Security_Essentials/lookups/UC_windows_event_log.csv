@@ -1,0 +1,5 @@
+_time,host,EventCode,Message,source
+"2017-06-26T04:36:54.000+0000",we8105desk,1102,"The audit log was cleared",wineventlog:security
+"2017-06-26T04:36:54.000+0000",we8105desk,1100,"The event logging service has shut down",wineventlog:security
+"2017-06-26T04:36:54.000+0000",we8105desk,104,"The Application log file was cleared.",wineventlog:system
+"2017-06-26T04:36:54.000+0000",we8105desk,1142,"Something happened",wineventlog:system

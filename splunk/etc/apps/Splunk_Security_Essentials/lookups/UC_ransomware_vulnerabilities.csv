@@ -1,0 +1,39 @@
+"_time",cve,signature,"netbios-name",hostname
+"2017-05-21T00:00:00.000+0000","cve-2017-0143
+cve-2017-0144
+cve-2017-0145
+cve-2017-0146
+cve-2017-0147
+cve-2017-0148","MS17-010: Security Update for Microsoft Windows SMB Server (4013389) (ETERNALBLUE) (ETERNALCHAMPION) (ETERNALROMANCE) (ETERNALSYNERGY) (WannaCry) (uncredentialed check)","BOB-PC","192.168.10.194"
+"2017-05-21T00:00:00.000+0000","cve-2017-0143
+cve-2017-0144
+cve-2017-0145
+cve-2017-0146
+cve-2017-0147
+cve-2017-0148","MS17-010: Security Update for Microsoft Windows SMB Server (4013389) (ETERNALBLUE) (ETERNALCHAMPION) (ETERNALROMANCE) (ETERNALSYNERGY) (WannaCry) (uncredentialed check)","BOB-PC","192.168.10.194"
+"2017-05-21T00:00:00.000+0000","cve-2017-0143
+cve-2017-0144
+cve-2017-0145
+cve-2017-0146
+cve-2017-0147
+cve-2017-0148","MS17-010: Security Update for Microsoft Windows SMB Server (4013389) (ETERNALBLUE) (ETERNALCHAMPION) (ETERNALROMANCE) (ETERNALSYNERGY) (WannaCry) (uncredentialed check)","BOB-PC","192.168.10.194"
+"2017-05-20T00:00:00.000+0000","cve-2017-0143
+cve-2017-0144
+cve-2017-0145
+cve-2017-0146
+cve-2017-0147
+cve-2017-0148","MS17-010: Security Update for Microsoft Windows SMB Server (4013389) (ETERNALBLUE) (ETERNALCHAMPION) (ETERNALROMANCE) (ETERNALSYNERGY) (WannaCry) (uncredentialed check)","BOB-PC","192.168.10.194"
+"2017-05-20T00:00:00.000+0000","cve-2015-1639
+cve-2015-1641","MS15-033: Vulnerabilities in Microsoft Office Could Allow Remote Code Execution (3048019)","JBRODSKY-MBP15","192.168.10.196"
+"2017-05-20T00:00:00.000+0000","cve-2015-1639
+cve-2015-1641","MS15-033: Vulnerabilities in Microsoft Office Could Allow Remote Code Execution (3048019)","JBRODSKY-MBP15","192.168.10.196"
+"2017-05-20T00:00:00.000+0000","cve-2015-1639
+cve-2015-1641","MS15-033: Vulnerabilities in Microsoft Office Could Allow Remote Code Execution (3048019)","JBRODSKY-MBP15","192.168.10.196"
+"2017-05-20T00:00:00.000+0000","cve-2015-1639
+cve-2015-1641","MS15-033: Vulnerabilities in Microsoft Office Could Allow Remote Code Execution (3048019)","JBRODSKY-MBP15","192.168.10.196"
+"2016-08-17T00:00:00.000+0000","cve-2014-6332
+cve-2014-6352","MS14-064: Vulnerabilities in Windows OLE Could Allow Remote Code Execution (3011443)",WE9041SRV,"192.168.250.20"
+"2016-08-17T00:00:00.000+0000","cve-2014-4114","MS14-060: Vulnerability in Windows OLE Could Allow Remote Code Execution (3000869)",WE9041SRV,"192.168.250.20"
+"2016-08-17T00:00:00.000+0000","cve-2014-6332
+cve-2014-6352","MS14-064: Vulnerabilities in Windows OLE Could Allow Remote Code Execution (3011443)",WE8105DESK,"192.168.250.100"
+"2016-08-17T00:00:00.000+0000","cve-2014-4114","MS14-060: Vulnerability in Windows OLE Could Allow Remote Code Execution (3000869)",WE8105DESK,"192.168.250.100"

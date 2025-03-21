@@ -1,0 +1,111 @@
+{
+    "combinedDistributions": {
+        "{\"source\":\"si_call_volume\",\"atf_hour_of_day\":\"14\"}": {
+            "key": { "atf_hour_of_day": "14", "source": "si_call_volume" },
+            "outlierCount": 1
+        },
+        "{\"source\":\"si_kpi_elements_cti_asgi\",\"atf_hour_of_day\":\"10\"}": {
+            "key": { "atf_hour_of_day": "10", "source": "si_kpi_elements_cti_asgi" },
+            "outlierCount": 5
+        },
+        "{\"source\":\"si_kpi_elements_cti_asgi\",\"atf_hour_of_day\":\"7\"}": {
+            "key": { "atf_hour_of_day": "7", "source": "si_kpi_elements_cti_asgi" },
+            "outlierCount": 2
+        },
+        "{\"source\":\"si_kpi_elements_cti_asgi\",\"atf_hour_of_day\":\"8\"}": {
+            "key": { "atf_hour_of_day": "8", "source": "si_kpi_elements_cti_asgi" },
+            "outlierCount": 4
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"11\"}": {
+            "key": { "atf_hour_of_day": "11", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 3
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"12\"}": {
+            "key": { "atf_hour_of_day": "12", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 3
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"13\"}": {
+            "key": { "atf_hour_of_day": "13", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 3
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"14\"}": {
+            "key": { "atf_hour_of_day": "14", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 3
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"7\"}": {
+            "key": { "atf_hour_of_day": "7", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 2
+        },
+        "{\"source\":\"si_kpi_elements_sgi\",\"atf_hour_of_day\":\"9\"}": {
+            "key": { "atf_hour_of_day": "9", "source": "si_kpi_elements_sgi" },
+            "outlierCount": 2
+        }
+    },
+    "splitFieldValues": [
+        {
+            "key": "atf_hour_of_day",
+            "value": {
+                "{\"atf_hour_of_day\":\"10\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "10" },
+                    "outlierCount": 5
+                },
+                "{\"atf_hour_of_day\":\"11\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "11" },
+                    "outlierCount": 3
+                },
+                "{\"atf_hour_of_day\":\"12\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "12" },
+                    "outlierCount": 3
+                },
+                "{\"atf_hour_of_day\":\"13\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "13" },
+                    "outlierCount": 3
+                },
+                "{\"atf_hour_of_day\":\"14\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "14" },
+                    "outlierCount": 4
+                },
+                "{\"atf_hour_of_day\":\"7\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "7" },
+                    "outlierCount": 4
+                },
+                "{\"atf_hour_of_day\":\"8\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "8" },
+                    "outlierCount": 4
+                },
+                "{\"atf_hour_of_day\":\"9\"}": {
+                    "fieldName": "atf_hour_of_day",
+                    "key": { "atf_hour_of_day": "9" },
+                    "outlierCount": 2
+                }
+            }
+        },
+        {
+            "key": "source",
+            "value": {
+                "{\"source\":\"si_call_volume\"}": {
+                    "fieldName": "source",
+                    "key": { "source": "si_call_volume" },
+                    "outlierCount": 1
+                },
+                "{\"source\":\"si_kpi_elements_cti_asgi\"}": {
+                    "fieldName": "source",
+                    "key": { "source": "si_kpi_elements_cti_asgi" },
+                    "outlierCount": 11
+                },
+                "{\"source\":\"si_kpi_elements_sgi\"}": {
+                    "fieldName": "source",
+                    "key": { "source": "si_kpi_elements_sgi" },
+                    "outlierCount": 16
+                }
+            }
+        }
+    ]
+}
