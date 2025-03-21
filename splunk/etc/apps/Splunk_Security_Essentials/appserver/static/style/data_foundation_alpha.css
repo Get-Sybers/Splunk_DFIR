@@ -1,0 +1,89 @@
+table.elementDetail{
+    width: 800px;
+    display: inline-block;
+    clear: both;
+}
+.baseSearch {
+    width: 200px;
+}
+.errorCode {
+    display: none;
+}
+#startSearchesDiv{
+    width: 30%; 
+    float:right; 
+    text-align:center; 
+    vertical-align: center;
+}
+.ds_datasource{
+    min-height: 63px;
+    min-width: 560px;
+    border: 1px solid gray;
+}
+.ds_status {
+    width: 60px;
+    height: 100%;
+    float: left;
+    height: 63px;
+   /* background-color: lightgray;*/
+}
+.ds_main {
+    width: 500px;
+    height: 100%;
+    display: inline-block;
+}
+.ds_header {
+    height: 50px;
+    overflow: hide;
+}
+.ds_dropdown {
+    width: 20px;
+    height: 60px;
+    overflow: none;
+    float: left;
+    height: 100%;
+    background-color: gray;
+    vertical-align: middle;
+    line-height: 60px;
+    margin: 0; 
+    padding: 0;
+    text-align: center;
+}
+.ds_dropdown i {
+    font-size: 16pt;
+    color: white;
+}
+.ds_lowermain {
+    display: none;
+}
+.et_lowerMain {
+    display: none;
+}
+.et_status {
+    width: 60px;
+    height: 100%;
+    float: left;
+    height: 63px;
+    position: relative;
+  /*  background-color: lightgray;*/
+}
+.et_select {
+    width: 60px;
+    height: 100%;
+    float: left;
+    height: 63px;
+    background-color: white;
+}
+.df_eventtype {
+    clear: both;
+}
+.et_main{
+    margin-left:85px;
+}
+.elementStatus{
+    position: relative;
+}
+.ds_main h2 {
+    margin-top: 2px;
+    margin-top: 2px;
+}

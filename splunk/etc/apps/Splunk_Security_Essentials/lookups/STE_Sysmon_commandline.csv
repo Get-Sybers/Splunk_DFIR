@@ -1,0 +1,380 @@
+"_time",CommandLine,host
+"2016-08-24T12:27:26.000-0600","taskhost.exe C:\Windows\system32\defrag.exe -c",we8105desk
+"2016-08-24T12:27:24.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T12:25:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T12:25:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T12:21:06.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T12:17:35.000-0600","""C:\Windows\system32\w32tm.exe""  /stripchart /computer:we9041srv.waynecorpinc.local /dataonly /samples:1",we8105desk
+"2016-08-24T12:17:33.000-0600","""C:\Windows\system32\PING.EXE""  we9041srv.waynecorpinc.local /n 2",we8105desk
+"2016-08-24T12:17:33.000-0600","""C:\Windows\system32\w32tm.exe""  /query /source",we8105desk
+"2016-08-24T12:17:31.000-0600","C:\Windows\Microsoft.NET\Framework64\v2.0.50727\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 ""/OUT:C:\Users\BOBSMI~1.WAY\AppData\Local\Temp\RES958E.tmp"" ""c:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\CSC958D.tmp""",we8105desk
+"2016-08-24T12:17:31.000-0600","""C:\Windows\Microsoft.NET\Framework64\v2.0.50727\csc.exe"" /noconfig /fullpaths @""C:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\l62oeljq.cmdline""",we8105desk
+"2016-08-24T12:17:31.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T12:17:31.000-0600","C:\Windows\Microsoft.NET\Framework64\v2.0.50727\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 ""/OUT:C:\Users\BOBSMI~1.WAY\AppData\Local\Temp\RES93AA.tmp"" ""c:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\CSC93A9.tmp""",we8105desk
+"2016-08-24T12:17:31.000-0600","""C:\Windows\Microsoft.NET\Framework64\v2.0.50727\csc.exe"" /noconfig /fullpaths @""C:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\m7m1p90n.cmdline""",we8105desk
+"2016-08-24T12:17:31.000-0600","C:\Windows\Microsoft.NET\Framework64\v2.0.50727\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 ""/OUT:C:\Users\BOBSMI~1.WAY\AppData\Local\Temp\RES936C.tmp"" ""c:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\CSC936B.tmp""",we8105desk
+"2016-08-24T12:17:31.000-0600","""C:\Windows\Microsoft.NET\Framework64\v2.0.50727\csc.exe"" /noconfig /fullpaths @""C:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\skj1oiou.cmdline""",we8105desk
+"2016-08-24T12:17:29.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T12:17:29.000-0600","C:\Windows\System32\sdiagnhost.exe -Embedding",we8105desk
+"2016-08-24T12:17:29.000-0600","C:\Windows\System32\svchost.exe -k swprv",we8105desk
+"2016-08-24T12:17:29.000-0600","""taskhost.exe""",we8105desk
+"2016-08-24T12:17:29.000-0600","C:\Windows\system32\vssvc.exe",we8105desk
+"2016-08-24T12:17:29.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T12:17:29.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe21_ Global\UsGthrCtrlFltPipeMssGthrPipe21 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T12:17:28.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T12:17:28.000-0600","C:\Windows\system32\mcbuilder.exe",we8105desk
+"2016-08-24T12:17:28.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T12:17:28.000-0600","C:\Windows\system32\rundll32.exe /d acproxy.dll,PerformAutochkOperations",we8105desk
+"2016-08-24T12:17:28.000-0600","C:\Windows\system32\rundll32.exe /d srrstr.dll,ExecuteScheduledSPPCreation",we8105desk
+"2016-08-24T12:17:28.000-0600","C:\Windows\system32\lpremove.exe",we8105desk
+"2016-08-24T12:16:49.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we1149srv
+"2016-08-24T12:16:49.000-0600","C:\Windows\system32\sc.exe start wuauserv",we1149srv
+"2016-08-24T12:15:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T12:15:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T12:10:47.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T12:10:47.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe20_ Global\UsGthrCtrlFltPipeMssGthrPipe20 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T12:10:29.000-0600","C:\Windows\system32\svchost.exe -k defragsvc",we8105desk
+"2016-08-24T12:10:28.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T12:10:28.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T12:10:28.000-0600","""taskhost.exe""",we8105desk
+"2016-08-24T12:10:28.000-0600","C:\Windows\system32\defrag.exe -c",we8105desk
+"2016-08-24T12:10:28.000-0600","C:\Windows\system32\aitagent.EXE",we8105desk
+"2016-08-24T12:10:28.000-0600","C:\Windows\system32\rundll32.exe aepdu.dll,AePduRunUpdate",we8105desk
+"2016-08-24T12:07:08.000-0600","taskhost.exe $(Arg0)",we8105desk
+"2016-08-24T12:06:06.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T12:05:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T12:05:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T12:03:00.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:55:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:55:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:51:05.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T11:45:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:45:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:39:35.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:39:35.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe19_ Global\UsGthrCtrlFltPipeMssGthrPipe19 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:36:52.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:36:52.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe18_ Global\UsGthrCtrlFltPipeMssGthrPipe18 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:36:05.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T11:35:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:35:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:28:43.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:27:21.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:25:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:25:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:21:05.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T11:18:10.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:18:10.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe17_ Global\UsGthrCtrlFltPipeMssGthrPipe17 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:15:29.000-0600","ping  -n 1 127.0.0.1",we8105desk
+"2016-08-24T11:15:29.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T11:15:29.000-0600","taskkill  /t /f /im ""osk.exe""",we8105desk
+"2016-08-24T11:15:29.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T11:15:29.000-0600","/d /c taskkill /t /f /im ""osk.exe"" &gt; NUL &amp; ping -n 1 127.0.0.1 &gt; NUL &amp; del ""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\{35ACA89F-933F-6A5D-2776-A3589FB99832}\osk.exe"" &gt; NUL",we8105desk
+"2016-08-24T11:15:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:15:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:15:13.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{3F6B5E16-092A-41ED-930B-0B4125D91D4E}",we8105desk
+"2016-08-24T11:15:12.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-110916_ Global\UsGthrCtrlFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-110916 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""  ""1""",we8105desk
+"2016-08-24T11:15:12.000-0600","""C:\Windows\System32\WScript.exe"" ""C:\Users\bob.smith.WAYNECORPINC\Desktop\# DECRYPT MY FILES #.vbs""",we8105desk
+"2016-08-24T11:15:12.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:15:12.000-0600","""C:\Program Files (x86)\Internet Explorer\iexplore.exe"" SCODEF:2404 CREDAT:79874",we8105desk
+"2016-08-24T11:15:11.000-0600","""C:\Windows\system32\NOTEPAD.EXE"" C:\Users\bob.smith.WAYNECORPINC\Desktop\# DECRYPT MY FILES #.txt",we8105desk
+"2016-08-24T11:15:11.000-0600","""C:\Program Files (x86)\Internet Explorer\iexplore.exe"" SCODEF:2404 CREDAT:79873",we8105desk
+"2016-08-24T11:15:11.000-0600","""C:\Program Files (x86)\Internet Explorer\iexplore.exe"" -nohome",we8105desk
+"2016-08-24T11:14:23.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:14:23.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe15_ Global\UsGthrCtrlFltPipeMssGthrPipe15 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:12:47.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:12:47.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe14_ Global\UsGthrCtrlFltPipeMssGthrPipe14 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:12:15.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:12:06.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:11:54.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:11:54.000-0600","""C:\Windows\explorer.exe""",we8105desk
+"2016-08-24T11:11:51.000-0600","taskhost.exe $(Arg0)",we8105desk
+"2016-08-24T11:10:01.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:10:01.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe13_ Global\UsGthrCtrlFltPipeMssGthrPipe13 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:08:47.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:08:47.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe12_ Global\UsGthrCtrlFltPipeMssGthrPipe12 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:06:46.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:06:46.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe11_ Global\UsGthrCtrlFltPipeMssGthrPipe11 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:06:39.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:06:31.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:06:05.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T11:06:01.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:05:53.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:05:47.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:05:33.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:05:19.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:05:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T11:05:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T11:05:03.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:04:55.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:04:53.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:04:33.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T11:04:33.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T11:04:31.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T11:04:31.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe10_ Global\UsGthrCtrlFltPipeMssGthrPipe10 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T11:02:36.000-0600","C:\Windows\system32\AUDIODG.EXE 0x4d4",we8105desk
+"2016-08-24T11:02:36.000-0600","rundll32.exe C:\Windows\system32\hotplug.dll,HotPlugEjectVetoed \\.\pipe\PNP_HotPlug_Pipe_1.{339df01b-6d4c-4d9a-b389-98d62839f1b0}",we8105desk
+"2016-08-24T11:02:29.000-0600","C:\Windows\system32\DeviceDisplayObjectProvider.exe -Embedding",we8105desk
+"2016-08-24T11:02:15.000-0600","C:\Windows\system32\DeviceDisplayObjectProvider.exe -Embedding",we8105desk
+"2016-08-24T10:56:55.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:56:55.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11099_ Global\UsGthrCtrlFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11099 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""  ""1""",we8105desk
+"2016-08-24T10:56:54.000-0600","""C:\Program Files (x86)\Internet Explorer\iexplore.exe"" SCODEF:4576 CREDAT:71937",we8105desk
+"2016-08-24T10:56:51.000-0600","""C:\Program Files (x86)\Internet Explorer\iexplore.exe"" -nohome",we8105desk
+"2016-08-24T10:56:47.000-0600","""C:\Windows\system32\rundll32.exe"" C:\Windows\system32\shell32.dll,OpenAs_RunDLL D:\Work Stuff\013\013366.pdf",we8105desk
+"2016-08-24T10:56:46.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T10:56:43.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:56:29.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:56:19.000-0600","""C:\Windows\explorer.exe""",we8105desk
+"2016-08-24T10:56:11.000-0600","C:\Windows\system32\AUDIODG.EXE 0x2c4",we8105desk
+"2016-08-24T10:56:09.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:56:08.000-0600","""C:\Windows\explorer.exe""",we8105desk
+"2016-08-24T10:55:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T10:55:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T10:53:39.000-0600","C:\Windows\System32\slui.exe -Embedding",we8105desk
+"2016-08-24T10:51:05.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:49:42.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:49:42.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe8_ Global\UsGthrCtrlFltPipeMssGthrPipe8 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T10:49:24.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:49:24.000-0600","""C:\Windows\System32\bcdedit.exe"" /set {default} bootstatuspolicy ignoreallfailures",we8105desk
+"2016-08-24T10:49:24.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:49:24.000-0600","""C:\Windows\System32\bcdedit.exe"" /set {default} recoveryenabled no",we8105desk
+"2016-08-24T10:49:23.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:49:23.000-0600","""C:\Windows\system32\wbem\wmic.exe"" shadowcopy delete",we8105desk
+"2016-08-24T10:49:23.000-0600","C:\Windows\System32\svchost.exe -k swprv",we8105desk
+"2016-08-24T10:49:23.000-0600","C:\Windows\system32\vssvc.exe",we8105desk
+"2016-08-24T10:49:23.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:49:23.000-0600","""C:\Windows\system32\vssadmin.exe"" delete shadows /all /quiet",we8105desk
+"2016-08-24T10:49:22.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{3AD05575-8857-4850-9277-11B85BDB8E09}",we8105desk
+"2016-08-24T10:49:22.000-0600","C:\Windows\system32\DllHost.exe /Processid:{E10F6C3A-F1AE-4ADC-AA9D-2FE65525666E}",we8105desk
+"2016-08-24T10:49:21.000-0600","consent.exe 928 274 0000000001CCA4D0",we8105desk
+"2016-08-24T10:49:11.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\{35ACA89F-933F-6A5D-2776-A3589FB99832}\osk.exe""",we8105desk
+"2016-08-24T10:49:03.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\{35ACA89F-933F-6A5D-2776-A3589FB99832}\osk.exe""",we8105desk
+"2016-08-24T10:49:03.000-0600","""C:\Windows\SysWOW64\QqJXZrBKCk72XzRgZs\AdapterTroubleshooter.exe""",we8105desk
+"2016-08-24T10:49:03.000-0600","C:\Windows\system32\DllHost.exe /Processid:{E10F6C3A-F1AE-4ADC-AA9D-2FE65525666E}",we8105desk
+"2016-08-24T10:49:03.000-0600","consent.exe 928 502 00000000031D8160",we8105desk
+"2016-08-24T10:49:03.000-0600","""C:\Windows\SysWOW64\QqJXZrBKCk72XzRgZs\AdapterTroubleshooter.exe""",we8105desk
+"2016-08-24T10:49:03.000-0600","consent.exe 928 274 0000000001CCA4D0",we8105desk
+"2016-08-24T10:49:03.000-0600","consent.exe 928 274 0000000001CCA4D0",we8105desk
+"2016-08-24T10:49:03.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{3AD05575-8857-4850-9277-11B85BDB8E09}",we8105desk
+"2016-08-24T10:49:03.000-0600","C:\Windows\system32\DllHost.exe /Processid:{E10F6C3A-F1AE-4ADC-AA9D-2FE65525666E}",we8105desk
+"2016-08-24T10:49:02.000-0600","consent.exe 928 274 0000000001CCA4D0",we8105desk
+"2016-08-24T10:49:01.000-0600","""C:\Windows\SysWOW64\explorer.exe""",we8105desk
+"2016-08-24T10:48:50.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\{35ACA89F-933F-6A5D-2776-A3589FB99832}\osk.exe""",we8105desk
+"2016-08-24T10:48:42.000-0600","ping  -n 1 127.0.0.1",we8105desk
+"2016-08-24T10:48:41.000-0600","taskkill  /t /f /im ""121214.tmp""",we8105desk
+"2016-08-24T10:48:41.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:48:41.000-0600","/d /c taskkill /t /f /im ""121214.tmp"" &gt; NUL &amp; ping -n 1 127.0.0.1 &gt; NUL &amp; del ""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\121214.tmp"" &gt; NUL",we8105desk
+"2016-08-24T10:48:41.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\{35ACA89F-933F-6A5D-2776-A3589FB99832}\osk.exe""",we8105desk
+"2016-08-24T10:48:29.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\121214.tmp""",we8105desk
+"2016-08-24T10:48:21.000-0600","""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\121214.tmp""",we8105desk
+"2016-08-24T10:48:21.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:48:21.000-0600","""C:\Windows\System32\cmd.exe"" /C START """" ""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\121214.tmp""",we8105desk
+"2016-08-24T10:45:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T10:45:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T10:44:21.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:44:08.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:44:07.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T10:43:54.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:43:54.000-0600","""C:\Windows\explorer.exe""",we8105desk
+"2016-08-24T10:43:27.000-0600","C:\Windows\splwow64.exe 8192",we8105desk
+"2016-08-24T10:43:21.000-0600","""C:\Windows\System32\WScript.exe"" ""C:\Users\bob.smith.WAYNECORPINC\AppData\Roaming\20429.vbs""",we8105desk
+"2016-08-24T10:43:21.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:43:21.000-0600","cmd.exe /V /C set ""GSI=%APPDATA%\%RANDOM%.vbs"" &amp;&amp; (for %i in (""DIm RWRL"" ""FuNCtioN GNbiPp(Pt5SZ1)"" ""EYnt=45"" ""GNbiPp=AsC(Pt5SZ1)"" ""Xn1=52 This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. This line has been artificially truncated because it was causing Splunk Security Essentials to be flagged by Avast AV. Because we used this in part to look for very long CLI strings... this will be repeated. cho %~i)&gt;""!GSI!"" &amp;&amp; start """" ""!GSI!""",we8105desk
+"2016-08-24T10:43:17.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:43:17.000-0600","wmiadap.exe /R /T",we8105desk
+"2016-08-24T10:43:16.000-0600","""C:\Program Files\Common Files\Microsoft Shared\OfficeSoftwareProtectionPlatform\OSPPSVC.EXE""",we8105desk
+"2016-08-24T10:43:12.000-0600","""C:\Program Files (x86)\Microsoft Office\Office14\WINWORD.EXE"" /n /f ""D:\Miranda_Tate_unveiled.dotm""",we8105desk
+"2016-08-24T10:43:12.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T10:43:03.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T10:43:03.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:43:02.000-0600","""C:\Windows\explorer.exe""",we8105desk
+"2016-08-24T10:42:16.000-0600","C:\Windows\system32\AUDIODG.EXE 0x8b8",we8105desk
+"2016-08-24T10:36:59.000-0600","""dwm.exe""",we9041srv
+"2016-08-24T10:36:59.000-0600","""LogonUI.exe"" /flags:0x0",we9041srv
+"2016-08-24T10:36:58.000-0600","winlogon.exe",we9041srv
+"2016-08-24T10:36:58.000-0600","%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,20480,768 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=sxssrv,4 ProfileControl=Off MaxRequestThreads=16",we9041srv
+"2016-08-24T10:36:58.000-0600","\SystemRoot\System32\smss.exe 00000000 00000050",we9041srv
+"2016-08-24T10:36:44.000-0600","choice  /T 1 /C X /D X /N",we8105desk
+"2016-08-24T10:36:44.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:36:44.000-0600","cmd /c C:\Windows\temp\nessus_W7GLH62C.bat",we8105desk
+"2016-08-24T10:36:26.000-0600","""dwm.exe""",we1149srv
+"2016-08-24T10:36:25.000-0600","""LogonUI.exe"" /flags:0x0",we1149srv
+"2016-08-24T10:36:24.000-0600","winlogon.exe",we1149srv
+"2016-08-24T10:36:24.000-0600","%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,20480,768 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=sxssrv,4 ProfileControl=Off MaxRequestThreads=16",we1149srv
+"2016-08-24T10:36:24.000-0600","\SystemRoot\System32\smss.exe 00000000 00000050",we1149srv
+"2016-08-24T10:36:14.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:36:14.000-0600","C:\Windows\tenable_mw_scan_142a90001fb65e0beb1751cc8c63edd0.exe",we8105desk
+"2016-08-24T10:36:14.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:36:14.000-0600","sc start tenable_mw_scan type=1 output=nessus_SFBBT7QA.txt",we8105desk
+"2016-08-24T10:36:02.000-0600","choice  /T 1 /C X /D X /N",we9041srv
+"2016-08-24T10:36:02.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:36:02.000-0600","cmd /c C:\Windows\temp\nessus_ZCHPYH15.bat",we9041srv
+"2016-08-24T10:35:36.000-0600","schtasks  /query /XML",we8105desk
+"2016-08-24T10:35:36.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:35:36.000-0600","cmd /c ""schtasks /query /XML &gt; %SystemRoot%\TEMP\nessus_VPG2T4UF.TMP &amp; ren %SystemRoot%\TEMP\nessus_VPG2T4UF.TMP nessus_VPG2T4UF.TXT""",we8105desk
+"2016-08-24T10:35:32.000-0600","C:\Windows\tenable_mw_scan_142a90001fb65e0beb1751cc8c63edd0.exe",we9041srv
+"2016-08-24T10:35:32.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:35:32.000-0600","sc start tenable_mw_scan type=1 output=nessus_QYVJLVDT.txt",we9041srv
+"2016-08-24T10:35:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T10:35:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T10:35:08.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we9041srv
+"2016-08-24T10:34:56.000-0600","netsh  advfirewall show allprofiles firewallpolicy",we8105desk
+"2016-08-24T10:34:56.000-0600","cmd  /c netsh advfirewall show allprofiles firewallpolicy",we8105desk
+"2016-08-24T10:34:55.000-0600","netsh  advfirewall firewall show rule name=all verbose",we8105desk
+"2016-08-24T10:34:55.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:34:55.000-0600","cmd /c netsh advfirewall firewall show rule name=all verbose &gt; %SystemRoot%\TEMP\nessus_OCREA4YZ.TMP &amp; cmd /c netsh advfirewall show allprofiles firewallpolicy &gt;&gt; %SystemRoot%\TEMP\nessus_OCREA4YZ.TMP &amp; move %SystemRoot%\TEMP\nessus_OCREA4YZ.TMP %SystemRoot%\TEMP\nessus_OCREA4YZ.TXT",we8105desk
+"2016-08-24T10:34:50.000-0600","schtasks  /query /XML",we9041srv
+"2016-08-24T10:34:50.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:34:50.000-0600","cmd /c ""schtasks /query /XML &gt; %SystemRoot%\TEMP\nessus_W426FMMY.TMP &amp; ren %SystemRoot%\TEMP\nessus_W426FMMY.TMP nessus_W426FMMY.TXT""",we9041srv
+"2016-08-24T10:34:21.000-0600","tasklist  /svc",we8105desk
+"2016-08-24T10:34:21.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:34:21.000-0600","cmd /c ""tasklist /svc &gt; %SystemRoot%\TEMP\nessus_task_listY42QJDIQ.TMP &amp; ren %SystemRoot%\TEMP\nessus_task_listY42QJDIQ.TMP nessus_task_listY42QJDIQ.TXT""",we8105desk
+"2016-08-24T10:34:19.000-0600","C:\Windows\system32\svchost.exe -k wsappx",we9041srv
+"2016-08-24T10:34:14.000-0600","powershell  ""Get-AppxPackage -AllUsers | select name, version, architecture, publisher | Format-List | out-string -width 4096""",we9041srv
+"2016-08-24T10:34:14.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:34:14.000-0600","cmd /c powershell ""Get-AppxPackage -AllUsers | select name, version, architecture, publisher | Format-List | out-string -width 4096"" &gt; %SystemRoot%\TEMP\nessus_R3OP3JQV.TMP &amp; move %SystemRoot%\TEMP\nessus_R3OP3JQV.TMP %SystemRoot%\TEMP\nessus_R3OP3JQV.TXT",we9041srv
+"2016-08-24T10:34:11.000-0600","netsh  advfirewall show allprofiles firewallpolicy",we9041srv
+"2016-08-24T10:34:11.000-0600","cmd  /c netsh advfirewall show allprofiles firewallpolicy",we9041srv
+"2016-08-24T10:34:11.000-0600","netsh  advfirewall firewall show rule name=all verbose",we9041srv
+"2016-08-24T10:34:11.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:34:11.000-0600","cmd /c netsh advfirewall firewall show rule name=all verbose &gt; %SystemRoot%\TEMP\nessus_SV9VMSPT.TMP &amp; cmd /c netsh advfirewall show allprofiles firewallpolicy &gt;&gt; %SystemRoot%\TEMP\nessus_SV9VMSPT.TMP &amp; move %SystemRoot%\TEMP\nessus_SV9VMSPT.TMP %SystemRoot%\TEMP\nessus_SV9VMSPT.TXT",we9041srv
+"2016-08-24T10:34:06.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we8105desk
+"2016-08-24T10:34:06.000-0600","C:\Windows\system32\svchost.exe -k regsvc",we8105desk
+"2016-08-24T10:34:05.000-0600","netsh  wlan show interface",we8105desk
+"2016-08-24T10:34:05.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:34:05.000-0600","cmd /c netsh wlan show interface &gt; %SystemRoot%\TEMP\nessus_IQK9FYH1.TMP &amp; move %SystemRoot%\TEMP\nessus_IQK9FYH1.TMP %SystemRoot%\TEMP\nessus_IQK9FYH1.TXT",we8105desk
+"2016-08-24T10:34:04.000-0600","C:\Windows\servicing\TrustedInstaller.exe",we8105desk
+"2016-08-24T10:33:53.000-0600","netstat  -ano",we8105desk
+"2016-08-24T10:33:53.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:33:53.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:33:53.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe7_ Global\UsGthrCtrlFltPipeMssGthrPipe7 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T10:33:53.000-0600","cmd /c ""netstat -ano &gt; %SystemRoot%\TEMP\nessus_4UC962OK.TMP &amp; ren %SystemRoot%\TEMP\nessus_4UC962OK.TMP nessus_4UC962OK.TXT""",we8105desk
+"2016-08-24T10:33:52.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:33:46.000-0600","c:\windows\system32\inetsrv\w3wp.exe -ap ""DefaultAppPool"" -v ""v4.0"" -l ""webengine4.dll"" -a \\.\pipe\iisipm45a13fae-8ca5-408b-a9e4-631fc0631086 -h ""C:\inetpub\temp\apppools\DefaultAppPool\DefaultAppPool.config"" -w """" -m 0 -t 20 -ta 0",we1149srv
+"2016-08-24T10:33:44.000-0600","tasklist  /svc",we9041srv
+"2016-08-24T10:33:44.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:33:44.000-0600","cmd /c ""tasklist /svc &gt; %SystemRoot%\TEMP\nessus_task_listI8RC8S8K.TMP &amp; ren %SystemRoot%\TEMP\nessus_task_listI8RC8S8K.TMP nessus_task_listI8RC8S8K.TXT""",we9041srv
+"2016-08-24T10:33:32.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we9041srv
+"2016-08-24T10:33:30.000-0600","netsh  wlan show interface",we9041srv
+"2016-08-24T10:33:30.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:33:30.000-0600","cmd /c netsh wlan show interface &gt; %SystemRoot%\TEMP\nessus_JMJL39S5.TMP &amp; move %SystemRoot%\TEMP\nessus_JMJL39S5.TMP %SystemRoot%\TEMP\nessus_JMJL39S5.TXT",we9041srv
+"2016-08-24T10:33:30.000-0600","C:\Windows\winsxs\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_6.3.9600.16384_none_fa1dc1539b4180d8\TiWorker.exe -Embedding",we9041srv
+"2016-08-24T10:33:30.000-0600","C:\Windows\servicing\TrustedInstaller.exe",we9041srv
+"2016-08-24T10:33:24.000-0600","C:\Windows\system32\sppsvc.exe",we9041srv
+"2016-08-24T10:33:22.000-0600","netstat  -ano",we9041srv
+"2016-08-24T10:33:22.000-0600","\??\C:\Windows\system32\conhost.exe 0xffffffff",we9041srv
+"2016-08-24T10:33:22.000-0600","cmd /c ""netstat -ano &gt; %SystemRoot%\TEMP\nessus_4LX6EPAV.TMP &amp; ren %SystemRoot%\TEMP\nessus_4LX6EPAV.TMP nessus_4LX6EPAV.TXT""",we9041srv
+"2016-08-24T10:33:21.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we9041srv
+"2016-08-24T10:26:02.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we9041srv
+"2016-08-24T10:26:02.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we9041srv
+"2016-08-24T10:25:17.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we1149srv
+"2016-08-24T10:25:15.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we1149srv
+"2016-08-24T10:21:04.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:20:25.000-0600","C:\Windows\System32\rundll32.exe shell32.dll,SHCreateLocalServerRunDll {995C996E-D918-4a8c-A302-45719A6F4EA7} -Embedding",we8105desk
+"2016-08-24T10:19:43.000-0600","C:\Windows\system32\wermgr.exe -queuereporting",we8105desk
+"2016-08-24T10:18:10.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:18:10.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe6_ Global\UsGthrCtrlFltPipeMssGthrPipe6 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T10:15:15.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11095_ Global\UsGthrCtrlFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11095 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""  ""1""",we8105desk
+"2016-08-24T10:14:24.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:12:40.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11094_ Global\UsGthrCtrlFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11094 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""  ""1""",we8105desk
+"2016-08-24T10:12:24.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:10:24.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe3_ Global\UsGthrCtrlFltPipeMssGthrPipe3 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T10:10:24.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:10:00.000-0600","wmiadap.exe /F /T /R",we8105desk
+"2016-08-24T10:09:04.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:08:57.000-0600","taskhost.exe $(Arg0)",we8105desk
+"2016-08-24T10:08:57.000-0600","C:\Windows\System32\sdclt.exe /CONFIGNOTIFICATION",we8105desk
+"2016-08-24T10:08:16.000-0600","""C:\Program Files (x86)\Common Files\Acronis\SyncAgent\syncagentsrv.exe""",we8105desk
+"2016-08-24T10:08:16.000-0600","C:\Windows\system32\sppsvc.exe",we8105desk
+"2016-08-24T10:08:16.000-0600","""C:\Program Files (x86)\Intel\Intel(R) Management Engine Components\LMS\LMS.exe""",we8105desk
+"2016-08-24T10:07:23.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11092_ Global\UsGthrCtrlFltPipeMssGthrPipe_S-1-5-21-67332772-3493699611-3403467266-11092 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""  ""1""",we8105desk
+"2016-08-24T10:07:22.000-0600","""C:\Windows\system32\SearchFilterHost.exe"" 0 524 528 536 65536 532",we8105desk
+"2016-08-24T10:07:22.000-0600","""C:\Windows\system32\SearchProtocolHost.exe"" Global\UsGthrFltPipeMssGthrPipe1_ Global\UsGthrCtrlFltPipeMssGthrPipe1 1 -2147483646 ""Software\Microsoft\Windows Search"" ""Mozilla/4.0 (compatible; MSIE 6.0; Windows NT; MS Search 4.0 Robot)"" ""C:\ProgramData\Microsoft\Search\Data\Temp\usgthrsvc"" ""DownLevelDaemon""",we8105desk
+"2016-08-24T10:07:20.000-0600","C:\Windows\system32\SearchIndexer.exe /Embedding",we8105desk
+"2016-08-24T10:06:49.000-0600","C:\Windows\system32\SearchIndexer.exe /Embedding",we8105desk
+"2016-08-24T10:06:45.000-0600","""C:\Program Files (x86)\Microsoft Office\Office14\BCSSync.exe"" /DelayServices",we8105desk
+"2016-08-24T10:06:45.000-0600","""C:\Program Files (x86)\Acronis\TrueImageHome\TrueImageMonitor.exe""",we8105desk
+"2016-08-24T10:06:45.000-0600","""C:\Program Files (x86)\Common Files\Acronis\TibMounter\TibMounterMonitor.exe""",we8105desk
+"2016-08-24T10:06:45.000-0600","""C:\Program Files (x86)\Intel\Intel(R) USB 3.0 eXtensible Host Controller Driver\Application\iusb3mon.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Program Files (x86)\Intel\Intel(R) Integrated Clock Controller Service\ICCProxy.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","C:\Windows\system32\DllHost.exe /Processid:{AB8902B4-09CA-4BB6-B78D-A8F59079A8D5}",we8105desk
+"2016-08-24T10:06:44.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T10:06:44.000-0600","C:\Windows\SysWOW64\runonce.exe /Run6432",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Program Files (x86)\Common Files\Acronis\Schedule2\schedhlp.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Program Files\Boot Camp\Bootcamp.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Windows\System32\igfxpers.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Windows\System32\hkcmd.exe""",we8105desk
+"2016-08-24T10:06:44.000-0600","""C:\Windows\system32\igfxsrvc.exe"" -Embedding",we8105desk
+"2016-08-24T10:06:43.000-0600","""C:\Windows\System32\igfxtray.exe""",we8105desk
+"2016-08-24T10:06:42.000-0600","C:\Windows\Explorer.EXE",we8105desk
+"2016-08-24T10:06:42.000-0600","""C:\Windows\system32\Dwm.exe""",we8105desk
+"2016-08-24T10:06:42.000-0600","C:\Windows\system32\userinit.exe",we8105desk
+"2016-08-24T10:06:42.000-0600","""taskhost.exe""",we8105desk
+"2016-08-24T10:06:42.000-0600","C:\Windows\system32\DllHost.exe /Processid:{E10F6C3A-F1AE-4ADC-AA9D-2FE65525666E}",we8105desk
+"2016-08-24T10:06:20.000-0600","C:\Windows\System32\svchost.exe -k secsvcs",we8105desk
+"2016-08-24T10:06:16.000-0600","taskhost.exe SYSTEM",we8105desk
+"2016-08-24T10:06:15.000-0600","""C:\Windows\system32\WUDFHost.exe"" -HostGUID:{193a1820-d9ac-4997-8c55-be817523f6aa} -IoEventPortName:HostProcess-ac6024c6-0e8e-4905-9442-280600567282 -SystemEventPortName:HostProcess-47fb5318-ca0f-44a7-866d-cf286eabcb42 -IoCancelEventPortName:HostProcess-73811b94-bc88-4562-beac-f050c8c2e1ab -NonStateChangingEventPortName:HostProcess-487fce22-2fcf-4925-8557-9c32d3729e3e -ServiceSID:S-1-5-80-2652678385-582572993-1835434367-1344795993-749280709 -LifetimeId:9e02b3ab-0d2b-4e15-8682-744712c1ca2e",we8105desk
+"2016-08-24T10:06:15.000-0600","C:\Windows\system32\svchost.exe -k bthsvcs",we8105desk
+"2016-08-24T10:06:15.000-0600","C:\Windows\system32\svchost.exe -k LocalServiceAndNoImpersonation",we8105desk
+"2016-08-24T10:06:15.000-0600","C:\Windows\system32\svchost.exe -k NetworkServiceNetworkRestricted",we8105desk
+"2016-08-24T10:06:08.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\powershell2.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:08.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\powershell.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:08.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\perfmon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\admon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\WinRegMon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\WinPrintMon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\WinNetMon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\WinHostMon.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\WinEventLog.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:07.000-0600","cmd /c """"C:\Program Files\SplunkUniversalForwarder\etc\system\bin\MonitorNoHandle.cmd"" --scheme""",we8105desk
+"2016-08-24T10:06:06.000-0600","C:\Windows\system32\cmd.exe /c ""C:\Program Files\SplunkUniversalForwarder\bin\splunk.exe"" _internal check-xml-files --answer-yes --no-prompt 2&gt;&amp;1",we8105desk
+"2016-08-24T10:06:06.000-0600","C:\Windows\system32\cmd.exe /c btool server list general --no-log",we8105desk
+"2016-08-24T10:06:06.000-0600","C:\Windows\system32\cmd.exe /c btool server list replication_port --no-log",we8105desk
+"2016-08-24T10:06:03.000-0600","cscript.exe /nologo C:\Windows\TEMP\E5548D7D-7D5D-4693-A892-94129A925C26.vbs",we8105desk
+"2016-08-24T10:06:03.000-0600","cscript.exe /nologo C:\Windows\TEMP\A1985133-B0BB-4771-9B34-54C1DC493370.vbs",we8105desk
+"2016-08-24T10:06:03.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:06:03.000-0600","C:\Windows\sysWOW64\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:06:03.000-0600","cscript.exe /nologo C:\Windows\TEMP\5F336C48-BD3F-46AF-8FB1-E076BA7329CB.vbs",we8105desk
+"2016-08-24T10:06:01.000-0600","C:\Windows\system32\cmd.exe /c ""C:\Program Files\SplunkUniversalForwarder\bin\splunk.exe"" _internal pre-flight-checks --answer-yes --no-prompt 2&gt;&amp;1",we8105desk
+"2016-08-24T10:06:01.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -Embedding",we8105desk
+"2016-08-24T10:06:01.000-0600","C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",we8105desk
+"2016-08-24T10:06:01.000-0600","C:\Windows\system32\cmd.exe /c btool server list kvstore --no-log",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\cmd.exe /c btool server list general --no-log",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\cmd.exe /c btool web list settings --no-log",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\Sysmon.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\cmd.exe /c ""C:\Program Files\SplunkUniversalForwarder\bin\splunk.exe"" _internal_extra_splunkd_service_args",we8105desk
+"2016-08-24T10:06:00.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","\??\C:\Windows\system32\conhost.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\cmd.exe /c ""C:\Program Files\SplunkUniversalForwarder\bin\splunk.exe"" _RAW_envvars",we8105desk
+"2016-08-24T10:06:00.000-0600","""C:\Program Files (x86)\Common Files\Acronis\Infrastructure\mms_mini.exe""",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\AppleTimeSrv.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\AppleOSSMgr.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","""C:\Program Files (x86)\Common Files\Acronis\CDP\afcdpsrv.exe""",we8105desk
+"2016-08-24T10:06:00.000-0600","""C:\Program Files (x86)\Common Files\Acronis\Schedule2\schedul2.exe""",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k LocalServiceNoNetwork",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\System32\spoolsv.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k NetworkService",we8105desk
+"2016-08-24T10:06:00.000-0600","""C:\Windows\system32\WUDFHost.exe"" -HostGUID:{193a1820-d9ac-4997-8c55-be817523f6aa} -IoEventPortName:HostProcess-fa915abb-3e19-454d-abc3-af7084ddd6b2 -SystemEventPortName:HostProcess-ac8be148-87a6-4e0c-9c46-e06e1597f0ce -IoCancelEventPortName:HostProcess-c6ad7e19-54f2-46ea-af3f-88f7621e76ea -NonStateChangingEventPortName:HostProcess-b15c724e-59d6-4e9e-bba1-99864b9d80ce -ServiceSID:S-1-5-80-2652678385-582572993-1835434367-1344795993-749280709 -LifetimeId:584cb968-8b77-45ad-ae19-bbeb66853bc0",we8105desk
+"2016-08-24T10:06:00.000-0600","""LogonUI.exe"" /flags:0x0",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k LocalService",we8105desk
+"2016-08-24T10:06:00.000-0600","winlogon.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\AUDIODG.EXE 0x2c8",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k netsvcs",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\System32\svchost.exe -k LocalSystemNetworkRestricted",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\System32\svchost.exe -k LocalServiceNetworkRestricted",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k RPCSS",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\svchost.exe -k DcomLaunch",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\lsm.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\lsass.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","C:\Windows\system32\services.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,20480,768 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=winsrv:ConServerDllInitialization,2 ServerDll=sxssrv,4 ProfileControl=Off MaxRequestThreads=16",we8105desk
+"2016-08-24T10:06:00.000-0600","wininit.exe",we8105desk
+"2016-08-24T10:06:00.000-0600","\SystemRoot\System32\smss.exe 00000001 00000048",we8105desk
+"2016-08-24T10:06:00.000-0600","%SystemRoot%\system32\csrss.exe ObjectDirectory=\Windows SharedSection=1024,20480,768 Windows=On SubSystemType=Windows ServerDll=basesrv,1 ServerDll=winsrv:UserServerDllInitialization,3 ServerDll=winsrv:ConServerDllInitialization,2 ServerDll=sxssrv,4 ProfileControl=Off MaxRequestThreads=16",we8105desk
+"2016-08-24T10:06:00.000-0600","\SystemRoot\System32\smss.exe 00000000 00000048",we8105desk
+"2016-08-24T10:06:00.000-0600","\??\C:\Windows\system32\autochk.exe *",we8105desk
+"2016-08-24T10:06:00.000-0600","\SystemRoot\System32\smss.exe",we8105desk
+"2016-08-24T09:44:54.000-0600","C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",we8105desk
+"2016-08-24T09:44:54.000-0600","C:\Windows\System32\rundll32.exe shell32.dll,SHCreateLocalServerRunDll {995C996E-D918-4a8c-A302-45719A6F4EA7} -Embedding",we8105desk
+"2016-08-24T09:44:51.000-0600","C:\Windows\system32\vssvc.exe",we8105desk
+"2016-08-24T09:44:50.000-0600","""C:\Program Files (x86)\Common Files\Acronis\VssRequestor64\vss_requestor.exe"" -Embedding",we8105desk
+"2016-08-24T09:39:33.000-0600","C:\Windows\system32\wermgr.exe -queuereporting",we8105desk

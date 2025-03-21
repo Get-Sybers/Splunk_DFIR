@@ -1,0 +1,21 @@
+[default]
+access = read : [ * ], write: [admin, sc_admin]
+export = systen
+
+[checklist]
+export = system
+
+[app/install/install_source_checksum]
+version = 9.4.1
+modtime = 1741777649.007915000
+
+[inputs/monitor%3A%2F%2F%2Fdata%2Fprocessed%2Fzeek%2F%2A%2A%2F%2A.logs]
+owner = admin
+version = 9.4.1
+modtime = 1741904012.781475000
+
+[]
+access = read : [ * ], write : [ admin ]
+export = system
+version = 9.4.1
+modtime = 1742547497.899821000

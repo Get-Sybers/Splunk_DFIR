@@ -1,0 +1,3 @@
+<endpoint name="federated_search/new_asl_provider" showAppContext="1" template="pages/page.html">
+  <header>AWS Security Lake Provider</header>
+</endpoint>

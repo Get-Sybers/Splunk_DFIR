@@ -1,0 +1,69 @@
+.mltk-outliers-viz-controls {
+    display: none;
+    padding: 0 10px;
+}
+
+.mltk-outliers-viz-controls label:first-child {
+    margin-bottom: 5px;
+}
+
+.mltk-outliers-viz-controls-inner {
+    width: 100%;
+    display: flex;
+}
+
+.mltk-outliers-viz-controls-dropdown {
+    flex-grow: 1;
+    width: 0; /** IE11 requires this to correct wrap contents */
+}
+
+.mltk-outliers-viz-controls-buttons {
+    white-space: nowrap;
+}
+
+.mltk-outliers-viz-controls-buttons > .btn {
+    margin-left: 5px;
+}
+
+.mltk-outliers-plot {
+    position: relative;
+}
+
+.mltk-outliers-plot:not(:first-child) {
+    border-top: 1px solid #c3cbd4; /* gray80 */
+    margin-top: 10px;
+}
+
+.mltk-outliers-plot-count-wrapper {
+    width: 70px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 999;
+    height: 100%;
+    display: table;
+}
+
+.mltk-outliers-plot-count-wrapper.hidden {
+    display: none;
+}
+
+.mltk-outliers-plot-count-wrapper > div {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.mltk-outliers-plot-count {
+    font-size: 26px;
+    line-height: 26px;
+}
+
+.mltk-outliers-plot-chart {
+    height: 100%;
+}
+
+.mltk-outliers-viz-message {
+    display: none;
+    text-align: center;
+}

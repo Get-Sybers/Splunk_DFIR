@@ -1,0 +1,124 @@
+#!/bin/bash
+
+# Ensure correct filepath assigned when referenced
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+
+# Function to securely prompt for password and confirm it
+while true; do
+    read -s -p "Enter Splunk admin password (or press Ctrl+C to exit): " SPLUNK_PASSWORD
+    echo  # Move to a new line
+
+    # Check if input is empty
+    if [[ -z "$SPLUNK_PASSWORD" ]]; then
+        echo "❌ No password entered. Exiting..."
+        exit 1
+    fi
+
+    read -s -p "Confirm Splunk admin password: " SPLUNK_PASSWORD_CONFIRM
+    echo  # Move to a new line
+
+    # Check if input is empty
+    if [[ -z "$SPLUNK_PASSWORD_CONFIRM" ]]; then
+        echo "❌ No password entered. Exiting..."
+        exit 1
+    fi
+
+    if [[ "$SPLUNK_PASSWORD" == "$SPLUNK_PASSWORD_CONFIRM" ]]; then
+        echo "✅ Password confirmed."
+        break
+    else
+        echo "❌ Passwords do not match. Please try again."
+    fi
+done
+
+# Make sure all items in SPLUNK_DFIR/splunk and accessible by splunk
+echo "⚙️ Setting permissions of Splunk_DFIR/splunk/etc/* to $(whoami):docker and 777"
+sudo chown -R $(whoami):docker $REPO_ROOT_DIR/splunk/etc
+sudo chmod -R 777 $REPO_ROOT_DIR/splunk/etc
+
+echo "🚀 Building Splunk Enterprise Docker container..."
+
+echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/etc --> /data/etc:ro"
+echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/var --> /data/var"
+echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
+echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/ansible --> /data/ansible:ro"
+echo ""
+echo "📖 Qued Ansible Playbooks: Include-Custom-Apps.yml"
+echo "- find the rest @ $REPO_ROOT_DIR/splunk/ansible" 
+wait 3
+
+# Run Splunk Enterprise container with ansible_pre_tasks defined
+docker run -d --name splunk-enterprise \
+    --hostname splunk-enterprise \
+    -p 8000:8000 \
+    -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
+    -v "$REPO_ROOT_DIR/splunk/var":/data/var \
+    -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
+    -v "$REPO_ROOT_DIR/splunk/ansible":/data/ansible:ro \
+    -e SPLUNK_HTTP_ENABLESSL=true \
+    -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
+    -e SPLUNK_START_ARGS='--accept-license' \
+    -e SPLUNK_DISABLE_POPUPS='True' \
+    -e SPLUNK_ROLE=splunk_standalone \
+    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml" \
+    splunk/splunk:latest
+
+# Wait for Splunk to start up
+echo "🚀 docker go brrr"
+echo "🫡 loading in your apps now with ansible"
+sleep 0.1
+echo "        ⠀  _______________  "
+sleep 0.1
+echo "        ⠀ /      ZERO      \ "
+sleep 0.1
+echo "        ⠀ |      SUGAR     |"
+sleep 0.1
+echo "        ⠀ |----------------|"
+sleep 0.1
+echo "        ⠀ |  ██        ██  |"   
+sleep 0.1
+echo "        ⠀ |  ████     ███  |"  
+sleep 0.1
+echo "        ⠀ |  █████   ██ ██ |"  
+sleep 0.1
+echo "        ⠀ |  ██  █████  ██ |" 
+sleep 0.1
+echo "        ⠀ |  ██   ████  ██ |"
+sleep 0.1
+echo "        ⠀ |  ██    ███  ██ |"
+sleep 0.1
+echo "        ⠀ |  ██    ███  ██ |"
+sleep 0.1
+echo "        ⠀ |  ██    ██   ██ |"
+sleep 0.1
+echo "        ⠀ |  ██    ██   ██ |"       
+sleep 0.1
+echo "        ⠀ |  ██     █   ██ |"
+sleep 0.1
+echo "          |________________|"
+sleep 0.1
+echo "        ⠀ |      MONSTER   |"
+sleep 0.1
+echo "        ⠀ |      ENERGY    |"
+sleep 0.1
+echo "        ⠀ |________________|"
+sleep 0.1
+echo "        ⠀ |       ZERO     |"
+sleep 0.1
+echo "        ⠀ |       ULTRA    |"
+sleep 0.1
+echo "        ⠀ \________________/"
+sleep 0.1
+echo "done. punch it chewie 🧌"
+
+docker logs -f splunk-enterprise &
+
+
+# Ensure the container is running before proceeding
+if ! docker ps --format '{{.Names}}' | grep -q "splunk-enterprise"; then
+    echo "❌ Error: Splunk container failed to start!"
+    exit 1
+fi
+
+echo "✅ Splunk container setup completed successfully!"

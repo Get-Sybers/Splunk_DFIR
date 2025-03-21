@@ -1,0 +1,62 @@
+{
+    "predict_fields": {
+        "availableExamples": 13,
+        "colIndex": 0,
+        "description": "View examples that predict the value of a numeric or categorical field using the values from other fields in the event.",
+        "icon": {
+            "key": null,
+            "ref": null,
+            "props": {},
+            "_owner": null,
+            "_store": {}
+        },
+        "key": "predict_fields",
+        "rowIndex": 0,
+        "title": "Predict Fields"
+    },
+    "detect_outliers": {
+        "availableExamples": 12,
+        "colIndex": 1,
+        "description": "View examples that detect numeric and categorical values that differ significantly from values in the rest of the data. Identified outliers are indicative of interesting, unusual, and possibly dangerous events.",
+        "icon": {
+            "key": null,
+            "ref": null,
+            "props": {},
+            "_owner": null,
+            "_store": {}
+        },
+        "key": "detect_outliers",
+        "rowIndex": 0,
+        "title": "Detect Outliers"
+    },
+    "forecast_time_series": {
+        "availableExamples": 9,
+        "colIndex": 2,
+        "description": "View examples that predict the next value in a sequence of time series data by using past time series data.",
+        "icon": {
+            "key": null,
+            "ref": null,
+            "props": {},
+            "_owner": null,
+            "_store": {}
+        },
+        "key": "forecast_time_series",
+        "rowIndex": 0,
+        "title": "Forecast Time Series"
+    },
+    "cluster_events": {
+        "availableExamples": 6,
+        "colIndex": 0,
+        "description": "View examples that partition events with multiple fields into groups of events based on the values of those fields.",
+        "icon": {
+            "key": null,
+            "ref": null,
+            "props": {},
+            "_owner": null,
+            "_store": {}
+        },
+        "key": "cluster_events",
+        "rowIndex": 1,
+        "title": "Cluster Events"
+    }
+}

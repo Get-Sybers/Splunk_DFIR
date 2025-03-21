@@ -1,0 +1,46 @@
+#actualVsPredictedLinesPanel .mlts-panel-body {
+    height: 360px;
+}
+
+#actualVsPredictedLinesSortBy {
+    height: 40px;
+}
+
+#residualsLinePanel .mlts-panel-body, #residualsHistogramPanel .mlts-panel-body, #actualVsPredictedScatterLinePanel .mlts-panel-body {
+    height: 400px;
+}
+
+#dataAndPredictionsPanel thead th:nth-child(1), #dataAndPredictionsPanel thead th:nth-child(2), #dataAndPredictionsPanel thead th:nth-child(3) {
+    font-weight: bold;
+}
+
+#dataAndPredictionsPanel thead th:nth-child(3), #dataAndPredictionsPanel tbody td:nth-child(3) {
+    border-right: 1px solid #000;
+}
+
+/* TableViews don't have any bottom padding so this adds space between the table and the footer buttons */
+#fitModelSummaryPanel .mlts-panel-footer {
+    margin-top: 15px;
+}
+
+#trainingSetFractionSliderValue {
+    font-weight: bold;
+}
+
+#actualVsPredictedLinesSortBy label, #actualVsPredictedLinesSortBy .splunk-dropdown {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* a dumb hack to have the panel take up 100% vertical height */
+#regressionStatisticsPanel .dashboard-panel .dashboard-element.html {
+    height: 100%;
+    position: absolute;
+}
+
+#regressionStatisticsPanel .dashboard-panel .dashboard-element.html .mlts-panel-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+}

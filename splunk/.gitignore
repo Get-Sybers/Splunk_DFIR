@@ -1,0 +1,54 @@
+# ───────────────────────────────────────────────────────────
+# Ignore all of `apps/` recursively
+apps/**
+
+# ───────────────────────────────────────────────────────────
+# Re-allow important app components (default folders, scripts, etc.)
+!apps/**/default/
+!apps/**/metadata/
+!apps/**/static/
+!apps/**/bin/
+!apps/**/appserver/
+!apps/**/lookups/
+!apps/**/README.md
+
+# ───────────────────────────────────────────────────────────
+# Allow specific local config files (e.g., for Docker-only deployment)
+!apps/**/local/inputs.conf
+!apps/**/local/indexes.conf
+
+# ───────────────────────────────────────────────────────────
+# Ignore logs, runtime folders (explicitly listed — redundancy is okay)
+apps/**/logs/
+apps/**/tmp/
+apps/**/var/
+
+# ───────────────────────────────────────────────────────────
+# Ignore private/sensitive config types
+apps/**/local/passwords.conf
+apps/**/local/authentication.conf
+apps/**/local/server.conf
+apps/**/local/outputs.conf
+apps/**/local/web.conf
+apps/**/local/user-prefs.conf
+
+# ───────────────────────────────────────────────────────────
+# Ignore Python cache, OS junk, packages
+apps/**/__pycache__/
+apps/**/*.pyc
+apps/**/*.pyo
+apps/**/.DS_Store
+apps/**/*.spl
+apps/**/*.tar.gz
+apps/**/*.zip
+
+# ───────────────────────────────────────────────────────────
+# Ignore all of var recursively
+var/**
+!var/.gitkeep
+
+# ───────────────────────────────────────────────────────────
+# Allow additional project directories
+!ansible/**
+!app_tar_balls/**
+!dev/**

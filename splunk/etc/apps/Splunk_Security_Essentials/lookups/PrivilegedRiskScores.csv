@@ -1,0 +1,7 @@
+company,department,displayName,employeeid,isAdminAccount,mail,"risk_score",title,user
+myCompany,,"Chuck Ragland",39205,1,,70,"Gnome Legend Senior System Administrator","chuck_admin"
+myCompany,Sales,"Bob O'Brien",39193,0,"bob@mycompany.com",0,"AVP Sales",bob
+myCompany,Sales,"Alice Chu",38201,0,"alice@mycompany.com",50,"Chief Revenue Officer",alice
+myCompany,Sales,"Jim Smith",28051,0,"jsmith@mycompany.com",0,"Regional Sales Manager",jsmith
+"myCompany - EMEA",Engineering,"Edith Blake",45021,0,"edith@mycompany.com",0,"Principal Architect",edith
+myCompany,IT,"Chuck Ragland",39205,1,"chuck@mycompany.com",70,"Gnome Legend Senior System Administrator",chuck

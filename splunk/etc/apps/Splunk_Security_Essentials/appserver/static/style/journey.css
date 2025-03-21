@@ -1,0 +1,343 @@
+#stagetable {
+    margin-left: 0px;
+}
+
+#stagetable td {
+}
+
+.stagetablediv {
+    float: left;
+    width: auto !important;
+}
+
+.journey-slider {
+    writing-mode: bt-lr;
+    /* IE */
+    -webkit-appearance: slider-vertical;
+    /* WebKit */
+    width: 8px;
+    height: 625px;
+    padding: 0 5px;
+}
+
+.roundcorners {
+    border-radius: 30px 0px 0px 0px;
+}
+
+.stageheight {
+    height: 65px;
+}
+
+.stageviztitle {
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.journeystagename {
+    font-size: 18px;
+    font-weight: 700;
+    display: inline-flex;
+    gap: 10px;
+}
+
+.journeystagedesc {
+    font-size: 14px;
+}
+
+.journeystagetag {
+    background-color: #FFFFFF80;
+    padding: 2px 7px 2px 7px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #000000;
+}
+
+.stageinfotitle {
+    display: inline-flex;
+    gap: 10px;
+}
+
+.stageinfoname {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: -0.005em;
+    color: #3C444D;
+}
+
+.stageinfoLeveltag {
+    padding: 2px 7px 2px 7px;
+    border-radius: 100px;
+    background-color: #5CC05C;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    height: max-content;
+}
+
+.stageinfodatasources {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.datasourceLevellabel {
+    font-weight: 600;
+}
+
+.datasourcelevel {
+    width: 250px;
+}
+
+.journeywrapper {
+    display: flex;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.stageinfopanel {
+ padding: 15px !important;
+ background-color: #FFFFFF;
+}
+
+.stage {
+    float: right;
+    font-size: 14px;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    color: #000000;
+    padding: 13px;
+    margin: 0px;
+    cursor: pointer;
+    height: 100px;
+}
+
+.journeylevelgrayedout {
+    color: #818D99;
+}
+
+.topstagename {
+    line-height: 1em;
+    float: left;
+    text-align: right;
+    width: 330px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.stagename {
+    line-height: 15.5em;
+    float: right;
+    text-align: right;
+    width: 100px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    padding: 0px 30px 0px 0px
+}
+
+.stage6 {
+    width: 200px;
+    background-color: #937AB1;
+}
+
+.stage6dark {
+    width: 200px;
+    background-color: #d2cade;
+}
+
+.stage5 {
+    width: 300px;
+    background-color: #CD675D;
+}
+
+.stage5dark {
+    width: 300px;
+    background-color: #e4c3c0;
+}
+
+.stage4 {
+    width: 330px;
+    background-color: #7ECD7E;
+;
+}
+
+.stage4dark {
+    width: 330px;
+    background-color: #E1E6EB;
+}
+
+.stage3 {
+    width: 430px;
+    background-color: #9ED99E;
+}
+
+.stage3dark {
+    width: 430px;
+    background-color: #E1E6EB;
+}
+
+.stage2 {
+    width: 530px;
+    background-color: #BEE6BE;
+}
+
+.stage2dark {
+    width: 530px;
+    background-color: #E1E6EB;
+}
+
+.stage1 {
+    width: 630px;
+    background-color: #DFF2DF;
+}
+
+.stage1dark {
+    width: 630px;
+    background-color: #E1E6EB;
+}
+
+.slidercell {
+    padding-right: 10px;
+    padding-left: 10px;
+}
+
+.numberCircle {
+    border-radius: 50%;
+    behavior: url(PIE.htc);
+    /* remove if you don't care about IE8 */
+    width: 36px;
+    height: 36px;
+    padding: 0px;
+    background: #777777;
+    border: 0px solid #666;
+    color: #ffffff;
+    text-align: center;
+    font: 32px Arial, sans-serif;
+    float: left;
+    margin-top: 40px;
+}
+
+.selectedstage {
+    line-height: 1.5em;
+    float: left;
+    padding-right: 3px;
+    margin-top: 40px;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.usecasediv {
+    padding-top: 50px;
+    padding-bottom: 30px;
+    border: 0px solid black;
+    clear: both;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.column {
+    float: left;
+    border: 0px solid black;
+    padding: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.usecasetext {
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-weight: bold;
+    font-size: 14px;
+    margin-left: 40px;
+}
+
+.flatharvey {
+    margin-left: 37px;
+    padding-top: 6px;
+    padding-bottom: 33px;
+}
+
+.flatharveydashblue {
+    width: 60px;
+    height: 6px;
+    background-color: #66a3ff;
+    border-radius: 3px 3px 3px 3px;
+    float: left;
+    margin: 3px;
+}
+
+.flatharveydashgray {
+    width: 60px;
+    height: 6px;
+    background-color: #dddddd;
+    border-radius: 3px 3px 3px 3px;
+    float: left;
+    margin: 3px;
+}
+
+.stageinfo {
+    border-radius: 25px;
+    background: #ffffff;
+    padding: 0px;
+    margin-top: 20px;
+    margin-right: 0px;
+    color: #3C444D;
+    margin-bottom: 10px;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.stageinfowide {
+    border-radius: 25px;
+    background: #ffffff;
+    padding: 0px;
+    width: 1325px;
+    margin-top: 10px;
+    margin-right: 5px;
+    color: #000000;
+    margin-bottom: 10px;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.stageinfoheader {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: bold;
+}
+
+.stageinfocontent {
+    font-size: 14px;
+    font-weight: normal;
+}
+
+.datasources {
+    border-radius: 25px;
+    background: #ffffff;
+    padding: 20px;
+    width: 330px;
+    height: 200px;
+    margin-top: 20px;
+    margin-right: 10px;
+    color: #000000;
+    margin-bottom: 10px;
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.dontshow {
+    display: none;
+}
+
+.datasourcetable td {
+    border: 1px solid #dddddd;
+    padding: 10px;
+}

@@ -1,0 +1,128 @@
+[
+    {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Median Absolute Deviation to look for outliers in login information.",
+        "industries": [
+            "security"
+        ],
+        "name": "Employee Logins (prediction errors)",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Number of Logins (vs. Predicted Value)"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Random Forest Classifier algorithm to predict business process anomalies from fields related to computer logs.",
+        "industries": [
+            "business_analytics"
+        ],
+        "name": "External Anomalies",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict External Anomalies"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict future logins from three other fields.",
+        "industries": [
+            "it"
+        ],
+        "name": "Future Logins",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future Logins"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access via the VPN from twelve other fields. In this example time is categorical.",
+        "industries": [
+            "it"
+        ],
+        "name": "Future VPN Categorical",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future VPN Usage (categorical time)"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access via the VPN from thirteen other fields. In this example time is sinusoidal.",
+        "industries": [
+            "it"
+        ],
+        "name": "Future VPN Sinusoidal",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future VPN Usage (sinusoidal time)"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict disk failure from fields including hard drive model.",
+        "industries": [
+            "it"
+        ],
+        "name": "Disk Failures",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Hard Drive Failure"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict median house value from fields including crime rate, land zone, average rooms per dwelling, and property tax rate.",
+        "industries": [
+            "business_analytics"
+        ],
+        "name": "Housing",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Median House Value"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict energy output values from the values for humidity, pressure, temperature, and vacuum.",
+        "industries": [
+            "iot"
+        ],
+        "name": "Power Plant",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Power Plant Energy Output"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict AC power consumption from fields including CPU utilization, disk utilization, and unhalted core cycles.",
+        "industries": [
+            "it"
+        ],
+        "name": "Server Power",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Server Power Consumption"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict customer churn from fields including daytime minutes, nighttime minutes, and voicemail plan.",
+        "industries": [
+            "business_analytics"
+        ],
+        "name": "Churn",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Telecom Customer Churn"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict the response of diabetes from six other fields including BMI, age, blood pressure, and glucose concentration.",
+        "industries": [
+            "health"
+        ],
+        "name": "Diabetes",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict the Presence of Diabetes"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict malware from fields including bytes received, bytes sent, and destination port.",
+        "industries": [
+            "security"
+        ],
+        "name": "Malware",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict the Presence of Malware"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the LogisticRegression algorithm to predict vehicle type from seven other fields including battery voltage, engine coolant temperature, and speed.",
+        "industries": [
+            "iot"
+        ],
+        "name": "Race Cars",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Vehicle Make and Model"
+    },
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access to the VPN from four other fields.",
+        "industries": [
+            "security"
+        ],
+        "name": "App Usage",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict VPN Usage"
+    }
+]

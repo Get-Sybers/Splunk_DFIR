@@ -1,0 +1,91 @@
+# ============================
+# 🛑 Ignore all files inside processed/raw DFIR directories
+# ============================
+
+# JSON / JSN (log2timeline, Plaso, memory forensic outputs)
+**.[Jj][Ss][Oo][Nn]
+**.[Jj][Ss][Nn]
+
+# XML 
+**.[Xx][Mm][Ll]
+
+# Log files (Zeek, Sysmon, Event Logs, Forensic Logs)
+**.[Ll][Oo][Gg]
+
+# Text files (Event logs, timestamps, forensic reports)
+**.[Tt][Xx][Tt]
+
+# CSV files (timeline outputs, forensic exports)
+**.[Cc][Ss][Vv]
+
+# SQLite databases (Plaso, KAPE, forensic tools)
+**.[Ss][Qq][Ll][Ii][Tt][Ee]
+**.[Dd][Bb]
+**.[Ss][Qq][Ll][Ii][Tt][Ee]3
+
+# Memory dumps (Volatility, DumpIt, raw memory captures)
+**.[Vv][Mm][Ee][Mm]
+**.[Vv][Mm][Ss][Nn]
+**.[Rr][Aa][Ww]
+**.[Dd][Mm][Pp]
+**.[Mm][Dd][Mm][Pp]
+
+# PCAP files (Network traffic captures, Zeek, Suricata)
+**.[Pp][Cc][Aa][Pp]
+**.[Pp][Cc][Aa][Pp][Nn][Gg]
+**.[Cc][Aa][Pp]
+
+# Disk images (Forensic disk captures - EnCase, raw, AFF)
+**.[Ee]01
+**.[Ee][Xx]01
+**.[Ll]01
+**.[Ll][Xx]01
+**.[Aa][Ff][Ff]
+**.[Ss]01
+**.[Vv][Hh][Dd]
+**.[Vv][Hh][Dd][Xx]
+**.[Dd][Dd]
+
+# Prefetch files (Windows forensics)
+**.[Pp][Ff]
+
+# Windows Registry hives (NTUSER.dat, SYSTEM, SOFTWARE, etc.)
+**.[Dd][Aa][Tt]
+**.[Rr][Ee][Gg]
+
+# Windows Event Logs (EVTX)
+**.[Ee][Vv][Tt][Xx]
+
+# Shadow copies & system restore points
+**.[Vv][Ss][Ss]
+
+# Hibernation & page files (Windows)
+**.[Hh][Ii][Bb][Ee][Rr][Ff][Ii][Ll].[Ss][Yy][Ss]
+**.[Pp][Aa][Gg][Ee][Ff][Ii][Ll][Ee].[Ss][Yy][Ss]
+**.[Ss][Ww][Aa][Pp]
+
+# Email archives (OST, PST, MBOX)
+**.[Pp][Ss][Tt]
+**.[Oo][Ss][Tt]
+**.[Mm][Bb][Oo][Xx]
+
+# Executable & malicious binary dumps (malware, analysis)
+**.[Ee][Xx][Ee]
+**.[Dd][Ll][Ll]
+**.[Bb][Ii][Nn]
+**.[Ss][Yy][Ss]
+**.[Ii][Mm][Gg]
+
+# Compressed archives (zipped forensic packages)
+**.[Zz][Ii][Pp]
+**.[7][Zz]
+**.[Tt][Aa][Rr]
+**.[Gg][Zz]
+**.[Xx][Zz]
+**.[Rr][Aa][Rr]
+
+# Misc forensic artifacts (Rekall, Volatility, memory analysis)
+**.[Jj][Ss][Oo][Nn][Ll]
+**.[Nn][Dd][Jj][Ss][Oo][Nn]
+**.[Mm][Ss][Gg][Pp][Aa][Cc][Kk]
+**.[Tt][Ii][Mm][Ee][Ll][Ii][Nn][Ee]

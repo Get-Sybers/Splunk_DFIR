@@ -1,0 +1,4 @@
+1. Objective:
+  The specialdays specifies the field that indicates effects due to special days such as holidays.The file contains the list of US Holidays for the year 2018 and 2019.
+
+2. License: Splunk Owned

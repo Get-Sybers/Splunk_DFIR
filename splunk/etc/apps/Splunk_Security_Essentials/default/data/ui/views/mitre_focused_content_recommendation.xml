@@ -1,0 +1,128 @@
+<form version="1.1" script="runPageScript.js">
+  <init>
+    <set token="showIntro">1</set>
+  </init>
+  <label>MITRE ATT&amp;CK-Driven Content Recommendation</label>
+  <search id="data_inventory_built">
+    <query>| inputlookup data_inventory_products_lookup | search stage="all-done" </query>
+    <done>
+      <condition match="$job.resultCount$>0">
+        <unset token="dataInventoryNotBuilt">1</unset>
+        <set token="dataInventoryBuilt">1</set>
+      </condition>
+      <condition match="$job.resultCount$=0">
+        <set token="dataInventoryNotBuilt">1</set>
+        <unset token="dataInventoryBuilt">1</unset>
+        <set token="data_available">*</set>
+        <set token="form.data_available">*</set>
+      </condition>
+    </done>
+  </search>
+  <search id="listOfContent">
+    <query>
+      |sseanalytics | table * 
+    </query>
+  </search>
+  <search id="focusedList" base="listOfContent">
+    <query>
+      | search $categories$ $data_available$ $popularity$
+    </query>
+    <done>
+      <set token="allready">1</set>
+      <unset token="showIntro"></unset>
+    </done>
+    <progress>
+      <unset token="allready"></unset>
+      
+      <set token="showIntro">1</set>
+    </progress>
+  </search>
+  <search id="listOfMITRE" base="listOfContent">
+    <query>
+      | search mitre_technique!=""
+    </query>
+  </search>
+  <search id="listOfMITREDA" base="listOfContent">
+    <query>
+      | search mitre_technique!="" $data_available$
+    </query>
+  </search>
+  <search id="listOfMITREDAPopular" base="listOfContent">
+    <query>
+      | search mitre_technique!="" $data_available$ $popularity$
+    </query>
+  </search>
+  <fieldset submitButton="false">
+    <input type="multiselect" token="categories" searchWhenChanged="true">
+      <label>Categories</label>
+      <valuePrefix>category="</valuePrefix>
+      <valueSuffix>"</valueSuffix>
+      <delimiter> OR </delimiter>
+      <fieldForLabel>category</fieldForLabel>
+      <fieldForValue>category</fieldForValue>
+      <search>
+        <query>| sseanalytics | stats count by category | search category!=""</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="data_available">
+      <label>Content with Available Data</label>
+      <choice value="data_available=&quot;good&quot;">Available Data Only</choice>
+      <choice value="*">All Content</choice>
+      <default>data_available="good"</default>
+    </input>
+    <input type="dropdown" token="popularity" searchWhenChanged="true">
+      <label>Popularity w/ Threat Groups</label>
+      <choice value="mitre_techniques_avg_group_popularity&gt;=10">Very: &gt;= 10 Groups</choice>
+      <choice value="mitre_techniques_avg_group_popularity&gt;=3">Fairly: &gt;= 3 Groups</choice>
+      <choice value="mitre_techniques_avg_group_popularity&gt;0">Used: &gt;0 Groups</choice>
+      <choice value="*">All Content</choice>
+      <default>mitre_techniques_avg_group_popularity&gt;=3</default>
+    </input>
+  </fieldset>
+  <row depends="$showIntro$">
+    <panel>
+      <title>Intro</title>
+      <html>
+        <p>This page will provide specific content recommendations based on your needs and your available data. To give you a good starting point, it also pulls in MITRE ATT&amp;CK and shows only the Splunk content that is mapped to ATT&amp;CK Techniques that MITRE has shown to be popular with multiple threat groups.</p>
+      <p>To get started, select a content category in the dropdown above. If desired, you can disabled the data availability filter, and use the popularity filter to show more or less content.</p>
+      </html>
+    </panel>
+  </row>
+  <row depends="$allready$">
+    <panel>
+      <html>
+        <div id="allEventsTab"></div>
+      </html>
+    </panel>
+  </row>
+  <row depends="$allready$">
+    <panel>
+      <title>Total Content</title>
+      <single>
+        <search base="listOfContent">
+          <query>| stats count</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <title>Content that Meets Your Criteria</title>
+      <single>
+        <search base="focusedList">
+          <query>| stats count</query>
+        </search>
+      </single>
+    </panel>
+  </row>
+  <row depends="$allready$">
+    <panel>
+      <title>Content List</title>
+      <html>
+        <div id="content_list">
+          
+        </div>
+      </html>
+    </panel>
+  </row>
+</form>

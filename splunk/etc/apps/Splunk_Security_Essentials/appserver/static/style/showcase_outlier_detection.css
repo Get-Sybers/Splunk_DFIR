@@ -1,0 +1,31 @@
+#singleOutliersPanel .mlts-panel-body, #singleResultsPanel .mlts-panel-body {
+    height: 115px;
+}
+
+#windowedAnalysisControlWrapper .checkbox input[type="checkbox"] {
+    margin-top: 2px;
+}
+
+#windowSizeControl {
+    display: inline-block;
+}
+
+#windowSizeControl input[type="text"] {
+    width: 50px;
+}
+
+#windowSizeControl .checkbox {
+    min-height: 26px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+#outliersPanelMessage {
+    display: none;
+    text-align: center;
+}
+
+.panel-footer {
+    display: none;
+}

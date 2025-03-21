@@ -1,0 +1,125 @@
+{
+  "version": "1.0",
+  "date": "2024-10-24T06:51:16.853304097Z",
+  "hashAlgorithm": "SHA-256",
+  "app": {
+    "id": 5709,
+    "version": "4.0.2",
+    "files": [
+      {
+        "path": "LICENSES/LicenseRef-Splunk-8-2021.txt",
+        "hash": "37906d637abbbeca35cfb2efcb658cabbc0208d101848372c1e55fbf9ba62e47"
+      },
+      {
+        "path": "README.txt",
+        "hash": "1d47a12b4459a93e70bbaabff5dbdd9f1df38b75013361bd7c2cd05758cbe0e3"
+      },
+      {
+        "path": "THIRDPARTY",
+        "hash": "d717222ccef965fc0cbfd2e72c2e976f6dec9e2125466ae59d16a299032c19a6"
+      },
+      {
+        "path": "VERSION",
+        "hash": "337cbaa99290191201ea6523322b1a832fe0313aeea1ba677e504586397066f9"
+      },
+      {
+        "path": "app.manifest",
+        "hash": "6b55069be1a2ce8e30c9d26407b3e77cda896a1b43d8bc94cfa9f9c27cde4edc"
+      },
+      {
+        "path": "default/app.conf",
+        "hash": "f540a447a53bba2edb28f69ae49d1ccba900163eba11d79baebaf4296b8aa601"
+      },
+      {
+        "path": "default/eventtypes.conf",
+        "hash": "5839d3d47a3a52b7cda5bb3096f65d959ed230449c1edeeae46349abe1fdba22"
+      },
+      {
+        "path": "default/inputs.conf",
+        "hash": "4fb6549cc51fe89b28b045f7b94bc3f8b18b217402e65690aaa72c3f936fcc7f"
+      },
+      {
+        "path": "default/props.conf",
+        "hash": "252de45f01d30beac0f8955523d531f0ce84aea4bb0b207e723da5f242032357"
+      },
+      {
+        "path": "default/tags.conf",
+        "hash": "1db57f434fafad1ab87ba7caa95c8158336f34a4333672842f43bfea024d737d"
+      },
+      {
+        "path": "default/transforms.conf",
+        "hash": "b3ceba2f1d327a351beaa225de461feab4aa2a271013cb0abf9a884355e0d315"
+      },
+      {
+        "path": "lookups/microsoft_sysmon_eventcode.csv",
+        "hash": "6a3f5abae66d44de76537760c722a988f0747080bf766afdf49d99fd10c1ef41"
+      },
+      {
+        "path": "lookups/microsoft_sysmon_record_type_402.csv",
+        "hash": "087a3b97acdcbbc10b1591b75edff540292b468e13ca0dcbb1af86ae9f6003a9"
+      },
+      {
+        "path": "metadata/default.meta",
+        "hash": "fd263009d509641fa98cdbf47d6dacd88c650a1883b66f97289538e88de21c0c"
+      },
+      {
+        "path": "static/appIcon.png",
+        "hash": "6cb62d7fd2d90e69d66c3e4fbede9692f9d650176a7a9ec06edd4026f1de580a"
+      },
+      {
+        "path": "static/appIconAlt.png",
+        "hash": "6cb62d7fd2d90e69d66c3e4fbede9692f9d650176a7a9ec06edd4026f1de580a"
+      },
+      {
+        "path": "static/appIconAlt_2x.png",
+        "hash": "d7ad6f1263583f5b280b52be4f8806b0d22a4aa6e328a0209212697b6734570c"
+      },
+      {
+        "path": "static/appIcon_2x.png",
+        "hash": "d7ad6f1263583f5b280b52be4f8806b0d22a4aa6e328a0209212697b6734570c"
+      }
+    ]
+  },
+  "products": [
+    {
+      "platform": "splunk",
+      "product": "enterprise",
+      "versions": [
+        "9.1",
+        "9.2",
+        "9.3"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    },
+    {
+      "platform": "splunk",
+      "product": "cloud",
+      "versions": [
+        "9.1",
+        "9.2",
+        "9.3"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    }
+  ]
+}

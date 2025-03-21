@@ -1,0 +1,24 @@
+[props]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[transforms]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[inputs]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[lookups/modules.csv]
+access = read : [ * ], write : [ * ]
+export = system
+owner = nobody
+version = 9.4.1
+modtime = 1742108879.922150000
+
+[]
+access = read : [ * ], write : [ * ]
+export = system
+version = 9.4.1
+modtime = 1742547529.563741000

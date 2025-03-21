@@ -1,0 +1,2 @@
+field,fieldName,fieldDescription,required,header,sortOrder,type
+description,Description,Optional Description for Product,false,Metadata,1,textarea

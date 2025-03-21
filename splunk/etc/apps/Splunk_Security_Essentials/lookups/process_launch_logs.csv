@@ -1,0 +1,92 @@
+_time,host,EventCode,user,New_Process_ID,New_Process_Name
+2016-11-02T13:13:45.000-0700,USEXCH-2,4688,USEXCH-2$,0xef8,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-02T12:54:47.000-0700,USEXCH-2,4688,USEXCH-2$,0x1630,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T12:11:47.000-0700,USEXCH-2,4688,USEXCH-2$,0x1514,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T23:51:57.000-0700,USEXCH-2,4688,USEXCH-2$,0xd34,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-01T23:46:56.000-0700,USEXCH-1,4688,USEXCH-1$,0xbc4,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T05:07:57.000-0700,USEXCH-2,4688,USEXCH-2$,0xe3c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T21:52:58.000-0700,USEXCH-2,4688,USEXCH-2$,0xd28,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-02T13:17:45.000-0700,USEXCH-2,4688,USEXCH-2$,0x658,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-02T12:22:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x104c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T00:00:06.000-0700,USEXCH-2,4688,USEXCH-2$,0x1124,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T08:32:45.000-0700,USEXCH-2,4688,USEXCH-2$,0x13f8,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-02T09:54:48.000-0700,USEXCH-2,4688,USEXCH-2$,0x1004,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-02T08:12:16.000-0700,USEXCH-2,4688,USEXCH-2$,0xc48,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T11:33:44.000-0700,USEXCH-2,4688,USEXCH-2$,0x1444,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T12:18:57.000-0700,USEXCH-1,4688,USEXCH-1$,0xb18,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-02T11:32:56.000-0700,USEXCH-1,4688,USEXCH-1$,0xb20,C:\Windows\System32\cmd.exe
+2016-11-02T07:11:56.000-0700,USEXCH-1,4688,USEXCH-1$,0xe9c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-netmon.exe
+2016-11-02T05:27:44.000-0700,USEXCH-2,4688,USEXCH-2$,0x9c0,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winhostinfo.exe
+2016-11-02T05:06:56.000-0700,USEXCH-1,4688,USEXCH-1$,0xed8,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-02T12:59:09.000-0700,USEXCH-1,4688,USEXCH-1$,0x104c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T13:09:19.000-0700,USEXCH-1,4688,USEXCH-1$,0x11f8,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T02:41:36.000-0700,USEXCH-1,4688,USEXCH-1$,0x788,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T01:11:37.000-0700,USEXCH-1,4688,USEXCH-1$,0x2b4,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-01T22:59:56.000-0700,USEXCH-1,4688,USEXCH-1$,0xa24,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-01T20:31:46.000-0700,USEXCH-2,4688,USEXCH-2$,0x1320,C:\Program Files\SplunkUniversalForwarder\bin\splunk-admon.exe
+2016-11-02T03:52:57.000-0700,USEXCH-1,4688,USEXCH-1$,0x1ad8,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T01:41:56.000-0700,USEXCH-2,4688,USEXCH-2$,0xc98,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-02T10:32:48.000-0700,USEXCH-2,4688,USEXCH-2$,0x1760,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T09:01:48.000-0700,USEXCH-2,4688,USEXCH-2$,0x16c4,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T10:24:16.000-0700,USEXCH-2,4688,USEXCH-2$,0x1128,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T08:46:48.000-0700,USEXCH-2,4688,USEXCH-2$,0x17b8,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-02T08:13:12.000-0700,USEXCH-1,4688,USEXCH-1$,0xe14,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T06:14:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x1334,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-01T21:01:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x96c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T18:24:59.000-0700,USEXCH-1,4688,USEXCH-1$,0x1a60,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-02T06:44:35.000-0700,USEXCH-2,4688,USEXCH-2$,0xab4,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T05:13:06.000-0700,USEXCH-2,4688,USEXCH-2$,0x16e8,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T16:57:06.000-0700,USEXCH-2,4688,USEXCH-2$,0xb5c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-MonitorNoHandle.exe
+2016-11-02T06:08:57.000-0700,USEXCH-1,4688,USEXCH-1$,0x1b1c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-02T04:12:06.000-0700,USEXCH-2,4688,USEXCH-2$,0x1214,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-02T04:09:46.000-0700,USEXCH-2,4688,USEXCH-2$,0xe5c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-02T00:23:56.000-0700,USEXCH-2,4688,USEXCH-2$,0xa6c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-02T00:16:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x19f0,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T16:14:00.000-0700,USEXCH-1,4688,USEXCH-1$,0x16ac,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T19:29:47.000-0700,USEXCH-2,4688,USEXCH-2$,0xb68,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-02T03:30:06.000-0700,USEXCH-2,4688,USEXCH-2$,0xd68,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-MonitorNoHandle.exe
+2016-11-02T02:26:37.000-0700,USEXCH-1,4688,USEXCH-1$,0xd94,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T01:18:00.000-0700,USEXCH-1,4688,USEXCH-1$,0xb58,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-02T11:24:11.000-0700,USEXCH-1,4688,USEXCH-1$,0xf4,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T10:06:45.000-0700,USEXCH-2,4688,USEXCH-2$,0x1750,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T15:03:57.000-0700,USEXCH-1,4688,USEXCH-1$,0xad4,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-02T07:44:44.000-0700,USEXCH-2,4688,USEXCH-2$,0x1148,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-01T19:37:58.000-0700,USEXCH-1,4688,USEXCH-1$,0x1a40,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-01T19:37:56.000-0700,USEXCH-2,4688,USEXCH-2$,0xb34,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winhostinfo.exe
+2016-11-01T18:14:56.000-0700,USEXCH-2,4688,USEXCH-2$,0x1258,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T16:37:59.000-0700,USEXCH-1,4688,USEXCH-1$,0x394,C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+2016-11-01T16:37:59.000-0700,USEXCH-1,4688,USEXCH-1$,0xc91,C:\Windows\System32\sc.exe
+2016-11-01T16:38:01.000-0700,USEXCH-1,4688,USEXCH-1$,0x3de,C:\Windows\System32\net.exe
+2016-11-01T16:38:01.000-0700,USEXCH-1,4688,USEXCH-1$,0xfc1,C:\Windows\System32\quser.exe
+2016-11-01T16:38:01.000-0700,USEXCH-1,4688,USEXCH-1$,0x38a,C:\Windows\System32\tasklist.exe
+2016-11-01T16:38:02.000-0700,USEXCH-1,4688,USEXCH-1$,0x83b,C:\Windows\System32\ipconfig.exe
+2016-11-01T16:37:00.000-0700,USEXCH-1,4688,USEXCH-1$,0x35c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-01T16:21:36.000-0700,USEXCH-2,4688,USEXCH-2$,0xd4,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-MonitorNoHandle.exe
+2016-11-01T17:49:36.000-0700,USEXCH-2,4688,USEXCH-2$,0x11b0,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-01T16:51:00.000-0700,USEXCH-1,4688,USEXCH-1$,0x1830,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winprintmon.exe
+2016-11-02T05:35:35.000-0700,USEXCH-1,4688,USEXCH-1$,0xe6c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-regmon.exe
+2016-11-01T19:05:36.000-0700,USEXCH-2,4688,USEXCH-2$,0x848,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T18:08:00.000-0700,USEXCH-1,4688,USEXCH-1$,0x624,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-01T17:17:41.000-0700,USEXCH-1,4688,USEXCH-1$,0x9cc,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T14:50:57.000-0700,USEXCH-1,4688,USEXCH-1$,0x1850,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-01T13:30:57.000-0700,USEXCH-2,4688,USEXCH-2$,0x994,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T08:07:47.000-0700,USEXCH-2,4688,USEXCH-2$,0xb3c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T01:45:56.000-0700,USEXCH-2,4688,USEXCH-2$,0xa20,C:\Program Files\SplunkUniversalForwarder\bin\splunk-admon.exe
+2016-11-02T01:43:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x16dc,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T23:55:44.000-0700,USEXCH-2,4688,USEXCH-2$,0x12c4,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T23:14:56.000-0700,USEXCH-2,4688,USEXCH-2$,0x1368,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T23:04:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x12c4,C:\Program Files\SplunkUniversalForwarder\bin\splunk-MonitorNoHandle.exe
+2016-11-01T18:30:06.000-0700,USEXCH-2,4688,USEXCH-2$,0xcb0,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T17:35:05.000-0700,USEXCH-2,4688,USEXCH-2$,0x1710,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-MonitorNoHandle.exe
+2016-11-01T17:20:33.000-0700,USEXCH-1,4688,USEXCH-1$,0x16b4,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winhostinfo.exe
+2016-11-02T12:47:50.000-0700,USEXCH-2,4688,USEXCH-2$,0x116c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-02T10:57:58.000-0700,USEXCH-1,4688,USEXCH-1$,0x13bc,C:\Program Files\SplunkUniversalForwarder\bin\splunk-netmon.exe
+2016-11-02T07:29:46.000-0700,USEXCH-2,4688,USEXCH-2$,0x6a8,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-01T23:38:45.000-0700,USEXCH-2,4688,USEXCH-2$,0xa20,C:\Program Files\SplunkUniversalForwarder\bin\splunk-powershell.exe
+2016-11-01T22:11:56.000-0700,USEXCH-1,4688,USEXCH-1$,0x404,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-02T06:22:46.000-0700,USEXCH-2,4688,USEXCH-2$,0x125c,C:\Program Files\SplunkUniversalForwarder\bin\splunk-admon.exe
+2016-11-02T03:57:45.000-0700,USEXCH-2,4688,USEXCH-2$,0xab0,C:\Program Files\SplunkUniversalForwarder\bin\splunk-netmon.exe
+2016-11-01T17:47:59.000-0700,USEXCH-1,4688,USEXCH-1$,0xf40,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-winhostinfo.exe
+2016-11-01T15:05:06.000-0700,USEXCH-2,4688,USEXCH-2$,0xf8c,C:\Program Files\SplunkForwarderForSplunkInc\bin\splunk-netmon.exe
+2016-11-01T14:28:57.000-0700,USEXCH-2,4688,USEXCH-2$,0x138,C:\Program Files\SplunkUniversalForwarder\bin\splunk-winprintmon.exe
+2016-11-01T14:16:12.000-0700,USEXCH-2,4688,USEXCH-2$,0x838,C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe

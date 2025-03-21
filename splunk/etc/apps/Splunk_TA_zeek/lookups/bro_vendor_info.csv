@@ -1,0 +1,3 @@
+sourcetype, vendor, product
+bro_*, Corelight, OS_Zeek
+bro:*, Corelight, OS_Zeek

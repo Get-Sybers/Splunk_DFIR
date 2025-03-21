@@ -1,0 +1,17 @@
+sourcetype,transport,protocol
+bro_ssh,tcp,
+bro_ftp,tcp,
+bro_smtp,tcp,smtp
+bro_ssl,tcp,
+bro_smtp_entities,tcp,
+bro_http,tcp,
+bro_dhcp,udp,
+bro_conn,tcp,
+bro:ssh:json,tcp,
+bro:ftp:json,tcp,
+bro:smtp:json,tcp,smtp
+bro:ssl:json,tcp,
+bro:smtp_entities:json,tcp,
+bro:http:json,tcp,
+bro:dhcp:json,udp,
+bro:conn:json,tcp,

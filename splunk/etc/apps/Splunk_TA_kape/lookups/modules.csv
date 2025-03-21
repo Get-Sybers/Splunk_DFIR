@@ -1,0 +1,6 @@
+file_extension, module
+.pf, PECmd
+.lnk , LECmd
+.evtx, EvtxECmd
+.automaticDestinations-ms, FileFolderAccess
+.customDestinations-ms, FileFolderAccess

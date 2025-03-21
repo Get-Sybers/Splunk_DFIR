@@ -1,0 +1,17 @@
+[props]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[transforms]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[inputs]
+export = system
+access = read : [ * ], write : [ admin ]
+
+[]
+access = read : [ * ], write : [ * ]
+export = system
+version = 9.4.1
+modtime = 1742547518.438779000

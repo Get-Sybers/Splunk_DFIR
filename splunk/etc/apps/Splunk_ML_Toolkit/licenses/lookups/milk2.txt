@@ -1,0 +1,8 @@
+1. Objective:
+  This dataset is used for development and illustration of the StateSpaceForecast algorithm.
+
+2. License:
+  Derived from milk.csv, which has Splunk legal approval.
+
+4. Data Set Information:
+  Derived from the milk.csv dataset. The only difference is that milk2.csv adds a new column named 'holiday'. This column has two values: 0 and 1, with 0 means no holiday and 1 means a holiday for the associated date. The 1 values were set randomly.

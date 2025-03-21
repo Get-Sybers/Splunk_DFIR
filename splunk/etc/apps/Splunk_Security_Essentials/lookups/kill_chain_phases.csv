@@ -1,0 +1,8 @@
+title,order,order_title
+Reconnaissance,1,1_Reconnaissance
+Weaponization,2,2_Weaponization
+Delivery,3,3_Delivery
+Exploitation,4,4_Exploitation
+Installation,5,5_Installation
+Command and Control,6,6_Command and Control
+Actions On Objectives,7,7_Actions On Objectives

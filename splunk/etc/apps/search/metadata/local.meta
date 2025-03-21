@@ -1,0 +1,29 @@
+[indexes/misc]
+owner = admin
+version = 9.4.1
+modtime = 1742026020.900357000
+
+[indexes/host]
+owner = admin
+version = 9.4.1
+modtime = 1742545840.680791000
+
+[indexes/network]
+owner = admin
+version = 9.4.1
+modtime = 1742545854.093832000
+
+[inputs/monitor%3A%2F%2F%2Fdata%2Fprocessed%2Fjson%2F%2A.json]
+owner = admin
+version = 9.4.1
+modtime = 1742026025.721114000
+
+[inputs/monitor%3A%2F%2F%2Fdata%2Fprocessed%2Fcsv%2F%2A.csv]
+owner = admin
+version = 9.4.1
+modtime = 1742026067.610813000
+
+[inputs/monitor%3A%2F%2F%2Fdata%2Fprocessed%2Fmisc_logs%2F%2A%2A%2F%2A%2A%2F%2A%2A%2F%2A.log]
+owner = admin
+version = 9.4.1
+modtime = 1742026373.044158000

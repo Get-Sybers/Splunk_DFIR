@@ -1,0 +1,433 @@
+<form script="runPageScript.js" version="1.1">
+  <label>Analyze ES Risk Attributions</label>
+  <search id="systemwidemetrics">
+    <query>| sseanalytics 
+| search search_title!="" 
+| multireport 
+    [| stats dc(search_title) as count 
+    | eval item="# of Detections"] 
+    [| stats dc(mitre_technique) as count 
+    | eval item="# of MITRE ATT&amp;CK Techniques"] 
+    [| stats dc(mitre_tactic) as count 
+    | eval item="# of MITRE ATT&amp;CK Tactics"] 
+    [| stats dc(mitre_technique) as count 
+    | appendcols 
+        [| mitremap 
+        | eval items =null 
+        | foreach * 
+            [| eval items=if("&lt;&lt;FIELD&gt;&gt;" != "items",mvappend(items, '&lt;&lt;FIELD&gt;&gt;'), items)] 
+        | fields items 
+        | stats values(items) as items 
+        | eval items=mvcount(items)] 
+    | eval count=round(100*count/items, 2), item="% of MITRE ATT&amp;CK Coverage"] 
+| stats sum(count) as count by item | table *</query>
+    <earliest>-24h@h</earliest>
+    <latest>now</latest>
+  </search>
+  <search id="events">
+    <query>index=risk $criteria$ | table *</query>
+    <earliest>$timepicker.earliest$</earliest>
+    <latest>$timepicker.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="text" token="criteria" searchWhenChanged="true">
+      <label>Search Critera</label>
+      <default>*</default>
+    </input>
+    <input type="time" token="timepicker">
+      <label></label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>System-wide Metrics</title>
+      <single>
+        <title># of Detections</title>
+        <search base="systemwidemetrics">
+          <query>| search item="# of Detections"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single>
+        <title># of MITRE ATT&amp;CK Techniques</title>
+        <search base="systemwidemetrics">
+          <query>| search item="# of MITRE ATT&amp;CK Techniques"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single>
+        <title># of MITRE ATT&amp;CK Tactics</title>
+        <search base="systemwidemetrics">
+          <query>| search item="# of MITRE ATT&amp;CK Tactics"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single>
+        <title>% of MITRE ATT&amp;CK Techniques</title>
+        <search base="systemwidemetrics">
+          <query>| search item="% of MITRE ATT&amp;CK Coverage"</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single>
+        <title>Average Risk Object Score</title>
+        <search>
+          <query>index=risk|stats avg(risk_score) as Score</query>
+    <earliest>$timepicker.earliest$</earliest>
+    <latest>$timepicker.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+      <single>
+        <title># Risk Objects</title>
+        <search>
+          <query>index=risk|stats dc(risk_object) as count</query>
+    <earliest>$timepicker.earliest$</earliest>
+    <latest>$timepicker.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,50,100,200]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>MITRE ATT&amp;CK Tactics</title>
+      <single>
+        <search base="events">
+          <query>|rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)"| stats count by mitre_tactic_name | `Init_All_MITRE_Rows(mitre_tactic_name, count)` | stats sum(count) as count by mitre_tactic_name| `Sort_MITRE_Rows(mitre_tactic_name)` | streamstats count as order | eval mitre_tactic_name =  substr("0" . order, len("0" . order) - 1, 3) . ". " . mitre_tactic_name | fields - order | stats values(count) as count by mitre_tactic_name</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>MITRE ATT&amp;CK Matrix</title>
+        <search base="events">
+          <query>| mitremaplookup</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Count of Risk Object Attributions by MITRE ATT&amp;CK Tactic</title>
+      <chart>
+        <search base="events">
+          <query>|rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)"| timechart count by mitre_tactic_name</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Count of Risk Object Attributions by MITRE ATT&amp;CK Technique</title>
+      <chart>
+        <search base="events">
+          <query>|rex field=mitre_technique_combined "- (?&lt;mitre_technique_name&gt;.*)"| timechart count by mitre_technique_name</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+   <row>
+    <panel>
+      <title>Event Timeline for $criteria$</title>
+      <viz type="event-timeline-viz.event-timeline-viz">
+        <search base="events">
+          <query>| rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)" 
+| rex field=mitre_technique_combined "- (?&lt;mitre_technique_name&gt;.*)" 
+| eval tactic_technique_combined=mvzip(mitre_tactic_name,mitre_technique_name,"::") 
+| mvexpand mitre_technique_name
+| eval mitre_tactic_name=if(mvcount(mitre_tactic_combined)=1,mitre_tactic_name, null())
+| lookup mitre_enterprise_list Technique AS mitre_technique_name OUTPUTNEW Tactic AS mitre_tactic_name
+| eval c="If we have multiple Tactics linked to a Technique, just take the first one"
+| eval mitre_tactic_name=if(mvcount(mitre_tactic_combined)&gt;1,mvindex(mitre_tactic_name,0), mitre_tactic_name)
+
+| stats count, values(search_name) AS search_name by _time, risk_object, mitre_tactic_name mitre_technique_name 
+| eval label=mitre_technique_name 
+| eval start=_time 
+| eval group=risk_object 
+| eval tooltip=search_name 
+| eval colorScheme="Olaf" 
+| lookup mitre_color_scheme.csv colorScheme mitre_tactic_name OUTPUT color 
+| head 100 
+| table label, start, end, group, color, tooltip, data</query>
+        </search>
+        <option name="event-timeline-viz.event-timeline-viz.backgroundColor">#ffffff</option>
+        <option name="event-timeline-viz.event-timeline-viz.eventColor">#006d9c</option>
+        <option name="event-timeline-viz.event-timeline-viz.maxZoom">315360000000000</option>
+        <option name="event-timeline-viz.event-timeline-viz.minZoom">1</option>
+        <option name="event-timeline-viz.event-timeline-viz.orientation">top</option>
+        <option name="event-timeline-viz.event-timeline-viz.showCurrentTime">false</option>
+        <option name="event-timeline-viz.event-timeline-viz.sortGroupsBy">name</option>
+        <option name="event-timeline-viz.event-timeline-viz.stack">true</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenAllVisible">tok_et_all_visible</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenData">tok_et_data</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenEnd">tok_et_end</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenLabel">tok_et_label</option>
+        <option name="event-timeline-viz.event-timeline-viz.tokenStart">tok_et_start</option>
+        <option name="event-timeline-viz.event-timeline-viz.tooltipDateFormat">YYYY-MM-DD</option>
+        <option name="event-timeline-viz.event-timeline-viz.tooltipTimeFormat">h:mm:ss A</option>
+        <option name="height">498</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Count of Risk Object Attributions by Risk Object Type</title>
+      <chart>
+        <search base="events">
+          <query>| timechart count by risk_object_type</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Aggregate Risk Attribution Scores by Analytic</title>
+      <table>
+        <search base="events">
+          <query> |rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)"| chart sparkline sum(risk_score) as Score values(mitre_tactic_name)  as "ATT&amp;CK Tactics" by search_name|sort -Score|head 10</query>
+        </search>
+        <option name="count">50</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Aggregate Risk Attribution Scores by Risk Object</title>
+      <table>
+        <search base="events">
+          <query>| search NOT risk_object="unknown"|rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)"| chart sparkline sum(risk_score) as Score values(mitre_tactic_name)  as "ATT&amp;CK Tactics" by risk_object|sort -Score|head 10</query>
+        </search>
+        <option name="count">50</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Score">
+          <colorPalette type="list">[#53A051,#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">25,50,75,100</scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Watch-listed Objects with Risk Attributions</title>
+      <table>
+        <search base="events">
+          <query>| search user_watchlist=true|eval Fullname=user_first+" "+user_last|rex field=mitre_tactic_combined "- (?&lt;mitre_tactic_name&gt;.*)"|rex field=mitre_technique_combined "- (?&lt;mitre_technique_name&gt;.*)"|stats count sum(risk_score) as Score values(user_managedBy) as Manager values(user_identity) as Identities values(user_identity_tag) as Roles values(user_bunit) as BU values(search_name) as Analytics values(mitre_tactic_name) as Tactics values(mitre_technique_name) as Techniques by Fullname</query>
+        </search>
+        <option name="count">50</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,6 @@
+<endpoint name="agent_management_group_details" template="pages/page.html">
+  <header>unused</header>
+  <capabilities>
+    <read>(list_deployment_server AND edit_deployment_server)</read>
+  </capabilities>
+</endpoint>

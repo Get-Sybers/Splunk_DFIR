@@ -1,0 +1,214 @@
+{
+    "modelName": "CAR-Module",
+    "displayName": "CAR Module",
+    "description": "CAR Module Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Module",
+            "displayName": "CAR Module",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "base_address",
+                    "displayName": "base_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for base_address"
+                    }
+                },
+                {
+                    "fieldName": "fqdn",
+                    "displayName": "fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for fqdn"
+                    }
+                },
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "image_path",
+                    "displayName": "image_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for image_path"
+                    }
+                },
+                {
+                    "fieldName": "md5_hash",
+                    "displayName": "md5_hash",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for md5_hash"
+                    }
+                },
+                {
+                    "fieldName": "module_name",
+                    "displayName": "module_name",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for module_name"
+                    }
+                },
+                {
+                    "fieldName": "module_path",
+                    "displayName": "module_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for module_path"
+                    }
+                },
+                {
+                    "fieldName": "pid",
+                    "displayName": "pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for pid"
+                    }
+                },
+                {
+                    "fieldName": "sha1_hash",
+                    "displayName": "sha1_hash",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for sha1_hash"
+                    }
+                },
+                {
+                    "fieldName": "sha256_hash",
+                    "displayName": "sha256_hash",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for sha256_hash"
+                    }
+                },
+                {
+                    "fieldName": "signature_valid",
+                    "displayName": "signature_valid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for signature_valid"
+                    }
+                },
+                {
+                    "fieldName": "signer",
+                    "displayName": "signer",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for signer"
+                    }
+                },
+                {
+                    "fieldName": "tid",
+                    "displayName": "tid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for tid"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Module_load",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "load",
+                            "displayName": "load",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for load",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(load) OR load=\"\", \"unknown\", load)"
+                },
+                {
+                    "calculationID": "CAR_Module_unload",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "unload",
+                            "displayName": "unload",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for unload",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(unload) OR unload=\"\", \"unknown\", unload)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

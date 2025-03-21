@@ -1,0 +1,38 @@
+{
+    "dataFromFit": {
+        "preview": false,
+        "init_offset": 0,
+        "messages": [],
+        "fields": ["_isApply", "outlierCount", "atf_hour_of_day", "source"],
+        "rows": [
+            [null, "5.0", "10", "si_kpi_elements_cti_asgi"],
+            [null, "4.0", "8", "si_kpi_elements_cti_asgi"],
+            [null, "3.0", "11", "si_kpi_elements_sgi"],
+            [null, "3.0", "12", "si_kpi_elements_sgi"],
+            [null, "3.0", "13", "si_kpi_elements_sgi"],
+            [null, "3.0", "14", "si_kpi_elements_sgi"],
+            [null, "2.0", "7", "si_kpi_elements_cti_asgi"],
+            [null, "2.0", "7", "si_kpi_elements_sgi"],
+            [null, "2.0", "9", "si_kpi_elements_sgi"],
+            [null, "1.0", "14", "si_call_volume"]
+        ]
+    },
+    "dataFromApply": {
+        "preview": false,
+        "init_offset": 0,
+        "messages": [],
+        "fields": ["_isApply", "outlierCount", "atf_hour_of_day", "source"],
+        "rows": [
+            ["true", "5.0", "10", "si_kpi_elements_cti_asgi"],
+            ["true", "4.0", "8", "si_kpi_elements_cti_asgi"],
+            ["true", "3.0", "11", "si_kpi_elements_sgi"],
+            ["true", "3.0", "12", "si_kpi_elements_sgi"],
+            ["true", "3.0", "13", "si_kpi_elements_sgi"],
+            ["true", "3.0", "14", "si_kpi_elements_sgi"],
+            ["true", "2.0", "5", "si_kpi_elements_cti_asgi"],
+            ["true", "2.0", "7", "si_kpi_elements_cti_asgi"],
+            ["true", "2.0", "7", "si_kpi_elements_sgi"],
+            ["true", "2.0", "9", "si_kpi_elements_sgi"]
+        ]
+    }
+}

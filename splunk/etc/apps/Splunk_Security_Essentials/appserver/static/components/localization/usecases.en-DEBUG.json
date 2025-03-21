@@ -1,0 +1,79 @@
+{
+   "Application Security" : {
+      "enable" : true,
+      "order" : 5,
+      "id" : "application_security",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/appsec-icon.png",
+      "description" : "+++++++++++ ++++++++ ++ +++ +++ ++ +++++++++ +++++++++ +++ ++++++++++ +++++++ ++ +++++++ ++++++++++++ ++++ ++++++++ +++++++ +++++++++ +++++ +++ +++++++++++ ++ ++++++++++ +++ +++++++ +++++++ +++++ ++ +++++++ ++++++++++++++++ ++++++ +++ ++++ ++++++++ ++++++++++++ ++++++++",
+      "name" : "+++++++++++ ++++++++"
+   },
+   "SOC Automation" : {
+      "enable" : true,
+      "order" : 8,
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/socauto-icon.png",
+      "id" : "soc_automation",
+      "description" : "++++ +++ +++++++++++++++ ++++++ +++ ++++++++++ ++ ++++++++ ++++++++++ + ++++++++++ ++++++++ ++++++++++ ++++++++++ +++ + +++++++ ++++++++ ++ ++++++++ +++++++++ +++ +++++++ +++++ ++ ++++++ ++++++++ ++ +++++++ ++++++ ++++++++++ +++ +++++++++++++ ++ ++++++++ ++++++++++ +++++++++ +++++ +++++++ ++++++++ +++++++++++ ++ +++++++++++ ++++++++++++ ++++++++ +++++++ +++ +++++++++ +++++++ ++ ++++++",
+      "name" : "+++ ++++++++++"
+   },
+   "Fraud Detection" : {
+      "order" : 9,
+      "enable" : false,
+      "name" : "+++++ +++++++++",
+      "id" : "fraud_detection",
+      "description" : ""
+   },
+   "Incident Investigation & Forensics" : {
+      "enable" : false,
+      "order" : 6,
+      "description" : "",
+      "id" : "incident_investigation",
+      "name" : "++++++++ +++++++++++++ + +++++++++"
+   },
+   "Advanced Threat Detection" : {
+      "order" : 2,
+      "enable" : true,
+      "name" : "++++++++ ++++++ +++++++++",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/atd-icon.png",
+      "description" : "++ ++++++++ ++++++ +++++ ++ + +++ ++ ++++++++ +++ ++++++++++ ++++++++ +++++++ ++++++++++ +++++ ++++++++++++ ++ + ++++++ ++ +++++++ +++++++++ + ++++++++ +++++++ ++++ +++++++ +++++++ ++++++ +++++++ ++++++++++++++ ++++++ ++ ++++ +++ ++++++++ ++ +++++++++ ++++++++",
+      "id" : "advanced_threat_detection"
+   },
+   "Compliance" : {
+      "enable" : true,
+      "order" : 4,
+      "id" : "compliance",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png",
+      "description" : "++ ++++++ +++ +++++++++++++ +++++ +++ ++++++++++ ++++++++++++ ++ +++ ++++ ++ +++++++ + ++++ +++++++ ++++ +++ +++++ ++ +++++ ++++++ ++++ ++++ +++ ++++ +++ ++ ++++++++ ++++++++ +++++++++ ++++++ +++++++ +++++++++ ++ ++++++ +++++++++++ +++++ +++ +++++++ ++ ++++++++ +++++++ ++ +++++++++ ++++ ++ +++ +++++++++ +++ ++ +++++++++++++ +++++++++++ +++++++++++",
+      "name" : "++++++++++"
+   },
+   "Insider Threat" : {
+      "name" : "+++++++ ++++++",
+      "description" : "+++++++ +++++++ ++++ ++++ +++++++ ++ ++++++ ++++++++++ ++++++++++++ ++ ++++++++ +++ ++++ ++++++ ++ +++ +++++++++ +++++++ +++ +++++++++++++ ++ ++++++++++++ +++++++++++ ++++++ ++ +++++++ +++++++++ +++++ ++++ +++++ ++++ ++++++++++ ++++++ ++ ++++++ +++ ++++++++ +++++++++ +++++++++ ++++++ +++++++ +++++++++++ ++++++++ +++++++++ +++++++ ++ +++++ ++++++ +++ ++++ ++++ +++++",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/insider-icon.png",
+      "id" : "insider_threat",
+      "order" : 3,
+      "enable" : true
+   },
+   "Incident Response" : {
+      "name" : "++++++++ ++++++++",
+      "id" : "incident_response",
+      "description" : "",
+      "order" : 7,
+      "enable" : false
+   },
+   "Other" : {
+      "order" : 10,
+      "enable" : false,
+      "name" : "+++++",
+      "id" : "other",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/other-icon.png",
+      "description" : "++++ ++++++ ++ +++ ++++++++++ +++++++ +++ ++++++++ ++++ +++++ ++++ ++++++ +++ +++ +++++ +++++++ +++ +++++ +++++++ + +++ ++ ++++++"
+   },
+   "Security Monitoring" : {
+      "description" : "++++++++ ++++++++++++ ++++++++++ +++++++ +++ ++ +++++++ + ++++++++++ ++++++ ++ ++++ +++++++++ +++++++++ ++ +++ +++++ ++ ++++ ++ ++++ ++++++++ +++++ +++ ++++++++ ++++++++++ ++ ++++ ++ +++++ ++++++++ +++++++ +++ +++++++++++++",
+      "icon" : "/static/app/Splunk_Security_Essentials/images/general_images/secmon-icon.png",
+      "id" : "security_monitoring",
+      "name" : "++++++++ ++++++++++",
+      "enable" : true,
+      "order" : 1
+   }
+}

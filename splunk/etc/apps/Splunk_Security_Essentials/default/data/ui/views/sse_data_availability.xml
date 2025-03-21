@@ -1,0 +1,174 @@
+<dashboard script="components/pages/data_availability.js, runPageScript.js" version="1.1">
+  <label>Data Availability</label>
+  <search id="mltk_installed">
+    <refresh>1h</refresh>
+    <query>| rest /services/apps/local splunk_server=local | where (title="Splunk_ML_Toolkit" AND match(version, "^([5-9]|4.[2-9])")) OR (match(title, "Splunk_SA_Scientific_Python") AND match(version, "^([2-9]|1.[4-9])"))
+    </query>
+    <done>
+      <condition match="$job.resultCount$=2">
+        <unset token="mltkWarning">1</unset>
+        <set token="mltkGood">1</set>
+      </condition>
+      <condition match="$job.resultCount$!=2">
+        <set token="mltkWarning">1</set>
+        <unset token="mltkGood">1</unset>
+      </condition>
+    </done>
+  </search>
+  <search id="data_inventory_built">
+    <query>| inputlookup data_inventory_products_lookup | search stage="all-done" </query>
+    <done>
+      <condition match="$job.resultCount$>0">
+        <unset token="dataInventoryNotBuilt">1</unset>
+        <set token="dataInventoryBuilt">1</set>
+      </condition>
+      <condition match="$job.resultCount$=0">
+        <set token="dataInventoryNotBuilt">1</set>
+        <unset token="dataInventoryBuilt">1</unset>
+      </condition>
+    </done>
+  </search>
+    <panel depends="$dataInventoryNotBuilt$">
+      <title>Data Inventory Not Configured</title>
+      <html>
+        <p>It appears that no data inventory are fully configured. <a href="data_inventory?tour=datainventory-tour">Configure Data Inventory</a> first and then return to this dashboard.</p>
+      </html>
+    </panel>
+  <search id="model_not_built">
+    <query>| inputlookup SSE-data_availability_latency_status.csv </query>
+    <done>
+      <condition match="$job.resultCount$>0">
+        <unset token="modelNotBuilt">1</unset>
+        <set token="modelBuilt">1</set>
+      </condition>
+      <condition match="$job.resultCount$=0">
+        <set token="modelNotBuilt">1</set>
+        <unset token="modelBuilt">1</unset>
+      </condition>
+    </done>
+  </search>
+  <search id="base_latency_health">
+    <refresh>1h</refresh>
+    <query>| inputlookup SSE-data_availability_latency_status.csv 
+    | lookup data_inventory_products_lookup productId OUTPUT productName vendorName 
+    | eval prodname = if(isnull(vendorName) OR vendorName=="" OR vendorName=" ", "Unknown", vendorName) . " " . productName 
+    | stats count as num count(eval(baseline_num_data_samples &lt; 200)) as num_with_few_data_samples values(eval(if(baseline_num_data_samples &lt; 200, prodname, null))) as products_with_few_data_samples values(baseline_update_last_run) as baseline_update_last_run 
+    | eval status=null, status=if(num&lt;10, mvappend("Few products found -- only " . num . " total.", status), status), status=if(num_with_few_data_samples&gt;1, mvappend("There are " . num_with_few_data_samples . " products with fewer than thirty data points: " . mvjoin(products_with_few_data_samples, ", "), status), status)
+    | eval status=if(num_with_few_data_samples==1, mvappend("There is " . num_with_few_data_samples . " product with fewer than thirty data points: " . mvjoin(products_with_few_data_samples, ", "), status), status)
+    | eval status=if(baseline_update_last_run&lt;relative_time(now(), "-1d@d"), mvappend("Your baseline is out of date. It was last updated " . round((now() - baseline_update_last_run)/3600/24, 1) . " days ago.", status), status)
+    | table status |  mvexpand status
+    </query>
+    <done>
+      <condition match="$job.resultCount$>0">
+        <set token="latencyWarning">1</set>
+      </condition>
+      <condition match="$job.resultCount$=0">
+        <unset token="latencyWarning">1</unset>
+      </condition>
+    </done>
+  </search>
+  <search id="base_latency_search">
+    <refresh>5m</refresh>
+    <query>| tstats count as num_events avg(_indextime) as avg_indextime max(_indextime) as latest_indextime max(_time) as max_time values(source) as source where 
+    [| inputlookup data_inventory_products_lookup 
+    | eval category=case(isnotnull(daily_event_volume) AND daily_event_volume &gt; 50000, "highvolumelowlatency", stage!="step-sourcetype", "normal", 1=1,"unused") 
+    | lookup SSE-data-availability-products-categorization productId OUTPUT category as category_override 
+    | eval category=coalesce(category_override, category) 
+    | search category="highvolumelowlatency" OR category="normal" 
+    | eval termsearch = if(len(termsearch)>0,"(" . termsearch . ")",null())
+    | stats values(termsearch) as search 
+    | eval search="(" . mvjoin(search, " OR ") . ")" ] by index sourcetype 
+| eval productId=null, 
+    [| inputlookup data_inventory_products_lookup 
+    | eval category=case(isnotnull(daily_event_volume) AND daily_event_volume &gt; 50000, "highvolumelowlatency", stage!="step-sourcetype", "normal", 1=1,"unused") 
+    | lookup SSE-data-availability-products-categorization productId OUTPUT category as category_override 
+    | eval category=coalesce(category_override, category) 
+    | search category="highvolumelowlatency" OR category="normal" 
+    | eval termsearch = if(len(termsearch)>0,"(" . termsearch . ")",null())
+    | rex field=termsearch mode=sed "s/\"/\\\"/g" 
+    | eval search = "productId=if(searchmatch(\"" . termsearch . "\"), mvappend(productId, \"" . productId . "\"), productId)" 
+    | stats values(search) as search 
+    | eval search=mvjoin(search, ", ")] 
+| eval eventcount = "index=" . index . " sourcetype=" . sourcetype . " and events=" . num_events 
+| append 
+    [| inputlookup SSE-data_availability_latency_status.csv 
+    | where baseline_num_data_samples &gt; 100 AND baseline_avg_lag &lt; 4*3600] 
+| stats sum(num_events) as num_events values(eventcount) as eventcount min(latest_indextime) as slowest_max_indextime_for_any_index_sourcetype min(max_time) as slowest_max_time_for_any_index_sourcetype max(latest_indextime) as latest_indextime max(max_time) as max_time values(termsearch) as termsearch by productId 
+| lookup SSE-data_availability_latency_status.csv productId
+| lookup data_inventory_products_lookup productId OUTPUT productName vendorName termsearch 
+| eval lag = now() - max_time, max_lag = lag 
+| apply app:sse_event_lag_model upper_threshold=0.01 show_density=true 
+| rename "IsOutlier(lag)" as max_isOutlier "ProbabilityDensity(lag)" as max_probability 
+| eval lag = now() - slowest_max_time_for_any_index_sourcetype, slowest_lag = lag 
+| apply app:sse_event_lag_model upper_threshold=0.01 show_density=true 
+| rename "IsOutlier(lag)" as slowest_isOutlier "ProbabilityDensity(lag)" as slowest_probability 
+| eval num_events=coalesce(num_events, 0), vendorName=if(isnull(vendorName) OR vendorName="" OR vendorName=" ", "Unknown", vendorName), productName=if(isnull(productName) OR productName="", productId, productName) 
+| eval color=case(isnull(max_time), "#F2D7D5", isnull(slowest_isOutlier),"#F2F3F4", slowest_isOutlier=1 AND max_isOutlier=1, "#FAE5D3", slowest_isOutlier=1, "#FCF3CF", 1=1, "#D1F2EB")
+| eval sortby=case(isnull(max_time), 0, isnull(slowest_isOutlier),4, slowest_isOutlier=1 AND max_isOutlier=1, 1, slowest_isOutlier=1, 2, 1=1, 10)
+| eval Summary=case(isnull(max_time), "No data has been seen in the past four days", isnull(slowest_isOutlier),"We don't have an established baseline for this product", slowest_isOutlier=1 AND max_isOutlier=1, "The latency observed is outside normal ranges", slowest_isOutlier=1, "While some data is on time, some of the sourcetypes have unusually high latency.", 1=1, "No issues.")
+| join type=outer productId [| sseanalytics | search enabled=Yes | stats count as numDetections values(search_title) as dependent_searches by productId | eval dependent_searches = mvjoin(dependent_searches, "|")]
+| eval numDetections = coalesce(numDetections, 0), max_lag=coalesce(max_lag, "> Timerange")
+| eval eventcount = coalesce(eventcount, termsearch . ", no events")
+| table *</query>
+    <earliest>-4h@h</earliest>
+    <latest>now</latest>
+    <sampleRatio>1</sampleRatio>
+    <progress>
+      <set token="showInProgress">1</set>
+      <unset token="lagDone">0</unset>
+    </progress>
+    <done>
+      <unset token="showInProgress"></unset>
+      <set token="lagDone">0</set>
+    </done>
+  </search>
+  <row depends="$showInProgress$">
+    <panel>
+      <title>Loading Data...</title>
+      <single>
+        <search base="base_latency_search">
+        </search>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$latencyWarning$">
+      <title>Model Health Warning</title>
+      <table>
+        <search base="base_latency_health">
+        </search>
+      </table>
+    </panel>
+    <panel depends="$mltkWarning$">
+      <title>MLTK Warning</title>
+      <table>
+        <search><query>| makeresults |eval Summary="This dashboard (and the underlying models) requires the usage of Splunk's Machine Learning Toolkit version 4.1 or beyond. Please make sure that you have a suitable version installed, along with the Python for Scientific Computing Add-on that MLTK uses." | table Summary</query>
+        </search>
+      </table>
+      <table>
+        <search><query>| makeresults | eval title="Apps Present:", version="" | fields - title | append[| rest /services/apps/local | table title version | search title=Splunk_ML_Toolkit OR title=Splunk_SA_Scientific_Python*]</query></search>
+      </table>
+    </panel>
+    <panel depends="$modelNotBuilt$">
+      <title>Model Not Built</title>
+      <html>
+        <a class="btn btn-primary" target="_blank" href="search?s=%2FservicesNS%2Fadmin%2FSplunk_Security_Essentials%2Fsaved%2Fsearches%2FGenerate%2520Data%2520Availability%2520ML%2520Model%2520for%2520Latency">Run Baseline Search</a>
+      </html>
+    </panel>
+  </row>
+  <row depends="$lagDone$,$modelBuilt$,$mltkGood$">
+    <panel>
+      <title>Data Latency by Product</title>
+      <html>
+        <p>This dashboard pulls a dataset from the configuration in the <a href="data_inventory">Data Inventory dashboard</a>. A <a href="search?s=%2FservicesNS%2Fadmin%2FSplunk_Security_Essentials%2Fsaved%2Fsearches%2FGenerate%2520Data%2520Availability%2520ML%2520Model%2520for%2520Latency">nightly search</a> will run and over the past thirty days to determine how much latency is expected from each configured product. That data is pushed into a <a href="search?q=%7C%20summary%20sse_event_lag_model">Machine Learning model</a> and statistics are <a href="search?q=%7C%20inputlookup%20SSE-data_availability_latency_status.csv">recorded</a>. This dashboard then grabs data from the past four hours, calculates the current data lag, and feeds that through the ML model to determine if it is normal or not.</p>
+      </html>
+      <table id="colorLagTable">
+        <search base="base_latency_search">
+          <query>|  sort sortby | fields - sortby | eval slowest_lag = if(slowest_lag=max_lag, "", slowest_lag) | table color productId vendorName productName eventcount Summary max_lag slowest_lag numDetections baseline* dependent_searches | rename max_lag as "Minimum Lag Seen Per Product" slowest_lag as "Maximum Lag Seen Per Product (if different)" vendorName as "Vendor" productName as Product num_events as "Number of Events in Last Four Hours" eventcount as "Index/Sourcetypes and Events" numDetections as "Number of Enabled Detections" </query>
+        </search>
+        <option name="count">100</option>
+        <fields>["Vendor","Product","Index/Sourcetypes and Events","Summary","Minimum Lag Seen Per Product","Maximum Lag Seen Per Product (if different)","Number of Enabled Detections", "color", "productId"]</fields>
+      </table>
+    </panel>
+  </row>
+</dashboard>

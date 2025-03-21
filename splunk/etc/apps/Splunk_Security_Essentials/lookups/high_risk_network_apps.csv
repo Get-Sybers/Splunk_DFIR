@@ -1,0 +1,372 @@
+app,risk,vendor
+tor,encrypted-tunnel (client-server),Palo Alto Networks
+100bao,file-sharing (peer-to-peer),Palo Alto Networks
+aim,voip-video (peer-to-peer),Palo Alto Networks	 	 
+aim-audio,voip-video (peer-to-peer),Palo Alto Networks
+allpeers,file-sharing (peer-to-peer),Palo Alto Networks
+ants-p2p,file-sharing (peer-to-peer),Palo Alto Networks
+applejuice,file-sharing (peer-to-peer),Palo Alto Networks
+ares,file-sharing (peer-to-peer),Palo Alto Networks
+asf-streaming,photo-video (browser-based),Palo Alto Networks
+asproxy,proxy (browser-based),Palo Alto Networks
+axifile,file-sharing (browser-based),Palo Alto Networks
+azureus,file-sharing (peer-to-peer),Palo Alto Networks
+bittorrent,file-sharing (peer-to-peer),Palo Alto Networks
+brightcove,photo-video (browser-based),Palo Alto Networks
+bypass,proxy (client-server),Palo Alto Networks
+bypassthat,proxy (client-server),Palo Alto Networks
+camfrog,voip-video (peer-to-peer),Palo Alto Networks
+cgiproxy,proxy (browser-based),Palo Alto Networks
+circumventor,proxy (browser-based),Palo Alto Networks
+coinhive,general-business (browser-based),Palo Alto Networks
+coinimp,internet-utility (browser-based),Palo Alto Networks
+coralcdn-user,proxy (browser-based),Palo Alto Networks
+direct-connect,file-sharing (peer-to-peer),Palo Alto Networks
+dl-free,file-sharing (browser-based),Palo Alto Networks
+droidvpn,encrypted-tunnel (client-server),Palo Alto Networks
+ebuddy,instant-messaging (browser-based),Palo Alto Networks
+emule,file-sharing (peer-to-peer),Palo Alto Networks
+fasttrack,file-sharing (peer-to-peer),Palo Alto Networks
+feidian,photo-video (peer-to-peer),Palo Alto Networks
+fileguri,file-sharing (peer-to-peer),Palo Alto Networks
+filemail,file-sharing (browser-based),Palo Alto Networks
+fileserve,file-sharing (browser-based),Palo Alto Networks
+filesonic,file-sharing (browser-based),Palo Alto Networks
+fileswire,file-sharing (peer-to-peer),Palo Alto Networks
+firephoenix,encrypted-tunnel (client-server),Palo Alto Networks
+flashget,file-sharing (peer-to-peer),Palo Alto Networks
+foldera,remote-access (client-server),Palo Alto Networks
+foxy,file-sharing (peer-to-peer),Palo Alto Networks
+freenet,encrypted-tunnel (peer-to-peer),Palo Alto Networks
+ftp,file-sharing (client-server),Palo Alto Networks
+fufox,file-sharing (browser-based),Palo Alto Networks
+funshion,photo-video (client-server),Palo Alto Networks
+gbridge,encrypted-tunnel (client-server),Palo Alto Networks
+generic-p2p,file-sharing (peer-to-peer),Palo Alto Networks
+gizmo,voip-video (peer-to-peer),Palo Alto Networks
+glype-proxy,proxy (browser-based),Palo Alto Networks
+gnu-httptunnel,proxy (client-server),Palo Alto Networks
+gnunet,file-sharing (peer-to-peer),Palo Alto Networks
+gnutella,file-sharing (peer-to-peer),Palo Alto Networks
+goboogy,file-sharing (peer-to-peer),Palo Alto Networks
+google-drive-web,file-sharing (browser-based),Palo Alto Networks
+google-talk,file-sharing (peer-to-peer),Palo Alto Networks
+gtalk-file-transfer,file-sharing (peer-to-peer),Palo Alto Networks
+gtunnel,encrypted-tunnel (client-server),Palo Alto Networks
+guardster,proxy (browser-based),Palo Alto Networks
+hamachi,encrypted-tunnel (peer-to-peer),Palo Alto Networks
+hopster,proxy (client-server),Palo Alto Networks
+horde,email (browser-based),Palo Alto Networks
+hotfile,file-sharing (browser-based),Palo Alto Networks
+hotline,file-sharing (client-server),Palo Alto Networks
+http-audio,audio-streaming (browser-based),Palo Alto Networks
+http-proxy,proxy (browser-based),Palo Alto Networks
+http-tunnel,proxy (client-server),Palo Alto Networks
+http-video,photo-video (browser-based),Palo Alto Networks
+httport,proxy (client-server),Palo Alto Networks
+imesh,file-sharing (peer-to-peer),Palo Alto Networks
+irc,instant-messaging (client-server),Palo Alto Networks 	 	 
+irc-base,instant-messaging (client-server),Palo Alto Networks
+irc-dcc-file-transfer,file-sharing (client-server),Palo Alto Networks
+jabber,instant-messaging (client-server),Palo Alto Networks
+jap,proxy (client-server),Palo Alto Networks
+jsecoin,internet-utility (browser-based),Palo Alto Networks
+kazaa,file-sharing (peer-to-peer),Palo Alto Networks
+kino,photo-video (browser-based),Palo Alto Networks
+kproxy,proxy (browser-based),Palo Alto Networks
+kugoo,file-sharing (peer-to-peer),Palo Alto Networks
+libero-video,photo-video (browser-based),Palo Alto Networks
+lotus-notes,email (client-server),Palo Alto Networks 	 	 
+lotus-notes-base,email (client-server),Palo Alto Networks
+manolito,file-sharing (peer-to-peer),Palo Alto Networks
+meebo,file-sharing (browser-based),Palo Alto Networks 
+meebo-file-transfer,file-sharing (browser-based),Palo Alto Networks
+megashare,file-sharing (browser-based),Palo Alto Networks
+megashares,file-sharing (browser-based),Palo Alto Networks
+msn,file-sharing (peer-to-peer),Palo Alto Networks
+msn-file-transfer,file-sharing (peer-to-peer),Palo Alto Networks
+mute,file-sharing (peer-to-peer),Palo Alto Networks
+mydownloader,file-sharing (browser-based),Palo Alto Networks
+neonet,file-sharing (peer-to-peer),Palo Alto Networks
+netlog,social-networking (browser-based),Palo Alto Networks
+netmeeting,voip-video (client-server),Palo Alto Networks
+nntp,internet-utility (client-server),Palo Alto Networks
+openft,file-sharing (peer-to-peer),Palo Alto Networks
+packetix-vpn,encrypted-tunnel (client-server),Palo Alto Networks
+pando,file-sharing (peer-to-peer),Palo Alto Networks
+peerenabler,file-sharing (peer-to-peer),Palo Alto Networks
+perfect-dark,file-sharing (peer-to-peer),Palo Alto Networks
+phproxy,proxy (browser-based),Palo Alto Networks
+pingfu,proxy (client-server),Palo Alto Networks
+poco,file-sharing (peer-to-peer),Palo Alto Networks
+privax,proxy (browser-based),Palo Alto Networks
+proxeasy,proxy (browser-based),Palo Alto Networks
+proxono,proxy (browser-based),Palo Alto Networks
+psiphon,proxy (browser-based),Palo Alto Networks
+qdown,file-sharing (client-server),Palo Alto Networks
+qq,file-sharing (client-server),Palo Alto Networks
+qq-file-transfer,file-sharing (client-server),Palo Alto Networks
+r-exec,remote-access (client-server),Palo Alto Networks
+r-services,remote-access (client-server),Palo Alto Networks
+rediffbol,file-sharing (client-server),Palo Alto Networks
+rediffbol-file-transfer,file-sharing (client-server),Palo Alto Networks
+rss,internet-utility (client-server),Palo Alto Networks
+sharebase.to,file-sharing (browser-based),Palo Alto Networks
+skype,voip-video (peer-to-peer),Palo Alto Networks
+smtp,email (client-server),Palo Alto Networks
+socks,proxy (network-protocol),Palo Alto Networks
+socks2http,proxy (network-protocol),Palo Alto Networks
+sopcast,photo-video (peer-to-peer),Palo Alto Networks
+soribada,file-sharing (peer-to-peer),Palo Alto Networks
+soulseek,file-sharing (peer-to-peer),Palo Alto Networks
+ssh-tunnel,encrypted-tunnel (client-server),Palo Alto Networks
+stickam,voip-video (browser-based),Palo Alto Networks
+storage.to,file-sharing (browser-based),Palo Alto Networks
+stumbleupon,social-networking (browser-based),Palo Alto Networks
+suresome,proxy (browser-based),Palo Alto Networks
+swapper,instant-messaging (browser-based),Palo Alto Networks
+tesla,file-sharing (peer-to-peer),Palo Alto Networks
+thecircle,file-sharing (peer-to-peer),Palo Alto Networks
+totodisk,file-sharing (peer-to-peer),Palo Alto Networks
+transferbigfiles,file-sharing (browser-based),Palo Alto Networks
+trinoo,internet-utility (peer-to-peer),Palo Alto Networks
+tudou,photo-video (browser-based),Palo Alto Networks
+turboupload,file-sharing (browser-based),Palo Alto Networks
+vnc,remote-access (client-server),Palo Alto Networks
+vnc-base,remote-access (client-server),Palo Alto Networks
+vnc-http,remote-access (browser-based),Palo Alto Networks
+warez-p2p,file-sharing (peer-to-peer),Palo Alto Networks
+webdav,file-sharing (browser-based),Palo Alto Networks
+wickr,social-networking (client-server),Palo Alto Networks
+winmx,file-sharing (peer-to-peer),Palo Alto Networks
+winny,file-sharing (peer-to-peer),Palo Alto Networks
+woofiles,file-sharing (browser-based),Palo Alto Networks
+x11,remote-access (client-server),Palo Alto Networks
+xunlei,file-sharing (peer-to-peer),Palo Alto Networks
+youku,photo-video (browser-based),Palo Alto Networks
+youku-base,photo-video (browser-based),Palo Alto Networks
+yunpan360,internet-utility (client-server),Palo Alto Networks
+yunpan360-base,internet-utility (client-server),Palo Alto Networks
+zelune,proxy (browser-based),Palo Alto Networks
+3proxy.com,Anonymizer,Check Point Software Technologies
+A4Proxy,Anonymizer,Check Point Software Technologies
+ASProxy,Anonymizer,Check Point Software Technologies
+Act Mobile,Anonymizer,Check Point Software Technologies
+Airvpn,Anonymizer,Check Point Software Technologies
+AliveProxy,Anonymizer,Check Point Software Technologies
+Amaze VPN,Anonymizer,Check Point Software Technologies
+Anonine,Anonymizer,Check Point Software Technologies
+Anonymizer Universal,Anonymizer,Check Point Software Technologies
+Anonymizers/proxy avoidance sites,Anonymizer,Check Point Software Technologies
+AnonymousIndex,Anonymizer,Check Point Software Technologies
+Anonymouse,Anonymizer,Check Point Software Technologies
+Anonymox,Anonymizer,Check Point Software Technologies
+Anonytun VPN,Anonymizer,Check Point Software Technologies
+AppVPN,Anonymizer,Check Point Software Technologies
+AtomVPN,Anonymizer,Check Point Software Technologies
+Avira Phantom VPN,Anonymizer,Check Point Software Technologies
+Avoidr,Anonymizer,Check Point Software Technologies
+Betaproxy,Anonymizer,Check Point Software Technologies
+Betternet,Anonymizer,Check Point Software Technologies
+Blue,Anonymizer,Check Point Software Technologies
+Brik IM,Anonymizer,Check Point Software Technologies
+Browsec,Anonymizer,Check Point Software Technologies
+BypassProxyNow,Anonymizer,Check Point Software Technologies
+BypassThat,Anonymizer,Check Point Software Technologies
+CGI-Proxy,Anonymizer,Check Point Software Technologies
+CProxy,Anonymizer,Check Point Software Technologies
+Camouflage Proxy,Anonymizer,Check Point Software Technologies
+Cgi-proxy.net,Anonymizer,Check Point Software Technologies
+Cloud VPN,Anonymizer,Check Point Software Technologies
+Coralcdn,Anonymizer,Check Point Software Technologies
+CyberGhost VPN,Anonymizer,Check Point Software Technologies
+DNSCAT2,Anonymizer,Check Point Software Technologies
+Data Exfiltration Toolkit - DNS Mode,Anonymizer,Check Point Software Technologies
+Data Exfiltration Toolkit - HTTP mode,Anonymizer,Check Point Software Technologies
+Data Exfiltration Toolkit - TCP Mode,Anonymizer,Check Point Software Technologies
+Data Exfiltration Toolkit - Twitter Mode,Anonymizer,Check Point Software Technologies
+Data Exfiltration Toolkit - UDP Mode,Anonymizer,Check Point Software Technologies
+Dns2tcp,Anonymizer,Check Point Software Technologies
+Dostupest,Anonymizer,Check Point Software Technologies
+DotVPN,Anonymizer,Check Point Software Technologies
+DroidVPN,Anonymizer,Check Point Software Technologies
+EASY-HIDE-IP.com,Anonymizer,Check Point Software Technologies
+Easy Proxy,Anonymizer,Check Point Software Technologies
+Epic Browser,Anonymizer,Check Point Software Technologies
+ExpressVPN,Anonymizer,Check Point Software Technologies
+Fast Secure VPN,Anonymizer,Check Point Software Technologies
+FastStunnel,Anonymizer,Check Point Software Technologies
+FineVPN-services,Anonymizer,Check Point Software Technologies
+FirePhoenix,Anonymizer,Check Point Software Technologies
+FlyProxy,Anonymizer,Check Point Software Technologies
+FlyVPN,Anonymizer,Check Point Software Technologies
+Fqrouter,Anonymizer,Check Point Software Technologies
+FreeGate,Anonymizer,Check Point Software Technologies
+FreeMyBrowser,Anonymizer,Check Point Software Technologies
+Freebieproxy.com,Anonymizer,Check Point Software Technologies
+Freedome,Anonymizer,Check Point Software Technologies
+Freenet,Anonymizer,Check Point Software Technologies
+Frigate,Anonymizer,Check Point Software Technologies
+FrootVPN,Anonymizer,Check Point Software Technologies
+FrozenWay,Anonymizer,Check Point Software Technologies
+GNU-httptunnel,Anonymizer,Check Point Software Technologies
+GetPrivate,Anonymizer,Check Point Software Technologies
+Gom VPN,Anonymizer,Check Point Software Technologies
+Goproxing,Anonymizer,Check Point Software Technologies
+GreenVPN,Anonymizer,Check Point Software Technologies
+Guardster,Anonymizer,Check Point Software Technologies
+HTTP-Tunnel Client,Anonymizer,Check Point Software Technologies
+Hamachi,Anonymizer,Check Point Software Technologies
+HappyHoliday,Anonymizer,Check Point Software Technologies
+Hexatech VPN,Anonymizer,Check Point Software Technologies
+Hide All IP,Anonymizer,Check Point Software Technologies
+Hide My Ass,Anonymizer,Check Point Software Technologies
+Hide My IP,Anonymizer,Check Point Software Technologies
+Hide My Way,Anonymizer,Check Point Software Technologies
+Hide.me,Anonymizer,Check Point Software Technologies
+HideMe VPN,Anonymizer,Check Point Software Technologies
+HideMyAss! Pro VPN,Anonymizer,Check Point Software Technologies
+Hideman VPN,Anonymizer,Check Point Software Technologies
+Hola,Anonymizer,Check Point Software Technologies
+Hot VPN,Anonymizer,Check Point Software Technologies
+Hotspot Shield,Anonymizer,Check Point Software Technologies
+Hoxx VPN,Anonymizer,Check Point Software Technologies
+I2P,Anonymizer,Check Point Software Technologies
+IPVanish VPN,Anonymizer,Check Point Software Technologies
+IVPN,Anonymizer,Check Point Software Technologies
+Invisible Browsing,Anonymizer,Check Point Software Technologies
+InvisibleNET VPN,Anonymizer,Check Point Software Technologies
+Ipredator,Anonymizer,Check Point Software Technologies
+Jap,Anonymizer,Check Point Software Technologies
+Just Proxy,Anonymizer,Check Point Software Technologies
+Kerio VPN,Anonymizer,Check Point Software Technologies
+Kproxy,Anonymizer,Check Point Software Technologies
+Kproxy Agent,Anonymizer,Check Point Software Technologies
+Megaproxy,Anonymizer,Check Point Software Technologies
+Mullvad,Anonymizer,Check Point Software Technologies
+NSTX,Anonymizer,Check Point Software Technologies
+NetConceal Anonymizer,Anonymizer,Check Point Software Technologies
+New IP Now,Anonymizer,Check Point Software Technologies
+Ninjaproxy.com,Anonymizer,Check Point Software Technologies
+NordVPN,Anonymizer,Check Point Software Technologies
+Onavo Protect,Anonymizer,Check Point Software Technologies
+Online Proxy Checker,Anonymizer,Check Point Software Technologies
+OpenProxies,Anonymizer,Check Point Software Technologies
+OpenVPN,Anonymizer,Check Point Software Technologies
+Opera Mini,Anonymizer,Check Point Software Technologies
+Opera VPN,Anonymizer,Check Point Software Technologies
+OzymanDNS,Anonymizer,Check Point Software Technologies
+PacketiX VPN,Anonymizer,Check Point Software Technologies
+PingFu Iris,Anonymizer,Check Point Software Technologies
+Private Internet Access,Anonymizer,Check Point Software Technologies
+Private Tunnel,Anonymizer,Check Point Software Technologies
+Privatix,Anonymizer,Check Point Software Technologies
+Proprietary Tunneling Tools,Anonymizer,Check Point Software Technologies
+ProxEasy,Anonymizer,Check Point Software Technologies
+Proxify,Anonymizer,Check Point Software Technologies
+Proxxed.org,Anonymizer,Check Point Software Technologies
+Proxy Rental,Anonymizer,Check Point Software Technologies
+Proxy4Free,Anonymizer,Check Point Software Technologies
+Proxy7,Anonymizer,Check Point Software Technologies
+ProxyBuster Browser,Anonymizer,Check Point Software Technologies
+ProxyDex,Anonymizer,Check Point Software Technologies
+ProxyLocal,Anonymizer,Check Point Software Technologies
+ProxySite,Anonymizer,Check Point Software Technologies
+ProxyTopList,Anonymizer,Check Point Software Technologies
+Proxymod.com,Anonymizer,Check Point Software Technologies
+Proxymouse,Anonymizer,Check Point Software Technologies
+Proxytopsite,Anonymizer,Check Point Software Technologies
+Proxyweb,Anonymizer,Check Point Software Technologies
+Psiphon,Anonymizer,Check Point Software Technologies
+PurePrivacy,Anonymizer,Check Point Software Technologies
+PureVPN,Anonymizer,Check Point Software Technologies
+ReDuh,Anonymizer,Check Point Software Technologies
+SaferSurf Unblock Assistant,Anonymizer,Check Point Software Technologies
+SaferVPN,Anonymizer,Check Point Software Technologies
+Scotty,Anonymizer,Check Point Software Technologies
+SecureLine VPN,Anonymizer,Check Point Software Technologies
+SecureTunnel,Anonymizer,Check Point Software Technologies
+SecurityKISS,Anonymizer,Check Point Software Technologies
+Seed4.Me VPN,Anonymizer,Check Point Software Technologies
+SetupVPN,Anonymizer,Check Point Software Technologies
+Shadowsocks,Anonymizer,Check Point Software Technologies
+Shootback TCP tunnel,Anonymizer,Check Point Software Technologies
+Skydur,Anonymizer,Check Point Software Technologies
+SlickVPN,Anonymizer,Check Point Software Technologies
+Socks2HTTP,Anonymizer,Check Point Software Technologies
+SocksOnline,Anonymizer,Check Point Software Technologies
+SoftEther VPN,Anonymizer,Check Point Software Technologies
+Star VPN,Anonymizer,Check Point Software Technologies
+Stay Invisible,Anonymizer,Check Point Software Technologies
+Stealthy,Anonymizer,Check Point Software Technologies
+Steganos Internet Anonym VPN,Anonymizer,Check Point Software Technologies
+StrongVPN,Anonymizer,Check Point Software Technologies
+SumRando VPN,Anonymizer,Check Point Software Technologies
+SuperVPN,Anonymizer,Check Point Software Technologies
+Suresome,Anonymizer,Check Point Software Technologies
+SurfEasy,Anonymizer,Check Point Software Technologies
+Surrogafier,Anonymizer,Check Point Software Technologies
+TCP-over-DNS,Anonymizer,Check Point Software Technologies
+Tails,Anonymizer,Check Point Software Technologies
+Telex,Anonymizer,Check Point Software Technologies
+The Cloak,Anonymizer,Check Point Software Technologies
+Thisproxy.com,Anonymizer,Check Point Software Technologies
+Tone Link,Anonymizer,Check Point Software Technologies
+Toonel,Anonymizer,Check Point Software Technologies
+Tor,Anonymizer,Check Point Software Technologies
+Tor2Web,Anonymizer,Check Point Software Technologies
+TouchVPN,Anonymizer,Check Point Software Technologies
+Trusted Proxies,Anonymizer,Check Point Software Technologies
+Tunna,Anonymizer,Check Point Software Technologies
+TunnelBear,Anonymizer,Check Point Software Technologies
+Tunnello,Anonymizer,Check Point Software Technologies
+Turbo VPN,Anonymizer,Check Point Software Technologies
+UC browser,Anonymizer,Check Point Software Technologies
+UltraHook,Anonymizer,Check Point Software Technologies
+Ultrasurf,Anonymizer,Check Point Software Technologies
+Ultrasurf Chrome extension,Anonymizer,Check Point Software Technologies
+VNN,Anonymizer,Check Point Software Technologies
+VPN 360 and Unlimited VPN,Anonymizer,Check Point Software Technologies
+VPN Master,Anonymizer,Check Point Software Technologies
+VPN Proxy,Anonymizer,Check Point Software Technologies
+VPN Shield,Anonymizer,Check Point Software Technologies
+VPN.ht,Anonymizer,Check Point Software Technologies
+VPN4ALL,Anonymizer,Check Point Software Technologies
+VPNSecure,Anonymizer,Check Point Software Technologies
+VTunnel,Anonymizer,Check Point Software Technologies
+Viproxy,Anonymizer,Check Point Software Technologies
+Vtun,Anonymizer,Check Point Software Technologies
+Web Warper,Anonymizer,Check Point Software Technologies
+Windscribe,Anonymizer,Check Point Software Technologies
+Wireguard Tunnel Protocol,Anonymizer,Check Point Software Technologies
+X-VPN,Anonymizer,Check Point Software Technologies
+Yoga VPN,Anonymizer,Check Point Software Technologies
+Your Freedom,Anonymizer,Check Point Software Technologies
+Zapyo,Anonymizer,Check Point Software Technologies
+Zelune,Anonymizer,Check Point Software Technologies
+ZenMate,Anonymizer,Check Point Software Technologies
+Zero VPN,Anonymizer,Check Point Software Technologies
+ZeroNet Protocol,Anonymizer,Check Point Software Technologies
+ZeroTier One,Anonymizer,Check Point Software Technologies
+ZfreeZ,Anonymizer,Check Point Software Technologies
+ZoogTV,Anonymizer,Check Point Software Technologies
+Zpn-mobile,Anonymizer,Check Point Software Technologies
+glype proxy,Anonymizer,Check Point Software Technologies
+gpass proxy,Anonymizer,Check Point Software Technologies
+iodine,Anonymizer,Check Point Software Technologies
+labnol-proxy,Anonymizer,Check Point Software Technologies
+skyZIP,Anonymizer,Check Point Software Technologies
+spotflux,Anonymizer,Check Point Software Technologies
+Kazaa Media Desktop,P2P File Sharing,Check Point Software Technologies
+Kugou,P2P File Sharing,Check Point Software Technologies
+Sopcast,P2P File Sharing,Check Point Software Technologies
+WinMX,P2P File Sharing,Check Point Software Technologies
+DarkComet-RAT,Remote Administration,Check Point Software Technologies
+Pandora RAT,Remote Administration,Check Point Software Technologies
+Poison Ivy,Remote Administration,Check Point Software Technologies
+DroidJack,Spyware / Malicious Sites,Check Point Software Technologies
+NanoCore,Spyware / Malicious Sites,Check Point Software Technologies
+Novalite RAT,Spyware / Malicious Sites,Check Point Software Technologies
+Orcus RAT,Spyware / Malicious Sites,Check Point Software Technologies
+Sub7,Spyware / Malicious Sites,Check Point Software Technologies
+Maelstorm,Web Browser,Check Point Software Technologies

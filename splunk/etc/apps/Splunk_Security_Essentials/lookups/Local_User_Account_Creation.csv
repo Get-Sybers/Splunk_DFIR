@@ -1,0 +1,572 @@
+"Account_Domain","Account_Expires","Account_Name",AllowedToDelegateTo,"Allowed_To_Delegate_To",ComputerName,"Creator_Process_ID","Display_Name",EventCode,EventType,"Group_Domain","Group_Name","Home_Directory","Home_Drive",Keywords,LogName,"Logon_Hours","Logon_ID",Message,"New_Process_ID","New_Process_Name","New_UAC_Value","Old_UAC_Value",OpCode,"Password_Last_Set","Primary_Group_ID",Privileges,"Process_Command_Line","Profile_Path",RecordNumber,"SAM_Account_Name","SID_History","Script_Path","Security_ID",SourceName,TaskCategory,"Token_Elevation_Type",Type,"User_Account_Control","User_Parameters","User_Principal_Name","User_Workstations","_raw","_time","date_hour","date_mday","date_minute","date_month","date_second","date_wday","date_year","date_zone",eventtype,host,index,linecount,punct,source,sourcetype,"splunk_server","splunk_server_group",timeendpos,timestartpos
+CORP,,"dveuve
+-",,,"IP-C6137C2D.corp.amazonworkspaces.com",,,4732,0,Builtin,Users,,,"Audit Success",Security,,0x451177,"A member was added to a security-enabled local group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-32-545
+	Group Name:		Users
+	Group Domain:		Builtin
+
+Additional Information:
+	Privileges:		-",,,,,Info,,,"-",,,131147,,,,"S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003
+S-1-5-32-545","Microsoft Windows security auditing.","Security Group Management",,Information,,,,,"11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4732
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=Security Group Management
+OpCode=Info
+RecordNumber=131147
+Keywords=Audit Success
+Message=A member was added to a security-enabled local group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-32-545
+	Group Name:		Users
+	Group Domain:		Builtin
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,30,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=______-__.\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D","<never>","dveuve
+jsmith_admin","-",,"IP-C6137C2D.corp.amazonworkspaces.com",,"John Smith",4738,0,,,"<value not set>","<value not set>","Audit Success",Security,All,0x451177,"A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		John Smith
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x10
+	New UAC Value:		0x210
+	User Account Control:	
+		'Don't Expire Password' - Enabled
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-",,,0x210,0x10,Info,"11/28/2016 1:09:40 PM",513,"-",,"<value not set>",131146,"jsmith_admin","-","<value not set>","S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,,"<value not set>","-","<value not set>","11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4738
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131146
+Keywords=Audit Success
+Message=A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		John Smith
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x10
+	New UAC Value:		0x210
+	User Account Control:	
+		'Don't Expire Password' - Enabled
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,47,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=____.\r\r\r\r:\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D","<never>","dveuve
+jsmith_admin","-",,"IP-C6137C2D.corp.amazonworkspaces.com",,"John Smith",4738,0,,,"<value not set>","<value not set>","Audit Success",Security,All,0x451177,"A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		John Smith
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x10
+	New UAC Value:		0x10
+	User Account Control:	-
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-",,,0x10,0x10,Info,"11/28/2016 1:09:40 PM",513,"-",,"<value not set>",131145,"jsmith_admin","-","<value not set>","S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,"-","<value not set>","-","<value not set>","11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4738
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131145
+Keywords=Audit Success
+Message=A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		John Smith
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x10
+	New UAC Value:		0x10
+	User Account Control:	-
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,46,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=____.\r\r\r\r:\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D",,"dveuve
+jsmith_admin",,,"IP-C6137C2D.corp.amazonworkspaces.com",,,4724,0,,,,,"Audit Success",Security,,0x451177,"An attempt was made to reset an account's password.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D",,,,,Info,,,,,,131144,,,,"S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,,,,,"11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4724
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131144
+Keywords=Audit Success
+Message=An attempt was made to reset an account's password.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,23,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=_______'_.\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D","<never>","dveuve
+jsmith_admin","-",,"IP-C6137C2D.corp.amazonworkspaces.com",,"jsmith_admin",4738,0,,,"<value not set>","<value not set>","Audit Success",Security,All,0x451177,"A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		jsmith_admin
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x15
+	New UAC Value:		0x10
+	User Account Control:	
+		Account Enabled
+		'Password Not Required' - Disabled
+	User Parameters:	-
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-",,,0x10,0x15,Info,"11/28/2016 1:09:40 PM",513,"-",,"<value not set>",131143,"jsmith_admin","-","<value not set>","S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,,"-","-","<value not set>","11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4738
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131143
+Keywords=Audit Success
+Message=A user account was changed.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Changed Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		jsmith_admin
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	11/28/2016 1:09:40 PM
+	Account Expires:		<never>
+	Primary Group ID:	513
+	AllowedToDelegateTo:	-
+	Old UAC Value:		0x15
+	New UAC Value:		0x10
+	User Account Control:	
+		Account Enabled
+		'Password Not Required' - Disabled
+	User Parameters:	-
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,48,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=____.\r\r\r\r:\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D",,"dveuve
+jsmith_admin",,,"IP-C6137C2D.corp.amazonworkspaces.com",,,4722,0,,,,,"Audit Success",Security,,0x451177,"A user account was enabled.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D",,,,,Info,,,,,,131142,,,,"S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,,,,,"11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4722
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131142
+Keywords=Audit Success
+Message=A user account was enabled.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Target Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,23,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=____.\r\r\r\r:\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+"CORP
+IP-C6137C2D","<never>","dveuve
+jsmith_admin",,"-","IP-C6137C2D.corp.amazonworkspaces.com",,"<value not set>",4720,0,,,"<value not set>","<value not set>","Audit Success",Security,All,0x451177,"A user account was created.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+New Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		<value not set>
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	<never>
+	Account Expires:		<never>
+	Primary Group ID:	513
+	Allowed To Delegate To:	-
+	Old UAC Value:		0x0
+	New UAC Value:		0x15
+	User Account Control:	
+		Account Disabled
+		'Password Not Required' - Enabled
+		'Normal Account' - Enabled
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges		-",,,0x15,0x0,Info,"<never>",513,,,"<value not set>",131141,"jsmith_admin","-","<value not set>","S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003","Microsoft Windows security auditing.","User Account Management",,Information,,"<value not set>","-","<value not set>","11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4720
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=User Account Management
+OpCode=Info
+RecordNumber=131141
+Keywords=Audit Success
+Message=A user account was created.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+New Account:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		jsmith_admin
+	Account Domain:		IP-C6137C2D
+
+Attributes:
+	SAM Account Name:	jsmith_admin
+	Display Name:		<value not set>
+	User Principal Name:	-
+	Home Directory:		<value not set>
+	Home Drive:		<value not set>
+	Script Path:		<value not set>
+	Profile Path:		<value not set>
+	User Workstations:	<value not set>
+	Password Last Set:	<never>
+	Account Expires:		<never>
+	Primary Group ID:	513
+	Allowed To Delegate To:	-
+	Old UAC Value:		0x0
+	New UAC Value:		0x15
+	User Account Control:	
+		Account Disabled
+		'Password Not Required' - Enabled
+		'Normal Account' - Enabled
+	User Parameters:	<value not set>
+	SID History:		-
+	Logon Hours:		All
+
+Additional Information:
+	Privileges		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,49,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=____.\r\r\r\r:\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+CORP,,"dveuve
+-",,,"IP-C6137C2D.corp.amazonworkspaces.com",,,4728,0,"IP-C6137C2D",None,,,"Audit Success",Security,,0x451177,"A member was added to a security-enabled global group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-513
+	Group Name:		None
+	Group Domain:		IP-C6137C2D
+
+Additional Information:
+	Privileges:		-",,,,,Info,,,"-",,,131140,,,,"S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003
+S-1-5-21-530973380-1803174443-1567984831-513","Microsoft Windows security auditing.","Security Group Management",,Information,,,,,"11/28/2016 01:09:40 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4728
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=Security Group Management
+OpCode=Info
+RecordNumber=131140
+Keywords=Audit Success
+Message=A member was added to a security-enabled global group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-513
+	Group Name:		None
+	Group Domain:		IP-C6137C2D
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:40.000+0000",13,28,9,november,40,monday,2016,local,,"IP-C6137C2D",main,30,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=______-__.\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0
+CORP,,"dveuve
+-",,,"IP-C6137C2D.corp.amazonworkspaces.com",,,4732,0,Builtin,Administrators,,,"Audit Success",Security,,0x451177,"A member was added to a security-enabled local group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-32-544
+	Group Name:		Administrators
+	Group Domain:		Builtin
+
+Additional Information:
+	Privileges:		-",,,,,Info,,,"-",,,131149,,,,"S-1-5-21-2206723804-4039538768-2100233310-1109
+S-1-5-21-530973380-1803174443-1567984831-1003
+S-1-5-32-544","Microsoft Windows security auditing.","Security Group Management",,Information,,,,,"11/28/2016 01:09:50 PM
+LogName=Security
+SourceName=Microsoft Windows security auditing.
+EventCode=4732
+EventType=0
+Type=Information
+ComputerName=IP-C6137C2D.corp.amazonworkspaces.com
+TaskCategory=Security Group Management
+OpCode=Info
+RecordNumber=131149
+Keywords=Audit Success
+Message=A member was added to a security-enabled local group.
+
+Subject:
+	Security ID:		S-1-5-21-2206723804-4039538768-2100233310-1109
+	Account Name:		dveuve
+	Account Domain:		CORP
+	Logon ID:		0x451177
+
+Member:
+	Security ID:		S-1-5-21-530973380-1803174443-1567984831-1003
+	Account Name:		-
+
+Group:
+	Security ID:		S-1-5-32-544
+	Group Name:		Administrators
+	Group Domain:		Builtin
+
+Additional Information:
+	Privileges:		-","2016-11-28T18:09:50.000+0000",13,28,9,november,50,monday,2016,local,,"IP-C6137C2D",main,30,"//_::_\r=\r=___.\r=\r=\r=\r=-...\r=__\r=\r=\r=_\r=______-__.\r","WinEventLog:Security","WinEventLog:Security",PersonalSplunk,,23,0

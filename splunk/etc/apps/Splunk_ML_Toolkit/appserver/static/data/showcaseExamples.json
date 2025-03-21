@@ -1,0 +1,377 @@
+{
+    "server_power": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict AC power consumption from fields including CPU utilization, disk utilization, and unhalted core cycles.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Server Power",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Server Power Consumption"
+    },
+    "app_usage": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access to the VPN from four other fields.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "App Usage",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict VPN Usage"
+    },
+    "housing": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict median house value from fields including crime rate, land zone, average rooms per dwelling, and property tax rate.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Housing",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Median House Value"
+    },
+    "energy_output": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict energy output values from the values for humidity, pressure, temperature, and vacuum.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Power Plant",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Power Plant Energy Output"
+    },
+    "future_logins": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict future logins from three other fields.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "Future Logins",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future Logins"
+    },
+    "future_vpn_sinusoidal": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access via the VPN from thirteen other fields. In this example time is sinusoidal.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "Future VPN Sinusoidal",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future VPN Usage (sinusoidal time)"
+    },
+    "future_vpn_categorical": {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access via the VPN from twelve other fields. In this example time is categorical.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "Future VPN Categorical",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict Future VPN Usage (categorical time)"
+    },
+
+    "disk_failures": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict disk failure from fields including hard drive model.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Disk Failures",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Hard Drive Failure"
+    },
+    "malware": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict malware from fields including bytes received, bytes sent, and destination port.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Malware",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict the Presence of Malware"
+    },
+    "churn": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict customer churn from fields including daytime minutes, nighttime minutes, and voicemail plan.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Churn",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Telecom Customer Churn"
+    },
+    "diabetes": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict the response of diabetes from six other fields including BMI, age, blood pressure, and glucose concentration.",
+        "featured": false,
+        "industries": ["health"],
+        "name": "Diabetes",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict the Presence of Diabetes"
+    },
+    "vehicle_type": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the LogisticRegression algorithm to predict vehicle type from seven other fields including battery voltage, engine coolant temperature, and speed.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Race Cars",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict Vehicle Make and Model"
+    },
+    "external_anomalies": {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Random Forest Classifier algorithm to predict business process anomalies from fields related to computer logs.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "External Anomalies",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict External Anomalies"
+    },
+
+    "server_response_time": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Median Absolute Deviation to look for outliers in server response time.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Server Response Time",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Server Response Time"
+    },
+    "numeric_employee_logins": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Median Absolute Deviation to look for outliers in login information.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Employee Logins (prediction errors)",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Number of Logins (vs. Predicted Value)"
+    },
+    "numeric_supermarket_purchases": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Standard Deviation to look for outliers in supermarket purchases data.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Supermarket Purchases",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Supermarket Purchases"
+    },
+    "power_plant_humidity": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Standard Deviation to look for outliers in humidity related values.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Power Plant Humidity",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Power Plant Humidity"
+    },
+    "call_center_cyclical": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Standard Deviation to look for outliers in call center data.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "Call Center Cyclical",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Cyclical Outliers in Call Center Data"
+    },
+    "logins_cyclical": {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Standard Deviation to look for outliers in business process data and computer logs.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Logins Cyclical",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Cyclical Outliers in Logins"
+    },
+
+    "categorical_disk_failures": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on four fields of data that include model and serial number.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Disk Failures",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Disk Failures"
+    },
+    "bitcoin_transactions": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on three fields of data that include user and value.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Bitcoin Transactions",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Bitcoin Transactions"
+    },
+    "categorical_supermarket_purchases": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on six fields of data that include customer ID, product ID, and quantity.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Supermarket Purchases",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Supermarket Purchases"
+    },
+    "mortage_loans_data_ny": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on eight fields including purchase price, contract interest rate, initial fees and changes, and term to maturity.",
+        "featured": false,
+        "industries": ["finance"],
+        "name": "Mortgage Loans Data - New York",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Mortgage Contracts"
+    },
+    "diabetic_data": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on seven fields including number of medications, number of procedures, and number of emergencies.",
+        "featured": false,
+        "industries": ["health"],
+        "name": "Diabetic Data",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Diabetes Patient Records"
+    },
+    "phone_usage": {
+        "description": "This example uses the Detect Categorical Outliers Assistant on three fields of data that include incoming, outgoing, and missed call.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Phone Usage",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Mobile Phone Activity"
+    },
+
+    "internet_traffic": {
+        "description": "This example uses the Forecast Time Series Assistant and the Kalman Filter algorithm to forecast future internet traffic.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Internet Traffic",
+        "assistant": "forecast_time_series",
+        "title": "Forecast Internet Traffic"
+    },
+    "forecast_employee_logins": {
+        "description": "This example uses the Forecast Time Series Assistant and the Kalman Filter algorithm to forecast future employee login numbers.",
+        "featured": false,
+        "industries": ["security"],
+        "name": "Employee Logins",
+        "assistant": "forecast_time_series",
+        "title": "Forecast the Number of Employee Logins"
+    },
+    "souvenir_sales": {
+        "description": "This example uses the Forecast Time Series Assistant and the Kalman Filter algorithm to forecast future souvenir sales numbers.",
+        "featured": true,
+        "industries": ["business_analytics"],
+        "name": "Souvenir Sales",
+        "assistant": "forecast_time_series",
+        "title": "Forecast Monthly Sales"
+    },
+    "bluetooth_devices": {
+        "description": "This example uses the Forecast Time Series Assistant and the Kalman Filter algorithm to forecast distinct addresses.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Bluetooth Devices",
+        "assistant": "forecast_time_series",
+        "title": "Forecast the Number of Bluetooth Devices"
+    },
+    "exchange_rate_ARIMA": {
+        "description": "This example uses the Forecast Time Series Assistant and the ARIMA algorithm to forecast the exchange rate.",
+        "featured": false,
+        "industries": ["finance"],
+        "name": "Exchange Rate ARIMA",
+        "assistant": "forecast_time_series",
+        "title": "Forecast Exchange Rate TWI using ARIMA"
+    },
+
+    "hard_drives": {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the PCA method, and the K-means algorithm to cluster on four different fields.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Disk",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Hard Drives by SMART Metrics"
+    },
+    "apps": {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the Standard Scaler method, and the Spectral Clustering algorithm to cluster on four different fields.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Apps",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Behavior by App Usage"
+    },
+    "cluster_housing": {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the PCA method, and the DBSCAN algorithm to cluster on three different fields.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Housing",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Neighborhoods by Properties"
+    },
+    "vehicles": {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the PCA method, and the Birch algorithm to cluster data on seven fields including battery voltage, engine speed, and vertical G-force.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Track",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Vehicles by Onboard Metrics"
+    },
+    "powerplant": {
+        "description": "This example uses the Cluster Numeric Events Assistant and the Birch algorithm to cluster data on five fields including humidity, pressure, and temperature.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "PowerPlant",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Power Plant Operating Regimes"
+    },
+    "business_anomalies": {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the PCA method, and the DBSCAN algorithm to cluster on a single field.",
+        "featured": false,
+        "industries": ["iot"],
+        "name": "Business Anomalies",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Business Anomalies to Reduce Noise"
+    },
+
+    "sf_app_usage": {
+        "description": "This example uses the Smart Forecasting Assistant to forecast expenses for the next month, based on three months of data. The Smart Forecasting Assistant leverages the StateSpaceForecast algorithm.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "App Usage",
+        "assistant": "smart_forecast",
+        "title": "Forecast App Expenses"
+    },
+    "sf_call_center": {
+        "description": "This example uses the Smart Forecasting Assistant to forecast call count for the next 30 points, based on three months of data. The Smart Forecasting Assistant leverages the StateSpaceForecast algorithm.",
+        "featured": false,
+        "industries": ["business_analytics"],
+        "name": "Calls",
+        "assistant": "smart_forecast",
+        "title": "Forecast the Number of Calls to a Call Center"
+    },
+    "sf_app_logons": {
+        "description": "This example uses the Smart Forecasting Assistant to forecast the number of logons for the next 30 points, based on nine months of data. A lookup file excludes special days from the forecast. The Smart Forecasting Assistant leverages the StateSpaceForecast algorithm.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "App Logons",
+        "assistant": "smart_forecast",
+        "title": "Forecast App Logons with Special Days"
+    },
+    "sf_app_usage_multiple": {
+        "description": "This example uses the Smart Forecasting Assistant to forecast CRM and ERP for the next month, based on three months of data. The Smart Forecasting Assistant leverages the StateSpaceForecast algorithm.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "App Expenses Multivariate",
+        "assistant": "smart_forecast",
+        "title": "Forecast App Expenses from Multiple Variables"
+    },
+
+    "soda_disk_failure": {
+        "description": "This example uses the Smart Outlier Detection Assistant to find anomalies in SMART (self-monitoring, analysis, and reporting technology) metrics across different hard drive models. The Smart Outlier Detection Assistant leverages the DensityFunction algorithm.",
+        "featured": false,
+        "industries": ["it"],
+        "name": "Hard Drive Anomalies",
+        "assistant": "smart_outlier_detection",
+        "title": "Find Anomalies in Hard Drive Metrics"
+    },
+    "soda_supermarket": {
+        "description": "This example uses the Smart Outlier Detection Assistant to find anomalies in supermarket purchase quantity metrics across different shops. The Smart Outlier Detection Assistant leverages the DensityFunction algorithm.",
+        "featured": true,
+        "industries": ["business_analytics"],
+        "name": "Anomalies in Supermarket Purchases",
+        "assistant": "smart_outlier_detection",
+        "title": "Find Anomalies in Supermarket Purchases"
+    },
+    "property_descriptions": {
+        "description": "This example uses the Smart Clustering Assistant to group houses based on a selection of fields relating to those houses. The Smart Clustering Assistant leverages the K-Means algorithm.",
+        "featured": true,
+        "industries": ["business_analytics"],
+        "name": "Property Descriptions",
+        "assistant": "smart_clustering",
+        "title": "Cluster Houses by Property Descriptions"
+    },
+    "mortgage_loans": {
+        "description": "This example uses the Smart Clustering Assistant to group mortgage loans based on a set of related fields. The Smart Clustering Assistant leverages the K-Means algorithm.",
+        "featured": true,
+        "industries": ["finance"],
+        "name": "Mortgage Loans",
+        "assistant": "smart_clustering",
+        "title": "Cluster Mortgage Loans"
+    },
+    "disk_utilization": {
+        "description": "This example uses the Smart Prediction Assistant and the AutoPrediction algorithm to predict disk utilization from fields in the data including disk access and disk blocks.",
+        "featured": true,
+        "industries": ["it"],
+        "name": "Disk Utilization",
+        "assistant": "smart_prediction",
+        "title": "Predict Disk Utilization"
+    },
+    "firewall_traffic": {
+        "description": "This example uses the Smart Prediction Assistant and the AutoPrediction algorithm to predict vulnerabilities in firewall data from fields in the data including bytes received, bytes sent, packets received, and packets sent.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Firewall Traffic",
+        "assistant": "smart_prediction",
+        "title": "Predict the Presence of Vulnerabilities"
+    }
+}

@@ -1,0 +1,6 @@
+#categoryList .showcase-list-item-title {
+    position: initial !important;
+}
+#categoryList .showcase-list-item-content {
+    margin-left: 0px !important;
+}

@@ -1,0 +1,50 @@
+{
+    "receive_time": {
+        "isNumerical": false,
+        "value": "10/7/15 23:59"
+    },
+    "serial_number": {
+        "isNumerical": false,
+        "value": "sn_0009C101998"
+    },
+    "session_id": {
+        "isNumerical": false,
+        "value": "sid_100615"
+    },
+    "src_ip": {
+        "isNumerical": false,
+        "value": "109.197.174.142"
+    },
+    "dst_ip": {
+        "isNumerical": false,
+        "value": "73.147.88.91"
+    },
+    "bytes_received": {
+        "isNumerical": true,
+        "value": 133170
+    },
+    "packets_sent": {
+        "isNumerical": true,
+        "value": 46
+    },
+    "packets_received": {
+        "isNumerical": true,
+        "value": 102
+    },
+    "dest_port": {
+        "isNumerical": false,
+        "value": "p_53"
+    },
+    "src_port": {
+        "isNumerical": false,
+        "value": "p_0"
+    },
+    "used_by_malware": {
+        "isNumerical": false,
+        "value": "yes"
+    },
+    "has_known_vulnerability": {
+        "isNumerical": false,
+        "value": "yes"
+    }
+}

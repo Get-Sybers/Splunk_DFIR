@@ -1,0 +1,278 @@
+{
+    "modelName": "CAR-Thread",
+    "displayName": "CAR Thread",
+    "description": "CAR Thread Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Thread",
+            "displayName": "CAR Thread",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "src_pid",
+                    "displayName": "src_pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_pid"
+                    }
+                },
+                {
+                    "fieldName": "src_tid",
+                    "displayName": "src_tid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_tid"
+                    }
+                },
+                {
+                    "fieldName": "stack_base",
+                    "displayName": "stack_base",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for stack_base"
+                    }
+                },
+                {
+                    "fieldName": "stack_limit",
+                    "displayName": "stack_limit",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for stack_limit"
+                    }
+                },
+                {
+                    "fieldName": "start_address",
+                    "displayName": "start_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for start_address"
+                    }
+                },
+                {
+                    "fieldName": "start_function",
+                    "displayName": "start_function",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for start_function"
+                    }
+                },
+                {
+                    "fieldName": "start_module",
+                    "displayName": "start_module",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for start_module"
+                    }
+                },
+                {
+                    "fieldName": "start_module_name",
+                    "displayName": "start_module_name",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for start_module_name"
+                    }
+                },
+                {
+                    "fieldName": "tgt_pid",
+                    "displayName": "tgt_pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for tgt_pid"
+                    }
+                },
+                {
+                    "fieldName": "tgt_tid",
+                    "displayName": "tgt_tid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for tgt_tid"
+                    }
+                },
+                {
+                    "fieldName": "uid",
+                    "displayName": "uid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for uid"
+                    }
+                },
+                {
+                    "fieldName": "user",
+                    "displayName": "user",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user"
+                    }
+                },
+                {
+                    "fieldName": "user_stack_base",
+                    "displayName": "user_stack_base",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user_stack_base"
+                    }
+                },
+                {
+                    "fieldName": "user_stack_limit",
+                    "displayName": "user_stack_limit",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user_stack_limit"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Thread_create",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "create",
+                            "displayName": "create",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for create",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(create) OR create=\"\", \"unknown\", create)"
+                },
+                {
+                    "calculationID": "CAR_Thread_remote_create",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "remote_create",
+                            "displayName": "remote_create",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for remote_create",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(remote_create) OR remote_create=\"\", \"unknown\", remote_create)"
+                },
+                {
+                    "calculationID": "CAR_Thread_suspend",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "suspend",
+                            "displayName": "suspend",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for suspend",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(suspend) OR suspend=\"\", \"unknown\", suspend)"
+                },
+                {
+                    "calculationID": "CAR_Thread_terminate",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "terminate",
+                            "displayName": "terminate",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for terminate",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(terminate) OR terminate=\"\", \"unknown\", terminate)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

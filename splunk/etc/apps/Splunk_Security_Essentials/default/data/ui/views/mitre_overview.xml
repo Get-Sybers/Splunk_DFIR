@@ -1,0 +1,2610 @@
+<form version="1.1" script="runPageScript.js" theme="light">
+  <label>MITRE ATT&amp;CK Framework</label>
+  <description>Each number represents a piece of content. Follow the headlines 1, 2 and 3 to find and drill down into the content.</description>
+  <init>
+    <set token="chart_post_process">| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+    | where Matrix= "Enterprise ATT&amp;CK"
+| sort Tactic_Order
+| fields - Tactic_Order Matrix
+| rename "MITRE Tactic" AS "MITRE ATT&amp;CK Tactic"
+    </set>
+    <set token="chart_post_process2">| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+| sort Tactic_Order
+| where Matrix="Enterprise ATT&amp;CK"
+| fields - Tactic_Order Matrix
+            </set>
+
+    <set token="Phase0LongName">Active</set>
+    <set token="Phase1LongName">Available</set>
+    <set token="Phase2LongName">Needs data</set>
+    <set token="SelectedLongName">Selected</set>
+    <set token="SelectedColor">F1C40F</set>
+    <set token="colorby">Total</set>
+    <set token="deeplink_mitre_platforms">Enterprise</set>
+    <set token="modified_mitre_platforms">Enterprise</set>
+    <set token="attach_index_sourcetype"></set>
+    <set token="mitre_threat_groups_for_in">*</set>
+  </init>
+  <search>
+    <query>| inputlookup ColorScheme.csv WHERE Enabled="Yes"
+| appendcols [
+| inputlookup AppSettings.csv
+| transpose 10 header_field=Key
+| fields - column
+]</query>
+    <done>
+      <condition match="'job.resultCount' &gt; 0">
+        <set token="addsample"></set>
+        <set token="replacewithsample"></set>
+        <set token="y_field">Status</set>
+        <set token="Phase0Color">$result.Phase0$</set>
+        <set token="Phase1Color">$result.Phase1$</set>
+        <set token="Phase2Color">$result.Phase2$</set>
+        <set token="SelectedColor">$result.Selected$</set>
+        <set token="Phase0LongName">$result.Phase0LongName$</set>
+        <set token="Phase0ShortName">$result.Phase0ShortName$</set>
+        <set token="Phase1LongName">$result.Phase1LongName$</set>
+        <set token="Phase1ShortName">$result.Phase1ShortName$</set>
+        <set token="Phase2LongName">$result.Phase2LongName$</set>
+        <set token="Phase2ShortName">$result.Phase2ShortName$</set>
+        <set token="SelectedLongName">$result.SelectedLongName$</set>
+        <set token="SelectedShortName">$result.SelectedShortName$</set>
+      </condition>
+    </done>
+  </search>
+  <search>
+    <query>| makeresults count=1</query>
+    <done>
+      <condition match="$job.doneProgress$=1">
+        <set token="x_field">$form.x_field$</set>
+        <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+| sort Tactic_Order
+| where (Matrix="Enterprise ATT&amp;CK" AND "$form.x_field$"="MITRE Tactic") OR "$form.x_field$"!="MITRE Tactic"
+| fields - Tactic_Order Matrix
+| rename "MITRE Tactic" AS "MITRE ATT&amp;CK Tactic"
+        </set>
+      </condition>
+    </done>
+  </search>
+  <search>
+    <query>| rest splunk_server=local count=1 /services/server/info | table version | eval majorVersion=mvindex(split(version,"."),0) | where majorVersion>=8</query>
+    <done>
+      <condition match="'job.resultCount' == 0">
+        <set token="nov8">nov8</set>
+        <unset token="v8">v8</unset>
+      </condition>
+      <condition match="'job.resultCount' &gt; 0">
+        <unset token="nov8">nov8</unset>
+        <set token="v8">v8</set>
+      </condition>
+    </done>
+  </search>
+  <search>
+    <query>| rest splunk_server=local /services/apps/local | search disabled=0 title=*sankey*</query>
+    <done>
+      <condition match="'job.resultCount' == 0">
+        <set token="nosankey">nosankey</set>
+        <unset token="sankey">sankey</unset>
+      </condition>
+      <condition match="'job.resultCount' &gt; 0">
+        <unset token="nosankey">nosankey</unset>
+        <set token="sankey">sankey</set>
+      </condition>
+    </done>
+  </search>
+  <search id="data_sources_selected_filter_search">
+    <query>
+      | makeresults count=1
+| eval data_sources=mvappend($datasource_selection$,"-")
+| eval data_sources=mvfilter(NOT like('data_sources',"*"))
+| eval data_sources=mvjoin(data_sources,"\",\"")
+| rex mode=sed field=data_sources "s/,/) OR match('Data Source',/g"
+| eval data_sources_selected_filter="match('Data Source',\"".data_sources."\")"
+| fields data_sources_selected_filter
+</query>
+    <done>
+      <condition match="$job.doneProgress$=1">
+        <set token="data_sources_selected_filter">$result.data_sources_selected_filter$</set>
+      </condition>
+    </done>
+  </search>
+  <search>
+    <query>| rest splunk_server=local /services/apps/local | search disabled=0 title=*radar*</query>
+    <done>
+      <condition match="'job.resultCount' == 0">
+        <set token="noradar">noradar</set>
+        <unset token="radar">radar</unset>
+      </condition>
+      <condition match="'job.resultCount' &gt; 0">
+        <unset token="noradar">noradar</unset>
+        <set token="radar">radar</set>
+      </condition>
+    </done>
+  </search>
+  <search id="usecase_base">
+    <query>
+        | sseanalytics
+        | lookup use_cases.csv title AS "usecase" OUTPUT order_title AS use_case_order_title
+        | eval "Use Case Orig"=if(isnull('usecase'),"Other",'usecase')
+        | eval "Use Case"=if(isnull(use_case_order_title), "9_Other",use_case_order_title)
+        | eval "Has Data"=if(data_available="Available" OR data_available="Mixed", "Yes", "No")
+        | eval Status=case(
+        'enabled'="Yes" AND 'Has Data'="Yes","$Phase0LongName$",
+        'enabled'!="Yes" AND 'Has Data'="Yes","$Phase1LongName$",
+        1=1,"$Phase2LongName$"
+        )
+        | eval App=displayapp, Enabled=enabled, Title=name, "Security Data Journey"=securityDataJourney, "Data Source"=datasource, "Data Source Category"=data_source_categories_display
+        | where (mitre_tactic_display!="" AND mitre_tactic_display!="None") OR (mitre_technique_display!="" AND mitre_technique_display!="None" AND mvcount(mitre_technique_display)&gt;0)
+
+        
+        | eval mitre_sub_technique_display=if(mitre_sub_technique_display="None","",mitre_sub_technique_display)
+        | eval "MITRE Tactic"=if('mitre_tactic_display'="","-",'mitre_tactic_display'), "MITRE Technique"=mitre_technique_display, "MITRE Sub-Technique"=mitre_sub_technique_display, "MITRE Threat Group"=mitre_threat_groups, "MITRE Platforms"=mitre_platforms, Industry=split(industryMapping,"|")
+        | eval c="This adds the Technique parent to the mitre_technique_combined field when you only have mapped to a sub-technique. This makes it count in the Technique cell"
+        | lookup mitre_enterprise_list Sub_TechniqueId AS mitre_sub_technique OUTPUT Technique AS Technique_MergeFix TechniqueId AS TechniqueId_MergeFix
+        | eval TechniqueCombined_MergeFix=mvzip(TechniqueId_MergeFix,Technique_MergeFix," - ")
+        | eval mitre_technique_combined=mvdedup(mvappend(mitre_technique_combined,TechniqueCombined_MergeFix))
+        | fields - *_MergeFix
+</query>
+<done>
+      <eval token="usecase_baseJob">'job.sid'</eval>
+    </done>
+  </search>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <html>
+          <i data-translate-id="contentanalytics-i-mitrelink">For more details check the <a href="https://mitre-attack.github.io/attack-navigator/enterprise/" target="_blank">MITRE ATT&amp;CK Navigator.</a>
+        </i>
+
+      </html>
+    </panel>
+  </row>
+  <row id="cs2">
+    <panel>
+      <single>
+        <title>$Phase0LongName$</title>
+        <search base="usecase_base">
+          <query>| where Status="$Phase0LongName$"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["#$Phase0Color$","#3c444d"]</option>
+        <option name="rangeValues">[1000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="underLabel">Content ($Phase0LongName$)</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <set token="form.phase">$Phase0LongName$</set>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>$Phase1LongName$</title>
+        <search base="usecase_base">
+          <query>| where Status="$Phase1LongName$"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["#$Phase1Color$","#3c444d"]</option>
+        <option name="rangeValues">[1000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="underLabel">Content ($Phase1LongName$)</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <set token="form.phase">$Phase1LongName$</set>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>$Phase2LongName$</title>
+        <search base="usecase_base">
+          <query>| where Status="$Phase2LongName$"
+| stats count</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">all</option>
+        <option name="rangeColors">["#$Phase2Color$","#3c444d"]</option>
+        <option name="rangeValues">[10000]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="underLabel">Content ($Phase2LongName$)</option>
+        <option name="useColors">1</option>
+        <drilldown>
+          <set token="form.phase">$Phase2LongName$</set>
+        </drilldown>
+      </single>
+    </panel>
+
+  </row>
+  <row id="tabs">
+    <panel>
+      <html>
+      <h1 data-translate-id="contentanalytics-h1-availableContent">1. Available Content</h1>
+          <p data-translate-id="contentanalytics-p-graphs">Click in the graphs below to filter on an area you want to highlight.</p>
+      <ul id="tabs" class="nav nav-tabs">
+                    <li class="active">
+                        <a class="toggle-tab available_content" data-toggle="tab" data-tab-set="available_content" data-elements="row1_col1" data-token="row1_col1" data-translate-id="contentanalytics-li-mitremap">MITRE ATT&amp;CK Matrix</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab available_content" data-toggle="tab" data-tab-set="available_content" data-elements="row1_col2" data-token="row1_col2" data-translate-id="contentanalytics-li-chartview">Chart View</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab available_content" data-toggle="tab" data-tab-set="available_content" data-elements="row1_col3_dropdowns,row1_col3" data-token="row1_col3" data-translate-id="contentanalytics-li-radarview">Radar View</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab available_content" data-toggle="tab" data-tab-set="available_content" data-elements="row1_col4" data-token="row1_col4" data-translate-id="contentanalytics-li-sankeyview">Sankey View</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab available_content" data-toggle="tab" data-tab-set="available_content" data-elements="row1_col5,row1_col6,row1_col7,row1_col8" data-token="row1_col5" data-translate-id="contentanalytics-li-journeyview">Security Data Journey View</a>
+                    </li>
+				</ul>
+    </html>
+    </panel>
+  </row>
+    <row id="row1_col1">
+    <panel>
+      <input type="dropdown" token="colorby">
+        <label>Color by</label>
+        <choice value="Total">Content (Total)</choice>
+        <default>Total</default>
+        <fieldForLabel>DisplayValue</fieldForLabel>
+        <fieldForValue>Value</fieldForValue>
+        <search>
+          <query>| inputlookup AppSettings.csv
+| search Key=Phase*LongName
+| fields Value
+| eval DisplayValue="Content (".Value.")"
+| append [
+| makeresults count=1
+| eval Value="Popularity",DisplayValue="Threat Group Count"
+| fields - _time
+]
+| append [
+| makeresults count=1
+| eval Value="Bookmarked",DisplayValue="Bookmarked Count"
+| fields - _time
+]
+</query>
+        </search>
+      </input>
+      
+        <input type="dropdown" token="app">
+        <label>Originating app</label>
+        <fieldForLabel>App</fieldForLabel>
+        <fieldForValue>App</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by App | fields App | sort 0 App</query>
+        </search>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_displayapp">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_displayapp">replace($value$, " ", "_")</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="multiselect" token="MITRE_Technique">
+        <label>MITRE ATT&amp;CK Technique</label>
+        <fieldForLabel>mitre_technique_combined</fieldForLabel>
+        <fieldForValue>mitre_technique</fieldForValue>
+        <search base="usecase_base">
+          <query>
+            | stats count by "mitre_technique_combined" 
+            | fields "mitre_technique_combined" 
+            | eval mitre_technique=mitre_technique_combined
+            | append 
+                [| inputlookup mitre_technique_lists.csv 
+                | inputlookup append=t mitre_custom_technique_lists
+                | rename List AS "mitre_technique_combined", Techniques AS "mitre_technique" 
+                | fields mitre_technique_combined mitre_technique 
+                | eval mitre_technique=split(mitre_technique,",") 
+                | mvexpand mitre_technique 
+                | lookup mitre_enterprise_list TechniqueIdCombined AS mitre_technique OUTPUT Technique 
+                | eval Technique=mvdedup(Technique) 
+                | eval mitre_technique=mitre_technique." - ".Technique 
+                | fields mitre_technique_combined mitre_technique 
+                | mvcombine mitre_technique delim="," 
+                | nomv mitre_technique 
+                | eval mitre_technique="0_".mitre_technique
+                    ] 
+
+            | append 
+                [| inputlookup mitre_enterprise_list
+                | search Sub_Technique="-"
+                | eval mitre_technique_combined = TechniqueIdCombined." - ".if('Sub_Technique'="-",Technique,'Sub_Technique')
+                | eval mitre_technique=mitre_technique_combined 
+                | fields mitre_technique_combined mitre_technique
+                
+                    ]  
+            | sort 0 "mitre_technique" 
+            | eval mitre_technique=if(like(mitre_technique,"0_%"),mvindex(split(mitre_technique,"0_"),1), mitre_technique) 
+            | dedup mitre_technique
+            | where mitre_technique!="None"
+        </query>
+        </search>
+        <choice value="">Any</choice>
+        <default></default>
+        <change>
+          <condition label="Any">
+            <set token="mitre_technique_ids">*</set>
+            <eval token="MITRE_Technique2">$form.MITRE_Technique$</eval>
+            <eval token="form.MITRE_Technique2">$form.MITRE_Technique$</eval>
+          </condition>
+          <condition label="*">
+            <eval token="mitre_technique_ids">replace(replace(mvjoin($form.MITRE_Technique$,","), " - [^,]*", ""),"^,","")</eval>
+            <eval token="MITRE_Technique2">$form.MITRE_Technique$</eval>
+            <eval token="form.MITRE_Technique2">$form.MITRE_Technique$</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="multiselect" token="MITRE_Threat_Group">
+        <label>MITRE ATT&amp;CK Threat Group</label>
+        <fieldForLabel>mitre_threat_groups</fieldForLabel>
+        <fieldForValue>mitre_threat_group_value</fieldForValue>
+        <search>
+          <query>| union [
+| inputlookup mitre_threat_groups.csv
+| stats delim="," values(Threat_Group) AS Threat_Groups BY Industry
+| nomv Threat_Groups
+| eval Industry="Industry: ".Industry
+| eval Threat_Groups=Threat_Groups.",".Industry
+| rename Threat_Groups AS mitre_threat_group_value
+| rename Industry AS mitre_threat_groups
+]
+[
+| inputlookup append=t mitre_enterprise_list
+| eval Threat_Groups=split(Threat_Groups,"|")
+| stats count by Threat_Groups
+| where Threat_Groups!="" AND Threat_Groups!="-"
+| fields Threat_Groups
+| rename Threat_Groups AS mitre_threat_groups
+]
+[
+| inputlookup append=t mitre_custom_threat_groups
+| table mitre_threat_groups mitre_threat_group_value
+]
+| eval mitre_threat_group_value=coalesce(mitre_threat_group_value,mitre_threat_groups)
+| search mitre_threat_groups!="Industry: -"
+</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <delimiter>,</delimiter>
+      </input>
+      <input type="dropdown" token="software">
+        <label>MITRE ATT&amp;CK Software</label>
+        <fieldForLabel>mitre_software</fieldForLabel>
+        <fieldForValue>mitre_software</fieldForValue>
+        <search>
+          <query>|inputlookup mitre_enterprise_list
+| eval Software=split(Software,"|")
+| stats count by Software
+| where Software!="" AND Software!="-"
+| fields Software
+| rename Software AS mitre_software</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="multiselect" token="mitre_platforms">
+        <label>MITRE ATT&amp;CK Matrix Platform</label>
+        <fieldForLabel>platforms</fieldForLabel>
+        <fieldForValue>platforms</fieldForValue>
+        <delimiter>,</delimiter>
+        <change>
+          <eval token="deeplink_mitre_platforms">mvjoin(split(replace(replace('form.mitre_platforms'," ","_"),"\"",""),","),"|")</eval>
+          <eval token="modified_mitre_platforms">mvjoin('form.mitre_platforms',"\",\"")</eval>
+        </change>
+        <search>
+          <query>| inputlookup mitre_enterprise_list
+| fields Platforms
+| eval platforms=split(Platforms,"|")
+| stats count by platforms
+| fields platforms
+| sort platforms</query>
+        </search>
+        <choice value="Enterprise">Enterprise</choice>
+        <choice value='"Google Workspace,IaaS,Office 365,SaaS,Azure AD"'>Cloud</choice>
+        <default>Enterprise</default>
+        <initialValue>Enterprise</initialValue>
+      </input>
+      <input type="multiselect" token="datasource_selection">
+        <label>Highlight Data Source</label>
+        <fieldForLabel>datasource</fieldForLabel>
+        <fieldForValue>datasource</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by datasource | fields datasource | sort 0 datasource</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <valuePrefix>"</valuePrefix>
+        <delimiter>,</delimiter>
+        <valueSuffix>"</valueSuffix>
+      </input>
+      <input type="dropdown" token="matrix_filter">
+        <label>Filter</label>
+        <choice value="">None</choice>
+        <choice value="popular_only=true">Threat Group Count>=3</choice>
+        <choice value="content_available=true">Techniques with Content</choice>
+        <choice value="bookmarked_only=true">Bookmarked Content</choice>
+        <choice value="group_only=true">Threat Group Selection</choice>
+        <default>None</default>
+        <change>
+          <condition label="*">
+          </condition>
+        </change>
+      </input>
+      <table id="mitremaptable" depends="$v8$">
+        <title>MITRE ATT&amp;CK Matrix</title>
+        <search>
+          <query>| mitremap $matrix_filter$ groups="$MITRE_Threat_Group$" platforms="$mitre_platforms$" techniques="$mitre_technique_ids$"
+| foreach *
+    [ | rex field="&lt;&lt;FIELD&gt;&gt;" "(?&lt;technique_temp&gt;.*) \("
+    | eval Technique_nogroups=coalesce(technique_temp,'&lt;&lt;FIELD&gt;&gt;')
+    | eval "&lt;&lt;FIELD&gt;&gt; Tactic" = "&lt;&lt;FIELD&gt;&gt;"
+    | eval App=if("$app$"="*", "Any", "$app$")
+    | eval Matrix="Enterprise ATT&amp;CK"
+    | eval "Sub-Technique"="-"
+    | lookup mitre_environment_count.csv App Matrix "Sub-Technique" Technique AS Technique_nogroups, "Tactic" AS "&lt;&lt;FIELD&gt;&gt; Tactic" OUTPUT "Active" "Available" "Needs data" "Data Source" Bookmarked
+    | lookup mitre_enterprise_list Matrix Tactic AS "&lt;&lt;FIELD&gt;&gt; Tactic" Technique AS Technique_nogroups Sub_Technique AS "Sub-Technique" OUTPUT Threat_Groups
+    | eval "Threat_Group_Popularity"=if(Threat_Groups!="-",mvcount(split(Threat_Groups,"|")),0)
+    | eval "Data Source"=split('Data Source',",")
+    | eval "Data Source"=mvfilter($data_sources_selected_filter$)
+    | rex field="Data Source" "(?&lt;Data_Source&gt;[^:]*)::(?&lt;Data_Source_Count&gt;.*)"
+    | rename Data_Source AS "Data Source"
+    | eval Selected=if(in('Data Source',$datasource_selection$) , Data_Source_Count,0)
+    | eval Selected=tonumber(coalesce(mvindex(Selected,0,0),0))+tonumber(coalesce(mvindex(Selected,1,1),0))+tonumber(coalesce(mvindex(Selected,2,2),0))+tonumber(coalesce(mvindex(Selected,3,3),0))+tonumber(coalesce(mvindex(Selected,4,4),0))+tonumber(coalesce(mvindex(Selected,5,5),0))+tonumber(coalesce(mvindex(Selected,6,6),0))
+    | fields - Technique_nogroups technique_temp "Sub-Technique" Threat_Groups
+    | eval count = coalesce(count, 1), temp = "t" + count, {temp}='&lt;&lt;FIELD&gt;&gt;', color="#00A9F8", colorby="$form.colorby$"
+
+    | eval text='&lt;&lt;FIELD&gt;&gt;'
+    | eval p0_count=coalesce(Active,0)
+    | eval p1_count=coalesce(Available,0)
+    | eval p2_count=coalesce('Needs data',0)
+    | eval p3_count=coalesce('Selected',0)
+    | eval total_count=p0_count+p1_count+p2_count
+    | eval opacity=tostring(case(
+        colorby="Active",p0_count/20,
+        colorby="Available",p1_count/20,
+        colorby="Needs data",p2_count/20,
+        colorby="Total",total_count/20,
+        colorby="Popularity",min(Threat_Group_Popularity/20,1),
+        colorby="Bookmarked",Bookmarked/20
+        ))
+    | eval tooltip="Active: ".p0_count."&lt;br /&gt;"."Available: ".p1_count."&lt;br /&gt;"."Needs data: ".p2_count."&lt;br /&gt;"."Total: ".total_count."&lt;br /&gt;"."Selected: ".p3_count
+    | eval "&lt;&lt;FIELD&gt;&gt;_Groups"=rtrim(mvindex(split('text', " ("),1),")")
+    | eval "Technique"=mvindex(split('text', " ("),0)
+
+    | lookup mitre_enterprise_list Matrix Tactic AS "&lt;&lt;FIELD&gt;&gt; Tactic" Technique OUTPUT TechniqueId AS "&lt;&lt;FIELD&gt;&gt;"_TechniqueId  Sub_TechniqueId AS Sub_TechniqueId Threat_Groups AS Sub_Technique_Threat_Groups, Software AS Software
+    | eval "Sub_Technique_Threat_Group_Popularity"=mvmap(Sub_Technique_Threat_Groups,if(Sub_Technique_Threat_Groups!="-",mvcount(split(Sub_Technique_Threat_Groups,"|")),0))
+    | eval "Sub_TechniqueId"=mvindex('Sub_TechniqueId',1,30)
+    | eval IsSubTechnique="Yes" 
+    | lookup mitre_environment_count.csv App Matrix Tactic AS "&lt;&lt;FIELD&gt;&gt; Tactic" Technique IsSubTechnique OUTPUT "Sub-Technique" Active AS Active_SubTechnique Available AS Available_SubTechnique "Needs data" AS "Needs Data_SubTechnique" Sub_Technique_Total AS Total_SubTechnique Bookmarked AS Bookmarked_SubTechnique
+
+    | eval Opacity_SubTechnique=case(
+    colorby="Active", mvmap(Active_SubTechnique,Active_SubTechnique/20),
+    colorby="Available", mvmap(Available_SubTechnique,Available_SubTechnique/20),
+    colorby="Needs data", mvmap('Needs Data_SubTechnique','Needs Data_SubTechnique'/20),
+    colorby="Total", mvmap(Total_SubTechnique,Total_SubTechnique/20),
+    colorby="Popularity", mvmap(Sub_Technique_Threat_Group_Popularity,Sub_Technique_Threat_Group_Popularity/20),
+    colorby="Bookmarked", mvmap(Bookmarked,Bookmarked/20)
+    )
+    | eval Color_SubTechnique=mvmap(Active_SubTechnique,'color')
+    | eval Active_SubTechniqueJson=mvmap(Active_SubTechnique,"\"Active\": ".Active_SubTechnique),Available_SubTechniqueJson=mvmap(Available_SubTechnique,"\"Available\": ".Available_SubTechnique),NeedsData_SubTechniqueJson=mvmap('Needs Data_SubTechnique',"\"Needs Data\": ".'Needs Data_SubTechnique'),Total_SubTechniqueJson=mvmap('Total_SubTechnique',"\"Total\": ".'Total_SubTechnique'),Color_SubTechniqueJson=mvmap('Color_SubTechnique',"\"Color\": \"".'Color_SubTechnique'."\""),Opacity_SubTechniqueJson=mvmap('Opacity_SubTechnique',"\"Opacity\": ".'Opacity_SubTechnique'),Id_SubTechniqueJson=mvmap('Sub_TechniqueId',"\"Sub_TechniqueId\": \"".'Sub_TechniqueId'."\""),Bookmarked_SubTechniqueJson=mvmap(Bookmarked_SubTechnique,"\"Bookmarked\": ".Bookmarked_SubTechnique)
+
+    | eval c="======This magic section filters all threat groups attached to the sub-technique to only the ones we have selected in the filter====="
+    | eval Selected_Threat_Groups="$MITRE_Threat_Group$"
+    | eval Sub_Technique_Threat_Groups= mvindex(mvmap(Sub_Technique_Threat_Groups,if(isnotnull(mvfind(split(Selected_Threat_Groups,","),Sub_Technique_Threat_Groups)) OR Selected_Threat_Groups == "*",Sub_Technique_Threat_Groups,"-")),1,30)
+    | eval Selected_Threat_GroupsJson=",\"Selected_Threat_Groups\": \"".'Selected_Threat_Groups'."\""
+    | eval Groups_SubTechniqueJson=mvmap('Sub_Technique_Threat_Groups',"\"Threat_Groups\": \"".replace(Sub_Technique_Threat_Groups, "\|",",")."\"")
+    | eval Popularity_SubTechniqueJson=mvmap('Sub_Technique_Threat_Group_Popularity',"\"Sub-Technique Popularity\": \"".'Sub_Technique_Threat_Group_Popularity'."\"")
+    | fields - Sub_Technique_Threat_GroupsLine Sub_Technique_Threat_GroupsTemp Selected_Threat_Groups Sub_Technique_Threat_Groups Sub_Technique_Threat_Group_Popularity c
+    | eval c="=======END======="
+    
+    | eval c="======This magic section filters all software attached to only the ones we have selected in the filter====="
+    | eval Selected_Software="$software$"
+    | eval Software=mvindex(mvmap(if(mvcount(Software)=1,mvappend("-",Software), Software),if(isnotnull(mvfind(split(Selected_Software,","),Software)),Software,"-")),1,100)
+    | eval Selected_SoftwareJson=",\"Selected_Software\": \"".'Selected_Software'."\""
+    | eval Software_SubTechniqueJson=mvmap('Software',"\"Software\": \"".replace(Software, "\|",",")."\"")
+    | eval Software_Json="\"Software\": \"".coalesce(mvjoin(mvdedup(split(mvjoin(mvfilter(Software!="-"),"|"),"|")),","),"-")."\""
+    | fields - Software c
+    | eval c="=======END======="
+
+    | eval SubTechniqueValuesMerge=mvzip(Active_SubTechniqueJson,mvzip(Available_SubTechniqueJson,mvzip(NeedsData_SubTechniqueJson,mvzip(Color_SubTechniqueJson,mvzip(Opacity_SubTechniqueJson,mvzip(Total_SubTechniqueJson,mvzip(Id_SubTechniqueJson,mvzip(mvzip(Groups_SubTechniqueJson,Popularity_SubTechniqueJson),mvzip(Software_SubTechniqueJson,Bookmarked_SubTechniqueJson)))))))))
+    | eval Sub_Technique=coalesce(",\"Sub_Techniques\": {".mvjoin(mvzip(mvmap('Sub-Technique',"\"".'Sub-Technique'."\""),mvmap(SubTechniqueValuesMerge, "{".SubTechniqueValuesMerge."}"),": "),",")."}","") 
+    | fields - *_SubTechniqueJson  Active_SubTechnique Available_SubTechnique "Needs Data_SubTechnique" "Sub-Technique" IsSubTechnique SubTechniqueValuesMerge *_SubTechnique
+    
+    | eval "&lt;&lt;FIELD&gt;&gt;_TechniqueId"=mvdedup('&lt;&lt;FIELD&gt;&gt;_TechniqueId') 
+    | eval "&lt;&lt;FIELD&gt;&gt;" = if(text!="",mvappend("TechniqueId: ".'&lt;&lt;FIELD&gt;&gt;_TechniqueId',"Technique: ".Technique,"Color: ".color,"Opacity: ".opacity,"Active: ".p0_count,"Available: ".p1_count,"Needs data: ".p2_count,"Total: ".total_count,"Selected: ".p3_count,"Groups: ".'&lt;&lt;FIELD&gt;&gt;_Groups',"Technique Popularity: ".'Threat_Group_Popularity',"Bookmarked: ".'Bookmarked'),null) 
+    | eval "&lt;&lt;FIELD&gt;&gt;"="{".mvjoin(mvmap('&lt;&lt;FIELD&gt;&gt;',"\"".mvindex(split('&lt;&lt;FIELD&gt;&gt;',": "),0)."\": \"".mvindex(split('&lt;&lt;FIELD&gt;&gt;',": "),1)."\""),",").Selected_Threat_GroupsJson.Selected_SoftwareJson.",".Software_Json.Sub_Technique."}"
+    | eval count = count + 1 
+        ]
+        | eval v8="$v8$" | fields - v8
+        | fields - temp count Active Available "Needs data" tooltip *Tactic color colorby opacity c p0* p1* p2* t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 text total_count "Data Source" Data_Source_Count Selected p3_count Matrix *_TechniqueId *_Groups Threat_Group_Popularity Technique "Sub-Technique" Sub_Technique Selected_* Software_Json Bookmarked Bookmarked App</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">39</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">none</option>
+      </table>
+      <table class="mitremaptable" id="mitremaptablev7" depends="$nov8$">
+        <title>MITRE ATT&amp;CK Matrix</title>
+        <search>
+          <query>| mitremap $matrix_filter$ groups="$MITRE_Threat_Group$" platforms="$mitre_platforms$"
+| foreach * 
+    [| rex field="&lt;&lt;FIELD&gt;&gt;" "(?&lt;technique_temp&gt;.*) \(" 
+    | eval Technique_nogroups=coalesce(technique_temp,'&lt;&lt;FIELD&gt;&gt;') 
+    | eval "&lt;&lt;FIELD&gt;&gt; Tactic" = "&lt;&lt;FIELD&gt;&gt;" 
+    | eval Matrix="Enterprise ATT&amp;CK" 
+    | eval "Sub-Technique"="-" 
+    | lookup mitre_environment_count.csv Matrix "Sub-Technique" Technique AS Technique_nogroups, "Tactic" AS "&lt;&lt;FIELD&gt;&gt; Tactic" OUTPUT "Active" "Available" "Needs data" "Data Source" 
+    | eval "Data Source"=split('Data Source',",") 
+    | eval "Data Source"=mvfilter($data_sources_selected_filter$)
+    | rex field="Data Source" "(?&lt;Data_Source&gt;[^:]*)::(?&lt;Data_Source_Count&gt;.*)" 
+    | rename Data_Source AS "Data Source" 
+    | eval Selected=if(in('Data Source',$datasource_selection$) , Data_Source_Count,0)
+    | eval Selected=tonumber(coalesce(mvindex(Selected,0,0),0))+tonumber(coalesce(mvindex(Selected,1,1),0))+tonumber(coalesce(mvindex(Selected,2,2),0))+tonumber(coalesce(mvindex(Selected,3,3),0))+tonumber(coalesce(mvindex(Selected,4,4),0))+tonumber(coalesce(mvindex(Selected,5,5),0))+tonumber(coalesce(mvindex(Selected,6,6),0)) 
+    | fields - Technique_nogroups technique_temp "Sub-Technique" 
+    | eval count = coalesce(count, 1), temp = "t" + count, {temp}='&lt;&lt;FIELD&gt;&gt;', color="#00A9F8", colorby="Total" 
+    | eval text='&lt;&lt;FIELD&gt;&gt;' 
+    | eval p0_count=coalesce(Active,0) 
+    | eval p1_count=coalesce(Available,0) 
+    | eval p2_count=coalesce('Needs data',0) 
+    | eval p3_count=coalesce('Selected',0) 
+    | eval total_count=p0_count+p1_count+p2_count 
+    | eval opacity=tostring(case(
+        colorby="Active",p0_count/20,
+        colorby="Available",p1_count/20,
+        colorby="Needs data",p2_count/20,
+        colorby="Total",total_count/20
+        )) 
+    | eval tooltip="Active: ".p0_count."&lt;br /&gt;"."Available: ".p1_count."&lt;br /&gt;"."Needs data: ".p2_count."&lt;br /&gt;"."Total: ".total_count."&lt;br /&gt;"."Selected: ".p3_count 
+    | eval "&lt;&lt;FIELD&gt;&gt;_Groups"=rtrim(mvindex(split('text', " ("),1),")") 
+    | eval "Technique"=mvindex(split('text', " ("),0) 
+    | eval "Sub_Technique"="-" 
+    | lookup mitre_enterprise_list Matrix Tactic AS "&lt;&lt;FIELD&gt;&gt; Tactic" Technique Sub_Technique OUTPUT TechniqueId AS "&lt;&lt;FIELD&gt;&gt;"_TechniqueId Sub_TechniqueId AS Sub_TechniqueId Threat_Groups AS Sub_Technique_Threat_Groups, Software AS Software 
+    | eval "Sub_TechniqueId"=mvindex('Sub_TechniqueId',1,30) 
+    | eval IsSubTechnique="Yes" 
+    | lookup mitre_environment_count.csv Matrix Tactic AS "&lt;&lt;FIELD&gt;&gt; Tactic" Technique IsSubTechnique OUTPUT "Sub-Technique" Active AS Active_SubTechnique Available AS Available_SubTechnique "Needs data" AS "Needs Data_SubTechnique" Sub_Technique_Total AS Total_SubTechnique 
+    | eval c="======This magic section filters all threat groups attached to the sub-technique to only the ones we have selected in the filter=====" 
+    | eval Selected_Threat_Groups="$MITRE_Threat_Group$"
+    | eval Selected_Threat_GroupsJson="\"Selected_Threat_Groups\": \"".'Selected_Threat_Groups'."\"" 
+    | fields - Sub_Technique_Threat_GroupsLine Sub_Technique_Threat_GroupsTemp Selected_Threat_Groups Sub_Technique_Threat_Groups c 
+    | eval c="=======END=======" 
+    | eval c="======This magic section filters all software attached to only the ones we have selected in the filter=====" 
+    | eval Selected_Software="$software$"
+    | eval Selected_SoftwareJson="\"Selected_Software\": \"".'Selected_Software'."\"" 
+    | eval Software_Json="\"Software\": \"".coalesce(mvjoin(mvdedup(split(mvjoin(mvfilter(Software!="-"),"|"),"|")),","),"-")."\"" 
+    | fields - c Software
+    | eval c="=======END=======" 
+    | fields - *_SubTechniqueJsonActive_SubTechnique Available_SubTechnique "Needs Data_SubTechnique" "Sub-Technique" IsSubTechnique SubTechniqueValuesMerge *_SubTechnique 
+    | eval "&lt;&lt;FIELD&gt;&gt;_TechniqueId"=mvdedup('&lt;&lt;FIELD&gt;&gt;_TechniqueId') 
+    | eval "&lt;&lt;FIELD&gt;&gt;" = if(text!="",mvappend("\"TechniqueId\": \"".'&lt;&lt;FIELD&gt;&gt;_TechniqueId'."\"","\"Technique\": \"".Technique."\"","\"Color\": \"".color."\"","\"Opacity\": \"".opacity."\"","\"Active\": \"".p0_count."\"","\"Available\": \"".p1_count."\"","\"Needs data\": \"".p2_count."\"","\"Total\": \"".total_count."\"","\"Selected\": \"".p3_count."\"",Selected_Threat_GroupsJson,Software_Json,Selected_SoftwareJson,"\"Groups\": \"".'&lt;&lt;FIELD&gt;&gt;_Groups'."\""),null) 
+    | eval "&lt;&lt;FIELD&gt;&gt;"="{".mvjoin('&lt;&lt;FIELD&gt;&gt;',",")."}" 
+    | eval count = count + 1 
+        ] 
+| eval nov8="$nov8$" | fields - nov8
+| fields - temp count Active Available "Needs data" tooltip *Tactic color colorby opacity c p0* p1* p2* t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18 text total_count "Data Source" Data_Source_Count Selected p3_count Matrix *_TechniqueId *_Groups Technique "Sub-Technique" Sub_Technique Selected_* *Software*</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="count">39</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+        <eval token="selectedTechnique">mvindex(split(replace(replace($click.value2$, "\"", ""),"\\\\", ""),","),1)</eval>
+          <eval token="form.MITRE_Technique">substr('selectedTechnique',12,500)</eval>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="row1_col2">
+    <panel>
+      <input type="dropdown" token="x_field">
+        <label>Split by</label>
+        <choice value="App">App</choice>
+        <choice value="Data Source">Data Source</choice>
+        <choice value="Data Source Category">Data Source Category</choice>
+        <choice value="index">Index</choice>
+        <choice value="sourcetype">Sourcetype</choice>
+        <choice value="Use Case">Use Case</choice>
+        <choice value="Industry">Industry</choice>
+        <choice value="Security Data Journey">Security Data Journey</choice>
+        <choice value="MITRE Tactic">ATT&amp;CK Tactic</choice>
+        <choice value="MITRE Technique">ATT&amp;CK Technique</choice>
+        <choice value="MITRE Threat Group">ATT&amp;CK Threat Group</choice>
+        <choice value="MITRE Platforms">ATT&amp;CK Platforms</choice>
+        <default>MITRE Tactic</default>
+        <change>
+            <condition value="MITRE Tactic">
+            <set token="chart_post_process">| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+| sort Tactic_Order
+| where Matrix="Enterprise ATT&amp;CK"
+| fields - Tactic_Order Matrix
+| rename "MITRE Tactic" AS "MITRE ATT&amp;CK Tactic"
+            </set>
+
+          </condition>
+          <condition value="MITRE Technique">
+            <set token="chart_post_process">| lookup mitre_enterprise_list "Technique" AS "MITRE Technique" OUTPUT Technique_Order Matrix
+| sort Technique_Order
+| where Matrix="Enterprise ATT&amp;CK"
+| fields - Technique_Order Matrix
+| rename "MITRE Technique" AS "MITRE ATT&amp;CK Technique"
+            </set>
+          </condition>
+          <condition value="MITRE Threat Group">
+            <set token="chart_post_process">
+            | where 'MITRE Threat Group'!=""
+| rename "MITRE Threat Group" AS "MITRE ATT&amp;CK Threat Group"
+            </set>
+          </condition>
+          <condition value="MITRE Platforms">
+            <set token="chart_post_process">
+            | where 'MITRE Platforms'!=""
+| rename "MITRE Platforms" AS "MITRE ATT&amp;CK Platforms"
+            </set>
+
+          </condition>
+          <condition label="Use Case">
+            <set token="chart_post_process">| append
+[
+| inputlookup use_cases.csv
+| fields title order_title
+| rename order_title AS "Use Case"
+]
+| stats first(*) AS * BY "Use Case"
+| fields - "Use Case"
+| rename title AS "Use Case"
+| fillnull
+|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+          </condition>
+          <condition label="Index">
+          <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+<set token="attach_index_sourcetype">
+| join data_source_categories [
+| inputlookup data_inventory_products_lookup 
+| search stage!=step-sourcetype stage!=step-cim 
+| rex field=basesearch "^\s*(?&lt;basesearch>.*?)\s*$" 
+| eval basesearch=if(like(basesearch, "(%") AND like(basesearch, "%)"), basesearch, "(" . basesearch . ")") 
+| makemv delim="|" eventtypeId 
+| where (isnotnull(daily_event_volume) OR isnotnull(daily_host_volume) OR isnotnull(eventsize) OR isnotnull(cim_detail))
+| fields basesearch eventtypeId daily_event_volume
+| mvexpand eventtypeId 
+| rename eventtypeId as data_source_categories
+| eval basesearch_merge=basesearch."::".daily_event_volume
+| stats values(basesearch_merge) AS basesearch_merge  BY data_source_categories
+| mvexpand basesearch_merge
+| eval basesearch=mvindex(split(basesearch_merge,"::"),0)
+| eval daily_event_volume=mvindex(split(basesearch_merge,"::"),1)
+| fields - basesearch_merge
+| rex field="basesearch" max_match=0 "index=(\"|)(?&lt;index>[^\"\s]*).*"
+| rex field="basesearch" max_match=0 "sourcetype=(\"|)(?&lt;sourcetype>[^\s\"]*)"
+| fields data_source_categories index sourcetype daily_event_volume
+]
+| eval index=split(replace(index,"\n","::"),"::")
+| eval sourcetype=split(replace(sourcetype,"\n","::"),"::")
+</set>
+
+</condition>
+<condition label="Sourcetype">
+          <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+<set token="attach_index_sourcetype">
+| join data_source_categories [
+| inputlookup data_inventory_products_lookup 
+| search stage!=step-sourcetype stage!=step-cim 
+| rex field=basesearch "^\s*(?&lt;basesearch>.*?)\s*$" 
+| eval basesearch=if(like(basesearch, "(%") AND like(basesearch, "%)"), basesearch, "(" . basesearch . ")") 
+| makemv delim="|" eventtypeId 
+| where (isnotnull(daily_event_volume) OR isnotnull(daily_host_volume) OR isnotnull(eventsize) OR isnotnull(cim_detail))
+| fields basesearch eventtypeId daily_event_volume
+| mvexpand eventtypeId 
+| rename eventtypeId as data_source_categories
+| eval basesearch_merge=basesearch."::".daily_event_volume
+| stats values(basesearch_merge) AS basesearch_merge  BY data_source_categories
+| mvexpand basesearch_merge
+| eval basesearch=mvindex(split(basesearch_merge,"::"),0)
+| eval daily_event_volume=mvindex(split(basesearch_merge,"::"),1)
+| fields - basesearch_merge
+| rex field="basesearch" max_match=0 "index=(\"|)(?&lt;index>[^\"\s]*).*"
+| rex field="basesearch" max_match=0 "sourcetype=(\"|)(?&lt;sourcetype>[^\s\"]*)"
+| fields data_source_categories index sourcetype daily_event_volume
+]
+| eval index=split(replace(index,"\n","::"),"::")
+| eval sourcetype=split(replace(sourcetype,"\n","::"),"::")
+</set>
+          </condition>
+          <condition label="*">
+            <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="phase">
+        <label>Status</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <fieldForLabel>LongName</fieldForLabel>
+        <fieldForValue>LongName</fieldForValue>
+        <search>
+          <query>| inputlookup AppSettings.csv
+| rex field=Key "(?&lt;phase&gt;.*)(Long|Short)Name"
+| stats first(Value) AS LongName, Last(Value) AS ShortName BY phase
+| fields - phase</query>
+        </search>
+      </input>
+      <input type="checkbox" token="show_bookmarked_only" searchWhenChanged="true">
+        <label>Bookmarked</label>
+        <choice value="AND bookmark_status!=&quot;none&quot;">Yes</choice>
+        <change>
+          <eval token="form.bookmark_status">if(isnull('form.show_bookmarked_only') OR NOT like('form.show_bookmarked_only',"%none%"), "*","Yes")</eval>
+        </change>
+        <default>AND 1=1</default>
+        <delimiter> </delimiter>
+      </input>
+      <input type="multiselect" token="datasource_selection">
+        <label>Highlight Data Source</label>
+        <fieldForLabel>datasource</fieldForLabel>
+        <fieldForValue>datasource</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by datasource | fields datasource | sort 0 datasource</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <valuePrefix>"</valuePrefix>
+        <delimiter>,</delimiter>
+        <valueSuffix>"</valueSuffix>
+      </input>
+      <chart>
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$"
+| where 1=1 $show_bookmarked_only$
+
+$attach_index_sourcetype$
+
+| chart count over "$x_field$" By Status
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+$chart_post_process$
+</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsY.majorUnit">1</option>
+        <option name="charting.axisTitleY.text">Use Cases</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="height">310</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <eval token="form.enabled">if($form.y_field$="Enabled" OR $form.y_field$="Enabled and Accelerated", $click.name2$,"*")</eval>
+          <eval token="form.status">$click.name2$</eval>
+          <eval token="form.phase">$click.name2$</eval>
+          <eval token="form.sourcetype">if($form.x_field$="Sourcetype", $click.value$,"*")</eval>
+          <eval token="form.datamodel">if($form.x_field$="Datamodel", $click.value$,"*")</eval>
+          <eval token="form.AddOn">if($form.x_field$="AddOn", $click.value$,"*")</eval>
+          <eval token="form.App">if($form.x_field$="App", $click.value$,"*")</eval>
+          <eval token="form.usecase">if($form.x_field$="Use Case", $click.value$,"*")</eval>
+          <eval token="form.datasource">if($form.x_field$="Data Source", $click.value$,"*")</eval>
+          <eval token="form.datacategory">if($form.x_field$="Data Source Category", $click.value$,"*")</eval>
+          <eval token="form.securityDataJourney">if($form.x_field$="Security Data Journey", $click.value$,"*")</eval>
+          <eval token="form.MITRE_Tactic">if($form.x_field$="MITRE Tactic", $click.value$,"*")</eval>
+          <eval token="form.MITRE_Technique">if($form.x_field$="MITRE Technique", $click.value$,"*")</eval>
+          <eval token="form.MITRE_Threat_Group">if($form.x_field$="MITRE Threat Group", $click.value$,"*")</eval>
+          <eval token="form.MITRE_Platforms">if($form.x_field$="MITRE Platforms", $click.value$,"*")</eval>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row id="row1_col3_dropdowns">
+    <panel depends="$radar$">
+      <input type="dropdown" token="x_field">
+        <label>Split by</label>
+        <choice value="App">App</choice>
+        <choice value="Data Source">Data Source</choice>
+        <choice value="index">Index</choice>
+        <choice value="sourcetype">Sourcetype</choice>
+        <choice value="Use Case">Use Case</choice>
+        <choice value="Industry">Industry</choice>
+        <choice value="Security Data Journey">Security Data Journey</choice>
+        <choice value="MITRE Tactic">ATT&amp;CK Tactic</choice>
+        <choice value="MITRE Technique">ATT&amp;CK Technique</choice>
+        <choice value="MITRE Threat Group">ATT&amp;CK Threat Group</choice>
+        <choice value="MITRE Platforms">ATT&amp;CK Platforms</choice>
+        <default>MITRE Tactic</default>
+        <change>
+        
+        <condition value="MITRE Platforms">
+            <set token="chart_post_process">
+            | where 'MITRE Platforms'!=""
+            </set>
+            <set token="chart_post_process2">
+            | where 'MITRE Platforms'!=""
+            </set>
+          </condition>
+          <condition value="MITRE Tactic">
+            <set token="chart_post_process">| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+| sort Tactic_Order
+| where Matrix="Enterprise ATT&amp;CK"
+| fields - Tactic_Order Matrix
+            </set>
+            <set token="chart_post_process2">| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Tactic_Order Matrix
+| sort Tactic_Order
+
+| fields - Tactic_Order Matrix
+            </set>
+          </condition>
+          <condition value="MITRE Technique">
+            <set token="chart_post_process">| lookup mitre_enterprise_list "Technique" AS "MITRE Technique" OUTPUT Technique_Order Matrix
+| sort Technique_Order
+| where Matrix="Enterprise ATT&amp;CK"
+| fields - Technique_Order Matrix
+            </set>
+             <set token="chart_post_process2">| lookup mitre_enterprise_list "Technique" AS "MITRE Technique" OUTPUT Technique_Order Matrix
+| sort Technique_Order
+
+| fields - Technique_Order Matrix
+            </set>
+          </condition>
+          <condition value="MITRE Threat Group">
+            <set token="chart_post_process">
+              | where 'MITRE Threat Group'!=""
+            </set>
+            <set token="chart_post_process2">
+              | where 'MITRE Threat Group'!=""
+            </set>
+          </condition>
+          <condition label="Use Case">
+            <set token="chart_post_process">| append
+[
+| inputlookup use_cases.csv
+| fields title order_title
+| rename order_title AS "Use Case"
+]
+| stats first(*) AS * BY "Use Case"
+| fields - "Use Case"
+| rename title AS "Use Case"
+| fillnull
+|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+          </condition>
+          <condition label="Index">
+          <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+<set token="attach_index_sourcetype">
+| join data_source_categories [
+| inputlookup data_inventory_products_lookup 
+| search stage!=step-sourcetype stage!=step-cim 
+| rex field=basesearch "^\s*(?&lt;basesearch>.*?)\s*$" 
+| eval basesearch=if(like(basesearch, "(%") AND like(basesearch, "%)"), basesearch, "(" . basesearch . ")") 
+| makemv delim="|" eventtypeId 
+| where (isnotnull(daily_event_volume) OR isnotnull(daily_host_volume) OR isnotnull(eventsize) OR isnotnull(cim_detail))
+| fields basesearch eventtypeId daily_event_volume
+| mvexpand eventtypeId 
+| rename eventtypeId as data_source_categories
+| eval basesearch_merge=basesearch."::".daily_event_volume
+| stats values(basesearch_merge) AS basesearch_merge  BY data_source_categories
+| mvexpand basesearch_merge
+| eval basesearch=mvindex(split(basesearch_merge,"::"),0)
+| eval daily_event_volume=mvindex(split(basesearch_merge,"::"),1)
+| fields - basesearch_merge
+| rex field="basesearch" max_match=0 "index=(\"|)(?&lt;index>[^\"\s]*).*"
+| rex field="basesearch" max_match=0 "sourcetype=(\"|)(?&lt;sourcetype>[^\s\"]*)"
+| fields data_source_categories index sourcetype daily_event_volume
+]
+| eval index=split(replace(index,"\n","::"),"::")
+| eval sourcetype=split(replace(sourcetype,"\n","::"),"::")
+</set>
+
+</condition>
+<condition label="Sourcetype">
+          <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+<set token="attach_index_sourcetype">
+| join data_source_categories [
+| inputlookup data_inventory_products_lookup 
+| search stage!=step-sourcetype stage!=step-cim 
+| rex field=basesearch "^\s*(?&lt;basesearch>.*?)\s*$" 
+| eval basesearch=if(like(basesearch, "(%") AND like(basesearch, "%)"), basesearch, "(" . basesearch . ")") 
+| makemv delim="|" eventtypeId 
+| where (isnotnull(daily_event_volume) OR isnotnull(daily_host_volume) OR isnotnull(eventsize) OR isnotnull(cim_detail))
+| fields basesearch eventtypeId daily_event_volume
+| mvexpand eventtypeId 
+| rename eventtypeId as data_source_categories
+| eval basesearch_merge=basesearch."::".daily_event_volume
+| stats values(basesearch_merge) AS basesearch_merge  BY data_source_categories
+| mvexpand basesearch_merge
+| eval basesearch=mvindex(split(basesearch_merge,"::"),0)
+| eval daily_event_volume=mvindex(split(basesearch_merge,"::"),1)
+| fields - basesearch_merge
+| rex field="basesearch" max_match=0 "index=(\"|)(?&lt;index>[^\"\s]*).*"
+| rex field="basesearch" max_match=0 "sourcetype=(\"|)(?&lt;sourcetype>[^\s\"]*)"
+| fields data_source_categories index sourcetype daily_event_volume
+]
+| eval index=split(replace(index,"\n","::"),"::")
+| eval sourcetype=split(replace(sourcetype,"\n","::"),"::")
+</set>
+          </condition>
+          <condition label="*">
+            <set token="chart_post_process">|  foreach "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$"
+[
+    | eval "&lt;&lt;FIELD&gt;&gt;"=if(isnull('&lt;&lt;FIELD&gt;&gt;'), 0,'&lt;&lt;FIELD&gt;&gt;' )
+]
+| table "$x_field$" "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"</set>
+<set token="chart_post_process2"></set>
+          </condition>
+        </change>
+      </input>
+      <input type="checkbox" token="show_bookmarked_only" searchWhenChanged="true">
+        <label>Bookmarked</label>
+        <choice value="AND bookmark_status!=&quot;none&quot;">Yes</choice>
+        <change>
+          <eval token="form.bookmark_status">if(isnull('form.show_bookmarked_only') OR NOT like('form.show_bookmarked_only',"%none%"), "*","Yes")</eval>
+        </change>
+        <default>AND 1=1</default>
+        <delimiter> </delimiter>
+      </input>
+      <input type="multiselect" token="datasource_selection">
+        <label>Highlight Data Source</label>
+        <fieldForLabel>datasource</fieldForLabel>
+        <fieldForValue>datasource</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by datasource | fields datasource | sort 0 datasource</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <valuePrefix>"</valuePrefix>
+        <delimiter>,</delimiter>
+        <valueSuffix>"</valueSuffix>
+      </input>
+      </panel>
+    </row>
+      <row id="row1_col3">
+      <panel depends="$radar$">
+      <viz type="custom-radar-chart-viz.radar_chart">
+        <title>Coverage By Content Status</title>
+        <search base="usecase_base">
+          <query>
+                | eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+
+                $attach_index_sourcetype$
+
+                | chart count over "$x_field$" By Status
+
+                | eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+                | eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+                | fields - m
+                | eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+                | rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+                $chart_post_process$
+                
+                | eval "MITRE Tactic"=coalesce('MITRE ATT&amp;CK Tactic','MITRE Tactic')
+                | eval "MITRE Technique"=coalesce('MITRE ATT&amp;CK Technique','MITRE Technique')
+                | eval "MITRE Threat Group"=coalesce('MITRE ATT&amp;CK Threat Group','MITRE Threat Group')
+                | eval "MITRE Platforms"=coalesce('MITRE ATT&amp;CK Platforms','MITRE Platforms')
+                | fields - "MITRE ATT&amp;CK *"
+                | untable "$x_field$" key value
+                | rename  "$x_field$" AS axis
+                | eval keyColor=case(
+                    key="$Phase0LongName$","#$Phase0Color$",
+                    key="$Phase1LongName$","#$Phase1Color$",
+                    key="$Phase2LongName$","#$Phase2Color$",
+                    key="$SelectedLongName$","#$SelectedColor$"
+                )</query>
+        </search>
+        <option name="custom-radar-chart-viz.radar_chart.areasOpacity">0.35</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLabelFontColor">#737373</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLegendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLineColor">#FFFFFF</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartHeight">500</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartWidth">650</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesColor">#CDCDCD</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesFillColor">#ffffff</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesOpacity">0.1</option>
+        <option name="custom-radar-chart-viz.radar_chart.format">.0f</option>
+        <option name="custom-radar-chart-viz.radar_chart.fullScreen">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.isRounded">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendEnabled">1</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionX">565</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionY">10</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendSymbol">circle</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendToggleSymbol">cross</option>
+        <option name="custom-radar-chart-viz.radar_chart.levels">10</option>
+        <option name="custom-radar-chart-viz.radar_chart.maxValue"></option>
+        <option name="drilldown">none</option>
+        <option name="height">466</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+      </panel>
+      <panel depends="$radar$">
+      <viz type="custom-radar-chart-viz.radar_chart">
+        <title>$form.x_field$ Coverage Per ATT&amp;CK Platform</title>
+        <search base="usecase_base">
+          <query>
+                | eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                | eval "x_field"=if('$x_field$'=="MITRE Platforms", 'MITRE Tactic', '$x_field$')
+                | chart count limit=100 OVER "x_field" BY "MITRE Platforms"
+                | rename x_field AS "$x_field$"
+
+                | eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+                | eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+                | fields - m
+                | eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+                | rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+                 $chart_post_process2$
+
+                | fields -  "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$" VALUE
+                | eval "MITRE Tactic"=coalesce('MITRE ATT&amp;CK Tactic','MITRE Tactic')
+                | eval "MITRE Technique"=coalesce('MITRE ATT&amp;CK Technique','MITRE Technique')
+                | eval "MITRE Threat Group"=coalesce('MITRE ATT&amp;CK Threat Group','MITRE Threat Group')
+                | eval "MITRE Platforms"=coalesce('MITRE ATT&amp;CK Platforms','MITRE Platforms')
+                | fields - "MITRE ATT&amp;CK*" Value
+                | untable "$x_field$" key value
+                | where 'key'!="Enterprise"
+                | rename  "$x_field$" AS axis
+                | eval colorScheme="Olaf"
+                | lookup mitre_color_scheme.csv colorScheme mitre_platforms AS key OUTPUT color AS keyColor
+                | fields - colorScheme
+                )</query>
+        </search>
+        <option name="custom-radar-chart-viz.radar_chart.areasOpacity">0.25</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLabelFontColor">#737373</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLegendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLineColor">#FFFFFF</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartHeight">500</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartWidth">650</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesColor">#CDCDCD</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesFillColor">#ffffff</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesOpacity">0.1</option>
+        <option name="custom-radar-chart-viz.radar_chart.format">.0f</option>
+        <option name="custom-radar-chart-viz.radar_chart.fullScreen">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.isRounded">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendEnabled">1</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionX">565</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionY">10</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendSymbol">circle</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendToggleSymbol">cross</option>
+        <option name="custom-radar-chart-viz.radar_chart.levels">10</option>
+        <option name="custom-radar-chart-viz.radar_chart.maxValue"></option>
+        <option name="drilldown">none</option>
+        <option name="height">466</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row id="row1_col4">
+    <panel depends="$sankey$">
+      <title>Content from App &gt; Data Source &gt; MITRE ATT&amp;CK Tactic &gt; Status</title>
+      <input type="dropdown" token="phase">
+        <label>Status</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <fieldForLabel>LongName</fieldForLabel>
+        <fieldForValue>LongName</fieldForValue>
+        <search>
+          <query>| inputlookup AppSettings.csv
+| rex field=Key "(?&lt;phase&gt;.*)(Long|Short)Name"
+| stats first(Value) AS LongName, Last(Value) AS ShortName BY phase
+| fields - phase</query>
+        </search>
+      </input>
+      <input type="checkbox" token="show_bookmarked_only" searchWhenChanged="true">
+        <label>Bookmarked</label>
+        <choice value="AND bookmark_status!=&quot;none&quot;">Yes</choice>
+        <change>
+          <eval token="form.bookmark_status">if(isnull('form.show_bookmarked_only') OR NOT like('form.show_bookmarked_only',"%none%"), "*","Yes")</eval>
+        </change>
+        <default>AND 1=1</default>
+        <delimiter> </delimiter>
+      </input>
+      <input type="multiselect" token="datasource_selection">
+        <label>Highlight Data Source</label>
+        <fieldForLabel>datasource</fieldForLabel>
+        <fieldForValue>datasource</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by datasource | fields datasource | sort 0 datasource</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <valuePrefix>"</valuePrefix>
+        <delimiter>,</delimiter>
+        <valueSuffix>"</valueSuffix>
+      </input>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <title>(Requires Sankey Viz)</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| eval "Use Case"='Use Case Orig'
+               | foreach Enabled Hosts "Data Source" App "Data Source" "MITRE Tactic" Status  [
+             | eval "&lt;&lt;FIELD&gt;&gt;"=coalesce('&lt;&lt;FIELD&gt;&gt;',"-")
+            ]
+            | search Status="$phase$"
+            | appendpipe [| stats count(eval('$y_field$'="$Phase1LongName$")) AS "$y_field$_l1", count AS l1 by App "Data Source"]
+| appendpipe [| stats count(eval('$y_field$'="$Phase1LongName$")) AS "$y_field$_l2", count AS l2 by "Data Source" "MITRE Tactic"]
+| appendpipe [| stats count(eval('$y_field$'="$Phase1LongName$")) AS "$y_field$_l3", count AS l3 by "MITRE Tactic" "$y_field$"]
+| table App "Data Source" "MITRE Tactic" "$y_field$" l1 l2 l3 "$y_field$_l1" "$y_field$_l2" "$y_field$_l3"
+| eval LinkSource=case(isnotnull(l1), App, isnotnull(l2), 'Data Source', isnotnull(l3), 'MITRE Tactic', 1=1,null)
+| eval LinkDestination=case(isnotnull(l1), 'Data Source', isnotnull(l2), 'MITRE Tactic', isnotnull(l3), '$y_field$', 1=1,null)
+| eval count=coalesce(l1,l2,l3)
+| where isnotnull(l1) OR isnotnull(l2) OR isnotnull(l3)
+| table LinkSource LinkDestination count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="sankey_diagram_app.sankey_diagram.colorMode">sequential</option>
+        <option name="sankey_diagram_app.sankey_diagram.maxColor">#$Phase0Color$</option>
+        <option name="sankey_diagram_app.sankey_diagram.minColor">#F5F8F6</option>
+        <option name="sankey_diagram_app.sankey_diagram.numOfBins">9</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLegend">true</option>
+        <option name="sankey_diagram_app.sankey_diagram.useColors">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row id="row1_col5">
+    <panel>
+      <title>Security Data Journey</title>
+    </panel>
+  </row>
+  <row id="row1_col6">
+    <panel>
+      <title>Level 1</title>
+      <chart id="stage_1_bar">
+        <search base="usecase_base" id="stage_1_base">
+          <query>| eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| where "Security Data Journey"="Level_1"
+| chart count over "Security Data Journey" by Status
+| eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| table "Security Data Journey" Active Available "Needs data" "Selected"
+| fillnull "Security Data Journey" Active Available "Needs data" "Selected"
+| eval Total=Active+Available+'Needs data'+Selected
+| eval Perc_Selected=round((Selected/Total)*100,2)
+| eval Perc_Active=round((Active/Total)*100,2)
+| eval Perc_Available=round((Available/Total)*100,2)
+| eval Perc_NotActive=100-Perc_Active-Perc_Available
+| eval Status="Content"
+| fields Status Perc_NotActive Perc_Available Perc_Active Perc_Selected</query>
+        </search>
+        <option name="charting.axisLabelsX.axisVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsX.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsX.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.minorTickVisibility">hide</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"Perc_Selected": 0x$SelectedColor$,"Perc_Available": 0x$Phase1Color$,"Perc_Active": 0x$Phase0Color$,"Perc_NotActive": 0xe1e6eb,"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="charting.gridLinesX.showMajorLines">0</option>
+        <option name="charting.gridLinesX.showMinorLines">0</option>
+        <option name="charting.gridLinesY.showMajorLines">0</option>
+        <option name="charting.gridLinesY.showMinorLines">0</option>
+        <option name="charting.gridLinesY2.showMajorLines">0</option>
+        <option name="charting.gridLinesY2.showMinorLines">0</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="height">310</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Level 2</title>
+      <chart id="stage_2_bar">
+        <search base="usecase_base" id="stage_2_base">
+          <query>| eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| where "Security Data Journey"="Level_2"
+| chart count over "Security Data Journey" by Status
+| eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| table "Security Data Journey" Active Available "Needs data" "Selected"
+| fillnull "Security Data Journey" Active Available "Needs data" "Selected"
+| eval Total=Active+Available+'Needs data'+Selected
+| eval Perc_Selected=round((Selected/Total)*100,2)
+| eval Perc_Active=round((Active/Total)*100,2)
+| eval Perc_Available=round((Available/Total)*100,2)
+| eval Perc_NotActive=100-Perc_Active-Perc_Available
+| eval Status="Content"
+| fields Status Perc_NotActive Perc_Available Perc_Active Perc_Selected</query>
+        </search>
+        <option name="charting.axisLabelsX.axisVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsX.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsX.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.minorTickVisibility">hide</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"Perc_Selected": 0x$SelectedColor$,"Perc_Available": 0x$Phase1Color$,"Perc_Active": 0x$Phase0Color$,"Perc_NotActive": 0xe1e6eb,"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="charting.gridLinesX.showMajorLines">0</option>
+        <option name="charting.gridLinesX.showMinorLines">0</option>
+        <option name="charting.gridLinesY.showMajorLines">0</option>
+        <option name="charting.gridLinesY.showMinorLines">0</option>
+        <option name="charting.gridLinesY2.showMajorLines">0</option>
+        <option name="charting.gridLinesY2.showMinorLines">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="height">310</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Level 3</title>
+      <chart id="stage_3_bar">
+        <search base="usecase_base" id="stage_3_base">
+          <query>| eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| where "Security Data Journey"="Level_3"
+| chart count over "Security Data Journey" by Status
+| eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| table "Security Data Journey" Active Available "Needs data" "Selected"
+| fillnull "Security Data Journey" Active Available "Needs data" "Selected"
+| eval Total=Active+Available+'Needs data'+Selected
+| eval Perc_Selected=round((Selected/Total)*100,2)
+| eval Perc_Active=round((Active/Total)*100,2)
+| eval Perc_Available=round((Available/Total)*100,2)
+| eval Perc_NotActive=100-Perc_Active-Perc_Available
+| eval Status="Content"
+| fields Status Perc_NotActive Perc_Available Perc_Active Perc_Selected</query>
+        </search>
+        <option name="charting.axisLabelsX.axisVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsX.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsX.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.minorTickVisibility">hide</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"Perc_Selected": 0x$SelectedColor$,"Perc_Available": 0x$Phase1Color$,"Perc_Active": 0x$Phase0Color$,"Perc_NotActive": 0xe1e6eb,"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="charting.gridLinesX.showMajorLines">0</option>
+        <option name="charting.gridLinesX.showMinorLines">0</option>
+        <option name="charting.gridLinesY.showMajorLines">0</option>
+        <option name="charting.gridLinesY.showMinorLines">0</option>
+        <option name="charting.gridLinesY2.showMajorLines">0</option>
+        <option name="charting.gridLinesY2.showMinorLines">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="height">310</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Level 4</title>
+      <chart id="stage_4_bar">
+        <search base="usecase_base" id="stage_4_base">
+          <query>| eval Status=if("$x_field$"!="AddOn" AND in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| where "Security Data Journey"="Level_4"
+| chart count over "Security Data Journey" by Status
+| eval "$SelectedLongName$_New"=case(isnotnull(datasource) AND in(datasource,$datasource_selection$), '$SelectedLongName$',isnotnull(datasource) AND NOT in(datasource,$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, '$Phase2LongName$'+'$SelectedLongName$', '$Phase2LongName$')
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| table "Security Data Journey" Active Available "Needs data" "Selected"
+| fillnull "Security Data Journey" Active Available "Needs data" "Selected"
+| eval Total=Active+Available+'Needs data'+Selected
+| eval Perc_Selected=round((Selected/Total)*100,2)
+| eval Perc_Active=round((Active/Total)*100,2)
+| eval Perc_Available=round((Available/Total)*100,2)
+| eval Perc_NotActive=100-Perc_Active-Perc_Available
+| eval Status="Content"
+| fields Status Perc_NotActive Perc_Available Perc_Active Perc_Selected</query>
+        </search>
+        <option name="charting.axisLabelsX.axisVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisLabelsX.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsX.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsX.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY.minorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.axisVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorLabelVisibility">hide</option>
+        <option name="charting.axisLabelsY2.majorTickVisibility">hide</option>
+        <option name="charting.axisLabelsY2.minorTickVisibility">hide</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">collapsed</option>
+        <option name="charting.axisTitleY2.visibility">collapsed</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked100</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"Perc_Selected": 0x$SelectedColor$,"Perc_Available": 0x$Phase1Color$,"Perc_Active": 0x$Phase0Color$,"Perc_NotActive": 0xe1e6eb,"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="charting.gridLinesX.showMajorLines">0</option>
+        <option name="charting.gridLinesX.showMinorLines">0</option>
+        <option name="charting.gridLinesY.showMajorLines">0</option>
+        <option name="charting.gridLinesY.showMinorLines">0</option>
+        <option name="charting.gridLinesY2.showMajorLines">0</option>
+        <option name="charting.gridLinesY2.showMinorLines">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="height">310</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row id="row1_col7">
+    <panel>
+      <single>
+        <search base="stage_1_base">
+          <query>| fields Perc_Active</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase0LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_2_base">
+          <query>| fields Perc_Active</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase0LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_3_base">
+          <query>| fields Perc_Active</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase0LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_4_base">
+          <query>| fields Perc_Active</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase0LongName$</option>
+        <option name="unit">%</option>
+      </single>
+    </panel>
+  </row>
+  <row id="row1_col8">
+    <panel>
+      <single>
+        <search base="stage_1_base">
+          <query>| fields Perc_Available</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase1LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_2_base">
+          <query>| fields Perc_Available</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase1LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_3_base">
+          <query>| fields Perc_Available</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase1LongName$</option>
+        <option name="unit">%</option>
+      </single>
+      <single>
+        <search base="stage_4_base">
+          <query>| fields Perc_Available</query>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="underLabel">$Phase1LongName$</option>
+        <option name="unit">%</option>
+      </single>
+    </panel>
+  </row>
+
+  <row id="cs3">
+    <panel>
+      <title>Content selection</title>
+      <input type="dropdown" token="phase">
+        <label>Status</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <fieldForLabel>LongName</fieldForLabel>
+        <fieldForValue>LongName</fieldForValue>
+        <search>
+          <query>| inputlookup AppSettings.csv
+| rex field=Key "(?&lt;phase&gt;.*)(Long|Short)Name"
+| stats first(Value) AS LongName, Last(Value) AS ShortName BY phase
+| fields - phase</query>
+        </search>
+        <change>
+          <condition label="Active">
+            <set token="deeplink_enabled">Yes</set>
+            <set token="deeplink_data_available">Available|Mixed</set>
+          </condition>
+          <condition label="Available">
+            <set token="deeplink_enabled">No</set>
+            <set token="deeplink_data_available">Available|Mixed</set>
+          </condition>
+          <condition label="Needs data">
+            <set token="deeplink_enabled">ALL</set>
+            <set token="deeplink_data_available">Unknown|Unavailable</set>
+          </condition>
+          <condition label="*">
+            <set token="deeplink_enabled">ALL</set>
+            <set token="deeplink_data_available">ALL</set>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="app">
+        <label>Originating app</label>
+        <fieldForLabel>App</fieldForLabel>
+        <fieldForValue>App</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by App | fields App | sort 0 App</query>
+        </search>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_displayapp">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_displayapp">replace($value$, " ", "_")</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="MITRE_Tactic">
+        <label>MITRE ATT&amp;CK Tactic</label>
+        <fieldForLabel>MITRE_Tactic_Label</fieldForLabel>
+        <fieldForValue>MITRE Tactic</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by "MITRE Tactic"
+| fields "MITRE Tactic"
+| eval MITRE_Tactic_Label='MITRE Tactic'
+| sort 0 "MITRE_Tactic_Label"</query>
+        </search>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_mitre_tactic_display">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_mitre_tactic_display">replace($value$, " ", "_")</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="multiselect" token="MITRE_Technique2">
+        <label>MITRE ATT&amp;CK Technique</label>
+        <fieldForLabel>mitre_technique_combined</fieldForLabel>
+        <fieldForValue>mitre_technique</fieldForValue>
+        <search base="usecase_base">
+          <query>
+            | stats count by "mitre_technique_combined" 
+            | fields "mitre_technique_combined" 
+            | eval mitre_technique=mitre_technique_combined
+            | append 
+                [| inputlookup mitre_technique_lists.csv 
+                | inputlookup append=t mitre_custom_technique_lists
+                | rename List AS "mitre_technique_combined", Techniques AS "mitre_technique" 
+                | fields mitre_technique_combined mitre_technique 
+                | eval mitre_technique=split(mitre_technique,",") 
+                | mvexpand mitre_technique 
+                | lookup mitre_enterprise_list TechniqueIdCombined AS mitre_technique OUTPUT Technique 
+                | eval Technique=mvdedup(Technique) 
+                | eval mitre_technique=mitre_technique." - ".Technique 
+                | fields mitre_technique_combined mitre_technique 
+                | mvcombine mitre_technique delim="," 
+                | nomv mitre_technique 
+                | eval mitre_technique="0_".mitre_technique
+                    ] 
+
+            | append 
+                [| inputlookup mitre_enterprise_list
+                | search Sub_Technique="-"
+                | eval mitre_technique_combined = TechniqueIdCombined." - ".if('Sub_Technique'="-",Technique,'Sub_Technique')
+                | eval mitre_technique=mitre_technique_combined 
+                | fields mitre_technique_combined mitre_technique
+                
+                    ]  
+            | sort 0 "mitre_technique" 
+            | eval mitre_technique=if(like(mitre_technique,"0_%"),mvindex(split(mitre_technique,"0_"),1), mitre_technique) 
+            | dedup mitre_technique
+            | where mitre_technique!="None"
+        </query>
+        </search>
+        <choice value="">Any</choice>
+        <default></default>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_mitre_technique_combined">ALL</set>
+            <set token="mitre_technique_combined_for_in">*</set>
+            <set token="mitre_technique_selection_count">0</set>
+            <eval token="MITRE_Technique2_Label" delimiter=",">$label$</eval>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_mitre_technique_combined">coalesce(replace(replace(mvjoin($form.MITRE_Technique2$,","),",","|")," ","_"),"ALL")</eval>
+            <eval token="mitre_technique_combined_for_in">"\"".replace(mvjoin($form.MITRE_Technique2$,","),",","\",\"")."\""</eval>
+            <eval token="mitre_technique_selection_count">if(like($form.MITRE_Technique2$,"%*%"),0,mvcount(mvdedup(split(replace(mvjoin($form.MITRE_Technique2$,","), " - [^,]*", ""),","))))</eval>
+            <eval token="MITRE_Technique2_Label" delimiter=",">$label$</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="multiselect" token="MITRE_Threat_Group">
+        <label>MITRE ATT&amp;CK Threat Group</label>
+        <fieldForLabel>mitre_threat_groups</fieldForLabel>
+        <fieldForValue>mitre_threat_group_value</fieldForValue>
+        <search>
+          <query>| union [
+| inputlookup mitre_threat_groups.csv
+| stats delim="," values(Threat_Group) AS Threat_Groups BY Industry
+| nomv Threat_Groups
+| eval Industry="Industry: ".Industry
+| eval Threat_Groups=Threat_Groups.",".Industry
+| rename Threat_Groups AS mitre_threat_group_value
+| rename Industry AS mitre_threat_groups
+]
+[
+| inputlookup append=t mitre_enterprise_list
+| eval Threat_Groups=split(Threat_Groups,"|")
+| stats count by Threat_Groups
+| where Threat_Groups!="" AND Threat_Groups!="-"
+| fields Threat_Groups
+| rename Threat_Groups AS mitre_threat_groups
+]
+[
+| inputlookup append=t mitre_custom_threat_groups
+| table mitre_threat_groups mitre_threat_group_value
+]
+| eval mitre_threat_group_value=coalesce(mitre_threat_group_value,mitre_threat_groups)</query>
+        </search>
+        <choice value="*">None</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <delimiter>,</delimiter>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_mitre_threat_groups">ALL</set>
+            <set token="deeplink_industry_mapping">ALL</set>
+          </condition>
+          <condition label="None">
+            <set token="deeplink_mitre_threat_groups">ALL</set>
+            <set token="deeplink_industry_mapping">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_mitre_threat_groups">coalesce(replace(replace(replace(mvjoin($form.MITRE_Threat_Group$,","),",","|"),"Industry: ","")," ","_"),"ALL")</eval>
+            <eval token="deeplink_industry_mappingREMOVED">coalesce(replace(replace(replace(mvjoin($form.MITRE_Threat_Group$,","),",","|"),"Industry: ","")," ","_"),"ALL")</eval>
+            <set token="deeplink_industry_mapping">ALL</set>
+            <eval token="mitre_threat_groups_for_in">"\"".replace(mvjoin($form.MITRE_Threat_Group$,","),",","\",\"")."\""</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="text" token="threatgrouppopularity">
+        <label>Threat Group Count Filter</label>
+        <default>0</default>
+        <change>
+          <condition value="*">
+            <set token="deeplink_threatgrouppopularity">$value$</set>
+          </condition>
+        </change>
+      </input>
+      <input type="multiselect" token="mitre_platforms">
+        <label>MITRE ATT&amp;CK Matrix Platform</label>
+        <fieldForLabel>platforms</fieldForLabel>
+        <fieldForValue>platforms</fieldForValue>
+        <delimiter>,</delimiter>
+        <change>
+          <eval token="deeplink_mitre_platforms">mvjoin(split(replace(replace('form.mitre_platforms'," ","_"),"\"",""),","),"|")</eval>
+          <eval token="modified_mitre_platforms">mvjoin('form.mitre_platforms',"\",\"")</eval>
+        </change>
+        <search>
+          <query>| inputlookup mitre_enterprise_list
+| fields Platforms
+| eval platforms=split(Platforms,"|")
+| stats count by platforms
+| fields platforms
+| sort platforms</query>
+        </search>
+        <choice value="Enterprise">Enterprise</choice>
+        <choice value='"Google Workspace,IaaS,Office 365,SaaS,Azure AD"'>Cloud</choice>
+        <default>Enterprise</default>
+        <initialValue>Enterprise</initialValue>
+      </input>
+      <input type="dropdown" token="datasource">
+        <label>Data Source</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>datasource</fieldForLabel>
+        <fieldForValue>datasource</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by datasource | fields datasource | sort 0 datasource</query>
+        </search>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_datasource">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_datasource">replace($value$, " ", "_")</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="datacategory">
+        <label>Data Source Category</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>Data Source Category</fieldForLabel>
+        <fieldForValue>Data Source Category</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by "Data Source Category" | fields "Data Source Category" | sort 0 "Data Source Category"</query>
+        </search>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_data_source_categories_display">ALL</set>
+          </condition>
+          <condition label="*">
+            <eval token="deeplink_data_source_categories_display">replace($value$, " ", "_")</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="bookmark_status">
+        <label>Bookmark Status</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>bookmark_status_display</fieldForLabel>
+        <fieldForValue>bookmark_status</fieldForValue>
+        <search base="usecase_base">
+          <query>| stats count by bookmark_status,bookmark_status_display | fields bookmark_status bookmark_status_display
+| sort 0 bookmark_status_display
+| dedup bookmark_status</query>
+        </search>
+        <change>
+          <condition label="Any">
+            <set token="deeplink_bookmark_status">ALL</set>
+          </condition>
+          <condition label="*">
+            <set token="deeplink_bookmark_status">$value$</set>
+          </condition>
+        </change>
+      </input>
+      <input type="text" token="searchfilter">
+        <label>Search Filter</label>
+        <default></default>
+        <change>
+          <condition value="*">
+            <set token="deeplink_search">$value$</set>
+          </condition>
+        </change>
+      </input>
+    </panel>
+  </row>
+  <row id="tabs_content_table">
+    <panel>
+      <html>
+      <h1 data-translate-id="contentanalytics-h1-sectiontwo">2. Selected Content</h1>
+      <p data-translate-id="contentanalytics-p-sectiontwodescription">Use the drop downs or tables to further filter your selection. </p>
+      <ul id="tabs" class="nav nav-tabs">
+                    <li class="active">
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row2_col1,selected_content_row3_col1,selected_content_row4_col1" data-token="selected_content_row2_col1,selected_content_row3_col1,selected_content_row4_col1" data-translate-id="contentanalytics-li-selection">Selection</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col2" data-token="selected_content_row3_col2" data-translate-id="contentanalytics-li-contentlist">Content list</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col3" data-token="selected_content_row3_col3" data-translate-id="contentanalytics-li-datasource">Selection by Data Source</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col4" data-token="selected_content_row3_col4" data-translate-id="contentanalytics-li-datasourcecategory">Selection by Data Source Category</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col5" data-token="selected_content_row3_col5" data-translate-id="contentanalytics-li-mitretactic">Selection by ATT&amp;CK Tactic</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col6" data-token="selected_content_row3_col6" data-translate-id="contentanalytics-li-mitretechnique">Selection by ATT&amp;CK Technique</a>
+                    </li>
+                    <li>
+                        <a class="toggle-tab selected_content" data-toggle="tab" data-tab-set="selected_content" data-elements="selected_content_row3_col7" data-token="selected_content_row3_col7" data-translate-id="contentanalytics-li-mitrethreatgroup">Selection by ATT&amp;CK Threat Group</a>
+                    </li>
+				</ul>
+    </html>
+    </panel>
+  </row>
+  <row id="selected_content_row2_col1">
+    <panel>
+      <title></title>
+      <single>
+        <title>Total Content Selected</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$) "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+| stats
+count</query>
+<done>
+      <condition match="'job.resultCount' &gt; 0">
+        <set token="selectedContentCount">$result.count$</set>
+      </condition>
+    </done>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <chart>
+        <title>Selection by Status</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+| stats
+count by Status</query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.fieldColors">{"Perc_Available": 0x$Phase1Color$,"Perc_Active": 0x$Phase0Color$,"Perc_NotActive": 0xe1e6eb,"$Phase0LongName$": 0x$Phase0Color$, "$Phase1LongName$": 0x$Phase1Color$, "$Phase2LongName$":0x$Phase2Color$, "Yes":0x$Phase0Color$, "No":0x$Phase2Color$, "Enabled":0x$Phase0Color$, "Disabled":0x$Phase2Color$,"$SelectedLongName$":0x$SelectedColor$,"$SelectedShortName$":0x$SelectedColor$}</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="form.phase">$row.Status$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel depends="$radar$">
+      <viz type="custom-radar-chart-viz.radar_chart">
+        <title>Selection by ATT&amp;CK Platform</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+                | chart count limit=100 OVER "MITRE Platforms" BY "Status"
+
+                | eval "Selected_New"=case(isnotnull(datasource) AND in(datasource,"*"), 'Selected',isnotnull(datasource) AND NOT in(datasource,"*"),0,1=1,'Selected')
+                | eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+                | fields - m
+                | eval "Needs data"=if('Selected_New'=0 AND 'Selected'>0, 'Needs data'+'Selected', 'Needs data')
+                | rename "Selected_New" AS "Selected"
+
+                | untable "MITRE Platforms" key value
+                | rename  "MITRE Platforms" AS axis
+                | eval keyColor=case(
+                    key="$Phase0LongName$","#$Phase0Color$",
+                    key="$Phase1LongName$","#$Phase1Color$",
+                    key="$Phase2LongName$","#$Phase2Color$",
+                    key="$SelectedLongName$","#$SelectedColor$"
+                )
+          </query>
+        </search>
+        <option name="custom-radar-chart-viz.radar_chart.areasOpacity">0.35</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLabelFontColor">#737373</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLegendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.axesLineColor">#FFFFFF</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartHeight">250</option>
+        <option name="custom-radar-chart-viz.radar_chart.chartWidth">400</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesColor">#CDCDCD</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesFillColor">#ffffff</option>
+        <option name="custom-radar-chart-viz.radar_chart.circlesOpacity">0.05</option>
+        <option name="custom-radar-chart-viz.radar_chart.format">.0f</option>
+        <option name="custom-radar-chart-viz.radar_chart.fullScreen">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.isRounded">0</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendEnabled">1</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendFontColor">#000000</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionX">25</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendPositionY">25</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendSymbol">circle</option>
+        <option name="custom-radar-chart-viz.radar_chart.legendToggleSymbol">cross</option>
+        <option name="custom-radar-chart-viz.radar_chart.levels">8</option>
+        <option name="custom-radar-chart-viz.radar_chart.maxValue"></option>
+        <option name="drilldown">none</option>
+        <option name="height">250</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+   <row id="selected_content_row3_col1">
+    <panel>
+      <title></title>
+      <chart>
+        <title>Tactics Covered</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                  | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                  | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                  | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+                  
+
+                  | mvexpand "mitre_technique_combined"
+                  | search "mitre_technique_combined" IN($mitre_technique_combined_for_in$) 
+                  | stats dc("MITRE Tactic") AS "Tactics Covered" 
+
+                  | appendcols [
+                  | inputlookup mitre_enterprise_list | stats dc(Tactic) AS Count
+                  ]
+                  | eval "Remaining Tactics"='Count'-'Tactics Covered'
+                  | fields - Count
+                  | transpose
+                  | rename "row 1" AS "Count" 
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+      <panel>
+      <title></title>
+      <chart>
+        <title>Techniques Covered from selected Techniques (Click to drilldown)</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                  | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                  | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                  | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+
+                  | mvexpand "mitre_technique_combined"
+                  | search "mitre_technique_combined" IN($mitre_technique_combined_for_in$) 
+                  | stats dc("mitre_technique_combined") AS "Techniques Covered" 
+                  
+                  | appendcols [
+                  | inputlookup mitre_enterprise_list | search Sub_Technique="-" | stats dc(Technique) AS TotalTechniqueCount
+                  ]
+                  | eval "Remaining Techniques"=if(like("$mitre_technique_ids$","%*%"), 'TotalTechniqueCount'-'Techniques Covered', $mitre_technique_selection_count$-'Techniques Covered')
+                  | fields - TotalTechniqueCount
+                  | transpose
+                  | rename "row 1" AS "Count" 
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">All</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">search?q=%7C%20sseanalytics%0A%20%20%20%20%20%20%20%20%7C%20lookup%20use_cases.csv%20title%20AS%20%22usecase%22%20OUTPUT%20order_title%20AS%20use_case_order_title%0A%20%20%20%20%20%20%20%20%7C%20eval%20%22Use%20Case%20Orig%22%3Dif(isnull('usecase')%2C%22Other%22%2C'usecase')%0A%20%20%20%20%20%20%20%20%7C%20eval%20%22Use%20Case%22%3Dif(isnull(use_case_order_title)%2C%20%229_Other%22%2Cuse_case_order_title)%0A%20%20%20%20%20%20%20%20%7C%20eval%20%22Has%20Data%22%3Dif(data_available%3D%22Available%22%20OR%20data_available%3D%22Mixed%22%2C%20%22Yes%22%2C%20%22No%22)%0A%20%20%20%20%20%20%20%20%7C%20eval%20Status%3Dcase(%0A%20%20%20%20%20%20%20%20'enabled'%3D%22Yes%22%20AND%20'Has%20Data'%3D%22Yes%22%2C%22$Phase0LongName$%22%2C%0A%20%20%20%20%20%20%20%20'enabled'!%3D%22Yes%22%20AND%20'Has%20Data'%3D%22Yes%22%2C%22$Phase1LongName$%22%2C%0A%20%20%20%20%20%20%20%201%3D1%2C%22$Phase2LongName$%22%0A%20%20%20%20%20%20%20%20)%0A%20%20%20%20%20%20%20%20%7C%20eval%20App%3Ddisplayapp%2C%20Enabled%3Denabled%2C%20Title%3Dname%2C%20Journey%3Djourney%2C%20%22Data%20Source%22%3Ddatasource%2C%20%22Data%20Source%20Category%22%3Ddata_source_categories_display%0A%20%20%20%20%20%20%20%20%7C%20where%20(mitre_tactic_display!%3D%22%22%20AND%20mitre_tactic_display!%3D%22None%22)%20OR%20(mitre_technique_display!%3D%22%22%20AND%20mitre_technique_display!%3D%22None%22%20AND%20mvcount(mitre_technique_display)%3E0)%0A%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%7C%20eval%20mitre_sub_technique_display%3Dif(mitre_sub_technique_display%3D%22None%22%2C%22%22%2Cmitre_sub_technique_display)%0A%20%20%20%20%20%20%20%20%7C%20eval%20%22MITRE%20Tactic%22%3Dif('mitre_tactic_display'%3D%22%22%2C%22-%22%2C'mitre_tactic_display')%2C%20%22MITRE%20Technique%22%3Dmitre_technique_display%2C%20%22MITRE%20Sub-Technique%22%3Dmitre_sub_technique_display%2C%20%22MITRE%20Threat%20Group%22%3Dmitre_threat_groups%2C%20%22MITRE%20Platforms%22%3Dmitre_platforms%2C%20Industry%3Dsplit(industryMapping%2C%22%7C%22)%20%7C%20eval%20Status%3Dif(in(datasource%2C$datasource_selection$)%2C%20%22$SelectedLongName$%22%2CStatus)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20search%20Status%3D%22$phase$%22%20%22App%22%3D%22$app$%22%20%22Data%20Source%22%3D%22$datasource$%22%20%22Data%20Source%20Category%22%3D%22$datacategory$%22%20%22bookmark_status%22%3D%22$bookmark_status$%22%20%22MITRE%20Tactic%22%3D%22$MITRE_Tactic$%22%20%22mitre_technique_combined%22%20IN($mitre_technique_combined_for_in$)%20%20%22MITRE%20Threat%20Group%22%20IN($mitre_threat_groups_for_in$)%20%22MITRE%20Platforms%22%20IN(%22$modified_mitre_platforms$%22)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20where%20like(lower(Title)%2C%22%25%22.lower(%22$searchfilter$%22).%22%25%22)%20OR%20like(lower(Description)%2C%22%25%22.lower(%22$searchfilter$%22).%22%25%22)%20OR%20like(lower('Data%20Source')%2C%22%25%22.lower(%22$searchfilter$%22).%22%25%22)%20OR%20like(lower('Data%20Source%20Category')%2C%22%25%22.lower(%22$searchfilter$%22).%22%25%22)%20OR%20like(lower('Use%20Case')%2C%22%25%22.lower(%22$searchfilter$%22).%22%25%22)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20where%20mvcount('MITRE%20Threat%20Group')%3E%3D$threatgrouppopularity$%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20mvexpand%20%22mitre_technique_combined%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20search%20%22mitre_technique_combined%22%20IN($mitre_technique_combined_for_in$)%0A%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20stats%20count%20by%20%22mitre_technique_combined%22%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20fields%20%22mitre_technique_combined%22%20count%0A%20%20%20%20%20%20%20%20%20%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20append%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5B%7C%20inputlookup%20mitre_enterprise_list%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20search%20Sub_Technique%3D%22-%22%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20eval%20mitre_technique_combined%20%3D%20TechniqueIdCombined.%22%20-%20%22.if('Sub_Technique'%3D%22-%22%2CTechnique%2C'Sub_Technique')%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20search%20%22mitre_technique_combined%22%20IN($mitre_technique_combined_for_in$)%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20eval%20count%3D0%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7C%20fields%20mitre_technique_combined%20count%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5D%20%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20sort%200%20%22mitre_technique_combined%22%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20stats%20max(count)%20AS%20%22Content%20Count%22%20by%20mitre_technique_combined%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20where%20mitre_technique_combined!%3D%22None%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%7C%20sort%20%22Content%20Count%22&amp;earliest=$earliest$&amp;latest=$latest$</link>
+        </drilldown>
+      </chart>
+      </panel>
+      <panel>
+      <title></title>
+      <chart>
+        <title>Threat Groups Covered</title>
+        <search>
+          <query> | makeresults count=1
+                  | eval "MITRE Threat Group"="$MITRE_Threat_Group$"
+                  | eval "MITRE Threat Group"=split('MITRE Threat Group',",")
+                  | eval "MITRE Threat Group"=mvfilter('MITRE Threat Group'!="*")
+                  | eval "MITRE Threat Group"=mvfilter('MITRE Threat Group'!="Industry")
+                  | stats dc("MITRE Threat Group") AS "Threat Groups Covered"
+                  | appendcols [
+                  | inputlookup mitre_enterprise_list | eval Threat_Groups=split(Threat_Groups,"|") | stats dc(Threat_Groups) AS Count
+                  ]
+                  | eval "Remaining Threat Groups"='Count'-'Threat Groups Covered'
+                  | fields - Count
+                  | transpose
+                  | rename "row 1" AS "Count"
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+      </panel>
+  </row>
+  <row id="selected_content_row4_col1">
+    <panel>
+      <title></title>
+      <chart>
+        <title>Tactics Covered By App</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                  | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                  | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                  | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+                  
+                   | stats dc("MITRE Tactic") AS "Tactics" BY App
+                 
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+      <panel>
+      <title></title>
+      <chart>
+        <title>Techniques Covered By App</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                  | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                  | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                  | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+                  
+                  | stats dc("MITRE Technique") AS "Techniques" BY App 
+                  
+                  | fields - Count
+                  
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+      </panel>
+      <panel>
+      <title></title>
+      <chart>
+        <title>Threat Groups Covered By App</title>
+        <search base="usecase_base">
+          <query> 
+                  | eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+                  | search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+                  | where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+                  | where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+                  | eval "MITRE Threat Group"=if('MITRE Threat Group'="None", null(), 'MITRE Threat Group')
+                  | stats dc("MITRE Threat Group") AS "Threat Groups Covered"  BY App
+          </query>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.showLabels">true</option>
+        <option name="charting.showPercent">true</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Threat Groups Covered":0x$SelectedColor$,"Techniques Covered":0x$SelectedColor$,"Tactics Covered":0x$SelectedColor$,"Remaining Techniques":0x$Phase2Color$,"Remaining Tactics":0x$Phase2Color$,"Remaining Threat Groups":0x$Phase2Color$}</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+      </panel>
+  </row>
+  <row id="selected_content_row3_col2">
+    <panel>
+      <table id="content_table">
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='$Phase0LongName$'+'$Phase1LongName$'+'$Phase2LongName$'+'$SelectedLongName$'
+| sort "Security Data Journey"
+| eval "Use Case"='Use Case Orig',"Bookmark Status"=bookmark_status_display, "Data Availability"=data_available,Enabled=enabled,"Data Coverage"=data_available_numeric
+| eval "Data Source"=mvdedup('Data Source')
+| table Title Status  Description "Data Source" "Data Source Category" "Use Case" "MITRE Tactic" "MITRE Technique" "MITRE Sub-Technique" "MITRE Threat Group" "MITRE Platforms" App "Bookmark Status" "Security Data Journey" Enabled "Data Availability" "Data Coverage" id
+| eval "MITRE Threat Group"=mvcount('MITRE Threat Group')
+| sort - "MITRE Threat Group"
+| rename "MITRE *" AS "ATT&amp;CK *"
+| rename "ATT&amp;CK Threat Group" AS "ATT&amp;CK Threat Groups for Content"
+| foreach "ATT&amp;CK*" [
+  | eval "&lt;&lt;FIELD&gt;&gt;"=mvdedup('&lt;&lt;FIELD&gt;&gt;')
+]
+</query>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">true</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#1836DE" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Active">
+          <colorPalette type="list">[#1836DE]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="Available">
+          <colorPalette type="minMidMax" maxColor="#0D6AEB" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Needs data">
+          <colorPalette type="minMidMax" maxColor="#00A9F8" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Selected">
+          <colorPalette type="minMidMax" maxColor="#F1C40F" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="Selected">
+          <colorPalette type="minMidMax" maxColor="#F1C40F" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="number" field="Data Coverage">
+          <option name="precision">0</option>
+          <option name="unit">%</option>
+        </format>
+        <format type="color" field="Status">
+          <colorPalette type="map">{"Perc_Available":#73D0FB,"Perc_Active":#00A9F8,"Perc_NotActive":#E1E6EB,"Active":#00A9F8,"Available":#73D0FB,"Needs data":#BFEAFD,"Yes":#00A9F8,"No":#BFEAFD,"Enabled":#00A9F8,"Disabled":#BFEAFD,"Selected":#49B849}</colorPalette>
+        </format>
+        <format type="color" field="ATT&amp;CK Threat Groups for Content">
+          <colorPalette type="minMidMax" maxColor="#DC4E41" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row id="selected_content_row3_col3">
+    <panel>
+      <table id="datasource_table">
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+| mvexpand "Data Source"
+| where 'Data Source'!="-"
+
+| mvexpand data_source_categories
+
+| lookup data_inventory_eventtypes_lookup datasource AS "Data Source" eventtypeId AS data_source_categories OUTPUT eventtypeId
+| where isnotnull(eventtypeId)
+| fields - eventtypeId
+
+| join data_source_categories type=outer
+    [
+| inputlookup data_inventory_products_lookup
+| eval eventtypeId=split(eventtypeId,"|")
+| eval key=_key
+| fields eventtypeId status stage coverage_level key
+| eval data_available=if((stage="all-done" OR stage="step-review" OR status="manualnodata") AND (coverage_level="" OR isnull(coverage_level) OR coverage_level>=20 OR coverage_level=-1),"Available","Unavailable")
+| stats values(coverage_level) AS coverage_level, values(data_available) AS data_available BY eventtypeId
+| eval data_available=if(like(data_available,"%Available%"),"Available", "Unavailable")
+| eval coverage_level=max(coverage_level)
+| rename eventtypeId AS data_source_categories
+
+]
+
+| eval "Has Data"=if(data_available="Available" OR data_available="Mixed", "Yes", "No")
+| eval Status=case(
+        'enabled'="Yes" AND 'Has Data'="Yes","$Phase0LongName$",
+        'enabled'!="Yes" AND 'Has Data'="Yes","$Phase1LongName$",
+        1=1,"$Phase2LongName$"
+        )
+| eval "Data Coverage"=coalesce(max(coverage_level,0),0)
+| eval "Data Availability"=data_available
+
+| eval "data_source_categories"=data_source_categories+" ("+data_available+", "+'Data Coverage'+"%)"
+
+
+| stats
+sum(eval(if(Status="$Phase0LongName$",1,0))) AS $Phase0LongName$,
+sum(eval(if(Status="$Phase1LongName$",1,0))) AS "$Phase1LongName$",
+sum(eval(if(Status="$Phase2LongName$",1,0))) AS "$Phase2LongName$",
+sum(eval(if(Status="$SelectedLongName$",1,0))) AS "$SelectedLongName$",
+values(data_source_categories) AS data_source_categories
+BY "Data Source"
+| rename data_source_categories AS "Data Source Category"
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='Active'+'Available'+'Needs data'+'Selected'
+
+| sort - Total
+| table "Data Source" Total "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$" "Data Source Category"
+
+| where case(
+"$phase$"="Active" AND '$Phase0LongName$'>0,1,
+"$phase$"="Available" AND '$Phase1LongName$'>0,1,
+"$phase$"="Needs data" AND '$Phase2LongName$'>0,1,
+"$phase$"="Selected" AND 'Total'>0,1,
+"$phase$"="*" AND 'Total'>0,1,
+1=1,0
+)=1
+
+</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#$Phase0Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase0LongName$">
+          <colorPalette type="list">[#$Phase0Color$]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="$Phase1LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase1Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase2LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase2Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedLongName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedShortName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <drilldown>
+          <set token="form.datasource">$row.Data Source$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="selected_content_row3_col4">
+    <panel>
+      <table id="datacategory_table">
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+| eval data_source_categories_merge=mvzip(data_source_categories,data_source_categories_display,"::")
+| mvexpand data_source_categories_merge
+| rex field="data_source_categories_merge" "(?&lt;data_source_categories>[^:]*)::(?&lt;data_source_categories_display>.*)"
+| eval "Data Source Category"=data_source_categories_display
+| where 'Data Source Category'!="-"
+
+| join data_source_categories type=outer
+    [
+| inputlookup data_inventory_products_lookup
+| eval eventtypeId=split(eventtypeId,"|")
+| eval key=_key
+| fields eventtypeId status stage coverage_level key
+| eval data_available=if((stage="all-done" OR stage="step-review" OR status="manualnodata") AND (coverage_level="" OR isnull(coverage_level) OR coverage_level>=20 OR coverage_level=-1),"Available","Unavailable")
+| stats values(coverage_level) AS coverage_level, values(data_available) AS data_available BY eventtypeId
+| eval data_inventory_data_available=if(data_available="Available","Available", "Unavailable")
+| rename eventtypeId AS data_source_categories
+        ]
+| rename data_inventory_data_available AS data_available
+| eval "Has Data"=if(data_available="Available" OR data_available="Mixed", "Yes", "No")
+        | eval Status=case(
+        'enabled'="Yes" AND 'Has Data'="Yes","Active",
+        'enabled'!="Yes" AND 'Has Data'="Yes","Available",
+        1=1,"Needs data"
+        )
+| eval "Data Coverage"=coalesce(coverage_level,0)
+| eval "Data Availability"=data_available
+
+| stats
+sum(eval(if(Status="$Phase0LongName$",1,0))) AS $Phase0LongName$,
+sum(eval(if(Status="$Phase1LongName$",1,0))) AS "$Phase1LongName$",
+sum(eval(if(Status="$Phase2LongName$",1,0))) AS "$Phase2LongName$",
+sum(eval(if(Status="$SelectedLongName$",1,0))) AS "$SelectedLongName$"
+BY "Data Source Category" data_source_categories "Data Availability" "Data Coverage"
+| rename data_source_categories AS eventtypeId
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='$Phase0LongName$'+'$Phase1LongName$'+'$Phase2LongName$'+'$SelectedLongName$'
+| sort - Total
+| table "Data Source Category" Total "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$" eventtypeId "Data Availability" "Data Coverage"
+
+| where case(
+"$phase$"="Active" AND 'Active'>0,1,
+"$phase$"="Available" AND 'Available'>0,1,
+"$phase$"="Needs data" AND 'Needs data'>0,1,
+"$phase$"="Selected" AND 'Total'>0,1,
+"$phase$"="*" AND 'Total'>0,1,
+1=1,0
+)=1
+
+</query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#$Phase0Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase0LongName$">
+          <colorPalette type="list">[#$Phase0Color$]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="$Phase1LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase1Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase2LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase2Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedLongName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedShortName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="number" field="Data Coverage">
+          <option name="precision">0</option>
+          <option name="unit">%</option>
+        </format>
+        <drilldown>
+          <set token="form.datacategory">$row.Data Source Category$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="selected_content_row3_col5">
+    <panel>
+      <table id="mitre_tactic_table">
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+| mvexpand "MITRE Tactic"
+| lookup mitre_enterprise_list "Tactic" AS "MITRE Tactic" OUTPUT Matrix
+| where Matrix="Enterprise ATT&amp;CK"
+| stats
+sum(eval(if(Status="$Phase0LongName$",1,0))) AS $Phase0LongName$,
+sum(eval(if(Status="$Phase1LongName$",1,0))) AS "$Phase1LongName$",
+sum(eval(if(Status="$Phase2LongName$",1,0))) AS "$Phase2LongName$",
+sum(eval(if(Status="$SelectedLongName$",1,0))) AS "$SelectedLongName$",
+dc("MITRE Technique") AS "MITRE Techniques"
+BY "MITRE Tactic"
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='$Phase0LongName$'+'$Phase1LongName$'+'$Phase2LongName$'+'$SelectedLongName$'
+| sort - Total
+| table "MITRE Tactic" "MITRE Techniques" Total "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"
+| rename "MITRE *" AS "ATT&amp;CK *"
+| foreach "ATT&amp;CK*" [
+  | eval "&lt;&lt;FIELD&gt;&gt;"=mvdedup('&lt;&lt;FIELD&gt;&gt;')
+]
+          </query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#$Phase0Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase0LongName$">
+          <colorPalette type="list">[#$Phase0Color$]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="$Phase1LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase1Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase2LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase2Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedLongName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedShortName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <drilldown>
+          <set token="form.MITRE_Tactic">$row.ATT&amp;CK Tactic$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="selected_content_row3_col6">
+    <panel>
+      <table id="mitre_technique_table">
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+| mvexpand "MITRE Technique"
+| eval Sub_Technique_Temp="-"
+| lookup mitre_enterprise_list "Technique" AS "MITRE Technique", Sub_Technique AS Sub_Technique_Temp OUTPUT Matrix TechniqueIdCombined
+| where Matrix="Enterprise ATT&amp;CK"
+| where 'MITRE Technique'!=""
+| stats
+sum(eval(if(Status="$Phase0LongName$",1,0))) AS $Phase0LongName$,
+sum(eval(if(Status="$Phase1LongName$",1,0))) AS "$Phase1LongName$",
+sum(eval(if(Status="$Phase2LongName$",1,0))) AS "$Phase2LongName$",
+sum(eval(if(Status="$SelectedLongName$",1,0))) AS "$SelectedLongName$",
+values(TechniqueIdCombined) AS Id
+BY "MITRE Technique"
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='$Phase0LongName$'+'$Phase1LongName$'+'$Phase2LongName$'+'$SelectedLongName$'
+| sort - Total
+| table Id "MITRE Technique" Total "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"
+| rename "MITRE Technique" AS "MITRE ATT&amp;CK Technique"
+| foreach "ATT&amp;CK*" [
+  | eval "&lt;&lt;FIELD&gt;&gt;"=mvdedup('&lt;&lt;FIELD&gt;&gt;')
+]
+          </query>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#$Phase0Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase0LongName$">
+          <colorPalette type="list">[#$Phase0Color$]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="$Phase1LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase1Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase2LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase2Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedLongName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedShortName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <drilldown>
+          <set token="form.MITRE_Technique">$row.MITRE ATT&amp;CK Technique$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="selected_content_row3_col7">
+    <panel>
+      <table id="mitre_threat_group_table">
+        <title>Click to filter</title>
+        <search base="usecase_base">
+          <query>| eval Status=if(in(datasource,$datasource_selection$), "$SelectedLongName$",Status)
+| search Status="$phase$" "App"="$app$" "Data Source"="$datasource$" "Data Source Category"="$datacategory$" "bookmark_status"="$bookmark_status$" "MITRE Tactic"="$MITRE_Tactic$" "mitre_technique_combined" IN($mitre_technique_combined_for_in$)  "MITRE Threat Group" IN($mitre_threat_groups_for_in$) "MITRE Platforms" IN("$modified_mitre_platforms$")
+| where like(lower(Title),"%".lower("$searchfilter$")."%") OR like(lower(Description),"%".lower("$searchfilter$")."%") OR like(lower('Data Source'),"%".lower("$searchfilter$")."%") OR like(lower('Data Source Category'),"%".lower("$searchfilter$")."%") OR like(lower('Use Case'),"%".lower("$searchfilter$")."%")
+| where mvcount('MITRE Threat Group')>=$threatgrouppopularity$
+
+| mvexpand "MITRE Threat Group"
+| where 'MITRE Threat Group'!=""
+| stats
+sum(eval(if(Status="$Phase0LongName$",1,0))) AS $Phase0LongName$,
+sum(eval(if(Status="$Phase1LongName$",1,0))) AS "$Phase1LongName$",
+sum(eval(if(Status="$Phase2LongName$",1,0))) AS "$Phase2LongName$",
+sum(eval(if(Status="$SelectedLongName$",1,0))) AS "$SelectedLongName$",
+dc("MITRE Technique") AS "MITRE Techniques"
+BY "MITRE Threat Group"
+
+| eval "$SelectedLongName$_New"=case(isnotnull('Data Source') AND in('Data Source',$datasource_selection$), '$SelectedLongName$',isnotnull('Data Source') AND NOT in('Data Source',$datasource_selection$),0,1=1,'$SelectedLongName$')
+| eval m="Move the overlapping entries to Phase 2 so they dont get lost while filtering"
+| fields - m
+| eval "$Phase2LongName$"=if('$SelectedLongName$_New'=0 AND '$SelectedLongName$'&gt;0, coalesce('$Phase2LongName$',0)+coalesce('$SelectedLongName$',0), coalesce('$Phase2LongName$',0))
+| rename "$SelectedLongName$_New" AS "$SelectedLongName$"
+
+| eval Total='$Phase0LongName$'+'$Phase1LongName$'+'$Phase2LongName$'+'$SelectedLongName$'
+| sort - Total
+| table "MITRE Threat Group" "MITRE Techniques" Total "$Phase0LongName$" "$Phase1LongName$" "$Phase2LongName$" "$SelectedLongName$"
+| rename "MITRE *" AS "ATT&amp;CK *"
+| foreach "ATT&amp;CK*" [
+  | eval "&lt;&lt;FIELD&gt;&gt;"=mvdedup('&lt;&lt;FIELD&gt;&gt;')
+]
+| where in('ATT&amp;CK Threat Group',split("$MITRE_Threat_Group$",","))
+          </query>
+
+
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="totalsRow">false</option>
+        <format type="color" field="Total">
+          <colorPalette type="minMidMax" maxColor="#$Phase0Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase0LongName$">
+          <colorPalette type="list">[#$Phase0Color$]</colorPalette>
+          <scale type="threshold"></scale>
+        </format>
+        <format type="color" field="$Phase1LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase1Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$Phase2LongName$">
+          <colorPalette type="minMidMax" maxColor="#$Phase2Color$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedLongName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <format type="color" field="$SelectedShortName$">
+          <colorPalette type="minMidMax" maxColor="#$SelectedColor$" minColor="#FFFFFF"></colorPalette>
+          <scale type="minMidMax"></scale>
+        </format>
+        <drilldown>
+          <set token="form.MITRE_Threat_Group">$row.ATT&amp;CK Threat Group$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row id="bookmarkSelection">
+    <panel>
+      <title>Bookmark Selection ($selectedContentCount$)</title>
+      <description>Bookmark the content to come back to it later</description>
+      <html>
+      <div id="bookmarkSelectionContainer" class="dashboard-form-fieldset fieldset">
+          <div id="bookmarkSelectionDropdownWrapper" class="">
+          <label title="Select which status you want the bookmarks to have">Bookmark Status</label>
+          </div>
+          <div id="bookmarkSelectionTextbox" class="">
+          <label title="Add a note for the bookmark">Note</label>
+          </div>
+          <div id="bookmarkSelectionButton"></div><span class="bookmarkSelectionProgress"></span>
+      </div>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+          <h1 data-translate-id="contentanalytics-h1-sectionthree">3. View Content</h1>
+      <p data-translate-id="contentanalytics-h1-sectionthreedescription">Click the button below to drill down in to the content. </p>
+       <a class="btn btn-primary animatedbutton" target="_blank" role="button" data-unset-token="show_details" href="/app/Splunk_Security_Essentials/security_content#mitre_technique_combined=$deeplink_mitre_technique_combined$&amp;mitre_tactic_display=$deeplink_mitre_tactic_display$&amp;mitre_threat_groups=$deeplink_mitre_threat_groups$&amp;industryMapping=$deeplink_industry_mapping$&amp;mitre_platforms=$deeplink_mitre_platforms$&amp;bookmark_status=$deeplink_bookmark_status$&amp;displayapp=$deeplink_displayapp$&amp;datasource=$deeplink_datasource$&amp;data_source_categories_display=$deeplink_data_source_categories_display$&amp;enabled=$deeplink_enabled$&amp;data_available=$deeplink_data_available$&amp;search=$deeplink_search$">
+          <span data-translate-id="contentanalytics-span-drilldowntosse">Drill down to content selection</span>
+        </a>
+    </html>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,12 @@
+fields
+base_address
+fqdn
+hostname
+image_path
+md5_hash
+module_name
+pid
+sha1_hash
+sha256_hash
+signature_valid
+signer

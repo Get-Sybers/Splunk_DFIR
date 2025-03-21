@@ -1,0 +1,70 @@
+[
+    {
+        "description": "This example uses the Predict Numeric Fields Assistant and the Linear Regression algorithm to predict remote access to the VPN from four other fields.",
+        "featured": true,
+        "industries": [
+            "security"
+        ],
+        "name": "App Usage",
+        "assistant": "predict_numeric_fields",
+        "title": "Predict VPN Usage"
+    },
+    {
+        "description": "This example uses the Predict Categorical Fields Assistant and the Logistic Regression algorithm to predict malware from fields including bytes received, bytes sent, and destination port.",
+        "featured": true,
+        "industries": [
+            "security"
+        ],
+        "name": "Malware",
+        "assistant": "predict_categorical_fields",
+        "title": "Predict the Presence of Malware"
+    },
+    {
+        "description": "This example uses the Detect Numeric Outliers Assistant and threshold method of Median Absolute Deviation to look for outliers in login information.",
+        "featured": true,
+        "industries": [
+            "security"
+        ],
+        "name": "Employee Logins (prediction errors)",
+        "assistant": "detect_numeric_outliers",
+        "title": "Detect Outliers in Number of Logins (vs. Predicted Value)"
+    },
+    {
+        "description": "This example uses the Detect Categorical Outliers Assistant on three fields of data that include user and value.",
+        "featured": true,
+        "industries": [
+            "security"
+        ],
+        "name": "Bitcoin Transactions",
+        "assistant": "detect_categorical_outliers",
+        "title": "Detect Outliers in Bitcoin Transactions"
+    },
+    {
+        "description": "This example uses the Forecast Time Series Assistant and the Kalman Filter algorithm to forecast future employee login numbers.",
+        "featured": false,
+        "industries": [
+            "security"
+        ],
+        "name": "Employee Logins",
+        "assistant": "forecast_time_series",
+        "title": "Forecast the Number of Employee Logins"
+    },
+    {
+        "description": "This example uses the Cluster Numeric Events Assistant, a preprocessing step using the Standard Scaler method, and the Spectral Clustering algorithm to cluster on four different fields.",
+        "featured": true,
+        "industries": [
+            "security"
+        ],
+        "name": "Apps",
+        "assistant": "cluster_numeric_events",
+        "title": "Cluster Behavior by App Usage"
+    },
+    {
+        "description": "This example uses the Smart Prediction Assistant and the AutoPrediction algorithm to predict vulnerabilities in firewall data from fields in the data including bytes received, bytes sent, packets received, and packets sent.",
+        "featured": true,
+        "industries": ["security"],
+        "name": "Firewall Traffic",
+        "assistant": "smart_prediction",
+        "title": "Predict the Presence of Vulnerabilities"
+    }
+]

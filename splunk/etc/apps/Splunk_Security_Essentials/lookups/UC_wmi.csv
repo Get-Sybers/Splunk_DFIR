@@ -1,0 +1,13 @@
+_time,host,Image,CommandLine,EventCode
+"2017-05-22T04:36:54.000+0000",we8105desk,wmic.exe,"wmic.exe we1149srv /node: we1149srv /user user /password process call create c:\malware.exe",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\SysWOW64\DllHost.exe /Processid:{1EF75F33-893B-4E8F-9655-C3D602BA4897}",1
+"2017-05-22T04:36:54.000+0000",we1149srv,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -Embedding",1
+"2017-05-22T04:36:54.000+0000",we1149srv,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\system32\w32tm.exe""  /stripchart /computer:we9041srv.waynecorpinc.local /dataonly /samples:1",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\system32\PING.EXE""  we9041srv.waynecorpinc.local /n 2",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\system32\w32tm.exe""  /query /source",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\Microsoft.NET\Framework64\v2.0.50727\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 ""/OUT:C:\Users\BOBSMI~1.WAY\AppData\Local\Temp\RES958E.tmp"" ""c:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\CSC958D.tmp""",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"""C:\Windows\Microsoft.NET\Framework64\v2.0.50727\csc.exe"" /noconfig /fullpaths @""C:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\l62oeljq.cmdline""",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding",1
+"2017-05-22T04:36:54.000+0000",we8105desk,calc.exe,"C:\Windows\Microsoft.NET\Framework64\v2.0.50727\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 ""/OUT:C:\Users\BOBSMI~1.WAY\AppData\Local\Temp\RES93AA.tmp"" ""c:\Users\bob.smith.WAYNECORPINC\AppData\Local\Temp\CSC93A9.tmp""",1

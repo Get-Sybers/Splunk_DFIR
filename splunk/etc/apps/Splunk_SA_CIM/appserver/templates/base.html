@@ -1,0 +1,246 @@
+<%!
+app_name = "Splunk_SA_CIM"
+
+%>\
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>
+       CIM Setup
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <style>
+        /* App Menu Dark Mode - CIM-1110 */
+        .dark [data-view="views/shared/MenuDialog"] [data-role="slidenav-menu"] ul a {
+            color: #fff;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-role="slidenav-menu"] ul a:hover {
+            background-color: #3c444d;
+            color: #fff;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-popdown-role="arrow"] {
+            border-bottom: 8px solid #000;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-popdown-role="arrow"]:before {
+            border-bottom: 8px solid #171d21;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-role="slidenav-menu"] ul,
+        .dark [data-view="views/shared/MenuDialog"] [data-role="slidenav-menu"] {
+            background-color: #171d21;
+        }
+
+        .dark [data-view="views/shared/splunkbar/find/results/Master"],
+        .dark [data-view="views/shared/MenuDialog"] {
+            border: 1px solid #000;
+            background-color: #171d21;
+        }
+
+        .dark [data-view="views/shared/splunkbar/find/FindProgress"],
+        .dark [data-view="views/shared/splunkbar/find/results/Master"] ul {
+            background-color: #171d21;
+        }
+        .dark [data-view="views/shared/splunkbar/find/results/Master"] ul > li > a {
+            color: #fff;
+        }
+        .dark [data-view="views/shared/splunkbar/find/results/Master"] ul > li > a:hover:not(.disabled) {
+            color: #fff;
+            background-color: #3c444d;
+        }
+        .dark [data-view="views/shared/splunkbar/find/FindProgress"] * {
+            background-color: #171d21;
+            border: #3c444d;
+            color: #fff;
+        }
+        .dark [data-view="views/shared/splunkbar/find/results/Master"] [data-popdown-role="arrow"]::before,
+        .dark [data-view="views/shared/splunkbar/find/FindProgress"] [data-popdown-role="arrow"]::before{
+            border-bottom: 8px solid #171d21;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-role="slidenav-menu"] [data-role="divider"] {
+            border-top: 1px solid #000;
+            background-color: #000;
+        }
+
+        .dark [data-role="slidelist-menu"] [data-role="divider"]+li>a {
+            border-top: 1px solid #3c444d;
+        }
+
+        /* Splunk Menu */
+        .dark [data-view="views/shared/splunkbar/apps/MenuContents"],
+        .dark [data-view="views/shared/splunkbar/apps/MenuContents"] [data-role="apps-list"],
+        .dark [data-view="views/shared/splunkbar/apps/MenuContents"] [data-role="apps-list"]+ul,
+        .dark [data-view="views/shared/splunkbar/activity/MenuContents"],
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"],
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] [data-popdown-role="body"],
+        .dark [data-view="views/shared/splunkbar/messages/MenuContents"] [data-role="footer"],
+        .dark [data-view="views/shared/splunkbar/messages/MenuContents"] [data-view="views/shared/splunkbar/messages/Message"],
+        .dark [data-view="views/shared/splunkbar/help/MenuContents"],
+        .dark [data-view="views/shared/splunkbar/help/MenuContents"] ul,
+        .dark [data-view="views/shared/splunkbar/user/MenuContents"] {
+            background-color: transparent;
+        }
+
+        .dark [data-view="views/shared/splunkbar/messages/MenuContents"] [data-role="no-messages"] {
+            color: inherit;
+            background-color: inherit;
+        }
+
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] [data-popdown-role="body"] a {
+            color: #3ebcff;
+        }
+
+        .dark [data-role="apps-list"] a > span,
+        .dark [data-role="apps-list"]+ul a,
+        .dark [data-view="views/shared/splunkbar/activity/MenuContents"] a,
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] [data-popdown-role="sidebar"] a,
+        .dark [data-view="views/shared/splunkbar/messages/MenuContents"] [data-view="views/shared/splunkbar/messages/Message"],
+        .dark [data-view="views/shared/splunkbar/help/MenuContents"] li>a,
+        .dark [data-view="views/shared/splunkbar/user/MenuContents"] li>a{
+            color: #fff;
+        }
+
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] svg,
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] svg * {
+            fill: #fff;
+        }
+
+        .dark  [data-role="apps-list"] li>a:hover:not(.disabled),
+        .dark  [data-role="apps-list"]+ul li>a:hover:not(.disabled),
+        .dark [data-view="views/shared/splunkbar/activity/MenuContents"] li>a:hover:not(.disabled),
+        .dark [data-view="views/shared/splunkbar/system/MenuContents"] [data-popdown-role="sidebar"] a:hover,
+        .dark [data-view="views/shared/splunkbar/messages/MenuContents"] li>a:hover:not(.disabled),
+        .dark [data-view="views/shared/splunkbar/help/MenuContents"] li>a:hover:not(.disabled),
+        .dark [data-view="views/shared/splunkbar/user/MenuContents"] li>a:hover:not(.disabled) {
+            color: #eee;
+            background: #3c444d;
+        }
+
+
+        /* Modals */
+        .dark [data-view="views/shared/aboutmodal/Master"],
+        .dark [data-view="views/shared/aboutmodal/Master"] [data-modal-role="header"],
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] [data-modal-role="header"],
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] {
+            color: #fff !important;
+            background-color: #171d21;
+        }
+
+        .dark [data-view="views/shared/aboutmodal/Master"] [data-icon="splunk"] {
+            color: #fff !important;
+        }
+
+
+        .dark [data-view="views/shared/aboutmodal/Contents"] h2, 
+        .dark [data-view="views/shared/aboutmodal/Contents"] div,
+        .dark [data-view="views/shared/aboutmodal/Contents"] div p,
+        .dark [data-component-name="user-pref-modal"] [data-test="header"] [data-test="title"],
+        .dark [data-component-name="user-pref-modal"] [data-test="tab"],
+        .dark [data-component-name="user-pref-modal"] h3,
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] p,
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] [data-role="health-node"] a,
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] [data-role="info-default"],
+        .dark [data-view="views/shared/splunkbar/healthmodal/Master"] [data-title-role="health-title"] {
+            color: #fff;
+        }
+
+        .dark [data-view="views/shared/aboutmodal/Contents"] a {
+            color: #3ebcff;
+        }
+
+        .dark [data-component-name="user-pref-modal"] [data-test="header"],
+        .dark [data-component-name="user-pref-modal"] [data-test="body"],
+        .dark [data-component-name="user-pref-modal"] [data-test="footer"] {
+            background-color: #181d21;
+        }
+
+        .dark [data-component-name="user-pref-modal"] [data-component="splunk-core:/views/shared/preferences/Tab"] button:hover {
+            background-color: #3c444d;
+        }
+
+        .dark [data-component-name="user-pref-modal"] [data-component="splunk-core:/views/shared/preferences/Tab"] button {
+            background-color: transparent;
+        }
+
+        .dark [data-component-name="user-pref-modal"] label,
+        .dark [data-component-name="user-pref-modal"] p {
+            color: #fff;
+        }
+
+        .dark [data-view="views/shared/MenuDialog"] [data-view="views/shared/controls/TextControl"] input,
+        .dark [data-view="views/shared/MenuDialog"] [data-view="views/shared/Button"], 
+        .dark [data-component-name="user-pref-modal"] [data-test="radio-bar"] [data-test="option"],
+        .dark [data-component-name="user-pref-modal"] button[data-select-appearance="toggle"]:not([disabled]),
+        .dark [data-component-name="user-pref-modal"] button[data-component-name="cancel"] {
+            background-color: #3c444d;
+            color: #fff;
+            border: none;
+        }
+
+        .dark [data-component-name="user-pref-modal"] [data-test="radio-bar"] [data-test="option"][aria-checked="true"] {
+            background-color: #2b3033;
+        }
+
+        /* .dark [data-test="popover"] [data-test="menu"] {
+            background-color: #222;
+        }
+
+        .dark [data-test="popover"] [data-test="menu"] button {
+            color: #fff;
+        }
+        .dark [data-test="popover"] [data-test="menu"] button:hover {
+            background-color: #3c444d;
+        } */
+
+        .dark [data-component-name="user-pref-modal"] button[role="switch"][data-selected="false"] {
+            background-color: #3c444d;
+            border: none;
+        }
+
+        .dark [data-component-name="user-pref-modal"] button[role="switch"][data-selected="true"] {
+            background-color: #00a4fd;
+            border: none;
+        }
+    </style>
+</head>
+
+<body class="locale-${i18n.current_lang()[0]|h} ${theme if theme is not UNDEFINED else 'enterprise'}">
+    <script src="${make_url('/config?autoload=1')}" crossorigin="use-credentials"></script>
+    <script src="${make_url('/static/js/i18n.js')}"></script>
+    <script src="${make_url('/i18ncatalog?autoload=1')}"></script>
+    % if theme is not UNDEFINED:
+    <link rel="stylesheet" type="text/css"
+        href="${make_url('/static/app/Splunk_SA_CIM/bootstrap-%s.css' % theme)}" />
+    % else:
+    <link rel="stylesheet" type="text/css"
+        href="${make_url('/static/app/Splunk_SA_CIM/bootstrap-enterprise.css')}" />
+    % endif
+
+    % if theme is not UNDEFINED:
+    <link rel="stylesheet" type="text/css"
+        href="${make_url('/static/app/Splunk_SA_CIM/cim_setup-%s.css' % theme)}" />
+    % else:
+    <link rel="stylesheet" type="text/css"
+        href="${make_url('/static/app/Splunk_SA_CIM/cim_setup-enterprise.css')}" />
+    % endif
+
+    <script>
+        __splunkd_partials__ = ${json_decode(splunkd)};
+        window.ES_CURRENT_THEME = "${theme if theme is not UNDEFINED else 'enterprise'}";
+    </script>
+
+    <%
+    page_path = "/static/app/" + app_name + "/cim_setup.js"
+    %>
+
+    <script src="${make_url(page_path)}"></script>
+</body>
+
+</html>

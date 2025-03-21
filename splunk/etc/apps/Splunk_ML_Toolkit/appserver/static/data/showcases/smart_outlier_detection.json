@@ -1,0 +1,60 @@
+{
+    "Hard Drive Anomalies": {
+        "title": "Find Anomalies in Hard Drive Metrics",
+        "type": "smart_outlier_detection",
+        "searchStages": [
+            {
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource",
+                "searchString": "| inputlookup disk_failures.csv",
+                "type": "spl"
+            },
+            {
+                "algorithm": "DensityFunction",
+                "algorithmParams": {
+                    "dist": "auto",
+                    "threshold": 0.01
+                },
+                "featureVariables": [],
+                "modelName": "example_soda_disk_failure",
+                "role": "main",
+                "splitBy": [],
+                "targetVariables": [
+                    "SMART_3_Raw"
+                ],
+                "type": "fit"
+            }
+        ]
+    },
+    "Anomalies in Supermarket Purchases": {
+        "title": "Find Anomalies in Supermarket Purchases",
+        "type": "smart_outlier_detection",
+        "searchStages": [
+            {
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource",
+                "searchString": "| inputlookup supermarket.csv",
+                "type": "spl"
+            },
+            {
+                "algorithm": "DensityFunction",
+                "algorithmParams": {
+                    "dist": "auto",
+                    "threshold": 0.01
+                },
+                "featureVariables": [],
+                "modelName": "example_soda_supermarket",
+                "role": "main",
+                "splitBy": [
+                    "shop_id"
+                ],
+                "targetVariables": [
+                    "quantity"
+                ],
+                "type": "fit"
+            }
+        ]
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "expandedViewProps": {
+        "cardsPerRow": 3,
+        "rowIndex": 2
+    },
+    "triangleProps": {
+        "colIndex": 2,
+        "rowIndex": 1
+    }
+}

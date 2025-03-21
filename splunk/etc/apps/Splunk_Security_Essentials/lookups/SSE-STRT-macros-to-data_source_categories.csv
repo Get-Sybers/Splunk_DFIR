@@ -1,0 +1,71 @@
+macro,definition,"_timediff",eventtypeId,productId,source,sourcetype
+wmi,"sourcetype=""wineventlog:microsoft-windows-wmi-activity/operational""",,"VendorSpecific-winsec","Microsoft__WMI",,"wineventlog:microsoft-windows-wmi-activity/operational"
+"ms_defender","source=""WinEventLog:Microsoft-Windows-Windows Defender/Operational""",,,,"WinEventLog:Microsoft-Windows-Windows",
+"amazon_security_lake","sourcetype=aws:asl",,"VendorSpecific-aws-cloudtrail","AWS__CloudTrail",,"aws:asl"
+"stream_http","sourcetype=stream:http",,"DS014WebServer-ET01Access","Stream__HTTP",,"stream:http"
+"zeek_x509","sourcetype=""zeek:x509:json""",,"VendorSpecific-zeek","Zeek__X509",,"zeek:x509:json"
+circleci,"sourcetype=circleci",,"VendorSpecific-circleci","CircleCI__CICD",,circleci
+"certificateservices_lifecycle","(source=XmlWinEventLog:Microsoft-Windows-CertificateServicesClient-Lifecycle-System/Operational OR source=XmlWinEventLog:Microsoft-Windows-CertificateServicesClient-Lifecycle-User/Operational)",,"VendorSpecific-winsec-certificateservices","Microsoft__Windows_Certificate_Services","XmlWinEventLog:Microsoft-Windows-CertificateServicesClient-Lifecycle-System/Operational|XmlWinEventLog:Microsoft-Windows-CertificateServicesClient-Lifecycle-User/Operational)",
+"iis_get_webglobalmodule","sourcetype=""Pwsh:InstalledIISModules""",,"DS014WebServer-ET01Access","Microsoft__IIS_get_webglobalmodule",,"Pwsh:InstalledIISModules"
+okta,"eventtype=okta_log",,"VendorSpecific-Okta","Okta__Identity_Cloud",,Okta
+"cisco_networks","eventtype=cisco_ios",,"VendorSpecific-cisco-ios","Cisco__IOS",,"eventtype=cisco_ios"
+"wineventlog_security","eventtype=wineventlog_security OR Channel=security OR source=XmlWinEventLog:Security",,"VendorSpecific-winsec","Microsoft__Windows_Process_Launch","WinEventLog:Security",
+"zeek_rpc","index=zeek sourcetype=""zeek:rpc:json""",,"VendorSpecific-zeek","Zeek__RPC",,"zeek:rpc:json"
+pingid,"source=PINGID",,,,PINGID,
+"kube_audit","source=""kubernetes""",,,,kubernetes,
+"cloudwatchlogs_vpcflow","sourcetype=aws:cloudwatchlogs:vpcflow",,"VendorSpecific-aws-vpcflow","AWS__VPC_Flow_Logs",,"aws:cloudwatchlogs:vpcflow"
+"o365_management_activity","sourcetype=o365:management:activity",,"VendorSpecific-azure-audit","Microsoft__Office_365_Audit",,"o365:management:activity"
+"google_gcp_pubsub_message","sourcetype=""google:gcp:pubsub:message""",,"VendorSpecific-gcp-gke-audit","Google_GCP_GKE_Audit",,"google:gcp:pubsub:message"
+sysmon,"sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational OR source=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational OR source=Syslog:Linux-Sysmon/Operational",,"VendorSpecific-winsec-sysmon","Microsoft__Sysmon_DNS","XmlWinEventLog:Microsoft-Windows-Sysmon/Operational|Syslog:Linux-Sysmon/Operational","XmlWinEventLog:Microsoft-Windows-Sysmon/Operational"
+audittrail,"index=_audit sourcetype=audittrail",,"VendorSpecific-SplunkSearchActivity","Splunk_Search_Activity",,audittrail
+"gsuite_gmail","sourcetype=gsuite:gmail:bigquery",,"VendorSpecific-google-gmail","Google__Gmail_bigquery",,"gsuite:gmail:bigquery"
+"osquery_process","eventtype=""osquery-process""",,"VendorSpecific-osquery","OSQuery___",,"osquery:results"
+"path_traversal_spl_injection","index=_internal sourcetype=splunkd_ui_access",,"VendorSpecific-SplunkUIAccess","Splunk_UI_Access",,"splunkd_ui_access"
+"gws_reports_login","sourcetype=gws:reports:login",,"VendorSpecific-gcp","Google_GCP_GWS",,"gws:reports:login"
+"wineventlog_system","eventtype=wineventlog_system",,"VendorSpecific-win-system","Microsoft__Windows_System_Log","WinEventLog:System",
+"capi2_operational","(source=XmlWinEventLog:Microsoft-Windows-CAPI2/Operational)",,"VendorSpecific-winsec-powershell","Microsoft__Windows_Powershell","XmlWinEventLog:Microsoft-Windows-CAPI2/Operational)",
+"gws_reports_admin","sourcetype=gws:reports:admin",,"VendorSpecific-gcp","Google_GCP_GWS",,"gws:reports:admin"
+"azure_audit","sourcetype=mscs:azure:audit",,"VendorSpecific-azure-audit","Azure__Audit",,"mscs:azure:audit"
+github,"sourcetype=aws:firehose:json",,"DS014WebServer-ET03SourceCode","Github__Github",,"aws:firehose:json"
+"splunkd_investigation_rest_handler","index=_internal sourcetype=investigation_rest_handler",,,,,"investigation_rest_handler"
+exchange,"sourcetype=""MSWindows:IIS""",,"VendorSpecific-ms-iis","Microsoft__Exchange_IIS",,"MSWindows:IIS"
+"aws_securityhub_finding","sourcetype=""aws:securityhub:finding""",,"VendorSpecific-aws-securityhub","AWS__Securityhub",,"aws:securityhub:finding"
+"nginx_access_logs","(sourcetype=""nginx:plus:kv"" OR sourcetype=""nginx:plus:access"")",,,,,"nginx:plus:kv|nginx:plus:access"
+suricata,"sourcetype=suricata",,"DS010NetworkCommunication-ET01Traffic|DS012NetworkIntrusionDetection-ET01SigDetection|DS001MAIL-ET02Receive|DS001MAIL-ET03Send","Suricata___",,suricata
+"gsuite_drive","sourcetype=gsuite:drive:json",,"VendorSpecific-google-drive","Google__Drive",,"gsuite:drive:json"
+"f5_bigip_rogue","index=netops sourcetype=""f5:bigip:rogue""",,"VendorSpecific-f5bigip","F5__Bigip_Rogue",,"f5:bigip:rogue"
+"azure_monitor_aad","sourcetype=azure:monitor:aad",,,,,"azure:monitor:aad"
+driverinventory,"sourcetype=PwSh:DriverInventory",,"VendorSpecific-winsec-powershell","Microsoft__Windows_Powershell",,"PwSh:DriverInventory"
+"kube_container_falco","sourcetype=""kube:container:falco""",,"VendorSpecific-kubernetes","Splunk__Connect_for_Kubernetes",,"kube:container:falco"
+"audit_searches","index=_audit sourcetype=audittrail action=search",,"VendorSpecific-SplunkSearchActivity","Splunk_Search_Activity",,audittrail
+"aws_cloudwatchlogs_eks","sourcetype=""aws:cloudwatchlogs:eks""",,"VendorSpecific-aws-cloudwatch-eks","AWS__CloudWatch_EKS",,"aws:cloudwatchlogs:eks"
+"splunk_python","index=_internal sourcetype=splunk_python",,"VendorSpecific-SplunkInternal","Splunk_Internal",,"splunk_python"
+"iis_operational_logs","sourcetype=""IIS:Configuration:Operational""",,"DS014WebServer-ET01Access","Microsoft__IIS_operational_logs",,"IIS:Configuration:Operational"
+papercutng,"sourcetype=""papercutng""",,"VendorSpecific-Papercut","Papercut_ng",,papercutng
+"splunk_crash_log","(index=_internal AND sourcetype=splunkd_crash_log)",,"VendorSpecific-SplunkInternal","Splunk_Internal",,"splunkd_crash_log)"
+"kube_objects_events","sourcetype=kube:objects:events",,"VendorSpecific-kubernetes","Splunk__Connect_for_Kubernetes",,"kube:objects:events"
+"gsuite_calendar","sourcetype=gsuite:calendar:json",,"VendorSpecific-google-calendar","Google__Calendar",,"gsuite:calendar:json"
+printservice,"source=""wineventlog:microsoft-windows-printservice/operational"" OR source=""WinEventLog:Microsoft-Windows-PrintService/Admin""",,,,"wineventlog:microsoft-windows-printservice/operational|WinEventLog:Microsoft-Windows-PrintService/Admin",
+splunkda,"index=_internal sourcetype=splunkd_access",,"VendorSpecific-SplunkInternal","Splunk_Internal",,"splunkd_access"
+"splunkd_ui","index=_internal sourcetype=splunkd_ui_access",,"VendorSpecific-SplunkUIAccess","Splunk_UI_Access",,"splunkd_ui_access"
+admon,"source=ActiveDirectory",,"DS034ApplicationLogs-ET01General","Microsoft__AD",ActiveDirectory,
+"kubernetes_azure","sourcetype=mscs:storage:blob:json",,"VendorSpecific-azure-aks-audit","Azure__AKS",,"mscs:storage:blob:json"
+subjectinterfacepackage,"sourcetype=""PwSh:SubjectInterfacePackage""",,,,,"PwSh:SubjectInterfacePackage"
+"bootloader_inventory","sourcetype = PwSh:bootloader",,"VendorSpecific-winsec-powershell","Microsoft__Windows_Powershell",,"PwSh:bootloader"
+"aws_s3_accesslogs","sourcetype=aws:s3:accesslogs",,"VendorSpecific-aws-s3-access","AWS__S3",,"aws:s3:accesslogs"
+"o365_graph","sourcetype=o365:graph:api",,,,,"o365:graph:api"
+"wineventlog_application","eventtype=wineventlog_application OR source=""XmlWinEventLog:Application""",,"DS034ApplicationLogs-ET01General|DS034ApplicationLogs-ET01General","Microsoft__Windows_Application_Log","XmlWinEventLog:Application",
+"stream_tcp","sourcetype=stream:tcp",,"DS010NetworkCommunication-ET01Traffic","Stream__TCP",,"stream:tcp"
+"splunkd_web","index=_internal sourcetype=splunk_web_access",,"VendorSpecific-SplunkWebAccess","Splunk_Web_Access",,"splunk_web_access"
+splunkd,"index=_internal sourcetype=splunkd",,"VendorSpecific-SplunkInternal","Splunk_Internal",,splunkd
+"stream_dns","sourcetype=stream:dns",,"DS002DNS-ET01QueryResponse|DS002DNS-ET01QueryRequest|DS002DNS-ET01Query","Stream__DNS",,"stream:dns"
+"wineventlog_task_scheduler","source=""WinEventLog:Microsoft-Windows-TaskScheduler/Operational""",,"VendorSpecific-win-taskscheduler","Microsoft__Windows_Task_Scheduler","WinEventLog:Microsoft-Windows-TaskScheduler/Operational",
+remoteconnectionmanager,"source=""WinEventLog:Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational""",,"VendorSpecific-winsec-powershell","Microsoft__Windows_Powershell","WinEventLog:Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational",
+"kubernetes_container_controller","sourcetype=kube:container:controller",,"VendorSpecific-kubernetes","Splunk__Connect_for_Kubernetes",,"kube:container:controller"
+"msexchange_management","sourcetype=MSExchange:management",,"DS001MAIL-ET02Receive|DS001MAIL-ET03Send","Microsoft__Exchange",,"MSExchange:management"
+cloudtrail,"sourcetype=aws:cloudtrail",,"VendorSpecific-aws-cloudtrail","AWS__CloudTrail",,"aws:cloudtrail"
+"splunkd_webx","index=_internal sourcetype=splunk_web_access",,"VendorSpecific-SplunkWebAccess","Splunk_Web_Access",,"splunk_web_access"
+netbackup,"sourcetype=""netbackup_logs""",,"DS027EndpointBackup-ET01General","Veritas_Netbackup",,"netbackup_logs"
+osquery,"sourcetype=osquery:results",,"VendorSpecific-osquery","OSQuery___",,"osquery:results"
+"zeek_ssl","index=zeek sourcetype=""zeek:ssl:json""",,"VendorSpecific-zeek","Zeek__SSL",,"zeek:ssl:json"
+powershell,"(source=WinEventLog:Microsoft-Windows-PowerShell/Operational OR source=""XmlWinEventLog:Microsoft-Windows-PowerShell/Operational"")",,"VendorSpecific-winsec-powershell","Microsoft__Windows_Powershell","WinEventLog:Microsoft-Windows-PowerShell/Operational|XmlWinEventLog:Microsoft-Windows-PowerShell/Operational",

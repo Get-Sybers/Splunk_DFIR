@@ -1,0 +1,114 @@
+[]
+access = read : [ * ], write : [ admin, power ]
+
+[viewstates]
+access = read : [ * ], write : [ * ]
+export = system
+
+[commands]
+export = system
+
+[searchbnf]
+export = system
+
+[collections] 
+access = read : [ * ], write : [ admin, power ]
+export = system
+owner = nobody
+
+[macros]
+export = system
+
+[lookups] 
+access = read : [ * ], write : [ admin, power ]
+export = system
+owner = nobody
+
+[transforms] 
+access = read : [ * ], write : [ admin, power ]
+export = system
+owner = nobody
+
+## Analytic Stories
+[analyticstories]
+access = read : [ * ], write : [ admin, power ]
+export = system
+
+[app/install/install_source_checksum]
+version = 6.5.2
+modtime = 1492199342.885660000
+
+
+[ui-tour/showcase_simple_search-tour%3Aenterprise]
+owner = admin
+version = 7.0.1
+modtime = 1516200723.381278000
+
+[views/journey]
+version = 7.0.2
+modtime = 1519061060.343288000
+
+[macros/User_to_Index_Provisioning_From_Data_Governance_App]
+export = none
+owner = admin
+version = 7.0.1
+modtime = 1518020879.050514000
+
+[ui-tour/contents-tour%3Aenterprise]
+owner = admin
+version = 7.0.1
+modtime = 1518573990.552671000
+
+[macros/Load_Sample_Log_Data%281%29]
+access = read : [ * ], write : [ admin, power ]
+export = system
+owner = nobody
+
+[props/source%3A%3A%2A-%20Rule/LOOKUP-splunk_security_essentials]
+access = read : [ * ], write : [ admin, power ]
+export = system
+owner = nobody
+
+[workflow_actions/mitre_technique_drilldown_notable]
+export = system
+
+[workflow_actions/mitre_technique_drilldown_modrisk]
+export = system
+
+[workflow_actions/mitre_tactic_drilldown_notable]
+export = system
+
+[workflow_actions/mitre_tactic_drilldown_modrisk]
+export = system
+
+[workflow_actions/sse_user_notable_risk_drilldown]
+export = system
+
+[workflow_actions/sse_user_risk_risk_drilldown]
+export = system
+
+[workflow_actions/sse_dest_notable_risk_drilldown]
+export = system
+
+[workflow_actions/sse_dest_ip_notable_risk_drilldown]
+export = system
+
+[workflow_actions/sse_dest_risk_risk_drilldown]
+export = system
+
+[workflow_actions/sse_src_notable_risk_drilldown]
+export = system
+
+[workflow_actions/sse_src_risk_risk_drilldown]
+export = system
+
+[workflow_actions/sse_risk_object_risk_risk_drilldown]
+export = system
+
+[workflow_actions/sse_src_ip_notable_risk_drilldown]
+export = system
+
+[savedsearches/Generate%20MITRE%20Environment%20Count]
+access = read : [ * ], write : [ admin ]
+export = system
+owner = admin

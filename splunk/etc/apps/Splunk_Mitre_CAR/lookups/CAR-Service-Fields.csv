@@ -1,0 +1,11 @@
+fields
+command_line
+exe
+fqdn
+hostname
+image_path
+name
+pid
+ppid
+uid
+user

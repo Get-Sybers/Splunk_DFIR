@@ -1,0 +1,26 @@
+1. Objective:
+  We want to first hash the text dataset with HashingVectorizer or convert the text dataset to a matrix of TF-IDF features and then cluster the type of ssh login attempts by failure type.
+
+2. License: Free to use with citation.
+Security Repo (http://www.secrepo.com/) by Mike Sconzo is licensed under a Creative Commons Attribution 4.0 International License
+
+3. Data Source:
+  http://www.secrepo.com/
+  "auth.log" under System header
+
+4. Data Set Information:
+  The dataset contains about 30000 ssh login failure attempts.
+
+5. Field Meanings:
+  A. Log: Includes the date, IP id, sshd/CRON and the error message all together as a string in one line of a log
+
+6. Parameter Selection:
+  A. Dashboard: Detect clusters through Hashing Vectorizer
+      Settings:
+    1) Search: | inputlookup authorization.csv | fit HashingVectorizer Logs ngram_range=1-2 k=50 stop_words=english | fit KMeans Logs_hashed* k=3 | fields cluster* Logs | sample 5 by cluster | sort by cluster
+    2) Field to hash: Logs
+  B. Dashboard: Detect clusters through TFIDF
+      Settings:
+    1) Search: | inputlookup authorization.csv | fit TFIDF Logs ngram_range=1-2 ngram_range=1-2 max_df=0.6 min_df=0.2 stop_words=english | fit KMeans Logs_tfidf* k=3 | *fields cluster Logs | sample 6 by cluster | sort by cluster
+    2) Field to convert from text dataset to a matrix of TF-IDF features: Logs
+

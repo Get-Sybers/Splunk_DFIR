@@ -1,0 +1,74 @@
+<nav search_view="search" color="#3b444d">
+	<view name="home" default='true'/>
+  <collection label="Content">
+    <view name="overview" />
+    <view name="security_content"/>
+    <view name="analytic_story_details" />
+    <view name="overview_old" />
+    <view name="bookmarked_content" />
+    <view name="custom_content" />
+    <view name="ransomware_content_browser" />
+  </collection>
+  <collection label="Analytics Advisor">
+    <view name="content_overview" />
+    <view name="kill_chain_overview" />
+    <view name="mitre_overview" />
+    <a href="mitre_benchmark?form.MITRE_Technique=T1190%20-%20Exploit%20Public-Facing%20Application%2CT1059.001%20-%20Command%20and%20Scripting%20Interpreter%2CT1027%20-%20Obfuscated%20Files%20or%20Information%2CT1083%20-%20File%20and%20Directory%20Discovery%2CT1059%20-%20Command%20and%20Scripting%20Interpreter%2CT1569.002%20-%20System%20Services%2CT1082%20-%20System%20Information%20Discovery%2CT1218.011%20-%20System%20Binary%20Proxy%20Execution%2CT1059.003%20-%20Command%20and%20Scripting%20Interpreter%2CT1070.004%20-%20Indicator%20Removal&amp;form.mitre_platforms=*&amp;form.cisa_alerts=No&amp;form.cisaalertfactor=0.75">MITRE ATT&amp;CK Benchmark</a>
+    <view name="mitre_focused_content_recommendation" />
+    <view name="rba_content_recommendation" />
+  </collection>
+  <collection label="Security Operations">
+    <view name="analyze_es_risk" />
+    <view name="sse_cim_compliance" />
+    <view name="Essential_Account_Security" />
+    <view name="Essential_Host_Security" />
+    <view name="Essential_Network_Security" />
+  </collection>
+  <collection label="Data">
+    <view name="data_inventory_overview" />
+    <view name="data_inventory" />
+    <a href="/app/Splunk_Security_Essentials/bookmarked_content#launchContentIntrospection">Content Mapping</a>
+    <view name="sse_data_availability" />
+    <divider />
+    <view name="journey"/>
+    <!-- <view name="journey_old"/> -->
+    <view name="data_source" />
+  </collection>
+  <collection label="Advanced">
+    <collection label="Reports and Queries">
+      <saved name="Saved Searches and the Data that Enables Them" />
+      <saved name="Products and the Content Mapped to Them" />
+      <a href="search?q=%7C%20sseanalytics">Core sseanalytics Comand</a>
+    </collection>
+    <collection label="Search Assistants">
+      <view name="showcase_standard_deviation"></view>
+      <view name="showcase_first_seen_demo"></view>
+      <view name="showcase_simple_search"></view>
+      <view name="showcase_security_content"></view>
+    </collection>
+    <divider />
+    <view name="search"/>
+    <view name="dashboards" />
+    <view name="datasets" />
+    <view name="reports" />
+    <view name="alerts" />
+  </collection>
+  <collection label="Documentation">
+    <a target="_blank" href="https://quickdraw.splunk.com/redirect/?product=Splunk_Security_Essentials&amp;location=default.sse&amp;version=latest">Documentation</a>
+    <a target="_blank" href="https://www.splunk.com/en_us/software/cyber-security-essentials.html">Website</a>
+    <a target="_blank" href="https://community.splunk.com/t5/forums/searchpage/tab/message?filter=location&amp;q=%2B%22security%20essentials%22&amp;location=forum-board:apps-add-ons-all&amp;sort_by=-topicPostDate">Ask a Question</a>
+    <divider />
+    <a target="_blank" href="https://quickdraw.splunk.com/redirect/?product=Splunk_Security_Essentials&amp;location=default.sse.latest.user.intro&amp;version=latest">User Guide</a>
+    <a target="_blank" href="https://quickdraw.splunk.com/redirect/?product=Splunk_Security_Essentials&amp;location=default.sse.laterst.install.overview&amp;version=latest">Install Guide</a>
+    <a target="_blank" href="https://quickdraw.splunk.com/redirect/?product=Splunk_Security_Essentials&amp;location=default.sse.latest.searchTutorial&amp;version=latest">Course: How Search Works</a>
+    <divider />
+    <view name="journey" />
+    <view name="data_source" />
+  </collection>
+   <collection label="Setup">
+    <a href="/app/Splunk_Security_Essentials/data_inventory">1 - Data Inventory</a>
+    <a href="/app/Splunk_Security_Essentials/bookmarked_content#launchContentIntrospection">2 - Content Mapping</a>
+    <a href="/app/Splunk_Security_Essentials/home#launchSystemConfig">3 - Review App Configuration</a>
+    <a href="/app/Splunk_Security_Essentials/data_source_check">4 - Create Posture Dashboards (optional)</a>
+  </collection>
+</nav>

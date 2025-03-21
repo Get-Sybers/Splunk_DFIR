@@ -1,0 +1,216 @@
+{
+    "Server Power": {
+        "title": "Predict Server Power Consumption",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup server_power.csv",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "type": "fit",
+                "role": "main",
+                "algorithm": "LinearRegression",
+                "targetVariable": "ac_power",
+                "featureVariables": [
+                    "total-unhalted_core_cycles",
+                    "total-instructions_retired",
+                    "total-last_level_cache_references",
+                    "total-memory_bus_transactions",
+                    "total-cpu-utilization",
+                    "total-disk-accesses",
+                    "total-disk-blocks",
+                    "total-disk-utilization"
+                ],
+                "algorithmParams": {
+                    "fit_intercept": true
+                },
+                "modelName": "example_server_power"
+            }
+        ]
+    },
+    "Housing": {
+        "title": "Predict Median House Value",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup housing.csv",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "type": "fit",
+                "role": "main",
+                "algorithm": "LinearRegression",
+                "targetVariable": "median_house_value",
+                "featureVariables": [
+                    "crime_rate",
+                    "land_zone",
+                    "nitric_oxide_concentration",
+                    "avg_rooms_per_dwelling",
+                    "units_prior_1940",
+                    "distance_to_employment_center",
+                    "highway_accessibility_index",
+                    "property_tax_rate",
+                    "pupil_teacher_ratio"
+                ],
+                "algorithmParams": {
+                    "fit_intercept": true
+                },
+                "modelName": "example_housing"
+            }
+        ]
+    },
+    "App Usage": {
+        "title": "Predict VPN Usage",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup app_usage.csv",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "type": "fit",
+                "role": "main",
+                "algorithm": "LinearRegression",
+                "targetVariable": "RemoteAccess",
+                "featureVariables": ["CRM", "HR1", "Webmail", "CloudDrive"],
+                "algorithmParams": {
+                    "fit_intercept": true
+                },
+                "modelName": "example_app_usage"
+            }
+        ]
+    },
+    "Power Plant": {
+        "title": "Predict Power Plant Energy Output",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "searchString": "| inputlookup power_plant.csv",
+                "type": "spl",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "type": "fit",
+                "role": "main",
+                "algorithm": "LinearRegression",
+                "targetVariable": "Energy_Output",
+                "featureVariables": ["Temperature", "Pressure", "Humidity", "Vacuum"],
+                "algorithmParams": {
+                    "fit_intercept": true
+                },
+                "modelName": "example_energy_output"
+            }
+        ]
+    },
+    "Future Logins": {
+        "title": "Predict Future Logins",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "type": "spl",
+                "searchString": "| inputlookup cyclical_business_process.csv\n| trendline sma5(logons) as sma5_logons ema10(logons) as ema10_logons\n| eval this_date_day = strftime(_time, \"%w\")\n| eval this_date_hour = strftime(_time, \"%H\")\n| eval this_date_day = strftime(_time, \"%w\")\n| eval this_date_day = this_date_day.\"_\"\n| eval this_date_hour = this_date_hour.\"_\"\n| reverse\n| streamstats current=f window=5 first(logons) as LogonsFromTheFuture\n| reverse",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "fit",
+                "algorithm": "LinearRegression",
+                "targetVariable": "LogonsFromTheFuture",
+                "modelName": "example_future_logins",
+                "featureVariables": ["ema10_logons", "logons", "sma5_logons"],
+                "algorithmParams": {
+                    "fit_intercept": true
+                }
+            }
+        ]
+    },
+    "Future VPN Sinusoidal": {
+        "title": "Predict Future VPN Usage (sinusoidal time)",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "type": "spl",
+                "searchString": "| inputlookup app_usage.csv\n| reverse\n| streamstats window=1 current=f first(RemoteAccess) as RemoteAccessFromFuture\n| reverse\n| eval epoch1=strptime(_time,\"%Y-%m-%d\")\n| eval date_wday = strftime(epoch1, \"%w\")\n| eval _pi = 3.141592\n| eval date_wday_sin = sin(2*_pi*date_wday/7)",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "fit",
+                "algorithm": "LinearRegression",
+                "targetVariable": "RemoteAccessFromFuture",
+                "modelName": "example_future_vpn_sinusoidal",
+                "featureVariables": [
+                    "CRM",
+                    "CloudDrive",
+                    "ERP",
+                    "Expenses",
+                    "HR1",
+                    "HR2",
+                    "ITOps",
+                    "OTHER",
+                    "Recruiting",
+                    "RemoteAccess",
+                    "Webmail",
+                    "date_wday",
+                    "date_wday_sin"
+                ],
+                "algorithmParams": {
+                    "fit_intercept": true
+                }
+            }
+        ]
+    },
+    "Future VPN Categorical": {
+        "title": "Predict Future VPN Usage (categorical time)",
+        "type": "predict_numeric_fields",
+        "searchStages": [
+            {
+                "type": "spl",
+                "searchString": "| inputlookup app_usage.csv\n| reverse\n| streamstats window=1 current=f first(RemoteAccess) as RemoteAccessFromFuture\n| reverse\n| eval epoch1=strptime(_time,\"%Y-%m-%d\")\n| eval date_wday = strftime(epoch1, \"%w\")\n| eval date_wday = date_wday.\"_\"",
+                "earliestTime": "",
+                "latestTime": "",
+                "role": "datasource"
+            },
+            {
+                "role": "main",
+                "type": "fit",
+                "algorithm": "LinearRegression",
+                "targetVariable": "RemoteAccessFromFuture",
+                "modelName": "example_future_vpn_categorical",
+                "featureVariables": [
+                    "CRM",
+                    "CloudDrive",
+                    "ERP",
+                    "Expenses",
+                    "HR1",
+                    "HR2",
+                    "ITOps",
+                    "OTHER",
+                    "Recruiting",
+                    "RemoteAccess",
+                    "Webmail",
+                    "date_wday"
+                ],
+                "algorithmParams": {
+                    "fit_intercept": true
+                }
+            }
+        ]
+    }
+}

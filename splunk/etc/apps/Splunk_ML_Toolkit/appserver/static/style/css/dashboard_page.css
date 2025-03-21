@@ -1,0 +1,505 @@
+.mlts-fieldset h1,
+.mlts-row h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+.mlts-fieldset h2,
+.mlts-row h2 {
+    font-size: 16px;
+    margin: 10px 0;
+    font-weight: 400;
+}
+.mlts-fieldset h3,
+.mlts-row h3 {
+    font-size: 14px;
+    font-weight: 700;
+}
+.mlts-fieldset h4,
+.mlts-row h4 {
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0;
+}
+.mlts-fieldset h5,
+.mlts-row h5 {
+    font-size: 10.2px;
+}
+.mlts-fieldset .splunk-checkbox,
+.mlts-fieldset .splunk-checkboxgroup,
+.mlts-fieldset .splunk-dropdown,
+.mlts-fieldset .splunk-multidropdown,
+.mlts-fieldset .splunk-radiogroup,
+.mlts-fieldset .splunk-searchbar,
+.mlts-fieldset .splunk-textinput,
+.mlts-fieldset > .splunk-timerange,
+.mlts-fieldset > button,
+.mlts-row .splunk-checkbox,
+.mlts-row .splunk-checkboxgroup,
+.mlts-row .splunk-dropdown,
+.mlts-row .splunk-multidropdown,
+.mlts-row .splunk-radiogroup,
+.mlts-row .splunk-searchbar,
+.mlts-row .splunk-textinput,
+.mlts-row > .splunk-timerange,
+.mlts-row > button {
+    margin: 0;
+}
+.mlts-fieldset .splunk-paginator,
+.mlts-row .splunk-paginator {
+    float: right;
+    padding-right: 15px;
+    padding-top: 3px;
+}
+.mlts-fieldset .splunk-table,
+.mlts-row .splunk-table {
+    margin-top: 12px;
+}
+.mlts-fieldset .splunk-table:after,
+.mlts-fieldset .splunk-table:before,
+.mlts-row .splunk-table:after,
+.mlts-row .splunk-table:before {
+    display: table;
+    content: '';
+    line-height: 0;
+}
+.mlts-fieldset .splunk-table:after,
+.mlts-row .splunk-table:after {
+    clear: both;
+}
+.mlts-fieldset .splunk-table .splunk-paginator,
+.mlts-row .splunk-table .splunk-paginator {
+    float: right;
+    padding-right: 15px;
+}
+.mlts-fieldset .results-table table tr > td:first-child,
+.mlts-fieldset .results-table table tr > th:first-child,
+.mlts-fieldset .table-row-expanding > tbody > tr > td.expands a,
+.mlts-fieldset .table-row-expanding th.col-info,
+.mlts-row .results-table table tr > td:first-child,
+.mlts-row .results-table table tr > th:first-child,
+.mlts-row .table-row-expanding > tbody > tr > td.expands a,
+.mlts-row .table-row-expanding th.col-info {
+    padding-left: 12px;
+}
+.mltk-dashboard-header {
+    margin-bottom: 10px;
+    padding-top: 10px;
+}
+.mltk-dashboard-header .draft-warning {
+    color: #212529;
+    background-color: #ffc107;
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    vertical-align: top;
+}
+.mltk-dashboard-header h2 {
+    font-size: 24px;
+    margin: 0;
+    padding: 0;
+    font-weight: 200;
+}
+.mltk-dashboard-header p.description {
+    margin: 8px 200px 0 0;
+    white-space: pre-line;
+}
+.mltk-dashboard-header .mltk-header-buttons > * {
+    display: inline-block;
+    margin-left: 5px;
+}
+.mltk-update-banner {
+    padding: 8px 35px 8px 14px;
+    color: #3a87ad;
+    background-color: #d9edf7;
+    border: 1px solid #bce8f1;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+.mltk-update-banner span {
+    color: #000;
+}
+.mltk-update-banner .close {
+    position: relative;
+    top: -6px;
+    right: -32px;
+    line-height: 20px;
+}
+.mlts-body {
+    padding: 0 20px 15px;
+    color: #3c444d;
+    background-color: #f2f4f5;
+    min-height: 500px;
+}
+.mlts-fieldset {
+    margin-bottom: 15px;
+    min-height: 50px;
+}
+.mlts-fieldset .mlts-input {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 10px;
+}
+.mlts-fieldset .mlts-input-narrow-wrapper > * {
+    display: inline-block;
+    vertical-align: sub;
+}
+.mlts-fieldset .mlts-input-narrow > input {
+    width: 100px;
+}
+.mlts-fieldset input[type='range'] {
+    height: 26px;
+}
+.mlts-row {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    height: 100%;
+    border-collapse: separate;
+}
+.mlts-row:last-child .mlts-cell {
+    padding-bottom: 0;
+}
+.mlts-row.hidden,
+.mlts-row.no-results {
+    display: none;
+}
+.mlts-row .mlts-cell {
+    display: table-cell;
+    height: 100%;
+    background-clip: padding-box;
+    padding-bottom: 5px;
+}
+.mlts-row .mlts-cell:not(:first-child) {
+    padding-left: 5px;
+}
+.mlts-row .mlts-cell.hidden {
+    display: none;
+}
+.mlts-row .mlts-cell .mlts-panel {
+    padding: 10px;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    -moz-box-sizing: border-box;
+}
+.mlts-row .mlts-cell .mlts-panel.hidden {
+    display: none;
+}
+.mlts-row .mlts-cell .mlts-panel .mlts-stats-panel {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+.mlts-row .mlts-cell .mlts-panel .mlts-stats-panel.hidden {
+    display: none;
+}
+.mlts-row .mlts-cell .mlts-panel .mlts-stats-panel > div {
+    display: table-cell;
+    text-align: center;
+}
+.mlts-row .mlts-cell .mlts-panel .mlts-stats-panel + .mlts-panel-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+}
+.mlts-preprocess {
+    margin-bottom: 15px;
+}
+.mltk-preprocess-wrapper {
+    margin: 5px -10px;
+    padding: 15px 0;
+    background-color: #eee;
+}
+.mltk-preprocess-wrapper:empty {
+    display: none;
+}
+.mlts-preprocess-content {
+    padding: 10px;
+    background-color: #fff;
+}
+.mlts-preprocess-content-footer {
+    margin: 10px 0 0;
+}
+.mlts-preprocess-last-step-info {
+    font-size: 1.5em;
+    padding: 0 10px;
+}
+.mlts-preprocess-accordion-wrapper {
+    border: 1px solid #bfbfbf;
+    -webkit-box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.2);
+    box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.2);
+}
+.mlts-preprocess-accordion-wrapper .accordion-toggle {
+    padding-right: 0;
+}
+label.mlts-preprocess-no-label-padding {
+    padding-top: 8px;
+}
+.mlts-preprocess-side-params {
+    margin-left: 15px;
+}
+.mlts-preprocess-method-config {
+    display: inline-block;
+}
+.mlts-preprocess-step-result-preview {
+    margin-top: -5px;
+}
+.mlts-preprocess-step-result-preview .icon-report-search {
+    font-size: 20px;
+}
+.mlts-remove-preprocess-step {
+    margin-top: -5px;
+}
+.mlts-preprocess-config-message {
+    margin-top: 10px;
+}
+.mlts-preprocess-config-message .alert {
+    margin-bottom: 0;
+}
+.mlts-apply-wrapper {
+    padding-top: 5px;
+}
+#addPreprocessMethod .icon-plus-circle {
+    font-size: 20px;
+    vertical-align: middle;
+}
+#addPreprocessMethod > span {
+    padding-left: 0.25em;
+    vertical-align: middle;
+}
+.mltk-enhancedtextinput-message {
+    color: grey;
+    font-size: 11px;
+    overflow: visible;
+}
+.mltk-enhancedtextinput-message > span {
+    display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+#dashboard-form-controls #inputControls label {
+    display: inline-block;
+}
+#dashboard-form-controls #inputControls label[data-original-title] {
+    border: dashed #bbb;
+    border-width: 0 0 1px;
+}
+#dashboard-form-controls #inputControls label[data-original-title]:hover {
+    border-style: solid;
+}
+.mltk-radiogroup-inline div[role='radiogroup'] {
+    -webkit-box-orient: horizontal;
+    -ms-flex-direction: row;
+    flex-direction: row;
+}
+.mltk-radiogroup-inline div[role='radiogroup'] > div {
+    padding: 6px 10px 6px 0;
+}
+.mlts-modal {
+    display: none;
+}
+.mlts-modal .mlts-modal-alert {
+    display: block;
+}
+.mlts-modal-form-inline > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+.mlts-modal-form-inline > :not(:first-child) {
+    margin-left: 5px;
+}
+.mlts-modal-form-inline > p {
+    margin-bottom: 20px;
+}
+.mlts-modal-form-inline > .splunk-textinput input[type='text'] {
+    width: 75px;
+}
+.mlts-modal-no-padding {
+    width: 80%;
+    left: 10%;
+    margin: auto;
+}
+.mlts-modal-no-padding .modal-body {
+    overflow-y: auto;
+    padding: 0;
+}
+.components-splunk-scheduledsearchmodal-save .mlts-time-label-icon {
+    padding-left: 5px;
+}
+.scheduled-search-checkbox > * {
+    display: inline-block;
+}
+.scheduled-search-checkbox .controls-block {
+    vertical-align: middle;
+    margin-left: 5px;
+}
+.mltk-experiments-success a.btn {
+    margin-left: 10px;
+}
+.mlts-panel-header a:not([href]) {
+    color: #000;
+    cursor: default;
+}
+.mlts-panel-footer {
+    text-align: center;
+}
+.mlts-panel-footer > :not(:first-child) {
+    margin-left: 5px;
+}
+.mlts-panel-footer > span {
+    display: inline-block;
+}
+.mlts-panel-footer [disabled] {
+    pointer-events: none;
+}
+.mlts-tabs {
+    border: 1px solid #ddd;
+}
+.mlts-tabs + .tab-content {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: 0 solid #ddd;
+    padding: 10px;
+    overflow: inherit;
+}
+.enhanced-multidropdown-view-controls {
+    border-top: 1px solid #bfbfbf;
+    padding: 5px;
+}
+.enhanced-multidropdown-view-controls button {
+    margin-right: 5px;
+}
+.mltk-tableview-not-clickable {
+    margin-top: 0;
+}
+.mltk-tableview-not-clickable tbody tr .multivalue-subcell.highlighted,
+.mltk-tableview-not-clickable tbody tr td.highlighted {
+    background-color: #fff !important;
+    cursor: default;
+}
+.mltk-tableview-not-clickable tbody tr td,
+.mltk-tableview-not-clickable tbody tr td:hover .multivalue-subcell {
+    color: #000 !important;
+}
+.mltk-tableview-not-clickable tbody tr.even .multivalue-subcell.highlighted,
+.mltk-tableview-not-clickable tbody tr.even td.highlighted {
+    background-color: #f5f5f5 !important;
+    cursor: default;
+}
+.mltk-experiment-history-table tbody td {
+    vertical-align: middle;
+}
+.mltk-experiment-history-table tbody td.row-expansion-toggle {
+    vertical-align: top;
+    padding-top: 5px !important;
+}
+.mltk-experiment-history-table tbody td.mltk-history-clock {
+    text-align: right;
+    width: 79px;
+}
+.mltk-experiment-history-table .btn-link:focus,
+.mltk-experiment-history-table .btn-link:hover {
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    border-color: transparent;
+    background-image: none;
+}
+.mltk-experiment-history-table .expanded-content-row {
+    font-family: Splunk Platform Sans, Proxima Nova, Roboto, Droid, Helvetica Neue, Helvetica, Arial,
+        sans-serif;
+}
+.mltk-experiment-history-table .expanded-content-row dt {
+    width: 180px;
+}
+.mltk-experiment-history-table .expanded-content-row dd {
+    margin-left: 185px;
+}
+.mlts-search-controls-wrapper .shared-jobstatus {
+    padding: 0;
+}
+.mlts-search-controls-wrapper .splunk-timerange button {
+    border-radius: 0;
+}
+.mlts-search-controls-wrapper .splunk-timerange button > span {
+    line-height: 28px;
+}
+.mlts-error-messages {
+    clear: both;
+    padding-top: 0;
+    display: none;
+}
+.mltk-dashboard-view-error {
+    margin-top: 10px;
+    text-align: center;
+}
+.mltk-dashboard-view-info {
+    width: 700px;
+    margin: auto;
+}
+.mlts-assistant-controls-footer {
+    padding-top: 10px;
+}
+.mlts-assistant-controls-footer [disabled] {
+    pointer-events: none;
+}
+.mlts-assistant-controls-footer > :not(:last-child) {
+    margin-right: 5px;
+}
+#assistantControlsError {
+    margin-top: 10px;
+}
+#assistantControlsError .alert {
+    margin-bottom: 0;
+}
+.splunk-textinput.error input[type='text'] {
+    border-color: #d6563c;
+}
+.mlts-search-string-display-table td {
+    width: 50%;
+}
+.mlts-search-string-display-table td.mlts-no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+.mltk-cancel-experiment-dialog .mltk-leave-experiment,
+.mltk-cancel-experiment-dialog .save-experiment {
+    display: inline-block;
+    margin-left: 5px;
+}
+.mltk-cancel-experiment-dialog i.icon-alert {
+    padding-top: 3px;
+}
+.mltk-experiment-search-stage-settings-list dt {
+    width: 180px;
+}
+.mltk-experiment-search-stage-settings-list dd {
+    margin-left: 185px;
+}
+.mltk-experiment-search-stage-settings-list dd:after,
+.mltk-experiment-search-stage-settings-list dd:before {
+    display: table;
+    content: '';
+    line-height: 0;
+}
+.mltk-experiment-search-stage-settings-list dd:after {
+    clear: both;
+}
+@-moz-document url-prefix() {
+    .splunk-choice-input .splunk-choice-input-message {
+        margin-top: 0 !important;
+    }
+}
+#experimentHistoryPanel .expanded-row .highlighted {
+    background-color: #e4e4e4 !important;
+}

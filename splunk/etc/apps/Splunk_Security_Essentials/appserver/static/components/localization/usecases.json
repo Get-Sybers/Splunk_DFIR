@@ -1,0 +1,79 @@
+{
+    "Security Monitoring": {
+        "order": 1,
+        "enable": true,
+        "id": "security_monitoring",
+        "name": "Security Monitoring",
+        "description": "Security (continuous) monitoring enables you to analyze a continuous stream of near real-time snapshots of the state of risk to your security data, the network, endpoints, as well as cloud devices, systems and applications.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/secmon-icon.png"
+    },
+    "Compliance": {
+        "order": 4,
+        "enable": true,
+        "id": "compliance",
+        "name": "Compliance",
+        "description": "In nearly all environments, there are regulatory requirements of one form or another - when dealing with the likes of GDPR, HIPAA, PCI, SOC, and even the 20 Critical Security Controls, Splunk enables customers to create correlation rules and reports to identify threats to sensitive data or key employees and to automatically demonstrate compliance.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/compliance-icon.png"
+    },
+    "Incident Investigation & Forensics": {
+        "order": 6,
+        "enable": false,
+        "id": "incident_investigation",
+        "name": "Incident Investigation & Forensics",
+        "description": ""
+    },
+    "Incident Response": {
+        "order": 7,
+        "enable": false,
+        "id": "incident_response",
+        "name": "Incident Response",
+        "description": ""
+    },
+    "SOC Automation": {
+        "order": 8,
+        "enable": true,
+        "id": "soc_automation",
+        "name": "SOC Automation",
+        "description": "With the ever-increasing volume and complexity of security incidents, a constantly evolving technology landscape, and a massive shortage of security analysts, the current model of manual response is falling short. Automation and orchestration of security operations addresses these issues, enabling enterprises to effectively investigate, contain, correct and remediate threats at scale.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/socauto-icon.png"
+    },
+    "Advanced Threat Detection": {
+        "order": 2,
+        "enable": true,
+        "id": "advanced_threat_detection",
+        "name": "Advanced Threat Detection",
+        "description": "An advanced threat (APT) is a set of stealthy and continuous computer hacking processes, often orchestrated by a person or persons targeting a specific entity. APTs usually targets either private organizations, states or both for business or political motives.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/atd-icon.png"
+    },
+    "Insider Threat": {
+        "order": 3,
+        "enable": true,
+        "id": "insider_threat",
+        "name": "Insider Threat",
+        "description": "Insider threats come from current or former employees, contractors, or partners who have access to the corporate network and intentionally or accidentally exfiltrate, misuse or destroy sensitive data. They often have legitimate access to access and download sensitive material, easily evading traditional security products. Nothing to fear, Splunk can also help here.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/insider-icon.png"
+    },
+    "Fraud Detection": {
+        "order": 9,
+        "enable": false,
+        "id": "fraud_detection",
+        "name": "Fraud Detection",
+        "description": ""
+    },
+    "Application Security": {
+        "order": 5,
+        "enable": true,
+        "id": "application_security",
+        "name": "Application Security",
+        "description": "Application security is the use of software, hardware, and procedural methods to protect applications from threats. Whether detecting DDoS, SQL Injections, or monitoring for attacks against known or unknown vulnerabilities, Splunk has your critical applications covered.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/appsec-icon.png"
+    },
+    "Other": {
+        "order": 10,
+        "id": "other",
+        "enable": false,
+        "name": "Other",
+        "description": "This bucket is for additional content and examples that don't fall within the use cases listed, but still provide a lot of value.",
+        "icon": "/static/app/Splunk_Security_Essentials/images/general_images/other-icon.png"
+    }
+}

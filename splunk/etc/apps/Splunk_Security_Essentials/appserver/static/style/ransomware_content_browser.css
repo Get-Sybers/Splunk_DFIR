@@ -1,0 +1,64 @@
+.tactic {
+    float:left;
+    border-right: 4px dotted;
+    padding: 0px 10px 0px 20px;
+    margin: 10px 0 20px 0;
+}
+.tactic:last-child {
+    border-right: none;
+    max-width: 240px;
+}
+.tactic .col1,.tactic .col2,.tactic .col3{
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+}
+.tactic .col1,.tactic .col2,.tactic .col3{
+    float:left;
+}
+.tactic_description {
+    margin: 0 0 20px 0  
+}
+
+.phase {
+    cursor:pointer;
+}
+
+.phase, .phase_spacer {
+    line-height: 0;
+}
+.phase circle {
+    fill:#ffffff;
+    stroke:#ecdc21;
+    stroke-width:6;
+}
+
+.phase circle:hover {
+    stroke-width: 10;
+    transition: stroke-width 0.2s;
+    stroke:rgba(243,152,154,255);
+}
+.phase.selected circle {
+    stroke-width: 10;
+    stroke:rgba(243,152,154,255);
+}
+.descriptions {
+    display: flex;
+    flex-direction: row;
+}
+.phase_descriptions,.stage_descriptions {
+    width:50%;
+}
+
+.phase_descriptions {
+    float:left;
+    padding:0 0 0 20px ;
+}
+.stage_descriptions {
+    float:left;
+}
+
+/* this is to show the edit button, might remove before golive */
+.dashboard-view-controls a.edit-btn {
+    display: inline-block !important;
+}

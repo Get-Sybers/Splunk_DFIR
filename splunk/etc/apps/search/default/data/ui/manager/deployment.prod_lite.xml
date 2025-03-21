@@ -1,0 +1,6 @@
+<endpoint name="deploymentserver" template="pages/system.html">
+  <header>unused</header>
+  <capabilities>
+    <read>list_deployment_server AND edit_deployment_server</read>
+  </capabilities>
+</endpoint>

@@ -1,0 +1,40 @@
+<form script="runPageScript.js" stylesheet="/style/app.css" version="1.1">
+  <label>Professional Services Use Case</label>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <html>
+        <h2>About Splunk Professional Services</h2>
+        <div style="float:left; width:10%">
+          <br/>
+                   <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/PS_Use_Case.png"/>
+ 
+        </div>
+        <div style="float:right; width:89%">
+          <p/>
+        <p>You're exploring an example that is best accomplished by engaging <a href="https://www.splunk.com/en_us/support-and-services/splunk-services.html">Splunk Professional Services</a>.
+          </p>
+        <p>Splunk offers on-site or remote Professional Services (PS) consultants, who have created many custom security search examples identical or similar to the one you just clicked on.</p>
+
+        <p>Splunk PS:</p>
+
+        <li>Aligns the right people with your requirements and process to ensure success;</li>
+        <li>Provides project management where appropriate to keep efforts on track;</li>
+        <li>Leverages a vast array of custom content from which to iterate on for your specific needs; and</li>
+        <li>Always delivers with Splunk best practices and proven architectures in mind.</li>
+        <br/>
+        <p>
+            <b>To learn more about Splunk Professional Services, click <a href="https://www.splunk.com/en_us/support-and-services/splunk-services.html">here </a>or contact your Splunk account team.</b>
+          </p>
+        <br/>
+        </div>
+        </html>
+    </panel>
+    <panel depends="$gotusecase$"><html><h2>Your Use Case</h2><div id="usecasecontent"></div></html></panel>
+  </row>
+
+  <row><panel depends="$gotusecasedetails$"><html><h2>Details for your Use Case</h2><div id="usecasedetail"></div></html></panel>
+  </row>
+  <row><panel depends="$gotusecasescreenshots$"><html><h2>Screenshots for your Use Case</h2><div id="usecasescreenshots"></div></html></panel>
+  </row>
+</form>

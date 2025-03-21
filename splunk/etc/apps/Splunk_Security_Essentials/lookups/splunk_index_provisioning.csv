@@ -1,0 +1,7 @@
+user,accessible_indexes,roles
+admin,main,admin
+admin,eudata,admin
+alice,main,user
+alice,eudata,gdpr_euaccess
+chuck,main,user
+chuck,eudata,gdpr_euaccess
