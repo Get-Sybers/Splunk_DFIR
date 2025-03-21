@@ -1,0 +1,230 @@
+{
+    "modelName": "CAR-Registry",
+    "displayName": "CAR Registry",
+    "description": "CAR Registry Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Registry",
+            "displayName": "CAR Registry",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "data",
+                    "displayName": "data",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for data"
+                    }
+                },
+                {
+                    "fieldName": "fqdn",
+                    "displayName": "fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for fqdn"
+                    }
+                },
+                {
+                    "fieldName": "hive",
+                    "displayName": "hive",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hive"
+                    }
+                },
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "image_path",
+                    "displayName": "image_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for image_path"
+                    }
+                },
+                {
+                    "fieldName": "key",
+                    "displayName": "key",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for key"
+                    }
+                },
+                {
+                    "fieldName": "new_content",
+                    "displayName": "new_content",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for new_content"
+                    }
+                },
+                {
+                    "fieldName": "pid",
+                    "displayName": "pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for pid"
+                    }
+                },
+                {
+                    "fieldName": "type",
+                    "displayName": "type",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for type"
+                    }
+                },
+                {
+                    "fieldName": "user",
+                    "displayName": "user",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user"
+                    }
+                },
+                {
+                    "fieldName": "value",
+                    "displayName": "value",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for value"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Registry_add",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "add",
+                            "displayName": "add",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for add",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(add) OR add=\"\", \"unknown\", add)"
+                },
+                {
+                    "calculationID": "CAR_Registry_key_edit",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "key_edit",
+                            "displayName": "key_edit",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for key_edit",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(key_edit) OR key_edit=\"\", \"unknown\", key_edit)"
+                },
+                {
+                    "calculationID": "CAR_Registry_remove",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "remove",
+                            "displayName": "remove",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for remove",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(remove) OR remove=\"\", \"unknown\", remove)"
+                },
+                {
+                    "calculationID": "CAR_Registry_value_edit",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "value_edit",
+                            "displayName": "value_edit",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for value_edit",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(value_edit) OR value_edit=\"\", \"unknown\", value_edit)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

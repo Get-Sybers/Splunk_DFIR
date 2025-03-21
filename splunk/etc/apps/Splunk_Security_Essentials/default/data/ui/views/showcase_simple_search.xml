@@ -1,0 +1,88 @@
+<form script="runPageScript.js" version="1.1">
+  <label>Simple Search</label>
+  <description>Could be any Splunk Search.</description>
+  <row>
+    <panel>
+    <html>
+     <div class="hideable">
+        <h3>How Does This Detection Work?</h3>
+        <p>This search assistant runs standard Splunk searches -- read below for the particulars on this detection.</p>
+   </div>
+    </html>
+  </panel>
+  </row>
+  <fieldset autoRun="false" submitButton="false">
+    <html>
+      <ul id="dashboard-form-tabs">
+        <li>
+          <a class="tab-title-text" data-tab="newOutliers">Detect New Values</a>
+        </li>
+        <!-- <li>
+          <a class="tab-title-text" data-tab="existingOutliers">Load Existing Settings</a>
+        </li> -->
+      </ul>
+      <div id="dashboard-form-controls">
+      <div id="inputControls" data-tab="newOutliers">
+        <label>Enter a search</label>
+        <div class="app-search-controls-wrapper">
+          <div id="searchBarControl"></div>
+          <div id="searchControlsControl"></div>
+        </div>
+        <div id="searchLabelMessage_old"></div>
+        <br />
+        <div id="assistantControlsFooter"></div>
+        <div id="errorDisplay" class="alerts shared-flashmessages app-error-messages"></div>
+      </div>
+        <div id="queryHistoryPanel" data-tab="existingOutliers"></div>
+      </div>
+    </html>
+  </fieldset>
+  <row><panel depends="$demodata$"><html><div class="alert-box success" id="searchLabelMessage"></div></html></panel></row>
+  <row>
+    <panel id="panelrow1cell1" depends="$row1cell1$"><html><div class="customViz" id="row1cell1"></div></html></panel>
+    <panel  depends="$row1cell2$"><html><div class="customViz" id="row1cell2"></div></html></panel>
+    <panel  depends="$row1cell3$"><html><div class="customViz" id="row1cell3"></div></html></panel>
+  </row>
+  <row>
+    <panel  depends="$row2cell1$"><html><div class="customViz" id="row2cell1"></div></html></panel>
+    <panel  depends="$row2cell2$"><html><div class="customViz" id="row2cell2"></div></html></panel>
+    <panel  depends="$row2cell3$"><html><div class="customViz" id="row2cell3"></div></html></panel>
+  </row>
+
+  <row depends="$searchBarSearchJobIdToken$" rejects="$showResultPanelsToken$">
+    <panel>
+      <html>
+        <h3>Raw Data Preview</h3>
+        <div><p id="ReminderToSubmit">(Review settings and click Detect above to find outliers.)</p></div>
+        <div id="datasetPreviewPanel"></div>
+      </html>
+    </panel>
+  </row>
+
+  <row depends="$showResultPanelsToken$">
+    <panel id="singleOutliersPanel">
+      <html></html>
+    </panel>
+    <panel id="singleEventCountPanel">
+      <html></html>
+    </panel>
+  </row>
+
+  <row depends="$showResultPanelsToken$">
+    <panel id="outliersPanel">
+      <html></html>
+    </panel>
+  </row>
+
+  <row depends="$blahblah$, $showResultPanelsToken$, $showOutliersOverTimeToken$">
+    <panel id="outliersOverTimePanel">
+      <html></html>
+    </panel>
+  </row>
+
+  <row>
+    <panel  depends="$row3cell1$"><html><div class="customViz" id="row3cell1"></div></html></panel>
+    <panel  depends="$row3cell2$"><html><div class="customViz" id="row3cell2"></div></html></panel>
+    <panel  depends="$row3cell3$"><html><div class="customViz" id="row3cell3"></div></html></panel>
+  </row>
+</form>

@@ -1,0 +1,558 @@
+#tabs{
+    border-bottom: 0px;
+}
+
+#tabs > .dashboard-cell > .dashboard-panel{
+    margin-bottom: 0px;
+    border-bottom: 0px;
+}
+
+#element1 > .html{
+    padding-left: 0px; /* This fixes some weirdness where the first tab doesn't look right due to the left part of the tab showing */
+    padding-right: 0px;
+    padding-top: 0px;
+}
+
+#tab_1 > .dashboard-cell > .dashboard-panel{
+    border-top: 0px;
+}
+.nav-tabs>li.active>a:before {
+    background-color: #00A9F8 !important;
+}
+/* This makes the Details column wider to display nice
+td[data-cell-index="3"] {
+  min-width:220px;
+}
+*/
+#content_table th[data-sort-key=Details] {
+    min-width:220px;
+}
+#content_table th[data-sort-key=Status] {
+    min-width:140px;
+}
+/*
+#content_table td:last-child,#content_table th:last-child {
+    display:none;
+}
+*/
+span.red {
+    color:red;
+}
+span.green {
+    color:green;
+}
+.dashboard-form-fieldset label {
+    display: inline-block;
+}
+.dashboard-form-fieldset label[data-bs-original-title] {
+    border: dashed #bbb;
+    border-width: 0 0 1px;
+}
+.fieldset div.input-checkbox {
+    width: 120px !important;
+}
+.fieldset div.input-multiselect {
+    width: 200px !important;
+}
+.fieldset div.input-dropdown, .fieldset div.input-dropdown .splunk-view div div{
+    width: 190px !important;
+}
+
+/* This makes descriptions that contain HTML tags display uniformly to those that do not */
+#content_table td p {
+    padding: 0 0px;
+     color: #006eaa !important;
+}
+
+#content_table td .highlight {
+    background-color: #fef2d7;
+    border-top: 4px solid #fef2d7;
+    border-bottom: 4px solid #fef2d7;
+    color: #3c444d;
+}
+.tooltip{
+    opacity: 1;
+}
+
+.tooltip p {
+    text-align:left;
+    color:#fff;
+}
+.tooltip li {
+    text-align: left;
+}
+.tooltip h2,.tooltip h3 {
+    color: #fff;
+}
+
+
+
+.fieldset .input-checkbox {
+    width: 100px;
+}
+
+div.input-dropdown,div.input-text, div.input-multiselect,div.input-checkbox {
+    width:200px !important;
+}
+
+/* This is for the drill down button to make it more prominent */
+.animatedbutton  {
+    vertical-align:middle
+}
+.animatedbutton span {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: 0.5s;
+}
+
+.animatedbutton span:after {
+  content: '\00bb';
+  position: absolute;
+  opacity: 0;
+  top: 0;
+  right: -20px;
+  transition: 0.5s;
+}
+
+.animatedbutton:hover span {
+  padding-right: 25px;
+}
+
+.animatedbutton:hover span:after {
+  opacity: 1;
+  right: 0;
+}
+
+
+
+/* This is for the security journey section that has some custom styling */
+.panel-element-row < #stage_1_bar,.panel-element-row < #stage_2_bar,.panel-element-row < #stage_3_bar,.panel-element-row < #stage_4_bar,.panel-element-row < #stage_5_bar,.panel-element-row < #stage_6_bar {
+    position: relative;
+}
+
+
+#row1_col4 .dashboard-panel,#row1_col5 .dashboard-panel,#row1_col6 .dashboard-panel,#row1_col7 .dashboard-panel,#row1_col8 .dashboard-panel {
+    margin: 0;
+}
+#row1_col4 .fieldset .input {
+    /* width: 230px; */
+}
+
+#row1_col6 .dashboard-panel .panel-element-row div.single,#row1_col7 .dashboard-panel .panel-element-row div.single,#row1_col8 .dashboard-panel .panel-element-row div.single {
+    min-width: 100px;
+}
+
+#row1_col6 .splunk-single .shared-reportvisualizer,#row1_col7 .splunk-single .shared-reportvisualizer,#row1_col8 .splunk-single .shared-reportvisualizer {
+    width: 50% !important;
+    height: 50px !important;
+    margin: 0 auto 0 auto;
+}
+#row1_col7 {
+    margin-bottom:5px;
+}
+
+/* This needs tweaking to show nice bg for the security journey
+#row1_col5 .dashboard-panel {
+    background: none !important;
+}
+
+#row1_col5 {
+    background-image: url(/static/app/Content_Analytics/images/security_journey_graph.png) !important;
+    background-position: left bottom;
+    background-clip: border-box;
+    background-size: 80%;
+    background-repeat: no-repeat;
+}
+*/
+
+
+/* Custom kill chain viz */
+
+#killchain_panel h1 {
+    margin-left: 20%;
+}
+
+.killchain-phases {
+    width: 90%;
+    margin-left: 20%;
+    display: inline-block;
+}
+
+.killchain_card {
+    width: 11.33%;
+    max-width: 160px;
+    float: left;
+}
+
+.killchain_arrow {
+    height: 85px;
+    line-height: 85px;
+    -webkit-clip-path: polygon(75% 0%, 90% 50%, 75% 100%, 0% 100%, 15% 50%, 0% 0%);
+    clip-path: polygon(75% 0%, 90% 50%, 75% 100%, 0% 100%, 15% 50%, 0% 0%);
+}
+
+.killchain-text {
+    font-size: 250%;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+}
+
+
+.killchain-label {
+    margin-top: 7px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-left: 10%;
+    width: 60%;
+}
+
+.killchain-text-one-line {
+    font-size: 16px;
+    color: #fff;
+    font-family: system-ui;
+    white-space: wrap;
+    width: 100%;
+    padding-top: 7%;
+    padding-left: 26%;
+}
+
+.killchain-text-second {
+    font-size: 16px;
+    color: #fff;
+    font-family: system-ui;
+    margin-top: -10px;
+    padding-left: 26%;
+}
+
+.notfirst {
+    margin-left: -2%;
+}
+
+/*Radar chart custom styling  
+
+*/
+/* Custom MITRE map viz */
+#mitremaptable  h3 {
+    font-size:20px;
+}
+#mitremaptable table td, #mitremaptable table th,#mitremaptablev7 table td, #mitremaptablev7 table th {
+    font-size: 10px;
+    color:#000000;
+}
+#mitremaptable  table td,#mitremaptablev7  table td {
+    line-height: 12px;
+    padding: 3px 3px;
+    cursor: pointer;
+    min-height: 34px;
+    height: 34px;
+}
+@-moz-document url-prefix() {
+    #mitremaptable  table td {
+        height: 100% !important;
+    }
+}
+#mitremaptable  table td.technique,#mitremaptablev7  table td.technique {
+    border: 1px solid #BFEAFD;
+}
+#mitremaptable  table th,#mitremaptablev7  table th  {
+    padding: 3px 6px;
+    text-align: center;
+    line-height: 1.3em;
+    font-weight: 500;
+}
+#mitremaptable table tr,#mitremaptablev7 table tr {
+    height: 100%;
+}
+#mitremaptable table td span,#mitremaptablev7 table td span {
+    /* min-height: 28px; */
+}
+
+#mitremaptable.tooltip,#mitremaptablev7 .tooltip {
+    max-width:180px;
+}
+#mitremaptable .tooltip-inner,#mitremaptablev7 .tooltip-inner {
+    text-align: left;
+}
+.tooltip-inner {
+    font-family: Splunk Platform Sans,Proxima Nova,Roboto,Droid,Helvetica Neue,Helvetica,Arial,sans-serif;
+}
+.tooltip-inner p{
+    padding-left:0px !important;
+}
+.tooltip-inner h3 {
+    text-align: center;
+    font-size: 18px !important;
+    margin-bottom: 2px;
+}
+.tooltip-inner h4 {
+    font-weight: bold;
+    font-size: 120%;
+    text-align: left;
+    color: #ffffff;
+    margin: 5px 0px 0px 0px;
+}
+
+.tooltip-inner .tooltip_content_table,.tooltip-inner .divTable {
+    text-align: left;
+    min-width: 120px;
+    margin-bottom: 6px;
+}
+.tooltip-inner .tooltip_content_table td:first-child,.tooltip-inner .divTable .divTableCell:first-child{
+    width: 70%;
+}
+.divTable{
+	display: table;
+	width: 100%;
+}
+.divTableRow {
+	display: table-row;
+}
+.divTableCell {
+	display: table-cell;
+}
+.mitremaptable_legend {
+    display:flex;
+    flex-direction: row;
+    align-items:baseline;
+}
+.mitremaptable_legend_item {
+    margin-left:15px;
+    display: inline;
+}
+.wrapper_class {
+    display: flex;
+    justify-content: space-between;
+}
+
+.mitremaptable_legend_item:first-child {
+    margin-left:12px;
+}
+.mitremaptable_legend_item  i{
+    display:inline-block;
+    width:50px;
+    height:11px;
+ }
+.content_legend_box {
+    /* background-color: #47a7ef; */
+    background-color: rgba(71,167,239,1);
+}
+.selected_legend_box {
+    border: 2px solid #49B849 !important;
+}
+.group_legend_box {  
+    /* background-color:#982a39; */
+    background-color: rgba(152,42,57,1);
+}
+.group_inside_legend_box {  
+    border: 2px solid #982a39 !important;
+}
+.software_legend_box {
+    border: 2px solid #F1813F !important;
+}
+
+.group_circle_container {
+    position: absolute;
+    top:-2px;
+    right:5px;
+}
+
+.group_circle {
+    border-radius: 50%;
+    width: 6px;
+    height: 6px;
+    padding: 2px 2px 2px 2px;
+    text-align: center;
+    font-size: 8px;
+    line-height: 7px;
+    font-style: normal;
+    display:inline-block;
+}
+
+.group_circle_technique {
+    background: #982a39;
+    border: 1px solid #982a39;
+    color: #fff;
+}
+.group_circle_subtechnique {
+    background: #fff;
+    border: 1px solid #982a39;
+    color: #982a39;
+}
+
+
+
+
+#mitremaptable td.selected,#mitremaptablev7 td.selected{
+    border: 2px solid #49B849 !important;
+}
+#mitremaptable td.software,#mitremaptablev7 td.software{
+    border: 2px solid #F1813F !important;
+}
+#mitremaptable td.threat_group.has_sub_technique {
+    /* Do nothing
+    */
+}
+
+#mitremaptable table-striped.table-chrome>tbody>tr.even>td, #mitremaptable .table-striped.table-chrome>tbody>tr:nth-child(2n)>td, #mitremaptable  .table-striped.table-chrome>tbody>tr:nth-child(odd).even>td,#mitremaptablev7 table-striped.table-chrome>tbody>tr.even>td, #mitremaptablev7 .table-striped.table-chrome>tbody>tr:nth-child(2n)>td, #mitremaptablev7  .table-striped.table-chrome>tbody>tr:nth-child(odd).even>td {
+    background-color: #ffffff !important;
+}
+
+.technique-container {
+    height:100%;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+.technique-container .technique {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    line-height: 8px;
+    font-size: 9px;
+}
+.subtechniques_expander {
+    width: 7px;
+    min-width: 7px;
+    padding: 2px 0 2px 0;
+    margin: 0px -3px 0px 0px;
+    background: #aaabae;
+    cursor: pointer;
+    position: relative;
+    display:flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+.subtechniques_expander .handle {
+    transform: rotate(-90deg);
+    color: #f2f2f2;
+}
+.subtechniques_expander + .tooltip {
+    opacity: 1;
+    max-width: 500px !important;
+    display: block;
+   }
+.subtechniques_expander + .tooltip .tooltip-inner {
+ background-color: #e1e6eb;
+ border: 1px solid #73D0FB;
+ padding: 0;
+ max-width: 300px;
+}
+.subtechniques_expander + .tooltip .tooltip-arrow {
+    border-right-color: #73D0FB;
+}
+.subtechniques_expander + .tooltip.right{
+    margin-left: 0px;
+    margin-top: 3px;
+    opacity: revert;
+}
+.subtechniques_expander + .tooltip .tooltip-inner .tooltip.in  {
+    opacity: 1;
+   }
+.subtechniques_expander + .tooltip .tooltip-inner .tooltip .tooltip-inner {
+    max-width: 350px !important;
+    padding: 6px 12px;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    background-color: #000;
+   }
+.subtechniques_expander + .tooltip .tooltip-arrow .tooltip.right .tooltip-arrow {
+    top: 50%;
+    left: 0;
+    margin-top: -5px;
+    border-width: 5px 5px 5px 0;
+    border-right-color: #000;
+}
+
+
+.subtechniques {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-left: -1px;
+    border-left: 2px solid #73D0FB;
+    outline: 1px solid #73D0FB;
+    outline-offset: -1px;
+    white-space: nowrap;
+    vertical-align: top;
+    overflow: scroll;
+}
+.subtechniques .subtechnique {
+    height: 100%;
+    flex-grow: 1;
+    padding-right: 20px;
+}
+
+.subtechniques .subtechnique.threat_group {
+/* Do nothing
+    */
+}
+.subtechniques .subtechnique.threat_group_multiple {
+    /* Do nothing
+    */
+}
+.subtechniques .subtechnique.software {
+    border: 2px solid #F1813F !important;
+}
+.subtechniques .subtechnique.software:not(:first-child) {
+    margin-top: -2px;
+}
+
+
+
+.subtechniques .subtechnique .technique-cell {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: 14px;
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+
+    padding: 0px 6px;
+    cursor: pointer;
+    min-height: 28px;
+    height: 28px;
+    color:#006eaa;
+    font-size: 10px;
+}
+#bookmarkSelectionContainer label{
+    margin: 0px 10px;
+}
+#bookmarkSelectionContainer div{
+    float:left;
+    position:relative;
+}
+#bookmarkSelectionContainer div#bookmarkSelectionButton{
+    clear:both;
+    position:relative;
+}
+#bookmarkSelectionContainer div#bookmarkSelectionButton{
+    margin: 10px 10px
+}
+#bookmarkSelectionContainer div textarea{
+    margin: 5px 10px;
+    height: 56px;
+    width: 260px;
+    display: flex;
+}
+
+#bookmarkSelectionContainer .bookmarkSelectionProgress{
+    float: left;
+    width: 16px;
+    height: 16px;
+    margin-top: 16px;
+}
+
+/* this is to show the edit button, might remove before golive */
+.dashboard-view-controls a.edit-btn {
+    display: inline-block !important;
+}
+

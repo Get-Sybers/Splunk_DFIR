@@ -1,0 +1,17 @@
+<form class="splunk-formatter-section" section-label="General">
+    <splunk-control-group label="Show Confidence Interval" help="">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showConfInterval" value="true">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+
+    <splunk-control-group label="Legend Position" help="">
+        <splunk-select name="{{VIZ_NAMESPACE}}.legendAlign" value="bottom">
+            <option value="bottom">Bottom</option>
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+            <option value="top">Top</option>
+        </splunk-select>
+    </splunk-control-group>
+</form>

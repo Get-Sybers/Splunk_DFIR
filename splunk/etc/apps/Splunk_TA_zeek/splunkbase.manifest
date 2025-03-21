@@ -1,0 +1,205 @@
+{
+  "version": "1.0",
+  "date": "2024-04-11T10:43:44.488168322Z",
+  "hashAlgorithm": "SHA-256",
+  "app": {
+    "id": 5466,
+    "version": "1.0.8",
+    "files": [
+      {
+        "path": "default/checklist.conf",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "default/app.conf",
+        "hash": "b68f988fc1dfd0873d08c893419a3e55c45111cd7f66f6091c3e9983cb79b9e7"
+      },
+      {
+        "path": "default/eventtypes.conf",
+        "hash": "eb002e1753daea72e288137b981045b09d9973ed1ef5afba8960a84ed08f1b01"
+      },
+      {
+        "path": "default/transforms.conf",
+        "hash": "0466ff5bc34d47c251cb599cdd33edc53428fcc9223265378f21d59ad7810803"
+      },
+      {
+        "path": "default/tags.conf",
+        "hash": "b2a6ac33ceba1b970f6bd572986cc753dd53207adabd0298eef8931f36d8da81"
+      },
+      {
+        "path": "default/props.conf",
+        "hash": "9a892a71edbaa2d1cfad3837bcda118ff767695711d23b16c1bc533fe904dbd5"
+      },
+      {
+        "path": "metadata/default.meta",
+        "hash": "c6d91923a05d9ad624dfa910c904868e191cc512b3c014958fae93bb3caed1ec"
+      },
+      {
+        "path": "static/appIcon.png",
+        "hash": "82ba4aa9c8454431a221c7fc49423bc0b050b3fb61519e7c9b8707e0c562c0aa"
+      },
+      {
+        "path": "static/appLogo_2x.png",
+        "hash": "cecee6a0ae7721481e2c405a10501bdba874a29e3907eab72cf89a90746b8a0c"
+      },
+      {
+        "path": "static/appLogo.png",
+        "hash": "cd215dafbdcba566fdef89c9be2507703f38243a7f477d6017870496c211d3b8"
+      },
+      {
+        "path": "static/appIcon_2x.png",
+        "hash": "14bf98153905e7c99aded892aca03b28cc634461738d808f9dbfa48597d44f5b"
+      },
+      {
+        "path": "static/appIconAlt_2x.png",
+        "hash": "14bf98153905e7c99aded892aca03b28cc634461738d808f9dbfa48597d44f5b"
+      },
+      {
+        "path": "static/appIconAlt.png",
+        "hash": "82ba4aa9c8454431a221c7fc49423bc0b050b3fb61519e7c9b8707e0c562c0aa"
+      },
+      {
+        "path": "appserver/static/appLogo_2x.png",
+        "hash": "cecee6a0ae7721481e2c405a10501bdba874a29e3907eab72cf89a90746b8a0c"
+      },
+      {
+        "path": "appserver/static/appLogo.png",
+        "hash": "cd215dafbdcba566fdef89c9be2507703f38243a7f477d6017870496c211d3b8"
+      },
+      {
+        "path": "appserver/static/appIcon_2x.png",
+        "hash": "14bf98153905e7c99aded892aca03b28cc634461738d808f9dbfa48597d44f5b"
+      },
+      {
+        "path": "appserver/static/appIconAlt_2x.png",
+        "hash": "14bf98153905e7c99aded892aca03b28cc634461738d808f9dbfa48597d44f5b"
+      },
+      {
+        "path": "appserver/static/appIconAlt.png",
+        "hash": "82ba4aa9c8454431a221c7fc49423bc0b050b3fb61519e7c9b8707e0c562c0aa"
+      },
+      {
+        "path": "appserver/static/appIcon.png",
+        "hash": "82ba4aa9c8454431a221c7fc49423bc0b050b3fb61519e7c9b8707e0c562c0aa"
+      },
+      {
+        "path": "appserver/static/documentation/README.md",
+        "hash": "9be388df3ca4ce81d3c9520389c3572c4bdc89542d63628e5e139f8fc7a7b6a0"
+      },
+      {
+        "path": "appserver/static/documentation/index.html",
+        "hash": "dc285879330f7ae212b98867653fa479d1361e3832ae3394fa8211f33756393d"
+      },
+      {
+        "path": "appserver/static/README.md",
+        "hash": "9be388df3ca4ce81d3c9520389c3572c4bdc89542d63628e5e139f8fc7a7b6a0"
+      },
+      {
+        "path": "appserver/static/details.md",
+        "hash": "294dfdd2559df96d4f27e853f49436f1fb86c517be81878f6d1f68c92824a484"
+      },
+      {
+        "path": "appserver/static/installation.md",
+        "hash": "f6a6223bdb302633f44188c56ce0dc2681469ba5d4e87a204e71b491f8a4c600"
+      },
+      {
+        "path": "appserver/static/release_notes.md",
+        "hash": "9e607adc6abf36249f56f47544a307d3a415f977ba7f1aa012101b52ced54630"
+      },
+      {
+        "path": "appserver/static/third_party.md",
+        "hash": "549fa1db116c810a8ef4ce4d522556042a2c083f5767b12b608dc0acbfdee84a"
+      },
+      {
+        "path": "appserver/static/troubleshooting.md",
+        "hash": "29e6094d1b483bc263118261fda49cf4fc1a57ebc99ebdcfdb207cfc4938eb6f"
+      },
+      {
+        "path": "README.md",
+        "hash": "9be388df3ca4ce81d3c9520389c3572c4bdc89542d63628e5e139f8fc7a7b6a0"
+      },
+      {
+        "path": "lookups/bro_note_alert_type.csv",
+        "hash": "0cd00a60352272993425d0bdc6a77b5daff9c58150ce945aa51cb3e9b9608aad"
+      },
+      {
+        "path": "lookups/bro_vendor_info.csv",
+        "hash": "46195e4dc0a781694790fba94db54bae2db52e0a1a3171cfa11a1ae94edf3f91"
+      },
+      {
+        "path": "lookups/bro_status_action.csv",
+        "hash": "01a346c22e0d738f5805bf49f864164ec705e4a728ffe34d92e481af6a241e78"
+      },
+      {
+        "path": "lookups/bro_protocols.csv",
+        "hash": "3d59146427ce15ee6a11dfedb329f5f2ba4abc40fc2d93546117797eb83d2c16"
+      },
+      {
+        "path": "lookups/bro_tc_flag.csv",
+        "hash": "d4ee95e95355d670d9369d2615f49079bbfbba07cad24f8ffd81f95e79eb2911"
+      },
+      {
+        "path": "lookups/zeek_ssl_history.csv",
+        "hash": "6c93c96cd8ada42be0c9bd799c3ddb6f677387981153a3b24467cd1e13cceb44"
+      },
+      {
+        "path": "lookups/zeek_conn_history.csv",
+        "hash": "ab6b153bb4c452e4a12225c024d99654a8285532c069ae1d112f1793ed197106"
+      },
+      {
+        "path": "lookups/bro_conn_state.csv",
+        "hash": "3ee322abda1e523fb09c4270f2f3ad60bd97680a4fa71d8ea1f3feda85624608"
+      },
+      {
+        "path": "app.manifest",
+        "hash": "e2be90f8c43e83e385ae3bde97a45b5a092c985ca7285aca21910c0938093143"
+      },
+      {
+        "path": "file.manifest",
+        "hash": "263623dc99a84752f2ec0b88e5135a5fd8fe03d9b58df2c96ff49081ccc9dfd0"
+      }
+    ]
+  },
+  "products": [
+    {
+      "platform": "splunk",
+      "product": "enterprise",
+      "versions": [
+        "9.0",
+        "9.1",
+        "9.2"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    },
+    {
+      "platform": "splunk",
+      "product": "cloud",
+      "versions": [
+        "9.0",
+        "9.1",
+        "9.2"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    }
+  ]
+}

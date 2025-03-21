@@ -1,0 +1,123 @@
+{
+  "version": "1.0",
+  "date": "2022-11-12T09:25:30.465208836Z",
+  "hashAlgorithm": "SHA-256",
+  "app": {
+    "id": 5641,
+    "version": "4.0.3",
+    "files": [
+      {
+        "path": "app.manifest",
+        "hash": "afc7c6a0c141708305533a47ca90d5b53a4d8e26357793e95677e678ec86b5ae"
+      },
+      {
+        "path": "default/app.conf",
+        "hash": "7df5a32fb39c8893a271dc1efccc26b9a3c402a8518b87b9d74fbd2998aa51f6"
+      },
+      {
+        "path": "default/data/ui/views/hydra_framework_status.xml",
+        "hash": "569e6643cffec6996769c9dab02ba9e30e88b3559abab8a83d9f29092ec0934f"
+      },
+      {
+        "path": "default/data/ui/views/hydra_scheduler_status.xml",
+        "hash": "20368ea8e52a82ecb57587156e1679013970b0be75483180ee51e102ddd01dc1"
+      },
+      {
+        "path": "default/eventtypes.conf",
+        "hash": "4b484b27706c11808c7f2eedd303bf2e5346b5eee03d1d89d567ab1e04cda82b"
+      },
+      {
+        "path": "default/multikv.conf",
+        "hash": "927817c702281f2e30f98810b67821424dcc773d1df7227a0360f4242b04a0e0"
+      },
+      {
+        "path": "default/props.conf",
+        "hash": "92face42621066ec1a631803bc46d02c0ead0814772b3b03fc5ac399ea85b67e"
+      },
+      {
+        "path": "default/tags.conf",
+        "hash": "43d8523f11bcec26e4704a4ce276da78d1df5573225e2631f7ca33b6f049231f"
+      },
+      {
+        "path": "default/transforms.conf",
+        "hash": "3e226430a9cb2b663dae5cf091b7908426d36ec56fd74e1c894080b9d9b5f07c"
+      },
+      {
+        "path": "license-eula.rtf",
+        "hash": "8bc3fc5f9908c20081d3569b9d84114bcec6371acc520ee7324abf39e8107c73"
+      },
+      {
+        "path": "license-eula.txt",
+        "hash": "14a0a52e51f8d42465e5bc56d07b6f4ea6e0a159a96fb574410a0de0e700fdba"
+      },
+      {
+        "path": "metadata/default.meta",
+        "hash": "cfa07dd59ec2d52366ee10636ad1e4a85b6ea3ba9c86db35e694bbff85e70bd8"
+      },
+      {
+        "path": "README.txt",
+        "hash": "8afafec2c727aab38ca982df17153c6e2225f37a9c3f9fecaa2a50c27f9bc97e"
+      },
+      {
+        "path": "static/appIcon_2x.png",
+        "hash": "d7ad6f1263583f5b280b52be4f8806b0d22a4aa6e328a0209212697b6734570c"
+      },
+      {
+        "path": "static/appIcon.png",
+        "hash": "6cb62d7fd2d90e69d66c3e4fbede9692f9d650176a7a9ec06edd4026f1de580a"
+      },
+      {
+        "path": "static/appIconAlt_2x.png",
+        "hash": "d7ad6f1263583f5b280b52be4f8806b0d22a4aa6e328a0209212697b6734570c"
+      },
+      {
+        "path": "static/appIconAlt.png",
+        "hash": "6cb62d7fd2d90e69d66c3e4fbede9692f9d650176a7a9ec06edd4026f1de580a"
+      }
+    ]
+  },
+  "products": [
+    {
+      "platform": "splunk",
+      "product": "enterprise",
+      "versions": [
+        "8.0",
+        "8.1",
+        "8.2",
+        "9.0"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    },
+    {
+      "platform": "splunk",
+      "product": "cloud",
+      "versions": [
+        "8.0",
+        "8.1",
+        "8.2",
+        "9.0"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    }
+  ]
+}

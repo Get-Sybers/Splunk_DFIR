@@ -1,0 +1,11 @@
+fields
+dest_ip
+dest_port
+hostname
+login_id
+login_successful
+login_type
+src_ip
+src_port
+uid
+user

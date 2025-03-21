@@ -1,0 +1,145 @@
+<form script="runPageScript.js" stylesheet="/style/app.css,/style/uba_and_es_use_case.css" version="1.1">
+  <label>ES Use Case</label>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <html>
+        <title>About Splunk Enterprise Security</title>
+        <div style="float:left; width:10%">
+          <br></br>
+                   <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/es_logo.png"/>
+ 
+        </div>
+        <div style="float:right; width:89%" data-translate-id="es-div-esdescription">
+        <p>You're exploring an example that, while could be done in Splunk Enterprise with a lot of effort, is more easily accomplished with <a href="https://www.splunk.com/en_us/products/premium-solutions/splunk-enterprise-security.html" target="_blank">Splunk's Enterprise Security (ES).</a>
+          </p>
+        <p>ES is Splunk's premium and flagship security product, which combines out-of-the-box SIEM functionality, several interactive features designed for Incident Response, and a set of security-centric data models so that you get value from your security data quickly and easily. Other important ES features include:</p>
+        <li>Five frameworks designed from the ground up to support your SOC and IR teams, including Asset/Identity, Risk, Notable Event, Threat Intelligence, and Adaptive Response;</li>
+        <li>Built-in correlation rules to notify you about common and not-so-common security incidents;</li>
+        <li>Investigator Journal and Timeline that allow your teams to fully document and collaborate on incidents;</li>
+        <li>Regularly-updated analytic content to help you detect and defend against the latest cyber-threats; and</li>
+        <li>Integrates with <a href="https://www.splunk.com/en_us/products/premium-solutions/user-behavior-analytics.html" target="_blank">Splunk UBA</a> to start investigations from user behavior threats and anomalies.</li>
+        <br/>
+        </div>
+        </html>
+      <html>
+        <p><b data-translate-id="es-b-sseconnection">The majority of the Security Examples marked as <span style="float:none; font-weight: normal; " class="grayAppButton">Try Splunk ES</span>within Security Essentials are "out-of-the-box" correlation searches within ES, as shown in the screencaps that you can select below. Find out more about Splunk Enterprise Security <a href="https://www.splunk.com/en_us/products/premium-solutions/splunk-enterprise-security.html" target="_blank">here</a>.</b></p>
+        </html>
+    </panel>
+    <panel depends="$gotusecase$"><title>Your Use Case</title><html><div id="usecasecontent"></div></html></panel>
+  </row>
+  <row><panel depends="$gotusecasedetails$"><title>Details for your Use Case</title><html><div id="usecasedetail"></div></html></panel>
+  </row>
+  <row><panel depends="$gotusecasescreenshots$"><title>Screenshots for your Use Case</title><html><div id="usecasescreenshots"></div></html></panel>
+  </row>
+  <row depends="$gotrelatedcontent$">
+    <panel><title>Related Splunk Content</title><html><div id="related_content"></div></html></panel>
+  </row>
+  <row>
+    <panel>
+      <input type="link" token="needed">
+         <label>Select a Security Journey Stage for an Example Screenshot</label>
+        <choice value="stage1">Collection</choice>
+        <choice value="stage2">Normalization</choice>
+        <choice value="stage3">Expansion</choice>
+        <choice value="stage4">Enrichment</choice>
+        <choice value="stage6">Advanced</choice>
+        <default>stage1</default>
+        <change>
+          <condition value="stage1">
+            <set token="showstage1">true</set>
+            <unset token="showstage2"></unset>
+            <unset token="showstage3"></unset>
+            <unset token="showstage4"></unset>
+             <unset token="showstage6"></unset>
+        </condition>
+          <condition value="stage2">
+            <set token="showstage2">true</set>
+            <unset token="showstage1"></unset>
+            <unset token="showstage3"></unset>
+            <unset token="showstage4"></unset>
+           <unset token="showstage6"></unset>
+          </condition>
+           <condition value="stage3">
+            <set token="showstage3">true</set>
+            <unset token="showstage1"></unset>
+            <unset token="showstage2"></unset>
+            <unset token="showstage4"></unset>
+           <unset token="showstage6"></unset>
+          </condition>
+           <condition value="stage4">
+            <set token="showstage4">true</set>
+            <unset token="showstage1"></unset>
+            <unset token="showstage3"></unset>
+            <unset token="showstage2"></unset>
+           <unset token="showstage6"></unset>
+          </condition>
+           <condition value="stage6">
+            <set token="showstage6">true</set>
+            <unset token="showstage1"></unset>
+            <unset token="showstage3"></unset>
+            <unset token="showstage4"></unset>
+           <unset token="showstage2"></unset>
+          </condition>
+        </change>
+      </input>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$showstage1$">
+      <title>Example Stage 1 ES Correlation Search Results</title>
+      <html> 
+      <h3><i data-translate-id="es-i-stage1examplename">Personally Identifiable Information Detected</i></h3>
+        
+        <br/>
+        <div style="float:left; width:79%">
+          <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/stage1_es.png"/>
+        </div>
+        </html>
+      </panel>
+      <panel depends="$showstage2$">
+      <title>Example Stage 2 ES Correlation Search Results</title>
+      <html>
+         <h3><i data-translate-id="es-i-stage2examplename">Brute Force Access Behavior Detected</i>
+        </h3>
+           <br/>
+        <div style="float:left; width:79%">
+          <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/stage2_es.png"/>
+        </div>
+      </html>
+      </panel>
+      <panel depends="$showstage3$">
+      <title>Example Stage 3 ES Correlation Search Results</title>
+      <html>
+         <h3><i data-translate-id="es-i-stage3examplename">Abnormally High Number of Endpoint Changes</i>
+        </h3>
+        <br/>
+        <div style="float:left; width:79%">
+                   <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/es_images/es_abnormal_number_endpoint_changes.png"/>
+        </div>
+      </html>
+      </panel>
+      <panel depends="$showstage4$">
+      <title>Example Stage 4 ES Correlation Search Results</title>
+      <html>
+         <h3><i data-translate-id="es-i-stage4examplename">Threat Activity Detected</i>
+        </h3>
+        <br/>
+        <div style="float:left; width:79%">
+                   <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/stage4_es.png"/>
+        </div>
+      </html>
+      </panel>
+      <panel depends="$showstage6$">
+       <title>Example Stage 6 ES Correlation Search Results</title>
+      <html>
+        <h3><i data-translate-id="es-i-stage6examplename">UEBA Threat Detected</i>
+        </h3>
+        <br/>
+        <div style="float:left; width:79%">
+                   <img style="border: gray 1px solid;" src="/static/app/Splunk_Security_Essentials/images/land_images/stage6_es.png"/>
+        </div>
+      </html>
+    </panel>
+  </row>
+</form>

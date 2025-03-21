@@ -1,0 +1,11 @@
+.clustering-plot {
+    display: table-cell;
+    position: relative;
+    text-align: center;
+}
+
+.clustering-row {
+    width: 100%;
+    display: table;
+    table-layout: fixed;
+}

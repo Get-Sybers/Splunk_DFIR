@@ -1,0 +1,597 @@
+"Event_Description","Event_Source","Host_Name","_time",severity,tag,url
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-0e-a2-9c-48  'Citrix PV Ethernet Adapter #0' 10.0.2.90",Smc,"host_1","1516913287.000",informational,,
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180125002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913403.000",informational,,"liveupdate.symantecliveupdate.com"
+"A LiveUpdate session ran successfully.  6 update(s) were available. 6 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_1","1516913403.000",informational,error,
+"An update for Power Eraser Definitions from LiveUpdate was successfully installed.  The new sequence number is 171207040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913404.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Extended File Attributes and Signatures from LiveUpdate was successfully installed.  The new sequence number is 180123004.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913405.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180125007.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913405.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for SONAR Definitions from LiveUpdate was successfully installed.  The new sequence number is 180122003.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913429.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180125038.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1516913429.000",informational,,"liveupdate.symantecliveupdate.com"
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-0e-a2-9c-48  'Citrix PV Ethernet Adapter #0' 10.0.2.90",Smc,"host_1","1516913702.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-0e-a2-9c-48  'Citrix PV Ethernet Adapter #0' 10.0.2.90",Smc,"host_1","1516937053.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1516958628.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1516980228.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517001828.000",informational,,
+"An update for Intrusion Prevention Signatures from LiveUpdate was successfully installed.  The new sequence number is 180125040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517023461.000",informational,,"liveupdate.symantecliveupdate.com"
+"A LiveUpdate session ran successfully.  5 update(s) were available. 5 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_1","1517023461.000",informational,error,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180126009.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517023462.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Extended File Attributes and Signatures from LiveUpdate was successfully installed.  The new sequence number is 180125016.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517023462.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180126002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517023462.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180126052.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517023464.000",informational,,"liveupdate.symantecliveupdate.com"
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517045064.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517066664.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517088265.000",informational,,
+"A LiveUpdate session ran successfully.  3 update(s) were available. 3 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_1","1517109880.000",informational,error,
+"An update for Intrusion Prevention Signatures from LiveUpdate was successfully installed.  The new sequence number is 180127040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517109880.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180127001.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517109881.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180127039.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517109883.000",informational,,"liveupdate.symantecliveupdate.com"
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517131483.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517153083.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517174683.000",informational,,
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180128002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517196296.000",informational,,"liveupdate.symantecliveupdate.com"
+"A LiveUpdate session ran successfully.  3 update(s) were available. 3 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_1","1517196296.000",informational,error,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180128007.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517196296.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180128036.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517196300.000",informational,,"liveupdate.symantecliveupdate.com"
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517217900.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517239500.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517261100.000",informational,,
+"An update for Intrusion Prevention Signatures from LiveUpdate was successfully installed.  The new sequence number is 180129040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517282716.000",informational,,"liveupdate.symantecliveupdate.com"
+"A LiveUpdate session ran successfully.  4 update(s) were available. 4 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_1","1517282716.000",informational,error,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180129018.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517282716.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180129002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517282716.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180129068.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_1","1517282719.000",informational,,"liveupdate.symantecliveupdate.com"
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517304319.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-0e-a2-9c-48  'Citrix PV Ethernet Adapter #0' 10.0.2.90",Smc,"host_1","1517319444.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{B6DC6C8F-46FA-40c7-A806-B669BE1D2D19}/180104052/Full.zip",SYLINK,"host_1","1517320462.000",informational,,"server_1(10.17.1.47):443"
+"An update for Submission Control Thresholds was successfully installed.  The new sequence number is 180104052.","LiveUpdate Manager","host_1","1517320462.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180129068/xdelta180129068_To_180130005.dax",SYLINK,"host_1","1517320658.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130005.","LiveUpdate Manager","host_1","1517320658.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows Server 2012 R2 (6.3.9600 )  Network  info:  No.0  'Ethernet'  0a-9c-c5-a2-9c-66  'AWS PV Network Device #0' 10.0.1.250",Smc,"host_4","1517321316.000",informational,,
+"SONAR has generated an error: code 0: description: Definition Failure","Symantec Endpoint Protection","host_4","1517321328.000",critical,error,
+"SONAR has generated an error: code 0: description: Definition Failure","Symantec Endpoint Protection","host_4","1517321328.000",critical,error,
+"A LiveUpdate session encountered errors.  7 update(s) were available. 6 update(s) installed successfully. 1 update(s) failed to install.","LiveUpdate Manager","host_4","1517321331.000",medium,error,
+"An update for Intrusion Prevention Signatures from LiveUpdate was successfully installed.  The new sequence number is 180129040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321331.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Extended File Attributes and Signatures from LiveUpdate was successfully installed.  The new sequence number is 180125016.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321332.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate failed to install. Error: Postsession callback failed (208)","LiveUpdate Manager","host_4","1517321332.000",critical,error,
+"An update for Power Eraser Definitions from LiveUpdate was successfully installed.  The new sequence number is 171207040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321332.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180129002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321332.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for SONAR Definitions from LiveUpdate was successfully installed.  The new sequence number is 180122003.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321334.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180130009.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1517321334.000",informational,,"liveupdate.symantecliveupdate.com"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{67F66706-F04B-4432-9947-F8354949D2A6}/180124018/xdelta180124018_To_180129018.dax",SYLINK,"host_4","1517321422.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180129018.","LiveUpdate Manager","host_4","1517321422.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{B6DC6C8F-46FA-40c7-A806-B669BE1D2D19}/180104052/Full.zip",SYLINK,"host_4","1517321423.000",informational,,"server_1(10.17.1.47):443"
+"An update for Submission Control Thresholds was successfully installed.  The new sequence number is 180104052.","LiveUpdate Manager","host_4","1517321423.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows Server 2012 R2 (6.3.9600 )  Network  info:  No.0  'Ethernet'  0a-9c-c5-a2-9c-66  'AWS PV Network Device #0' 10.0.1.250",Smc,"host_4","1517321579.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517325963.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180129018/xdelta180129018_To_180130002.dax",SYLINK,"host_4","1517329214.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130017/Full.zip",SYLINK,"host_4","1517329214.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130002.","LiveUpdate Manager","host_4","1517329214.000",informational,,
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130017.","LiveUpdate Manager","host_4","1517329214.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180129018/xdelta180129018_To_180130002.dax",SYLINK,"host_1","1517329429.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130002.","LiveUpdate Manager","host_1","1517329429.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130005/xdelta180130005_To_180130017.dax",SYLINK,"host_1","1517329431.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130017.","LiveUpdate Manager","host_1","1517329431.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517343173.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130017/xdelta180130017_To_180130033.dax",SYLINK,"host_1","1517343641.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130033.","LiveUpdate Manager","host_1","1517343641.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130017/xdelta180130017_To_180130033.dax",SYLINK,"host_4","1517343858.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130033.","LiveUpdate Manager","host_4","1517343858.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-0e-a2-9c-48  'Citrix PV Ethernet Adapter #0' 10.0.2.90",Smc,"host_1","1517344516.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517349835.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130033/xdelta180130033_To_180130050.dax",SYLINK,"host_4","1517358242.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130050.","LiveUpdate Manager","host_4","1517358242.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130002/xdelta180130002_To_180130008.dax",SYLINK,"host_1","1517358569.000",informational,,"10.17.1.47:443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130008.","LiveUpdate Manager","host_1","1517358569.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130033/xdelta180130033_To_180130050.dax",SYLINK,"host_1","1517358570.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130050.","LiveUpdate Manager","host_1","1517358570.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130002/xdelta180130002_To_180130008.dax",SYLINK,"host_4","1517358578.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130008.","LiveUpdate Manager","host_4","1517358578.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517364773.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517371435.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130050/xdelta180130050_To_180130068.dax",SYLINK,"host_1","1517372782.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180129040/xdelta180129040_To_180130040.dax",SYLINK,"host_1","1517372782.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130068.","LiveUpdate Manager","host_1","1517372782.000",informational,,
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180130040.","LiveUpdate Manager","host_1","1517372782.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180129040/xdelta180129040_To_180130040.dax",SYLINK,"host_4","1517372859.000",informational,,"server_1(10.17.1.47):443"
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180130040.","LiveUpdate Manager","host_4","1517372859.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130050/xdelta180130050_To_180130068.dax",SYLINK,"host_4","1517372860.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130068.","LiveUpdate Manager","host_4","1517372860.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517386373.000",informational,,
+"LiveUpdate started.",,"host_4","1517386995.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517387002.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517387020.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517387020.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517387020.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517387020.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517387020.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517387020.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517387020.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517387020.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517387020.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517387020.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517387311.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517387311.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517387311.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517387311.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517387311.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517387311.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517387311.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517387311.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517387311.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517387311.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517387312.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517387349.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517387349.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517387373.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517387373.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517387373.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517387373.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517387373.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517387373.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517387373.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517387373.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517387373.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517387373.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517387373.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517387373.000",,,
+"LiveUpdate succeeded.",,"host_4","1517387375.000",,,
+"LiveUpdate will start next on Wednesday, January 31, 2018 12:29:35 PM UTC on server_1.",,"host_4","1517387375.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517387375.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130068/xdelta180130068_To_180130080.dax",SYLINK,"host_4","1517387613.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130008/xdelta180130008_To_180130022.dax",SYLINK,"host_4","1517387613.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130080.","LiveUpdate Manager","host_4","1517387613.000",informational,,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130022.","LiveUpdate Manager","host_4","1517387613.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130008/xdelta180130008_To_180130022.dax",SYLINK,"host_1","1517387665.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130022.","LiveUpdate Manager","host_1","1517387665.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130068/xdelta180130068_To_180130080.dax",SYLINK,"host_1","1517387666.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130080.","LiveUpdate Manager","host_1","1517387666.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517393035.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-fa-a2-9c-5c  'Citrix PV Ethernet Adapter #0' 10.0.2.37",Smc,"host_2","1517394350.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-6f-a2-9c-22  'Citrix PV Ethernet Adapter #0' 10.0.2.54",Smc,"host_3","1517394391.000",informational,,
+"[SID: 30372] System Infected: Trojan.Coinbitminer Activity 11 attack blocked. Traffic has been blocked for this application: C:\WINDOWS\TASKS\SVCHOST.EXE",,"host_2","1517394467.000",critical,"attack
+host
+ids",
+"[SID: 30253] System Infected: Bitcoinminer Activity 6 attack blocked. Traffic has been blocked for this application: C:\WINDOWS\TASKS\SVCHOST.EXE",,"host_2","1517394467.000",critical,"attack
+host
+ids",
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-6f-a2-9c-22  'Citrix PV Ethernet Adapter #0' 10.0.2.54",Smc,"host_3","1517394614.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-fa-a2-9c-5c  'Citrix PV Ethernet Adapter #0' 10.0.2.37",Smc,"host_2","1517394868.000",informational,,
+"The client opted to download a full definitions package for AV definitions from the management server or GUP rather than download a large package from LiveUpdate.",SYLINK,"host_3","1517394963.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/Full.zip",SYLINK,"host_3","1517394963.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130080.","LiveUpdate Manager","host_3","1517394963.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{B6DC6C8F-46FA-40c7-A806-B669BE1D2D19}/180104052/Full.zip",SYLINK,"host_3","1517394964.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{D6AEBC07-D833-485f-9723-6C908D37F806}/180117005/xdelta180117005_To_180122003.dax",SYLINK,"host_3","1517394964.000",informational,,"server_1(10.17.1.47):443"
+"An update for Submission Control Thresholds was successfully installed.  The new sequence number is 180104052.","LiveUpdate Manager","host_3","1517394964.000",informational,,
+"An update for SONAR Definitions was successfully installed.  The new sequence number is 180122003.","LiveUpdate Manager","host_3","1517394964.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{FDDBF0FB-0A93-1B05-74DA-0710C2E8441D}/171207040/Full.zip",SYLINK,"host_3","1517394965.000",informational,,"server_1(10.17.1.47):443"
+"An update for Power Eraser Definitions was successfully installed.  The new sequence number is 171207040.","LiveUpdate Manager","host_3","1517394965.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/TempCache/{67F66706-F04B-4432-9947-F8354949D2A6}/180124018/xdelta180124018_To_180130022.dax",SYLINK,"host_2","1517395215.000",informational,,"10.17.1.47:443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130022.","LiveUpdate Manager","host_2","1517395215.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/Full.zip",SYLINK,"host_2","1517395216.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180130080.","LiveUpdate Manager","host_2","1517395216.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/TempCache/{E8827B4A-4F58-4dea-8C93-07B32A63D1C5}/171221003/xdelta171221003_To_180125016.dax",SYLINK,"host_2","1517395219.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/TempCache/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180120002/xdelta180120002_To_180129002.dax",SYLINK,"host_2","1517395219.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/TempCache/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180124040/xdelta180124040_To_180130040.dax",SYLINK,"host_2","1517395219.000",informational,,"10.17.1.47:443"
+"An update for Extended File Attributes and Signatures was successfully installed.  The new sequence number is 180125016.","LiveUpdate Manager","host_2","1517395219.000",informational,,
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180129002.","LiveUpdate Manager","host_2","1517395219.000",informational,,
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180130040.","LiveUpdate Manager","host_2","1517395219.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{B6DC6C8F-46FA-40c7-A806-B669BE1D2D19}/180104052/Full.zip",SYLINK,"host_2","1517395221.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{FDDBF0FB-0A93-1B05-74DA-0710C2E8441D}/171207040/Full.zip",SYLINK,"host_2","1517395221.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{D6AEBC07-D833-485f-9723-6C908D37F806}/180117005/xdelta180117005_To_180122003.dax",SYLINK,"host_2","1517395221.000",informational,,"10.17.1.47:443"
+"An update for Submission Control Thresholds was successfully installed.  The new sequence number is 180104052.","LiveUpdate Manager","host_2","1517395221.000",informational,,
+"An update for Power Eraser Definitions was successfully installed.  The new sequence number is 171207040.","LiveUpdate Manager","host_2","1517395221.000",informational,,
+"An update for SONAR Definitions was successfully installed.  The new sequence number is 180122003.","LiveUpdate Manager","host_2","1517395221.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{67F66706-F04B-4432-9947-F8354949D2A6}/180124018/xdelta180124018_To_180130022.dax",SYLINK,"host_3","1517395245.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180130022.","LiveUpdate Manager","host_3","1517395245.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180124040/xdelta180124040_To_180130040.dax",SYLINK,"host_3","1517395249.000",informational,,"server_1(10.17.1.47):443"
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180130040.","LiveUpdate Manager","host_3","1517395249.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180120002/xdelta180120002_To_180129002.dax",SYLINK,"host_3","1517395250.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/TempCache/{E8827B4A-4F58-4dea-8C93-07B32A63D1C5}/171221003/xdelta171221003_To_180125016.dax",SYLINK,"host_3","1517395250.000",informational,,"server_1(10.17.1.47):443"
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180129002.","LiveUpdate Manager","host_3","1517395250.000",informational,,
+"An update for Extended File Attributes and Signatures was successfully installed.  The new sequence number is 180125016.","LiveUpdate Manager","host_3","1517395250.000",informational,,
+"LiveUpdate started.",,"host_4","1517401804.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517401811.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517401811.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517401811.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517401811.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517401811.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced).",,"host_4","1517401811.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517401811.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517401812.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517401812.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517401812.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517401812.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced).",,"host_4","1517401812.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1.",,"host_4","1517401812.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517401812.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517401812.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517401812.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517401813.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517401813.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517401813.000",,,
+"LiveUpdate succeeded.",,"host_4","1517401814.000",,,
+"LiveUpdate will start next on Wednesday, January 31, 2018 4:30:14 PM UTC on server_1.",,"host_4","1517401814.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517401814.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517401814.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/xdelta180130080_To_180131004.dax",SYLINK,"host_4","1517402021.000",informational,,"10.17.1.47(server_1):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131004.","LiveUpdate Manager","host_4","1517402021.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/xdelta180130080_To_180131004.dax",SYLINK,"host_1","1517402160.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131004.","LiveUpdate Manager","host_1","1517402160.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/xdelta180130080_To_180131004.dax",SYLINK,"host_2","1517402244.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131004.","LiveUpdate Manager","host_2","1517402244.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180130080/xdelta180130080_To_180131004.dax",SYLINK,"host_3","1517402383.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131004.","LiveUpdate Manager","host_3","1517402383.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-6f-a2-9c-22  'Citrix PV Ethernet Adapter #0' 10.0.2.54",Smc,"host_3","1517407914.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517407973.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517414635.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_3","1517416239.000",informational,,
+"LiveUpdate started.",,"host_4","1517416265.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517416272.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517416291.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517416291.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517416291.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517416291.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517416291.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517416291.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517416291.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517416291.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517416291.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416291.000",,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_2","1517416418.000",informational,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416581.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517416607.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517416607.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517416607.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517416607.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517416607.000",,,
+"Successfully downloaded the Advanced Machine Learning (Static) content Win32 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416607.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517416608.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517416608.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416608.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517416609.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416653.000",,,
+"Successfully downloaded the Advanced Machine Learning (Static) content Win64 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416680.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517416713.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517416713.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517416713.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517416713.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517416713.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517416713.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517416714.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517416714.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517416714.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517416714.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517416714.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517416714.000",,,
+"LiveUpdate succeeded.",,"host_4","1517416715.000",,,
+"LiveUpdate will start next on Wednesday, January 31, 2018 8:38:35 PM UTC on server_1.",,"host_4","1517416715.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517416715.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130022/xdelta180130022_To_180131002.dax",SYLINK,"host_3","1517416980.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131002.","LiveUpdate Manager","host_3","1517416980.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131004/xdelta180131004_To_180131017.dax",SYLINK,"host_3","1517416981.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131017.","LiveUpdate Manager","host_3","1517416981.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130022/xdelta180130022_To_180131002.dax",SYLINK,"host_1","1517417028.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131002.","LiveUpdate Manager","host_1","1517417028.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131004/xdelta180131004_To_180131017.dax",SYLINK,"host_1","1517417029.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131017.","LiveUpdate Manager","host_1","1517417029.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130022/xdelta180130022_To_180131002.dax",SYLINK,"host_2","1517417034.000",informational,,"10.17.1.47:443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131002.","LiveUpdate Manager","host_2","1517417034.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131004/xdelta180131004_To_180131017.dax",SYLINK,"host_2","1517417035.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131017.","LiveUpdate Manager","host_2","1517417035.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180130022/xdelta180130022_To_180131002.dax",SYLINK,"host_4","1517417036.000",informational,,"10.17.1.47(server_1):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131002.","LiveUpdate Manager","host_4","1517417036.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131004/xdelta180131004_To_180131017.dax",SYLINK,"host_4","1517417037.000",informational,,"10.17.1.47(server_1):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131017.","LiveUpdate Manager","host_4","1517417037.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517429573.000",informational,,
+"LiveUpdate started.",,"host_4","1517431117.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517431124.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517431136.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517431136.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517431136.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517431136.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517431136.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517431136.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517431136.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517431136.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517431136.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517431136.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517431417.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517431417.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517431418.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517431418.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517431418.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517431418.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517431418.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517431418.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517431418.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517431418.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517431419.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517431456.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517431456.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517431481.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517431481.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517431481.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517431481.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517431481.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517431481.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517431481.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517431481.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517431481.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517431481.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517431481.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517431481.000",,,
+"LiveUpdate succeeded.",,"host_4","1517431483.000",,,
+"LiveUpdate will start next on Thursday, February 1, 2018 12:44:43 AM UTC on server_1.",,"host_4","1517431483.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517431483.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131017/xdelta180131017_To_180131033.dax",SYLINK,"host_2","1517431667.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131002/xdelta180131002_To_180131007.dax",SYLINK,"host_2","1517431667.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131033.","LiveUpdate Manager","host_2","1517431667.000",informational,,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131007.","LiveUpdate Manager","host_2","1517431667.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131002/xdelta180131002_To_180131007.dax",SYLINK,"host_3","1517431700.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131007.","LiveUpdate Manager","host_3","1517431700.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131017/xdelta180131017_To_180131033.dax",SYLINK,"host_3","1517431701.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131033.","LiveUpdate Manager","host_3","1517431701.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131002/xdelta180131002_To_180131007.dax",SYLINK,"host_1","1517431879.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131007.","LiveUpdate Manager","host_1","1517431879.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131017/xdelta180131017_To_180131033.dax",SYLINK,"host_1","1517431880.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131033.","LiveUpdate Manager","host_1","1517431880.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131017/xdelta180131017_To_180131033.dax",SYLINK,"host_4","1517431880.000",informational,,"10.17.1.47(server_1):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131002/xdelta180131002_To_180131007.dax",SYLINK,"host_4","1517431880.000",informational,,"10.17.1.47(server_1):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131007.","LiveUpdate Manager","host_4","1517431880.000",informational,,
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131033.","LiveUpdate Manager","host_4","1517431880.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517436235.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_3","1517437839.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_2","1517438018.000",informational,,
+"LiveUpdate started.",,"host_4","1517445884.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517445890.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517445890.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517445890.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517445890.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517445890.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517445890.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced).",,"host_4","1517445890.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517445890.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517445891.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517445894.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517445894.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517445894.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517445894.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517445894.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517445894.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517445894.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced).",,"host_4","1517445894.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517445894.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1.",,"host_4","1517445894.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517445894.000",,,
+"Successfully downloaded the Intrusion Prevention Signatures 14.0 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517445894.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517445912.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517445912.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517445912.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517445912.000",,,
+"Successfully downloaded the Intrusion Prevention Signatures 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517445912.000",,,
+"LiveUpdate succeeded.",,"host_4","1517445913.000",,,
+"LiveUpdate will start next on Thursday, February 1, 2018 4:45:13 AM UTC on server_1.",,"host_4","1517445913.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517445913.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180130040/xdelta180130040_To_180131040.dax",SYLINK,"host_1","1517446205.000",informational,,"server_1(10.17.1.47):443"
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180131040.","LiveUpdate Manager","host_1","1517446205.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131033/xdelta180131033_To_180131052.dax",SYLINK,"host_1","1517446207.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131052.","LiveUpdate Manager","host_1","1517446207.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180130040/xdelta180130040_To_180131040.dax",SYLINK,"host_2","1517446273.000",informational,,"10.17.1.47:443"
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180131040.","LiveUpdate Manager","host_2","1517446273.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131033/xdelta180131033_To_180131052.dax",SYLINK,"host_2","1517446274.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131052.","LiveUpdate Manager","host_2","1517446274.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180130040/xdelta180130040_To_180131040.dax",SYLINK,"host_3","1517446348.000",informational,,"server_1(10.17.1.47):443"
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180131040.","LiveUpdate Manager","host_3","1517446348.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131033/xdelta180131033_To_180131052.dax",SYLINK,"host_3","1517446349.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131052.","LiveUpdate Manager","host_3","1517446349.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131033/xdelta180131033_To_180131052.dax",SYLINK,"host_4","1517446503.000",informational,,"10.17.1.47(server_1):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{0D03AEA1-B630-43F8-828E-F10E80A68B99}/180130040/xdelta180130040_To_180131040.dax",SYLINK,"host_4","1517446503.000",informational,,"10.17.1.47(server_1):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131052.","LiveUpdate Manager","host_4","1517446503.000",informational,,
+"An update for Intrusion Prevention Signatures was successfully installed.  The new sequence number is 180131040.","LiveUpdate Manager","host_4","1517446503.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517451173.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-6f-a2-9c-22  'Citrix PV Ethernet Adapter #0' 10.0.2.54",Smc,"host_3","1517454612.000",informational,,
+"Symantec Endpoint Protection -- Engine version: 14.0.3876  Windows Version info:  Operating System: Windows 7 (6.1.7601 Service Pack 1)  Network  info:  No.0  'Local Area Connection'  0a-9c-fa-a2-9c-5c  'Citrix PV Ethernet Adapter #0' 10.0.2.37",Smc,"host_2","1517455377.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517457835.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_3","1517459496.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_2","1517459674.000",informational,,
+"LiveUpdate started.",,"host_4","1517460344.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517460350.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517460362.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517460362.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517460362.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517460362.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517460362.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517460362.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517460362.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517460362.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517460362.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517460362.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517460647.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517460647.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517460647.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517460647.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517460647.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517460647.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win32 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517460647.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517460648.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517460648.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517460648.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517460648.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517460686.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517460686.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517460712.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517460712.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517460712.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517460712.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517460712.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517460712.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517460712.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517460712.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517460712.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517460712.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517460712.000",,,
+"Successfully downloaded the Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced) security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517460712.000",,,
+"LiveUpdate succeeded.",,"host_4","1517460713.000",,,
+"LiveUpdate will start next on Thursday, February 1, 2018 8:51:53 AM UTC on server_1.",,"host_4","1517460713.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517460713.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131052/xdelta180131052_To_180131065.dax",SYLINK,"host_3","1517460794.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131065.","LiveUpdate Manager","host_3","1517460794.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131052/xdelta180131052_To_180131065.dax",SYLINK,"host_4","1517460944.000",informational,,"10.17.1.47(server_1):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131007/xdelta180131007_To_180131019.dax",SYLINK,"host_4","1517460944.000",informational,,"10.17.1.47(server_1):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131065.","LiveUpdate Manager","host_4","1517460944.000",informational,,
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131019.","LiveUpdate Manager","host_4","1517460944.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131007/xdelta180131007_To_180131019.dax",SYLINK,"host_1","1517460983.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131019.","LiveUpdate Manager","host_1","1517460983.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131052/xdelta180131052_To_180131065.dax",SYLINK,"host_1","1517460984.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131065.","LiveUpdate Manager","host_1","1517460984.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131007/xdelta180131007_To_180131019.dax",SYLINK,"host_2","1517461201.000",informational,,"10.17.1.47:443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131019.","LiveUpdate Manager","host_2","1517461201.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131052/xdelta180131052_To_180131065.dax",SYLINK,"host_2","1517461202.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131065.","LiveUpdate Manager","host_2","1517461202.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{67F66706-F04B-4432-9947-F8354949D2A6}/180131007/xdelta180131007_To_180131019.dax",SYLINK,"host_3","1517461300.000",informational,,"server_1(10.17.1.47):443"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) was successfully installed.  The new sequence number is 180131019.","LiveUpdate Manager","host_3","1517461300.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517472773.000",informational,,
+"LiveUpdate started.",,"host_4","1517475114.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Symantec Whitelist 14.0 RU1 .",,"host_4","1517475120.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517475120.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517475120.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517475120.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517475120.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517475120.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced).",,"host_4","1517475120.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517475120.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517475121.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517475121.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517475121.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517475121.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517475121.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517475121.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517475121.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517475121.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced).",,"host_4","1517475121.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1.",,"host_4","1517475121.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517475121.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517475121.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517475121.000",,,
+"LiveUpdate succeeded.",,"host_4","1517475123.000",,,
+"LiveUpdate will start next on Thursday, February 1, 2018 12:52:03 PM UTC on server_1.",,"host_4","1517475123.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517475123.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47(server_1):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131065/xdelta180131065_To_180131071.dax",SYLINK,"host_4","1517475394.000",informational,,"10.17.1.47(server_1):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131071.","LiveUpdate Manager","host_4","1517475394.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131065/xdelta180131065_To_180131071.dax",SYLINK,"host_3","1517475395.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131071.","LiveUpdate Manager","host_3","1517475395.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131065/xdelta180131065_To_180131071.dax",SYLINK,"host_2","1517475410.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131071.","LiveUpdate Manager","host_2","1517475410.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131065/xdelta180131065_To_180131071.dax",SYLINK,"host_1","1517475515.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180131071.","LiveUpdate Manager","host_1","1517475515.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517479435.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_3","1517481096.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_2","1517481274.000",informational,,
+"LiveUpdate started.",,"host_4","1517489574.000",,,
+"No updates found for SONAR Heuristics engine 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for SEPM LiveUpdate Database 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Power Eraser Definitions 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win32 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 11.0.",,"host_4","1517489579.000",,,
+"No updates found for AP Portal List 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Intrusion Prevention Signatures Mac 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for WSS Traffic Redirection 14.0 RU1 MP1.",,"host_4","1517489579.000",,,
+"No updates found for Endpoint Detection and Response 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Extended File Attributes and Signatures 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Mac Host Integrity Content 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Power Eraser Definitions 14.0.",,"host_4","1517489579.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win64 14.0 RU1 MP1 (English).",,"host_4","1517489579.000",,,
+"No updates found for Virus and Spyware definitions SDS Win32 14.0 RU1 (reduced).",,"host_4","1517489579.000",,,
+"No updates found for Windows Host Integrity Content 14.0 RU1.",,"host_4","1517489579.000",,,
+"No updates found for Submission Control signatures 14.0 RU1.",,"host_4","1517489580.000",,,
+"Successfully downloaded the Symantec Whitelist 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517489580.000",,,
+"Cleaned up 1 LiveUpdate downloaded content",,"host_4","1517489581.000",,,
+"No updates found for SPC AntiVirus Client Mac 14.0 (English).",,"host_4","1517489581.000",,,
+"No updates found for Symantec Endpoint Protection Win64 14.0 RU1 (English).",,"host_4","1517489581.000",,,
+"No updates found for Symantec Endpoint Protection Win32 14.0 RU1 (English).",,"host_4","1517489581.000",,,
+"No updates found for Symantec Endpoint Protection Manager Content Catalog 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for Centralized Reputation Settings 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for AP Portal List 12.1 RU6 MP8.",,"host_4","1517489581.000",,,
+"No updates found for Common Network Transport Library and Configuration 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for Symantec Endpoint Protection Security Fix Win32 14.0 RU1 MP1 (English).",,"host_4","1517489581.000",,,
+"No updates found for AP Portal List 12.1 RU5.",,"host_4","1517489581.000",,,
+"No updates found for Endpoint Detection and Response 14.0.",,"host_4","1517489581.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1 (reduced).",,"host_4","1517489581.000",,,
+"No updates found for Advanced Machine Learning (Static) content Win64 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for Virus and Spyware definitions SDS Win64 14.0 RU1.",,"host_4","1517489581.000",,,
+"No updates found for Symantec Endpoint Protection Manager API 14.0 RU1 MP1.",,"host_4","1517489581.000",,,
+"No updates found for Intrusion Prevention Signatures 14.0.",,"host_4","1517489581.000",,,
+"Successfully downloaded the Revocation Data 14.0 RU1  security definitions from LiveUpdate. The security definitions are now available for deployment.",,"host_4","1517489581.000",,,
+"LiveUpdate succeeded.",,"host_4","1517489582.000",,,
+"LiveUpdate will start next on Thursday, February 1, 2018 4:53:02 PM UTC on server_1.",,"host_4","1517489582.000",,,
+"LUALL.EXE successfully updated the content. Return code = 0.",,"host_4","1517489582.000",,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180129002/xdelta180129002_To_180201002.dax",SYLINK,"host_1","1517489927.000",informational,,"10.17.1.47:443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131071/xdelta180131071_To_180201006.dax",SYLINK,"host_1","1517489927.000",informational,,"10.17.1.47:443"
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180201002.","LiveUpdate Manager","host_1","1517489927.000",informational,,
+"An update for Revocation Data was successfully installed.  The new sequence number is 180201006.","LiveUpdate Manager","host_1","1517489927.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131071/xdelta180131071_To_180201006.dax",SYLINK,"host_2","1517489927.000",informational,,"10.17.1.47:443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180201006.","LiveUpdate Manager","host_2","1517489927.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://10.17.1.47:443/content/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180129002/xdelta180129002_To_180201002.dax",SYLINK,"host_2","1517489928.000",informational,,"10.17.1.47:443"
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180201002.","LiveUpdate Manager","host_2","1517489928.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180129002/xdelta180129002_To_180201002.dax",SYLINK,"host_3","1517490018.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131071/xdelta180131071_To_180201006.dax",SYLINK,"host_3","1517490018.000",informational,,"server_1(10.17.1.47):443"
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180201002.","LiveUpdate Manager","host_3","1517490018.000",informational,,
+"An update for Revocation Data was successfully installed.  The new sequence number is 180201006.","LiveUpdate Manager","host_3","1517490018.000",informational,,
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{810D5A61-809F-49c2-BD75-177F0647D2BA}/180131071/xdelta180131071_To_180201006.dax",SYLINK,"host_4","1517490120.000",informational,,"server_1(10.17.1.47):443"
+"Downloaded new content update from the management server successfully.     Remote file path: https://server_1(10.17.1.47):443/content/{EDBD3BD0-8395-4d4d-BAC9-19DD32EF4758}/180129002/xdelta180129002_To_180201002.dax",SYLINK,"host_4","1517490120.000",informational,,"server_1(10.17.1.47):443"
+"An update for Revocation Data was successfully installed.  The new sequence number is 180201006.","LiveUpdate Manager","host_4","1517490120.000",informational,,
+"An update for Symantec Whitelist was successfully installed.  The new sequence number is 180201002.","LiveUpdate Manager","host_4","1517490120.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1517494373.000",informational,,
+"Symantec Endpoint Protection Manager is available to provide updates, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_1","1517501035.000",informational,,
+"An update for Symantec Whitelist from LiveUpdate was successfully installed.  The new sequence number is 180125002.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913403.000",informational,,"liveupdate.symantecliveupdate.com"
+"A LiveUpdate session ran successfully.  6 update(s) were available. 6 update(s) installed successfully. 0 update(s) failed to install.","LiveUpdate Manager","host_4","1516913403.000",informational,error,
+"An update for Power Eraser Definitions from LiveUpdate was successfully installed.  The new sequence number is 171207040.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913404.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Extended File Attributes and Signatures from LiveUpdate was successfully installed.  The new sequence number is 180123004.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913405.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Virus and Spyware Definitions SDS Win64 (Reduced) from LiveUpdate was successfully installed.  The new sequence number is 180125007.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913405.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for SONAR Definitions from LiveUpdate was successfully installed.  The new sequence number is 180122003.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913429.000",informational,,"liveupdate.symantecliveupdate.com"
+"An update for Revocation Data from LiveUpdate was successfully installed.  The new sequence number is 180125038.    Content was downloaded from HTTP://liveupdate.symantecliveupdate.com/ (80).","LiveUpdate Manager","host_4","1516913429.000",informational,,"liveupdate.symantecliveupdate.com"
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1516958628.000",informational,,
+"Virus and Spyware Definitions were updated recently, so the scheduled LiveUpdate was skipped.","LiveUpdate Manager","host_4","1516980228.000",informational,,

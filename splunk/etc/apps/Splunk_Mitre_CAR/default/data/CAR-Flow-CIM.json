@@ -1,0 +1,402 @@
+{
+    "modelName": "CAR-Flow",
+    "displayName": "CAR Flow",
+    "description": "CAR Flow Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Flow",
+            "displayName": "CAR Flow",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "application_protocol",
+                    "displayName": "application_protocol",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for application_protocol"
+                    }
+                },
+                {
+                    "fieldName": "content",
+                    "displayName": "content",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for content"
+                    }
+                },
+                {
+                    "fieldName": "dest_fqdn",
+                    "displayName": "dest_fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_fqdn"
+                    }
+                },
+                {
+                    "fieldName": "dest_hostname",
+                    "displayName": "dest_hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_hostname"
+                    }
+                },
+                {
+                    "fieldName": "dest_ip",
+                    "displayName": "dest_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_ip"
+                    }
+                },
+                {
+                    "fieldName": "dest_port",
+                    "displayName": "dest_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_port"
+                    }
+                },
+                {
+                    "fieldName": "end_time",
+                    "displayName": "end_time",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for end_time"
+                    }
+                },
+                {
+                    "fieldName": "exe",
+                    "displayName": "exe",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for exe"
+                    }
+                },
+                {
+                    "fieldName": "fqdn",
+                    "displayName": "fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for fqdn"
+                    }
+                },
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "image_path",
+                    "displayName": "image_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for image_path"
+                    }
+                },
+                {
+                    "fieldName": "in_bytes",
+                    "displayName": "in_bytes",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for in_bytes"
+                    }
+                },
+                {
+                    "fieldName": "network_direction",
+                    "displayName": "network_direction",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for network_direction"
+                    }
+                },
+                {
+                    "fieldName": "out_bytes",
+                    "displayName": "out_bytes",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for out_bytes"
+                    }
+                },
+                {
+                    "fieldName": "packet_count",
+                    "displayName": "packet_count",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for packet_count"
+                    }
+                },
+                {
+                    "fieldName": "pid",
+                    "displayName": "pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for pid"
+                    }
+                },
+                {
+                    "fieldName": "ppid",
+                    "displayName": "ppid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for ppid"
+                    }
+                },
+                {
+                    "fieldName": "proto_info",
+                    "displayName": "proto_info",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for proto_info"
+                    }
+                },
+                {
+                    "fieldName": "src_fqdn",
+                    "displayName": "src_fqdn",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_fqdn"
+                    }
+                },
+                {
+                    "fieldName": "src_hostname",
+                    "displayName": "src_hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_hostname"
+                    }
+                },
+                {
+                    "fieldName": "src_ip",
+                    "displayName": "src_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_ip"
+                    }
+                },
+                {
+                    "fieldName": "src_port",
+                    "displayName": "src_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_port"
+                    }
+                },
+                {
+                    "fieldName": "start_time",
+                    "displayName": "start_time",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for start_time"
+                    }
+                },
+                {
+                    "fieldName": "tcp_flags",
+                    "displayName": "tcp_flags",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for tcp_flags"
+                    }
+                },
+                {
+                    "fieldName": "transport_protocol",
+                    "displayName": "transport_protocol",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for transport_protocol"
+                    }
+                },
+                {
+                    "fieldName": "uid",
+                    "displayName": "uid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for uid"
+                    }
+                },
+                {
+                    "fieldName": "user",
+                    "displayName": "user",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Flow_end",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "end",
+                            "displayName": "end",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for end",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(end) OR end=\"\", \"unknown\", end)"
+                },
+                {
+                    "calculationID": "CAR_Flow_message",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "message",
+                            "displayName": "message",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for message",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(message) OR message=\"\", \"unknown\", message)"
+                },
+                {
+                    "calculationID": "CAR_Flow_start",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "start",
+                            "displayName": "start",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for start",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(start) OR start=\"\", \"unknown\", start)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

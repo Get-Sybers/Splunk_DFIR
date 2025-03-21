@@ -1,0 +1,114 @@
+[
+    {
+        "id": "about",
+        "title": "About Splunk Security Essentials for Fraud Detection",
+        "short-description": "Description of app and explanation of anti-fraud use cases",
+        "category": ["About"],
+        "tags": [],
+        "versions": [],
+        "related_links": []
+    },
+
+    {
+        "id": "healthcare_provider_claims_anomaly_prescription_drugs",
+        "title": "Find anomalous healthcare providers",
+        "short-description": "Find nationwide and statewide anomalies in prescription drug claims",
+        "category": ["Healthcare Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "healthcare_provider_detailed_data",
+        "title": "Investigate specific healthcare provider",
+        "short-description": "Find all prescription claims, compare specific provider profile to typical nationwide or statewide profile",
+        "category": ["Healthcare Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+
+    {
+        "id": "payment_cards_risk_analysis",
+        "title": "Risk scoring of payment cards",
+        "short-description": "Show most risky payment cards with summary details of activity for each card",
+        "category": ["Payment Cards Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "payment_cards_detailed_txns",
+        "title": "Detailed card transactions",
+        "short-description": "Show detailed transaction activity of every payment card. Mark compromised payment cards.",
+        "category": ["Payment Cards Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "payment_cards_anomalous_cards__3d",
+        "title": "Detect anomalous payment cards",
+        "short-description": "Leverage unsupervised learning to discover anomalously behaving payment cards",
+        "category": ["Payment Cards Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "merchants_risk_analysis",
+        "title": "Risk analysis of merchants and payment terminals",
+        "short-description": "Analyze risk factors and predisposition to fraudulent activity of specific merchant and payment terminal.",
+        "category": ["Payment Cards Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+
+    {
+        "id": "fraud_overview_06",
+        "title": "Introduction: Wire Transfer Fraud Detection",
+        "short-description": "Detect wire transfer fraud and customer behavior anomalies with Splunk",
+        "category": ["Wire Transfer Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "fraud_03",
+        "title": "Wire Transfer Fraud Posture",
+        "short-description": "Fraud status overview, Wire transfer amounts deviation, customer status",
+        "category": ["Wire Transfer Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "fraud_01",
+        "title": "Account Profiling",
+        "short-description": "Customer profiling, Wire requests, Fraud events, Wire details",
+        "category": ["Wire Transfer Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "fraud_04",
+        "title": "Account Behavior Profile",
+        "short-description": "Learned customer profiles, Fraudulent activities, Detailed notables",
+        "category": ["Wire Transfer Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    },
+    {
+        "id": "fraud_02",
+        "title": "Wire Transfer Demo Data",
+        "short-description": "View of profiled target accounts with search and filtering",
+        "category": ["Wire Transfer Fraud"],
+        "tags": [],
+        "versions": ["6.5", "6.6"],
+        "related_links": []
+    }
+
+]

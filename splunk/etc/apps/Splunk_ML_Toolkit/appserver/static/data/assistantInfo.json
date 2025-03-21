@@ -1,0 +1,42 @@
+{
+    "predict_numeric_fields": {
+        "description": "Predict the value of a numeric field using a weighted combination of the values of other fields in that event.",
+        "title": "Predict Numeric Fields"
+    },
+    "predict_categorical_fields": {
+        "description": "Predict the value of a categorical field using the values of other fields in that event.",
+        "title": "Predict Categorical Fields"
+    },
+    "detect_numeric_outliers": {
+        "description": "Find values that differ significantly from previous values.",
+        "title": "Detect Numeric Outliers"
+    },
+    "detect_categorical_outliers": {
+        "description": "Find events that contain unusual combinations of values.",
+        "title": "Detect Categorical Outliers"
+    },
+    "forecast_time_series": {
+        "description": "Forecast future values given past values of a metric (numeric time series).",
+        "title": "Forecast Time Series"
+    },
+    "cluster_numeric_events": {
+        "description": "Partition events with multiple numeric fields into clusters.",
+        "title": "Cluster Numeric Events"
+    },
+    "smart_forecast": {
+        "description": "Forecast future numeric time series data using a step-by-step guided workflow with the option to bring in data from different sources and account for calendar specific \"special days\" such as holidays, company-specific event days.",
+        "title": "Smart Forecasting"
+    },
+    "smart_outlier_detection": {
+        "description": "Detect numeric outliers using a step-by-step guided workflow to leverage a density algorithm and segment data in advance of your anomaly search.",
+        "title": "Smart Outlier Detection"
+    },
+    "smart_clustering": {
+        "description": "Cluster numeric events using a step-by-step guided workflow.",
+        "title": "Smart Clustering"
+    },
+    "smart_prediction": {
+        "description": "Predict the value of a categorical or numeric field based on one or more other fields in the event using a step-by-step guided workflow.",
+        "title": "Smart Prediction"
+    }
+}

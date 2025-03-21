@@ -1,0 +1,53 @@
+<dashboard version="1.1" script="runPageScript.js">
+  <label>CIM Compliance Check</label>
+
+  <search id="data_inventory_built">
+    <query>| inputlookup data_inventory_products_lookup | search stage="all-done" </query>
+    <done>
+      <condition match="$job.resultCount$>0">
+        <unset token="dataInventoryNotBuilt">1</unset>
+        <set token="dataInventoryBuilt">1</set>
+      </condition>
+      <condition match="$job.resultCount$=0">
+        <set token="dataInventoryNotBuilt">1</set>
+        <unset token="dataInventoryBuilt">1</unset>
+      </condition>
+    </done>
+  </search>
+  <row>
+    <panel>
+      <title>Introduction</title>
+      <html>
+        <p>Welcome to the Common Information Model Compliance Check dashboard. This dashboard builds on top of the <a href="data_inventory">Data Inventory</a> introspection to show you what fields are CIM compliant. It aggregates those fields per-product, and tells you how those products are doing. CIM compliance is performed by checking common field values against a regular expression, also shown. Important note: this looks for the most common CIM fields used for most security content, but doesn't check all CIM fields.</p>
+        <p id="cim_doc_link">If you're new to Splunk's Common Information Model, consider reading <a href="" target="_blank" class="external drilldown-link">Splunk Docs</a>. If you would like to go deeper into assessing the CIM compliance of your data, we highly recommend <a href="https://splunkbase.splunk.com/app/2968/" target="_blank" class="external drilldown-link">SA-cim_vladiator</a> -- this functionality is a simplified version of what Splunk's Vladimir Skoryk has built there.</p>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$dataInventoryNotBuilt$">
+      <title>Data Inventory Not Configured</title>
+      <html>
+        <p>It appears that no data inventory are fully configured. <a href="data_inventory?tour=datainventory-tour">Configure Data Inventory</a> first and then return to this dashboard.</p>
+      </html>
+    </panel>
+    <panel depends="$dataInventoryBuilt$">
+      <title>Products</title>
+      <table id="expand_with_events">
+        <search>
+          <query>| inputlookup data_inventory_products_lookup | table eventtypeId termsearch productId productName vendorName cim_detail | search cim_detail!="{}"  cim_detail!=""| makemv delim="|" eventtypeId | mvexpand eventtypeId | eval json_blob = spath(cim_detail, eventtypeId) | rex field=json_blob "\\\"(?&lt;fields&gt;[a-zA-Z_]*)" max_match=100 | eval fields=mvfilter(mvfilter(mvfilter(fields!="success")!="failure")!="") | mvexpand fields | eval json_blob = spath(json_blob, fields) | spath input=json_blob | lookup lightweight_cim_regex_reference_only.csv field as fields | eval FieldPercentage = round(100*success / (success+failure),2) | stats values(termsearch) as termsearch count(eval(FieldPercentage &gt; 80)) as "# Compliant Fields for Product" list(fields) as "Field Analyzed" list(FieldPercentage) as "% Compliant" list(failure) as "# Failed" list(success) as "# Successful" list(regex) as "Regex Used" by eventtypeId productId  vendorName productName| sseidenrichment type=dscid field=eventtypeId | rename data_source_category as "Data Source Category" | eval allfields = mvjoin('Field Analyzed', " ")</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="fields">["vendorName", "productName", "Data Source Category", "# Compliant Fields for Product", "Field Analyzed", "% Compliant", "# Failed", "# Successful", "Regex Used", "termsearch", "allfields"]</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

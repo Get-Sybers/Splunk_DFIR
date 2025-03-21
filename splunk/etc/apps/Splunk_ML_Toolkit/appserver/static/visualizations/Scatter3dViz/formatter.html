@@ -1,0 +1,165 @@
+<form class="splunk-formatter-section" section-label="General">
+    <div class="control-group">
+        <label class="control-label">Background Color</label>
+        <div class="controls controls-fill">
+            <splunk-radio-input name="{{VIZ_NAMESPACE}}.bgColor" value="auto">
+                <option value="black">Black</option>
+                <option value="white">White</option>
+                <option value="auto">Auto</option>
+            </splunk-radio-input>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Show Legend</label>
+        <div class="controls controls-fill">
+            <splunk-radio-input name="{{VIZ_NAMESPACE}}.showLegend" value="1">
+                <option value="1">True</option>
+                <option value="0">False</option>
+            </splunk-radio-input>
+        </div>
+    </div>
+    <splunk-control-group label="Legend Order" help="">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.legendOrder" value="numeric">
+            <option value="default">Default</option>
+            <option value="numeric">Numeric</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+
+<form class="splunk-formatter-section" section-label="Aspect">
+    <div class="control-group">
+        <label class="control-label">Aspect Mode</label>
+        <div class="controls controls-fill">
+            <splunk-select name="{{VIZ_NAMESPACE}}.aspectMode" value="auto">
+                <option value="auto">Auto</option>
+                <option value="cube">Cube</option>
+                <option value="data">Data</option>
+                <option value="manual">Manual</option>
+            </splunk-select>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">X Aspect Ratio</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.xAspectRatio"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Y Aspect Ratio</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.yAspectRatio"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Z Aspect Ratio</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.zAspectRatio"></splunk-text-input>
+        </div>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Marker">
+    <div class="control-group">
+        <label class="control-label">Size</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.size" value="8"></splunk-text-input>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Opacity</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.opacity" value="0.5"></splunk-text-input>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Symbol</label>
+        <div class="controls controls-fill">
+            <splunk-select name="{{VIZ_NAMESPACE}}.symbol" value="circle">
+                <option value="circle"></option>
+                <option value="circle-open"></option>
+                <option value="square"></option>
+                <option value="square-open"></option>
+                <option value="diamond"></option>
+                <option value="diamond-open"></option>
+                <option value="cross"></option>
+                <option value="x"></option>
+            </splunk-select>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Line Color</label>
+        <div class="controls controls-fill">
+            <splunk-color-picker name="{{VIZ_NAMESPACE}}.lineColor" value="#000"></splunk-color-picker>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Line Width</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.lineWidth" value="0"></splunk-text-input>
+        </div>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Colors">
+    <div>
+        <span class="help-block" style="margin: 15px 0px 15px 20px">To specify cluster colors, provide a "clusterColor" field containing either hex color codes or supported color names from the documentation.</span>
+        <span class="help-block" style="margin: 15px 0px 15px 20px"><pre>| eval clusterColor = case(clusterId == &lt;cluster1&gt;, "&lt;color1&gt;", clusterId == &lt;cluster2&gt;, "&lt;color2&gt;", ...) | table clusterId x y z clusterColor</pre></span>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Axes">
+    <div class="control-group">
+        <label class="control-label">X-Axis Label</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.xTitle"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">X-Axis Field</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.xAxisField" value="x"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Y-Axis Label</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.yTitle"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Y-Axis Field</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.yAxisField" value="y"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Z-Axis Label</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.zTitle"></splunk-text-input>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Z-Axis Field</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.zAxisField" value="z"></splunk-text-input>
+        </div>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Limits">
+    <div class="control-group">
+        <label class="control-label">Categorical Limit</label>
+        <div class="controls controls-fill">
+            <splunk-text-input name="{{VIZ_NAMESPACE}}.catLimit" value="50"></splunk-text-input>
+        </div>
+    </div>
+    <div>
+      <span class="help-block" style="margin: 15px 0px 15px 20px">Increasing past a certain point may break the visualization and or your browser tab.</span>
+    </div>
+</form>

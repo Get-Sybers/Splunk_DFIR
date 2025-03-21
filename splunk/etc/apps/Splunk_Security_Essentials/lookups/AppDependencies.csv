@@ -1,0 +1,7 @@
+Title,App,Url,Comment,Dependency
+Splunk Common Information Model,Splunk_SA_CIM,https://splunkbase.splunk.com/app/1621/,App needs to be installed and enabled.,Required
+ES Content Updates,DA-ESS-ContentUpdate,https://splunkbase.splunk.com/app/3449/,This app contains a lot of the content.,Nice to have
+Splunk Security Essentials,Splunk_Security_Essentials,https://splunkbase.splunk.com/app/3435/,This app contains a lot of the content.,Nice to have
+Enterprise Security,SplunkEnterpriseSecuritySuite,https://splunkbase.splunk.com/app/263/,This app contains a lot of the content.,Nice to have
+Sankey Diagram,sankey_diagram_app,https://splunkbase.splunk.com/app/3112/,Without this app you will miss out on the Sankey vizualisation.,Nice to have
+Custom Radar Chart Visualization,custom-radar-chart-viz,https://splunkbase.splunk.com/app/3772/,Without this app you will miss out on the Radar/Spider web vizualisation.,Nice to have

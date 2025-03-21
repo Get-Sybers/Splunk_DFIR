@@ -1,0 +1,198 @@
+{
+    "modelName": "CAR-Socket",
+    "displayName": "CAR Socket",
+    "description": "CAR Socket Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Socket",
+            "displayName": "CAR Socket",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "family",
+                    "displayName": "family",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for family"
+                    }
+                },
+                {
+                    "fieldName": "image_path",
+                    "displayName": "image_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for image_path"
+                    }
+                },
+                {
+                    "fieldName": "local_address",
+                    "displayName": "local_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for local_address"
+                    }
+                },
+                {
+                    "fieldName": "local_path",
+                    "displayName": "local_path",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for local_path"
+                    }
+                },
+                {
+                    "fieldName": "local_port",
+                    "displayName": "local_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for local_port"
+                    }
+                },
+                {
+                    "fieldName": "pid",
+                    "displayName": "pid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for pid"
+                    }
+                },
+                {
+                    "fieldName": "protocol",
+                    "displayName": "protocol",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for protocol"
+                    }
+                },
+                {
+                    "fieldName": "remote_address",
+                    "displayName": "remote_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for remote_address"
+                    }
+                },
+                {
+                    "fieldName": "remote_port",
+                    "displayName": "remote_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for remote_port"
+                    }
+                },
+                {
+                    "fieldName": "success",
+                    "displayName": "success",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for success"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Socket_bind",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "bind",
+                            "displayName": "bind",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for bind",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(bind) OR bind=\"\", \"unknown\", bind)"
+                },
+                {
+                    "calculationID": "CAR_Socket_close",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "close",
+                            "displayName": "close",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for close",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(close) OR close=\"\", \"unknown\", close)"
+                },
+                {
+                    "calculationID": "CAR_Socket_listen",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "listen",
+                            "displayName": "listen",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for listen",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(listen) OR listen=\"\", \"unknown\", listen)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

@@ -1,0 +1,238 @@
+{
+    "modelName": "CAR-User_Session",
+    "displayName": "CAR User Session",
+    "description": "CAR User Session Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-User_Session",
+            "displayName": "CAR User Session",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "dest_ip",
+                    "displayName": "dest_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_ip"
+                    }
+                },
+                {
+                    "fieldName": "dest_port",
+                    "displayName": "dest_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_port"
+                    }
+                },
+                {
+                    "fieldName": "hostname",
+                    "displayName": "hostname",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for hostname"
+                    }
+                },
+                {
+                    "fieldName": "login_id",
+                    "displayName": "login_id",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for login_id"
+                    }
+                },
+                {
+                    "fieldName": "login_successful",
+                    "displayName": "login_successful",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for login_successful"
+                    }
+                },
+                {
+                    "fieldName": "login_type",
+                    "displayName": "login_type",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for login_type"
+                    }
+                },
+                {
+                    "fieldName": "src_ip",
+                    "displayName": "src_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_ip"
+                    }
+                },
+                {
+                    "fieldName": "src_port",
+                    "displayName": "src_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_port"
+                    }
+                },
+                {
+                    "fieldName": "uid",
+                    "displayName": "uid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for uid"
+                    }
+                },
+                {
+                    "fieldName": "user",
+                    "displayName": "user",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for user"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_User_Session_lock",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "lock",
+                            "displayName": "lock",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for lock",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(lock) OR lock=\"\", \"unknown\", lock)"
+                },
+                {
+                    "calculationID": "CAR_User_Session_login",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "login",
+                            "displayName": "login",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for login",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(login) OR login=\"\", \"unknown\", login)"
+                },
+                {
+                    "calculationID": "CAR_User_Session_logout",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "logout",
+                            "displayName": "logout",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for logout",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(logout) OR logout=\"\", \"unknown\", logout)"
+                },
+                {
+                    "calculationID": "CAR_User_Session_reconnect",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "reconnect",
+                            "displayName": "reconnect",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for reconnect",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(reconnect) OR reconnect=\"\", \"unknown\", reconnect)"
+                },
+                {
+                    "calculationID": "CAR_User_Session_unlock",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "unlock",
+                            "displayName": "unlock",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for unlock",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(unlock) OR unlock=\"\", \"unknown\", unlock)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}

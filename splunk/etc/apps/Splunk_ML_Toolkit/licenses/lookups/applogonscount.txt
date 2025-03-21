@@ -1,0 +1,9 @@
+1. Objective:
+  Random time series data (logons) for 8 months with a randomly upward trend.
+  Designed to make it easy to show off charting and math - things like timewrap and anomaly detection.
+
+2. License: Splunk Owned
+
+5. Field Meanings:
+  A. _time: UNIX epoch time (local time)
+  B. logons: number of logons to an application every minute

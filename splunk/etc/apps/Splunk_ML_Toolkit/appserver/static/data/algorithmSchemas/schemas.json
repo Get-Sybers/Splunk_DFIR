@@ -1,0 +1,480 @@
+{
+    "_default": {
+        "properties": {
+            "algorithm": {
+                "title": "Algorithm",
+                "type": "string",
+                "minLength": 1
+            },
+            "targetVariables": {
+                "title": "Target variable(s)",
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "featureVariables": {
+                "title": "Feature variable(s)",
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "splitBy": {
+                "title": "Split by fields",
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            },
+            "modelName": {
+                "title": "Model name",
+                "type": "string",
+                "minLength": 1
+            },
+            "trainingFraction": {
+                "title": "Training fraction",
+                "type": "integer",
+                "minimum": 10,
+                "maximum": 100,
+                "multipleOf": 10
+            },
+            "algorithmParams": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    "KernelPCA": {
+        "properties": {
+            "targetVariables": {
+                "title": "Fields to preprocess",
+                "description": "Select the fields to preprocess.",
+                "type": "array",
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "algorithmParams": {
+                "properties": {
+                    "k": {
+                        "title": "Number of new fields to create",
+                        "description": "Specify the number of principal components; K new fields will be created with the prefix \"PC_\".",
+                        "type": "number",
+                        "multipleOf": 1,
+                        "minimum": 1
+                    },
+                    "gamma": {
+                        "title": "Gamma",
+                        "description": "Kernel coefficient for the rbf kernel.",
+                        "type": "number"
+                    },
+                    "tolerance": {
+                        "title": "Tolerance",
+                        "description": "Convergence tolerance. If 0, an optimal value will be chosen using arpack.",
+                        "type": "number"
+                    },
+                    "max_iteration": {
+                        "title": "Max number of iterations",
+                        "description": "Maximum number of iterations. If not specified, an optimal value will be chosen using arpack.",
+                        "type": "number",
+                        "multipleOf": 1,
+                        "minimum": 1
+                    }
+                }
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify a field to preprocess.",
+                "k": "Value must be a positive integer.",
+                "gamma": "Value must be a number.",
+                "tolerance": "Value must be a number.",
+                "max_iteration": "Value must be a positive integer."
+            }
+        }
+    },
+    "PCA": {
+        "properties": {
+            "targetVariables": {
+                "title": "Fields to preprocess",
+                "description": "Select the fields to preprocess.",
+                "type": "array",
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "algorithmParams": {
+                "properties": {
+                    "k": {
+                        "title": "Number of new fields to create",
+                        "description": "Specify the number of principal components; K new fields will be created with the prefix \"PC_\".",
+                        "type": "number",
+                        "multipleOf": 1,
+                        "minimum": 1
+                    }
+                }
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify a field to preprocess.",
+                "k": "Value must be a positive integer."
+            }
+        }
+    },
+    "StandardScaler": {
+        "properties": {
+            "targetVariables": {
+                "title": "Fields to preprocess",
+                "description": "Select the fields to preprocess; for each selected field, a new field will be created with the prefix \"SS_\".",
+                "type": "array",
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "algorithmParams": {
+                "properties": {
+                    "with_mean": {
+                        "title": "Standardize fields",
+                        "description": "Select whether to center values with respect to the mean, scale them with respect to the standard deviation, or both.",
+                        "label": "With respect to mean",
+                        "type": "boolean"
+                    },
+                    "with_std": {
+                        "label": "With respect to standard deviation",
+                        "type": "boolean"
+                    }
+                }
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify a field to preprocess."
+            }
+        }
+    },
+    "DensityFunction": {
+        "properties": {
+            "targetVariables": {
+                "title": "Field to analyze",
+                "description": "Select a field to analyze",
+                "type": "array",
+                "maxItems": 1,
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "splitBy": {
+                "title": "Split by fields",
+                "maxItems": 6
+            },
+            "algorithmParams": {
+                "type": "object",
+                "properties": {
+                    "dist": {
+                        "title": "Distribution type",
+                        "description": "If you know what sort of statistical behaviour your data has, you can choose the right distribution here.",
+                        "type": "string",
+                        "enum": ["auto", "norm", "expon", "gaussian_kde", "beta"],
+                        "enumDescriptions": [
+                            null,
+                            "For bell-curved distributions",
+                            "For distributions with a right-facing long-tail",
+                            "For multi-modal or irregularly shaped distributions",
+                            "For distribution shapes supported by Beta distribution"
+                        ],
+                        "enumLabels": ["Auto", "Normal", "Exponential", "Gaussian KDE", "Beta"],
+                        "default": "auto"
+                    },
+                    "threshold": {
+                        "title": "Outlier tolerance threshold",
+                        "type": "number",
+                        "default": 0.0001,
+                        "minimum": 0.0001,
+                        "maximum": 1
+                    },
+                    "supervise_split_by": {
+                        "title" : "Supervised Grouping",
+                        "type": "boolean",
+                        "description": "Grouping will be performed using a supervised ML approach, which requires selecting at least one 'Split by' field."
+                    }
+                },
+                "required": ["dist"]
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify a field to analyze."
+            }
+        }
+    },
+    "StateSpaceForecast": {
+        "properties": {
+            "targetVariables": {
+                "title": "Fields to forecast",
+                "description": "Select up to five numeric fields to forecast",
+                "type": "array",
+                "maxItems": 5,
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "algorithmParams": {
+                "type": "object",
+                "properties": {
+                    "holdback": {
+                        "title": "Holdback period",
+                        "description": "Holdback is the number of data points held back from training to compare the forecast against known values. When holdback is set to 0, R² and RMSE statistics are not calculated.",
+                        "type": "string",
+                        "pattern": "^[0-9]\\d*[a-z]*$"
+                    },
+                    "forecast_k": {
+                        "title": "Future timespan",
+                        "description": "The further into the future the forecast, the less accurate it is likely to be.",
+                        "type": "string",
+                        "pattern": "^[0-9]\\d*[a-z]*$"
+                    },
+                    "conf_interval": {
+                        "title": "Confidence interval",
+                        "description": "Specify an integer between 0 and 99, where a larger value means a greater tolerance for forecast uncertainty.",
+                        "type": "integer",
+                        "default": 95,
+                        "minimum": 1,
+                        "maximum": 99,
+                        "multipleOf": 1
+                    },
+                    "specialdays": {
+                        "title": "Special days field",
+                        "description": "Special Days can improve your forecasts by accounting for days which should be treated differently, like Black Friday sales or IP traffic on July 4th",
+                        "type": "string"
+                    },
+                    "period": {
+                        "title": "Period",
+                        "description": "If the data has a known periodicity, specify it here. The units of the period are equal to the span of the _time field. For example, hourly data may have a period of 24 (one day), whereas daily data may have a period of 7 (one week).",
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                },
+                "patternProperties": {
+                    "output_metadata": {
+                        "type": "boolean"
+                    }
+                },
+                "required": ["holdback", "forecast_k"],
+                "errorMessage": {
+                    "properties": {
+                        "holdback": "Holdback must be a positive integer.",
+                        "forecast_k": "Future timespan must be a positive integer."
+                    }
+                }
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify 1-5 fields to forecast."
+            }
+        }
+    },
+    "KMeans": {
+        "properties": {
+            "targetVariables": {
+                "title": "Fields to cluster",
+                "type": "array",
+                "minItems": 1
+            },
+            "featureVariables": {
+                "maxItems": 0
+            },
+            "algorithmParams": {
+                "properties": {
+                    "k": {
+                        "title": "Number of clusters",
+                        "type": "integer",
+                        "description": "The number of clusters to form.",
+                        "minimum": 1,
+                        "maximum": 1000
+                    }
+                },
+                "required": ["k"],
+                "errorMessage": {
+                    "properties": {
+                        "k": "Value must be between 1 and 1000."
+                    }
+                }
+            }
+        },
+        "required": ["targetVariables"],
+        "errorMessage": {
+            "properties": {
+                "targetVariables": "You must specify one or more fields to cluster."
+            }
+        }
+    },
+    "FieldSelector": {
+        "description": "Univariate feature selector with configurable strategy.",
+        "properties": {
+            "algorithm": {
+                "title": "FieldSelector"
+            },
+            "targetVariables": {
+                "title": "Target variable",
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1
+            },
+            "featureVariables": {
+                "title": "Feature variables",
+                "type": "array",
+                "minItems": 1
+            },
+            "algorithmParams": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "title": "Type",
+                        "description": "Categorical or numeric.",
+                        "type": "string",
+                        "default": "",
+                        "enum": ["numerical", "categorical"]
+                    },
+                    "mode": {
+                        "title": "Mode",
+                        "description": "Feature selection mode.",
+                        "default": "",
+                        "type": "string",
+                        "enum": ["k_best", "fpr", "fdr", "fwe", "percentile"],
+                        "enumDescriptions": [
+                            "Select the k fields with the highest scores.",
+                            "Select fields with p-values below alpha based on a False Positive Rate (FPR) test",
+                            "Select fields with p-values below alpha for an estimated False Discovery Rate (FDR) test",
+                            "Select fields with p-values below alpha based on Family-Wise Error (FWE) rate.",
+                            "Select a percentage of fields with the highest scores."
+                        ],
+                        "enumLabels": [
+                            "K-best",
+                            "False positive rate",
+                            "False discovery rate",
+                            "Family-wise error rate",
+                            "Percentile"
+                        ]
+                    },
+                    "param": {
+                        "title": "Parameter",
+                        "description": "Parameter of the corresponding mode.",
+                        "type": "number"
+                    }
+                },
+                "required": ["mode", "param", "type"],
+                "errorMessage": {
+                    "properties": {
+                        "mode": "You must specify the mode.",
+                        "param": "You must specify the parameter of the corresponding mode."
+                    }
+                }
+            }
+        }
+    },
+    "AutoPrediction": {
+        "properties": {
+            "algorithm": {
+                "title": "AutoPrediction"
+            },
+            "targetVariables": {
+                "title": "Field to predict",
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1
+            },
+            "featureVariables": {
+                "title": "Predictor fields",
+                "type": "array",
+                "minItems": 1
+            },
+            "algorithmParams": {
+                "type": "object",
+                "properties": {
+                    "target_type": {
+                        "title": "Field type",
+                        "description": "Choose numeric, categorical, or auto-detect for the field to predict",
+                        "type": "string",
+                        "enum": ["auto", "numeric", "categorical"],
+                        "enumDescriptions": [
+                            "Auto detect the field type",
+                            "Numeric field type",
+                            "Categorical field type"
+                        ],
+                        "enumLabels": ["Auto Detect", "Numeric", "Categorical"],
+                        "group": "Fine-tune algorithm"
+                    },
+                    "max_features": {
+                        "title": "Max features",
+                        "description": "The number of features to consider when looking for the best split. Default to the total number of features.",
+                        "type": "number",
+                        "errorMessage": "",
+                        "group": "Fine-tune algorithm"
+                    },
+                    "criterion": {
+                        "title": "Criterion",
+                        "description": "The function to measure the quality of a split.",
+                        "type": "string",
+                        "errorMessage": "",
+                        "enum": ["gini", "entropy"],
+                        "group": "Fine-tune algorithm"
+                    },
+                    "n_estimators": {
+                        "title": "N estimators",
+                        "description": "The number of boosting stages to perform. Gradient boosting is fairly robust to over-fitting, so a large number usually results in better performance.",
+                        "type": "integer",
+                        "errorMessage": "",
+                        "group": "Fine-tune algorithm"
+                    },
+                    "max_depth": {
+                        "title": "Max depth",
+                        "description": "The maximum depth of the tree. If not set, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.",
+                        "type": "integer",
+                        "errorMessage": "",
+                        "group": "Fine-tune algorithm"
+                    },
+                    "min_samples_split": {
+                        "title": "Minimum samples split",
+                        "description": "The minimum number of samples required to split an internal node.",
+                        "type": "integer",
+                        "errorMessage": "",
+                        "group": "Fine-tune algorithm"
+                    },
+                    "max_leaf_nodes": {
+                        "title": "Maximum leaf nodes",
+                        "description": "Grow a tree with this many nodes in best-first fashion. Best nodes are defined as relative reduction in impurity. If not set then unlimited number of leaf nodes.",
+                        "type": "integer",
+                        "errorMessage": "",
+                        "group": "Fine-tune algorithm"
+                    },
+                    "test_split_ratio": {
+                        "description": "The fraction of data to use to train your model. Any data not used to train the model will be used to evaluate its quality.",
+                        "title": "Training / testing split",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.99,
+                        "multipleOf": 0.01,
+                        "default": 0.3
+                    }
+                },
+                "required": []
+            }
+        }
+    }
+}

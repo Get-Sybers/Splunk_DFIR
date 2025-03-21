@@ -1,0 +1,44 @@
+lookup,label
+Anonymized_Email_Logs.csv,Email Logs
+Example_Legacy_Pass_The_Hash.csv,Example Pass The Hash (Legacy)
+Local_Short_Lived_Account.csv,Local Short-Lived Account
+Local_User_Account_Creation.csv,Local User Account Creation
+SFDC_Sample_Data_Anon.csv,SFDC Data
+STE_Sysmon_commandline.csv,Sysmon Data
+STE_Win4688.csv,Windows 4688 Data
+Sampled_AnonymizedLogonActivity.csv,Windows Logon Activity
+Sysmon_Timestamp_Adjustment_STE.csv,Sysmon Timestamp Modification
+anon_interactive_logons.csv,Interactive Logins
+anonymized_DC_4776_logs.csv,Domain Controller Logins (Event ID 4776)
+anonymized_box_logs.csv,Box Logs
+anonymized_git_history.csv,Source Code Access Logs
+dns_data_anon.csv,DNS Logs
+event_id_4648_runas.csv,Windows Run As Logs (Event ID 4648)
+generic_sysmon_process_launch_logs.csv,Generic Sysmon Process Launches
+generic_sysmon_service_launch_logs.csv,Generic Sysmon Service Launches
+healthcare_cerner_patient_records.csv,Aggregated Cerner EMR Logs
+od_splunklive_fw_data.csv,Sample Firewall Data
+process_launch_logs.csv,Process Launch Logs
+synthetic_sysmon_process_launch_logs.csv,Synthetic Sysmon Process Launch Logs
+sysmon_process_launch_logs.csv,Sysmon Process Launch Logs
+uniflow_printer_log_sample.csv,Printer Logs
+windows_system_event_id_20001_usb_inserts.csv,USB Inserts from Windows System Event ID 20001
+bots-webproxy-data.csv,Web Proxy Logs
+AnonymizedBruteForce.csv,Windows Brute Force
+aws-cloudtrail-data-anon.csv,AWS CloudTrail
+tstats_online_hosts.csv,Raw Event Counts by Host
+anonymized_sep_logs.csv,Symantec Endpoint Protection Operations
+anonymized_sep_virus_logs.csv,Symantec Endpoint Protection Risks
+anon_wmi_service_logs.csv,System Update Service Status
+splunk_index_provisioning.csv,Splunk Index Provisioning
+UC_aws_public_buckets.csv,AWS CloudTrail Public Bucket
+UC_active_directory_search.csv,LDAPSearch Output
+UC_SFDC_GDPR_Contact_Accesses.csv,SFDC Contact Access by Country
+UC_anonymized_confluence_logs.csv,Confluence Logs
+UC_raw_data_for_privilege_calculations.csv,LDAP Data for Privilege Analysis
+PrivilegedRiskScores.csv,User Risk Scores
+UC_generic_risk_events.csv,Risk Events
+anonymized_windows_security_events_with_tags.csv,Windows Events with Tags
+anon_system_logon_with_failure_codes.csv,Windows Logons with Failure Codes
+UC_file_copied_to_usb.csv,Fabricated Files Copied to USB
+UC_dlp_alerts.csv,Fabricated DLP Alerts

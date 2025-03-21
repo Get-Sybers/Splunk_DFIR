@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<view template="pages/individual_page.html" type="html" isDashboard="False">
+    <label>Trigger Action View</label>
+</view>

@@ -1,0 +1,11 @@
+fields
+family
+image_path
+local_address
+local_path
+local_port
+pid
+protocol
+remote_address
+remote_port
+success

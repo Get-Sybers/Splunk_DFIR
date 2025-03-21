@@ -1,0 +1,6 @@
+user,peergroup
+chuck,"chuck,bob,frank"
+alice,"alice,john"
+john,"alice,john"
+bob,"chuck,bob,frank"
+frank,"chuck,bob,frank"

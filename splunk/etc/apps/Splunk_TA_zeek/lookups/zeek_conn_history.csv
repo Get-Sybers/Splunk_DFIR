@@ -1,0 +1,28 @@
+history_letter,history_meaning,tcp_flag,"__mv_tcp_flag",tcp_session_source
+s,a SYN w/o the ACK bit set (responder),"SYN","$SYN$",responder
+h,a SYN+ACK (“handshake”) (responder),"SYN,ACK","$SYN$,$ACK$",responder
+a,a pure ACK (responder),ACK,"$ACK$",responder
+d,packet with payload (“data”) (responder),,,responder
+f,packet with FIN bit set (responder),FIN,"$FIN$",responder
+r,packet with RST bit set (responder),RST,"$RST$",responder
+c,packet with a bad checksum (applies to UDP too) (responder),,,responder
+g,a content gap (responder),,,responder
+t,packet with retransmitted payload (responder),,,responder
+w,packet with a zero window advertisement (responder),,,responder
+i,inconsistent packet (e.g. FIN+RST bits set) (responder),"FIN,RST","$FIN$,$RST$",responder
+q,multi-flag packet (SYN+FIN or SYN+RST bits set) (responder),"SYN,FIN,RST","$SYN$,$FIN$,$RST$",responder
+^,connection direction was flipped by Zeek’s heuristic,,,responder
+x,connection analysis partial (e.g. limits exceeded) (responder),,,responder
+S,a SYN w/o the ACK bit set (originator),"SYN","$SYN$",originator
+H,a SYN+ACK (“handshake”) (originator),"SYN,ACK","$SYN$,$ACK$",originator
+A,a pure ACK (originator),ACK,"$ACK$",originator
+D,packet with payload (“data”) (originator),,,originator
+F,packet with FIN bit set (originator),FIN,"$FIN$",originator
+R,packet with RST bit set (originator),RST,"$RST$",originator
+C,packet with a bad checksum (applies to UDP too) (originator),,,originator
+G,a content gap (originator),,,originator
+T,packet with retransmitted payload (originator),,,originator
+W,packet with a zero window advertisement (originator),,,originator
+I,inconsistent packet (e.g. FIN+RST bits set) (originator),"FIN,RST","$FIN$,$RST$",originator
+Q,multi-flag packet (SYN+FIN or SYN+RST bits set) (originator),"SYN,FIN,RST","$SYN$,$FIN$,$RST$",originator
+X,connection analysis partial (e.g. limits exceeded) (originator),,,originator

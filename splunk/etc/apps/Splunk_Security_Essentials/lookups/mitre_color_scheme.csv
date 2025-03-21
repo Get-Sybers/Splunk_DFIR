@@ -1,0 +1,13 @@
+mitre_tactic_name,mitre_platforms,color,colorScheme
+Initial Access,Enterprise,#d8031a,Olaf
+Execution,Windows,#ff2e45,Olaf
+Persistence,macOS,#ff4785,Olaf
+Privilege Escalation,Linux,#ff8041,Olaf
+Defense Evasion,Cloud,#ffaf00,Olaf
+Credential Access,AWS,#ffd300,Olaf
+Discovery,Azure,#abc530,Olaf
+Lateral Movement,GCP,#01c26d,Olaf
+Collection,SaaS,#007b84,Olaf
+Exfiltration,Azure AD,#86308c,Olaf
+Command and Control,Office 365,#075190,Olaf
+Impact,,#482569,Olaf

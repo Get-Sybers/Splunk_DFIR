@@ -1,0 +1,370 @@
+{
+    "modelName": "CAR-Email",
+    "displayName": "CAR Email",
+    "description": "CAR Email Data Model",
+    "editable": false,
+    "objects": [
+        {
+            "objectName": "CAR-Email",
+            "displayName": "CAR Email",
+            "parentName": "BaseEvent",
+            "fields": [
+                {
+                    "fieldName": "action_reason",
+                    "displayName": "action_reason",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for action_reason"
+                    }
+                },
+                {
+                    "fieldName": "attachment_mime_type",
+                    "displayName": "attachment_mime_type",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for attachment_mime_type"
+                    }
+                },
+                {
+                    "fieldName": "attachment_name",
+                    "displayName": "attachment_name",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for attachment_name"
+                    }
+                },
+                {
+                    "fieldName": "attachment_size",
+                    "displayName": "attachment_size",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for attachment_size"
+                    }
+                },
+                {
+                    "fieldName": "date",
+                    "displayName": "date",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for date"
+                    }
+                },
+                {
+                    "fieldName": "dest_address",
+                    "displayName": "dest_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_address"
+                    }
+                },
+                {
+                    "fieldName": "dest_ip",
+                    "displayName": "dest_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_ip"
+                    }
+                },
+                {
+                    "fieldName": "dest_port",
+                    "displayName": "dest_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for dest_port"
+                    }
+                },
+                {
+                    "fieldName": "from",
+                    "displayName": "from",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for from"
+                    }
+                },
+                {
+                    "fieldName": "message_body",
+                    "displayName": "message_body",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for message_body"
+                    }
+                },
+                {
+                    "fieldName": "message_links",
+                    "displayName": "message_links",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for message_links"
+                    }
+                },
+                {
+                    "fieldName": "message_type",
+                    "displayName": "message_type",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for message_type"
+                    }
+                },
+                {
+                    "fieldName": "return_address",
+                    "displayName": "return_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for return_address"
+                    }
+                },
+                {
+                    "fieldName": "server_relay",
+                    "displayName": "server_relay",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for server_relay"
+                    }
+                },
+                {
+                    "fieldName": "smtp_uid",
+                    "displayName": "smtp_uid",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for smtp_uid"
+                    }
+                },
+                {
+                    "fieldName": "src_address",
+                    "displayName": "src_address",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_address"
+                    }
+                },
+                {
+                    "fieldName": "src_domain",
+                    "displayName": "src_domain",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_domain"
+                    }
+                },
+                {
+                    "fieldName": "src_ip",
+                    "displayName": "src_ip",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_ip"
+                    }
+                },
+                {
+                    "fieldName": "src_port",
+                    "displayName": "src_port",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for src_port"
+                    }
+                },
+                {
+                    "fieldName": "subject",
+                    "displayName": "subject",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for subject"
+                    }
+                },
+                {
+                    "fieldName": "to",
+                    "displayName": "to",
+                    "type": "string",
+                    "fieldSearch": "",
+                    "required": false,
+                    "multivalue": false,
+                    "hidden": false,
+                    "comment": {
+                        "description": "Auto-generated description for to"
+                    }
+                }
+            ],
+            "calculations": [
+                {
+                    "calculationID": "CAR_Email_block",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "block",
+                            "displayName": "block",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for block",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(block) OR block=\"\", \"unknown\", block)"
+                },
+                {
+                    "calculationID": "CAR_Email_delete",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "delete",
+                            "displayName": "delete",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for delete",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(delete) OR delete=\"\", \"unknown\", delete)"
+                },
+                {
+                    "calculationID": "CAR_Email_deliver",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "deliver",
+                            "displayName": "deliver",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for deliver",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(deliver) OR deliver=\"\", \"unknown\", deliver)"
+                },
+                {
+                    "calculationID": "CAR_Email_quarantine",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "quarantine",
+                            "displayName": "quarantine",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for quarantine",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(quarantine) OR quarantine=\"\", \"unknown\", quarantine)"
+                },
+                {
+                    "calculationID": "CAR_Email_redirect",
+                    "calculationType": "Eval",
+                    "outputFields": [
+                        {
+                            "fieldName": "redirect",
+                            "displayName": "redirect",
+                            "type": "string",
+                            "fieldSearch": "",
+                            "required": false,
+                            "multivalue": false,
+                            "hidden": false,
+                            "comment": {
+                                "description": "Auto-generated action for redirect",
+                                "expected_values": []
+                            }
+                        }
+                    ],
+                    "expression": "if(isnull(redirect) OR redirect=\"\", \"unknown\", redirect)"
+                }
+            ],
+            "constraints": []
+        }
+    ]
+}
