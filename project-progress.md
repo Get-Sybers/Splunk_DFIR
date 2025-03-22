@@ -10,7 +10,7 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line      | ✅     |         |            |
 | [Zeek](https://zeek.org/)                                     | ✅            | json_line      | ✅     | ✅      |            |
-| [Kape](https://github.com/EricZimmerman/KapeFiles)            | manual        | json_line, csv | ✅     |         |            |
+| [Kape](https://github.com/EricZimmerman/KapeFiles)            | manual        | json_line, csv | ✅     |   ✅✅  |            |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                |        |         |            |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx      |        |         |            |
 | [Symon](https://github.com/mandiant/Symon)                    |               |                |        |         |            |
