@@ -1,0 +1,23 @@
+- name: Check if /opt/splunk/etc/system/local/limits.conf exists
+  ansible.builtin.stat:
+    path: /opt/splunk/etc/system/local/limits.conf
+  register: limits_conf_stat
+
+- name: Ensure /opt/splunk/etc/system/local directory exists (if limits.conf is missing)
+  ansible.builtin.file:
+    path: /opt/splunk/etc/system/local
+    state: directory
+    owner: splunk
+    group: splunk
+    mode: "0755"
+  when: not limits_conf_stat.stat.exists
+
+- name: Copy limits.conf if it does not exist
+  ansible.builtin.copy:
+    src: /data/etc/system/local/limits.conf
+    dest: /opt/splunk/etc/system/local/limits.conf
+    remote_src: yes
+    owner: splunk
+    group: splunk
+    mode: "0755"
+  when: not limits_conf_stat.stat.exists
