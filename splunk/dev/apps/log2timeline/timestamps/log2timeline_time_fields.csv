@@ -1,0 +1,184 @@
+"date_time.__class_name__","date_time.__type__","date_time.time_zone_offset","date_time.timestamp",timestamp,"timestamp_desc","date_time.fat_date_time","date_time.string","date_time.system_time_tuple{}","date_time.time_elements_tuple{}"
+Filetime,DateTimeValues,,132576082883886009,"none
+1613134688388601","Content Modification Time",,,,
+Filetime,DateTimeValues,,132576082883886009,"none
+1613134688388601","Creation Time",,,,
+Filetime,DateTimeValues,,132576082826854663,"none
+1613134682685466","Metadata Modification Time",,,,
+Filetime,DateTimeValues,,132576082740917017,"none
+1613134674091702","Last Access Time",,,,
+Filetime,DateTimeValues,,132576082321228558,"none
+1613134632122856","Last Seen Time",,,,
+PosixTime,DateTimeValues,,4294967295,"none
+4294967295000000","Content Modification Time",,,,
+PosixTime,DateTimeValues,,4290504741,"none
+4290504741000000","Creation Time",,,,
+Filetime,DateTimeValues,,133205615060000000,"none
+1676087906000000","Expiration Time",,,,
+Filetime,DateTimeValues,,132576098785783762,"none
+1613136278578376","Last Shutdown Time",,,,
+Filetime,DateTimeValues,,132575415738869009,"none
+1613067973886901","Synchronization Time",,,,
+Filetime,DateTimeValues,,132574889936679770,"none
+1613015393667977","Last Scavenge Time",,,,
+Filetime,DateTimeValues,,132574997064049910,"none
+1613026106404991","Last Login Time",,,,
+Filetime,DateTimeValues,,132574984755578755,"none
+1613024875557876","First Access Time",,,,
+TimeElementsInMilliseconds,DateTimeValues,"-300",,"none
+1612919416394000","End Time",,,,"2021
+2
+9
+20
+10
+16
+394"
+TimeElementsInMilliseconds,DateTimeValues,"-300",,"none
+1612919416378000","Added Time",,,,"2021
+2
+9
+20
+10
+16
+378"
+FATDateTime,DateTimeValues,,,"none
+1612919414000000","Last Access Time",155669066,,,
+FATDateTime,DateTimeValues,,,"none
+1612919414000000","Content Modification Time",155669066,,,
+FATDateTime,DateTimeValues,,,"none
+1612915410000000","Creation Time",7295562,,,
+Filetime,DateTimeValues,,132573943890120000,"none
+1612920789012000","Last Time Executed",,,,
+UUIDTime,DateTimeValues,,138319772317034076,"none
+1612684431703408","Creation Time",,,,
+Systemtime,DateTimeValues,,,"none
+1612529605446000","Last Connection Time",,,"2021
+2
+5
+5
+12
+53
+25
+446",
+Systemtime,DateTimeValues,,,"none
+1612529605306000","Creation Time",,,"2021
+2
+5
+5
+12
+53
+25
+306",
+Filetime,DateTimeValues,,132567099415482055,"none
+1612236341548206","First Seen Time",,,,
+PosixTime,DateTimeValues,,1612074454,"none
+1612074454000000","Installation Time",,,,
+Filetime,DateTimeValues,,132565480519771211,"none
+1612074451977121","Last Password Set Time",,,,
+Filetime,DateTimeValues,,132399052227656069,"none
+1595431622765607","Last registered Time",,,,
+PosixTimeInMicroseconds,DateTimeValues,,2102177741337049,"none
+2102177741337049","Content Modification Time",,,,
+Filetime,DateTimeValues,,132393203461880000,"none
+1594846746188000","Item Modification Time",,,,
+Filetime,DateTimeValues,,132393180000000000,"none
+1594844400000000","Document Last Save Time",,,,
+Filetime,DateTimeValues,,132393180000000000,"none
+1594844400000000","Document Creation Time",,,,
+PosixTime,DateTimeValues,,1544912676,"none
+1544912676000000","Link Time",,,,
+NotSet,DateTimeValues,,,"none
+0","Not a time",,"Not set",,
+SemanticTime,DateTimeValues,,,"none
+0","Expiration Time",,Infinite,,
+Filetime,DateTimeValues,,132573305890105566,"none
+1612856989010557","Launch Time",,,,
+WebKitTime,DateTimeValues,,0,"none
+-11644473600000000","Expiration Time",,,,
+TimeElements,DateTimeValues,,,"none
+0","Link Time",,,,"1970
+1
+1
+0
+0
+0"
+TimeElementsInMicroseconds,DateTimeValues,0,,"none
+877473583000000","Creation Time",,,,"1997
+10
+21
+22
+39
+43
+0"
+TimeElementsInMicroseconds,DateTimeValues,0,,"none
+963865214000000","Last Printed Time",,,,"2000
+7
+17
+20
+20
+14
+0"
+TimeElements,DateTimeValues,"-300",,"none
+915166800000000","Scheduled to start",,,,"1999
+1
+1
+0
+0
+0"
+Filetime,DateTimeValues,,127438255167839431,"none
+1099351916783943","Item Creation Time",,,,
+Filetime,DateTimeValues,,126763258000000000,"none
+1031852200000000","Document Last Printed Time",,,,
+Filetime,DateTimeValues,,128063841300000000,"none
+1161910530000000","File Last Modification Time",,,,
+TimeElementsInMicroseconds,DateTimeValues,0,,"none
+1161691200000000","Content Modification Time",,,,"2006
+10
+24
+12
+0
+0
+0"
+Filetime,DateTimeValues,,131577593660671466,"none
+1513285766067147","Unknown Time",,,,
+Filetime,DateTimeValues,,132566051324429075,"none
+1612131532442908","Previous Last Time Executed",,,,
+WebKitTime,DateTimeValues,,13256733456797809,"none
+1612259856797809","Last Visited Time",,,,
+WebKitTime,DateTimeValues,,13256733433267780,"none
+1612259833267780","Creation Time",,,,
+WebKitTime,DateTimeValues,,13256729905233291,"none
+1612256305233291","Last Access Time",,,,
+WebKitTime,DateTimeValues,,13256729083122941,"none
+1612255483122941","Time of installation",,,,
+WebKitTime,DateTimeValues,,13256782810330695,"none
+1612309210330695","Recorded Time",,,,
+PosixTimeInMicroseconds,DateTimeValues,,1612411490062447,"none
+1612411490062447","Last Visited Time",,,,
+WebKitTime,DateTimeValues,,13256950624610232,"none
+1612477024610232","End Time",,,,
+WebKitTime,DateTimeValues,,13256950618683519,"none
+1612477018683519","Start Time",,,,
+FATDateTime,DateTimeValues,,,"none
+1247548374000000","Synchronization Time",698039022,,,
+TimeElementsInMilliseconds,DateTimeValues,0,,"none
+1470306478000000","Content Modification Time",,,,"2016
+8
+4
+10
+27
+58
+0"
+Filetime,DateTimeValues,,132567943874720000,"none
+1612320787472000","Content Deletion Time",,,,
+Filetime,DateTimeValues,,132569779967428250,"none
+1612504396742825","Last Connection Time",,,,
+Systemtime,DateTimeValues,,,"none
+1612976752191000","Last Time Executed",,,"2021
+2
+3
+10
+17
+5
+52
+191",
