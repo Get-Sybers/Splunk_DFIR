@@ -25,7 +25,7 @@
 
 This repository automates the processing and ingestion of forensic data into **[Splunk](https://www.splunk.com/)** using tools such as **[Plaso (log2timeline)](https://github.com/log2timeline/plaso), [Zeek](https://zeek.org/)**, and mapping fields to the **[MITRE CAR Data Model](https://car.mitre.org/data_model/)**.
 
-## 📌 Current Status
+## 📌 Current Status: In-Development
 <a name="current-status"></a>
 
 Currently in development, which means that the code and functionality are still evolving and have not yet reached full operational capacity. See [Project-Progress](/project-progress.md) for more.
