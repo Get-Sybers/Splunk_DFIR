@@ -40,14 +40,20 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
   - Looking at the potential to use CTI STIX data for this as well as data within https://github.com/ForensicArtifacts/artifacts
 - Develop a **Splunk dashboard** to visualize **MITRE CAR-mapped events**.  
 
-
-
 ### 🔹 **Environment & Dependencies**  
 - Create a guide for **setting up the development environment**.  
+
+### 🔹 **Field Mappings**  
 
 ---
 
 ## 🔄 In Progress
+### 🔹 **Field Mappings**  
+- Log2timeline field mappings
+  - Think I need to use python for this.. sourcetype "l2t:olecf" contains timestamp within json object spread accross fields `date_time.__class_name__	date_time.__type__	date_time.fat_date_time	 date_time.timestamp`
+  - contains time formats `Filetime, UUIDTime, FATDateTime`
+  - need to figure out how to handle "junk" timestamps created by `.custom_destinations`
+
 ### 🔹 **Splunk Apps for Data Types**  
 - Create individual Splunk apps for each data type (Zeek, log2timeline, EVTX, KAPE). This app will handle all conf files for ingestion.
 - **Documentation Updates**  
@@ -62,6 +68,11 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 ---
 
 ## ✅ Done
+### 🔹 **Field Mappings**  
+✅ - Kape CSV and JSON
+  - timestamps so far are mappped correctly. Need more data to test if anything more will capture ingest time as _time
+  - haven't been able to push SOF-ELK sourcetype to the rest of the Kape source types.
+
 ### 🔹 **Dynamic Scripts Testing**  
 ✅- Test `log2timeline-dynamic.sh` for processing **single E01 images**.  
 ✅- Test `log2timeline-ALL-dynamic.sh` for processing **all E01 images**.  
