@@ -4,9 +4,9 @@ import json
 from datetime import datetime
 
 def calculate_epoch(event):
-    class_name = event.get("date_time.__class_name__")
-    timestamp = event.get("date_time.timestamp")
-    fat_raw = event.get("date_time.fat_date_time")
+    class_name = event.get("date_time", {}).get("__class_name__")
+    timestamp = event.get("date_time", {}).get("timestamp")
+    fat_raw = event.get("date_time", {}).get("fat_date_time")
     epoch = None
     try:
         if class_name == "Filetime" and timestamp:
@@ -33,8 +33,8 @@ def calculate_epoch(event):
             second = (time_val & 0x1F) * 2
             dt = datetime(year, month, day, hour, minute, second)
             epoch = dt.timestamp()
-    except Exception:
-        epoch = None
+    except Exception as e:
+        sys.stderr.write(f"Error calculating epoch: {e}\n")
     return epoch
 
 def main():
@@ -44,15 +44,22 @@ def main():
             continue
         try:
             event = json.loads(line)
-            epoch = calculate_epoch(event)
-            if epoch is not None:
-                # Output the epoch value as plain text.
-                sys.stdout.write(str(epoch) + "\n")
-            else:
-                sys.stdout.write("\n")
         except Exception as e:
-            sys.stderr.write(f"Error processing line: {e}\n")
+            sys.stderr.write(f"Error parsing JSON: {e}\n")
             continue
+
+        epoch = calculate_epoch(event)
+        if epoch is not None:
+            # Add the two key values:
+            # DTG: epoch timestamp (numeric)
+            event["DTG"] = epoch
+            # DTG_ISO: ISO 8601 representation (for readability/searching)
+            event["DTG_ISO"] = datetime.utcfromtimestamp(epoch).isoformat() + "Z"
+        else:
+            event["DTG"] = None
+            event["DTG_ISO"] = None
+
+        sys.stdout.write(json.dumps(event) + "\n")
 
 if __name__ == "__main__":
     main()
