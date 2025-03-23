@@ -1,0 +1,13 @@
+class,"'date_time.timestamp'","'date_time.fat_date_time'",DTG
+Filetime,,,"2021-02-12 12:58:08"
+PosixTime,,,unknown
+TimeElementsInMilliseconds,,,unknown
+FATDateTime,,,"FATDateTime=1984-10-07 10:18:20"
+UUIDTime,,,"2021-02-07 07:53:51"
+Systemtime,,,unknown
+PosixTimeInMicroseconds,,,unknown
+NotSet,,,"not set"
+SemanticTime,,,unknown
+WebKitTime,,,unknown
+TimeElements,,,unknown
+TimeElementsInMicroseconds,,,unknown

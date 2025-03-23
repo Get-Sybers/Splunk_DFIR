@@ -1,0 +1,1203 @@
+{
+  "version": "1.0",
+  "date": "2024-05-01T17:30:45.543593406Z",
+  "hashAlgorithm": "SHA-256",
+  "app": {
+    "id": 4801,
+    "version": "0.1.3",
+    "files": [
+      {
+        "path": "README.txt",
+        "hash": "c3cfaae826a852853a6697b6e14146dc121e1c4c42a3a215af223fced04feb85"
+      },
+      {
+        "path": "bin/_debug_config.py",
+        "hash": "1566bb98ce37d986f7d22f7ce542f6e053d26be3329a64d8d0cbe5a5b1bc4e5b"
+      },
+      {
+        "path": "bin/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/splunk_debug.py",
+        "hash": "df5c4fe8156cb30cbf2f5b324f9d55af5a00a12a00e39207c112d307ac9d0846"
+      },
+      {
+        "path": "bin/ptvsd/reraise2.py",
+        "hash": "958d3155ca717e7df9d4ebf9b60241e285777f81dcf43e7861d02413216975aa"
+      },
+      {
+        "path": "bin/ptvsd/options.py",
+        "hash": "166f186933a68c60d67870edac39d7a86bbc9756661583b4d929dd3a5258a089"
+      },
+      {
+        "path": "bin/ptvsd/tracing.py",
+        "hash": "5b520ef26eda3688ac889745586abe57f33a4c34bba3690224a098cf02c00a69"
+      },
+      {
+        "path": "bin/ptvsd/runner.py",
+        "hash": "75281cd3cbac6bb16e6f407b6f56929dc6d140f5b49049f4beea9b0a564aac8b"
+      },
+      {
+        "path": "bin/ptvsd/wrapper.py",
+        "hash": "c25e0cf8daf5f3dd5ffe1f7027f5ed0d9441a8475f54e814f89b70ab7d08969d"
+      },
+      {
+        "path": "bin/ptvsd/ipcjson.py",
+        "hash": "db0750adc03f7aa916d4d34ff1a96350494bab96b3f2decb8ff230604bd35626"
+      },
+      {
+        "path": "bin/ptvsd/_local.py",
+        "hash": "61d5a8d03cd58f8e220ca01dc8ceb97a33128e9ef177cb663369c3794f68f20a"
+      },
+      {
+        "path": "bin/ptvsd/version.py",
+        "hash": "20d6f89ed0a379902d7cd8fdc4ab15f88a9eedd088b20390f74580c038084fee"
+      },
+      {
+        "path": "bin/ptvsd/compat.py",
+        "hash": "53533f4fb0697a2159fe5b2a328152148296642f1b9b655ee00142ffb4496cd0"
+      },
+      {
+        "path": "bin/ptvsd/ThirdPartyNotices.txt",
+        "hash": "4590c2f4df8de053ab9109cd59acb92ce0af69db0d07d04108070f4120c94c3c"
+      },
+      {
+        "path": "bin/ptvsd/reraise3.py",
+        "hash": "17c7286ced431fb42ff9a1bbd5b96eefde907350f0853be900fdbbb8539b7b62"
+      },
+      {
+        "path": "bin/ptvsd/_version.py",
+        "hash": "3be4562bfa53cf98cb9dfc1bc725f5fd1e3d9fc8c92ffadf655ab56ca2e90e57"
+      },
+      {
+        "path": "bin/ptvsd/log.py",
+        "hash": "6ef37564007007a95bf793e96ac02c062af0b3415aea8c10f68a80a517f7ffbb"
+      },
+      {
+        "path": "bin/ptvsd/pydevd_hooks.py",
+        "hash": "dcda254dc55799add7d419f9ca13383fd002dd79a3e9313006d56a2f6d71c8c6"
+      },
+      {
+        "path": "bin/ptvsd/attach_server.py",
+        "hash": "754eebed85f12050fcd2b156f7ea5875545a1839628bef6df241b206322df62a"
+      },
+      {
+        "path": "bin/ptvsd/session.py",
+        "hash": "f281325047ba86cc4f56f568a00b9c248fe3e4276eebc2d8454ca690e9dcd222"
+      },
+      {
+        "path": "bin/ptvsd/__init__.py",
+        "hash": "89193ee0fad6ec32ea2ad8f1c330dd0298b6762dc4adf198b3a0136089238871"
+      },
+      {
+        "path": "bin/ptvsd/futures.py",
+        "hash": "f0bff009682bba63b73645df5c0dd0e190afd953dc962974df1f40aecf9b221e"
+      },
+      {
+        "path": "bin/ptvsd/debugger.py",
+        "hash": "1f26134117c118157b838ff75ad7107ccf4a8803b7b32a8e6669e73c8842f87f"
+      },
+      {
+        "path": "bin/ptvsd/_util.py",
+        "hash": "33ec0672c2d698e95c4105495e7a2148382ba0fb5d20465d24ad5cc2b4766048"
+      },
+      {
+        "path": "bin/ptvsd/_remote.py",
+        "hash": "8a155180e0387647554b385b49749bd8584d2f267aae227cee885e3ad06e815d"
+      },
+      {
+        "path": "bin/ptvsd/reraise.py",
+        "hash": "50bf437cc1667556eb2a768c9594a5c541ccc83415b7ba6ab6fc35a3db1eda0f"
+      },
+      {
+        "path": "bin/ptvsd/socket.py",
+        "hash": "b5c7660a38a04dfde86ebd3cedfc17f25dbb1fdcb84783b130ef6d03cb6e2168"
+      },
+      {
+        "path": "bin/ptvsd/multiproc.py",
+        "hash": "81c3240fa0ea0aa0b20aa96047f575610ff72f9d44767b8a192540066caf0664"
+      },
+      {
+        "path": "bin/ptvsd/__main__.py",
+        "hash": "10ed67e23f2fbec81a052832112f771d9e78d5ed607c1baf0d74e7976a6db60a"
+      },
+      {
+        "path": "bin/ptvsd/daemon.py",
+        "hash": "da1f81e9e09bb9031c614c5e5652c283933832f1baa5730b3d91b94c4787d1ea"
+      },
+      {
+        "path": "bin/ptvsd/exit_handlers.py",
+        "hash": "c5f3e6c4aeb0db9176b2e51e77fe54a42635b83311c08d79b62fee968798c4b9"
+      },
+      {
+        "path": "bin/ptvsd/messaging.py",
+        "hash": "915ecaafad1c35abac6ff83819336cdb944cf09c8d11899b6f8b22b4b6987c98"
+      },
+      {
+        "path": "bin/ptvsd/attach_script_ptvsd_pid.py",
+        "hash": "40309405f964a255949c18c12170abdb0202eafc46f538ef800366fcd3a16475"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/force_pydevd.py",
+        "hash": "c85f0a7ca57c368d3d08f2759924c7abf54070564f3c879f9f0464da25b64278"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/__init__.py",
+        "hash": "f79a3d2b559c15daae7680c592cbbd06dbb8d4e975a24a8461a314ffe1a0cdbb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/_util.py",
+        "hash": "8cd54037c68b5ec2cea4c359d33568def3c92b1c5e8086a79fc1ca55ababe5e9"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/_pydevd_packaging.py",
+        "hash": "f721df3a51870a26288ecc64608352cffbc23810aed9558a433faf3cfd197c66"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_file_utils.py",
+        "hash": "113bb1687fc3838726e571a501934a127ba646ec1c49653fb811c33f09e1ea66"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_tracing.py",
+        "hash": "878427f1e352a209c55eb84779844174a6677193586c1f4a3ea8ded18c5020dc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_app_engine_debug_startup.py",
+        "hash": "fa0035509f29458dd513c6d173b2615919b19516a743c406dfbdb83b98a878a0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_coverage.py",
+        "hash": "f998d4f1fc4ebbb51bc05a62c4d406e32c99a02c5d075599d47489e9060879e7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevconsole.py",
+        "hash": "29eaa66aa7f6f948009d308c36bcce2d6d700b47e694ae4b6af5641bc8cb78ab"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_run_in_console.py",
+        "hash": "62aff694e9a7f20412a00fd00d0efd7b5f7de4e57c7d76e51ddd77f58c345ac2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd.py",
+        "hash": "65cf7d1b4ed5b1aadfc3e9fec17a38daee97ab25a105f1d173aad3321239068c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/setup_cython.py",
+        "hash": "2cf27d34605a1d1322d6626748b5f1345ef9d9419f0e44718827d83dc8c06e09"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_pysrc.py",
+        "hash": "2cab704320d862bcb79612fb61a96099e860583f36f8d0e9a906188b56d3623f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles.py",
+        "hash": "c37bd9c3f710c945629742570bbcc77a5e7f8bf04eb0cc60c88583069cfc2e0f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_unittest.py",
+        "hash": "057d95152d965a9cd7fba2ac1bdc21740d59b31e78a322124cf32fa47a715658"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_coverage.py",
+        "hash": "b168c0446b75fb84995d80cd54c2f6d1b59ddc8046e6cb4f82ced0dc29b8b9bf"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_nose.py",
+        "hash": "505d0e5cad2bc26289a052957bcf67558833fe65f71601f16d40d232a715dac7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_pytest2.py",
+        "hash": "fbf82ee96a8f57d39c33bf762de00642e9b16903351822ca144d5f89c5587705"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_parallel_client.py",
+        "hash": "c3097c501a46452a93bf0f1509d9764bb1b43be4b25ed3a654520f2b3e2887d1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_xml_rpc.py",
+        "hash": "eb20ee46748bfd37244070fadf6ccc6696489ee4603ac08b192e3a7e4fce5b06"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_runfiles/pydev_runfiles_parallel.py",
+        "hash": "ab16cd4189671827ce0ea6d9ddbbd0b01e834f2ba66ae4c49151a2d967373680"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_vars.py",
+        "hash": "1e38d9121b4b65fe6658303e0b625f2dc59abf1d37f7e9daa25d4a3b5a5f36ec"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_command_line_handling.py",
+        "hash": "57c5e9a456f05e3cf5de9235d4eba244b5ec89d13ede37feb72d93f37a37f672"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_frame_utils.py",
+        "hash": "35e82ebb1daed3e3f631afd6b1bcfb2cfe40da326469ff086b380691b0e659c8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_breakpoints.py",
+        "hash": "02891e1322230ca7313cd1e72976426a6586b0c50cdf90f46f9455e28054c4e7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_plugin_utils.py",
+        "hash": "e5acc8b753067ed2b007b639613b6f18f0bd6a042def1336df38ef2aa1a37a28"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_cython.pyx",
+        "hash": "08b80508d78d5c007e3d62bb497be3c3a1719ff1dd3448ae6da9e45e66dd92a3"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_process_net_command_json.py",
+        "hash": "aa45623ca39e03ad3118b6c50dc12afc3a4541d0b22a049bbb1028a430b016f4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevconsole_code_for_ironpython.py",
+        "hash": "a226fae6abae6670e4e87de0e1939f7753552b49c373f89cc1344427da1c4a47"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_reload.py",
+        "hash": "c8756e73aed9e5a1172b94a977b5355e4a9c912cf33f954af2ee90710f687c57"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_io.py",
+        "hash": "cf594b13dbf6dc783640e7fde92962ba61ea82959b7afb84fb4e249bdafe65eb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_net_command_factory_json.py",
+        "hash": "eb5ae6e7036d28655b788ad403fcd63f26c85ed149524e0843fe8c915df8b89b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_comm.py",
+        "hash": "438a5f0da12d2b6fe4849078704e14797f2da0e7f926ec6b7e2424b0c221e33e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_net_command_factory_xml.py",
+        "hash": "2cd8ce172a5ae40439fd85682c139c4168c5a435c07a87a88109b29e2b9031c4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_exec.py",
+        "hash": "244414d6bf15d61f91de1f68d73ff8169355ef8011ffc6dccc1eb5cd3082a170"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_xml.py",
+        "hash": "7866de7d581941ef7401b448b410e7112c87815715274f346096c04f40d3b14c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_constants.py",
+        "hash": "82ce1ef42fff02901ce86a3cc907bbfe7e931334f2ed7c4174df8f46cfeec9e0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_trace_dispatch.py",
+        "hash": "697e8983e0d28922203ae4288167eb23ddbed47b4a62c85064bb3b1b7ac73876"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_extension_utils.py",
+        "hash": "0d962de7aadf466ff8c234971bb714485aa024150abd83a7a473f12165a9411e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_dont_trace_files.py",
+        "hash": "63261c36e97f872e4378d85bca0a058efb27fc03a5fb741a70fc6cc33f135698"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_custom_frames.py",
+        "hash": "97a2ef8c5eef393287dea95826a1eb211be80a165334919a8b9fe7b535e2a4d3"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_console.py",
+        "hash": "a70454e3cbeec802470329ff171c2a2842fae5bb6f9608267b3bef98559c88d7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_filtering.py",
+        "hash": "b92d7b7aebf7ba8e20bfbb7b75642e74e3aa634e267f26624fbf825ae52b4386"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_referrers.py",
+        "hash": "2ee14d15e88e5fb82fd9e2cbe4daddfdd5ef3835e9b9d43aa6d5dd6cf529523e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_extension_api.py",
+        "hash": "b8f4fbf9730d7b5b270570f37ee147e9f0463deeb162e0f9604408d6e3becef0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_stackless.py",
+        "hash": "06ef201bbc11aa65e5e82604315519abaeb5af76659d142463245ff4a331dd5b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_kill_all_pydevd_threads.py",
+        "hash": "cfecc56a3a7d3b17b7272478c85a3dcd551540b04fd0f63a9b842bcc7e5297c2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_trace_api.py",
+        "hash": "3fdfdeb907e460daeb954ce49db58126cc2b831432474f7fd7052ab26a451a2f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_trace_dispatch_regular.py",
+        "hash": "f630908358226590545bb109a2d270236ccbf509c2250d8fed9a5428db85de70"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_save_locals.py",
+        "hash": "947e4024a66e5c58af6cd8160948cd02be108890fe83364b8f1fb38a930fa29b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_additional_thread_info_regular.py",
+        "hash": "5809adf37fc38b69376cdec972bdd3f373a2a62d53e10d10ea18d003b56516dc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_suspended_frames.py",
+        "hash": "6ce87c51c470d17649801171b07bf1d4b0a1cf184256c6696c3cc8ae638714c2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_collect_try_except_info.py",
+        "hash": "e4b0e55ebd5b59b3878653d0fb12bff431c04c739b766cd5a8fc26c3a741c8f2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_json_debug_options.py",
+        "hash": "072fd51272073e17c1b649f2abe3ab75ccbd5ae9ad9f1730c4f1abe5ffef1742"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_cython.so",
+        "hash": "938e532456cea12547274345e936029f07109a2ef57770a8889463854bc0e7c7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_safe_repr.py",
+        "hash": "5d484101fe6bedf5c07ff823505e6e7e844ffee7088d052ce5f71606c1b6201a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_traceproperty.py",
+        "hash": "1c54570909875207bda93491b1ab8ab52ff2f9af4ea723b8d2db66e34bcf136a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_import_class.py",
+        "hash": "5e28083186d583a22c358dec84771af91dbabc61b9c0c4c6ca0772877f2f694f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_cython_wrapper.py",
+        "hash": "8557f386032e9c17ae5641a5f6a56713ab8c145497e03761c4f9742b6f9371de"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_additional_thread_info.py",
+        "hash": "9e0b003861895fd086f8c7737593c488bc2fafc8b06b16f54c27ddfe853bd563"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_api.py",
+        "hash": "f04c01f9c86750d7964cb23d8dc7a278034c83ab9930545ffc33976638b98c5c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_dont_trace.py",
+        "hash": "c8a3863fdf281999aab74fa0146552fbbcc5506760f36e4776b017116609b764"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_utils.py",
+        "hash": "98f0a3d85a75ee36fb3cbdee059a7e4cd6df5cf29730a477239ce9b2186dad0b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_net_command.py",
+        "hash": "278f5ca2640256aaf3e40b60cf62eb3f89c6891bb95622bbe1a80cea9633983c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_signature.py",
+        "hash": "8e39d117dd5ff8c5a905ce61a35c6e1283b3e060a1de418b7680c3972d63f5fc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_vm_type.py",
+        "hash": "a2c3e18220d1714eba2855107df511484b751b12ec4b907e0ee5754e11d1fec6"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_cython.c",
+        "hash": "770a32d36fb4395e8e7855c17405cb199df02aa4dfa6dbc3e3d7f9a1bedcf4a0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_comm_constants.py",
+        "hash": "6a14d8566fde41afcb3051e39e7fbb0d4ad1cd2fe4ca802abf6024351fa58f55"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_defaults.py",
+        "hash": "30fb419c6bca467eb921b1077ed97463f287d18cbf8d736366ecc42fca844262"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_process_net_command.py",
+        "hash": "f32ba8206e2e23c7dec921328c73241395c71d22ccdaf3b1f50f7149d534f057"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_cython.pxd",
+        "hash": "096a85f1f2b1ad696309562a5842e35b6a4dbc77c540c664ea200de1be44377c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_source_mapping.py",
+        "hash": "8d0e817071238b80460699e9eac29865ed4bfa86a0ed6ebb913e75148c58ffaf"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_resolver.py",
+        "hash": "0fd64666099ead2b9a8ccafa56989650327e7cfc5716f8868b7fafef65c4c9b2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_frame.py",
+        "hash": "de51a5355878cf79ad3b7217e31aa7d9b14d5d63608281872411ab1dc9969028"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/pydevd_exec2.py",
+        "hash": "f2ae9d7041c37c913a6ddc0dcab4455dafef60e953ac7cf751506d633867249a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/pydevd_base_schema.py",
+        "hash": "706ebd77968cd04ce16e9e90689ff382cbad654a2c12446d570716c10941e840"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/pydevd_schema_log.py",
+        "hash": "51c2e548c9572df9f7c0e75cf020778d7b63645062fbd1ea1e530b1e06b8f5a4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/__main__pydevd_gen_debug_adapter_protocol.py",
+        "hash": "a5e53409414ddd3f8b64088c86c09421492872c4ac8a4281b6db026a9a1645fc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/debugProtocol.json",
+        "hash": "7ff0222f351c9778b0011e024bcf04b2615f55e6624f40686af94ff38d5e62cd"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/debugProtocolCustom.json",
+        "hash": "b8fbd48b002c7a7ef066f960f5ad5f300d5606072fdc45010cfb907df0852e4b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_bundle/_debug_adapter/pydevd_schema.py",
+        "hash": "586e3a5ca0dce8ed9cd7a2502017fc3271510f605b92223f5c106715ca9f57d0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_calltip_util.py",
+        "hash": "8c5cc885e223967bf31d98713a4d28e2413364161d5e524f61717780314173d4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_filesystem_encoding.py",
+        "hash": "5726195e17accfeb7f7eb7069b39ba6f92b671cbfbc984535d671d6eac70a733"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_monkey.py",
+        "hash": "2020fa2032b1f210ccc310f21a0c413e6e88b5bcbdc254d7eef06e7d19281cd1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_tipper_common.py",
+        "hash": "d2f7c685ec2c128e6642fe7ef1c1282ede0441bb20c05b1e0beeb9134a91cbfc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_imports_tipper.py",
+        "hash": "dd8c8a25e763f3899ea82a851e74cc4dbd12d7a67f41e36fe3aebbffa52aa213"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_log.py",
+        "hash": "65d78829d5428c1056dea83125d8340bc3c410afb0feaa4696bc99f484390f93"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_monkey_qt.py",
+        "hash": "e975e697a459dc26789351c29159ea5301f37e592ae76495dd014050b4678459"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_completer.py",
+        "hash": "2af22c18dee94f2a5076bf96a2b6f862adab155c4950f93d9cdcfa4cbb04863f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_is_thread_alive.py",
+        "hash": "4e437eb4421ffd5a788aa2a65e4e55d793eb622a180daaa7b68b523eafa067bf"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_versioncheck.py",
+        "hash": "5691a9d5265e0cc3e29adfbee5dabb2c37c1ea62b23c645c02c4140b0b851eec"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_jy_imports_tipper.py",
+        "hash": "35b3aa602cd7dc1ffbc297223a57b43beddf86a50a7f352479d154bcf739de26"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_ipython_console.py",
+        "hash": "282107acc8be089c38a0a176c9c13939cdd5c60fee0e1b8edd5799c8af3a80ac"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_log.py",
+        "hash": "a2abe366790f47a2d5c68d947b0e61833c8bf1dd7e78b6f57db404a319024feb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_imports.py",
+        "hash": "688c45a647ad45c0d93a5147a583399ee5a96153e102adebf8e75b5f0e821ae8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_console_utils.py",
+        "hash": "6ec5f057c85b3190563cb482b1994255d3c090e4e7f525705f73910c18abf9f9"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_ipython_console_011.py",
+        "hash": "9189bc782facc3ea2adb41ae03ce8df28f476c5d1fe162d1e5c694cdefab9fce"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_import_hook.py",
+        "hash": "5dd040591284142158aca22746f739d0d4b02b8ede92a1c5687d4e6777c636ae"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_override.py",
+        "hash": "94bded1929d0b338b3b5bc9e3f2ae4f5ebbec66800594d98430c6dbf6b77b68e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_umd.py",
+        "hash": "96f91a6026ca8f6e4e8bb6c988884b624d5705f7d81a001e4835885c625489b9"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/pydev_localhost.py",
+        "hash": "f35c7db67853828bec582c834355917e6ef460b58caadc848df4c7f3c6895711"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_bundle/_pydev_getopt.py",
+        "hash": "618a61c4dc130f2683ef7b16ce75aa738d42970e6f1c5f39fab2002f01ea5c1d"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/django_debug.py",
+        "hash": "cfda80e275716dc6ea63b5e451101af123938fa8e2d7e6c9967cc4f9d8653f83"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/__init__.py",
+        "hash": "465ed4e533578d14cf20a922e7508e0b3f757a41bfceb8a854f55ea4ea7309a4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/jinja2_debug.py",
+        "hash": "aaf21f7f5e1427ce449f19ef90bf6c663916a9071c6aa8f18b202ded608acaed"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/__init__.py",
+        "hash": "465ed4e533578d14cf20a922e7508e0b3f757a41bfceb8a854f55ea4ea7309a4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/README.md",
+        "hash": "731bbc176f79b27515360a84e715ca9d94e96ea6d1dcb4e69bad2980ad08393b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/types/pydevd_plugin_numpy_types.py",
+        "hash": "4d929e3e034a58044eff46eb0bb42a9dc5362cd95f1adfc9f444cea8bd7cdaf2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/types/__init__.py",
+        "hash": "465ed4e533578d14cf20a922e7508e0b3f757a41bfceb8a854f55ea4ea7309a4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/types/pydevd_helpers.py",
+        "hash": "d1f151eb780638254d587a7e7bc125e8e3e50659634c9c027b5a042565cfbf93"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_plugins/extensions/types/pydevd_plugins_django_form_str.py",
+        "hash": "aaeaab4542ae2843e84f7ecc0656bbc09092b961e2a35748d5c10ad46d77a8ed"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_saved_modules.py",
+        "hash": "0e7558c446c15814f481569193c444d89952c551c26cd0892c18cf6af701edde"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_uuid_old.py",
+        "hash": "5a62ac5494b30b6ebd5a6b084f71576b99d20ca40ff0eca4d620a1c4b36a94ae"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_SimpleXMLRPCServer.py",
+        "hash": "87a86546c8c75345440a6c7fb21b2e2adcb806971af94ea0c9a196d612bb1adb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_pkgutil_old.py",
+        "hash": "06fc567a595322dd0f283d72755179584eaca6deea380bcc72d68e4dcfd62bda"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_inspect.py",
+        "hash": "676e248caea8de436eda06d88e601739fde6cccea189752a0ec710254e46f832"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_BaseHTTPServer.py",
+        "hash": "500d7583724b3a4b8a2088d705f21e922065bdbb7852a237cf0369f7c849402f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_execfile.py",
+        "hash": "4a088706e4d069f2751ebbf425d37789b1ad6c2be0ca14e5baea977e35b8c63b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_SocketServer.py",
+        "hash": "6ef67dea4b58ecc53276446a47439bd7013df43e8babd8fa23d2361e97a493a4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_sys_patch.py",
+        "hash": "3d734053b04177309d572aae65f9cbce2ad89179d2749b9ab9de5979c14b5278"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydev_imps/_pydev_xmlrpclib.py",
+        "hash": "1f87d45eedca43e6ca9d56579fb1fd56455d3e3dfc7fcc6e73adb0604fcd5ded"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookpyglet.py",
+        "hash": "08f84a7cddc842ab6d4a4694f39ca6d634ecf94528507b7296dfeb073fb61541"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookgtk.py",
+        "hash": "2c32e0d2d0d76e6bfe62838345e40ab4ebb901adc4081afd1d468d255d54624d"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhooktk.py",
+        "hash": "6d6ee12d5bf624eb8fd344d27aa230f4edca28d547b410691396c70125be6d2a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookglut.py",
+        "hash": "b5754accf42dab9f0be1bee0440a23e2efb9906d2a247c3f2d26818255bd35b7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/version.py",
+        "hash": "94b05247c9ad945d5e0b3c3039e8e58dc840c9f4b2d28a43f1bd30fd08d1f7b4"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/matplotlibtools.py",
+        "hash": "2cfaa70952e0d3f53dc6fdd102966159c421ae584d080598a6be22861567224b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookwx.py",
+        "hash": "fa7b50eacd94e18f03c07d93efd5830dc96ea9e264ba646750ba245bf97c6aab"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookqt5.py",
+        "hash": "02fba2ca4e39e2c60ccd234a3e1834bfd6f4f663223971ea5aa459de0f8d12e8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookgtk3.py",
+        "hash": "4a1dfcdb1af6e73b4a0107c2841366e03f8d0b952863e1e8d0b4c88f78b85a2f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/qt.py",
+        "hash": "2decbeec7fc59f8d336ba9492a67a40beaf4b8e4de3a09c7e85206501686a8ff"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhookqt4.py",
+        "hash": "0ca3a86c4bc7e9b22492f385e7cd558fead05d649453a7fb70473d7f35ebdff8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/README",
+        "hash": "aef2160d4a0db0fc484d283a114bb72fd0e28666540b0c7af2f42caa8fc54908"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/inputhook.py",
+        "hash": "54efdf90d1dada297c7946d79113310392d66ed2e63f98bfdcd8a3d74aa7dda1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/qt_loaders.py",
+        "hash": "4010699659eb1ec9f81b508191b2c1e022a0a0d1d28564fab2e3b325714029e3"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_ipython/qt_for_kernel.py",
+        "hash": "8f7e5f888a5e5a9407713ff9ccdcd5f598c56f6dcf64630ace2d4b8c504b9b56"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_amd64.pdb",
+        "hash": "801e17820c7e056fe7bf5876f68d698caaa68b8e78910199c21b3017fe39677f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/_test_attach_to_process.py",
+        "hash": "90cf4b160cd7fea4287c36ff5f48583126fc41fa206be7b1281967837fff299c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_x86.dll",
+        "hash": "649dc4cae704d29aaf49cfbb8371b81c3254392ef8abb65984241cf6446a73ef"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_x86_64.dylib",
+        "hash": "4f8515b4837e4abe9c9ab6818560f8847118c3ef59503ab5b8beb86d4978425b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_linux_amd64.so",
+        "hash": "ee021a529b90ca11b614d8df74cbd0d846a09b824fada9110dd7937799000a88"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/_check.py",
+        "hash": "5777fe08239370d0eb5baa0a777bbbe99758375a8fbf39eb06e93d0736dc41bb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_amd64.dll",
+        "hash": "1a8cfc199c3cad1357eaa94c8aca36cde0a4ad5235a6e91e653dc77fcbab7758"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/add_code_to_python_process.py",
+        "hash": "9de2879cfb90ee6f0ff8a80ca7325bcf40e12d02b0be009522799c51e2233de0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_x86.pdb",
+        "hash": "84a48906f64b48db5ae1be052d20350d441f9cb6803fd043e6eac9f9b1ff1fb6"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_script.py",
+        "hash": "94b7ca8d418e6c848a6016aeb07da741a199d258cd1cecec768cf3f1d5f662fe"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/README.txt",
+        "hash": "17032729e0f354ab93293ed8f0d4f20be57af4067a1ac422ed190892c579decf"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_x86.dylib",
+        "hash": "1acad872e9d814e597bc55b02f4fda8176419e87494228a671f1fd6fe402ec12"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_pydevd.py",
+        "hash": "33b79d466fc3d3743ed78d21d2b4b45c9fe51b8d6afc2be911c3bb11d2363fbd"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/attach_linux_x86.so",
+        "hash": "29201eca82b38d9047667f86854158f7809879f3dab2f197231923524fab21cb"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/_test_attach_to_process_linux.py",
+        "hash": "0132fc5af35c18f8b7c131ed4d02f6dd484ac676ed1bd770077313644882fb61"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/_always_live_program.py",
+        "hash": "23c09bab64d1d387deae13750cc76cf5a8054ea17c4524fa3f0e9d883147afaa"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/ref_utils.hpp",
+        "hash": "f300c5424f57a009cad8474ce09f9112b29f058667f77b86e91c393826cbb00d"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/py_version.hpp",
+        "hash": "a688e25e2fe349b0c2780c32a4aacc0d283fa865d855cc0f1c23cdcf21dcc900"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/py_settrace.hpp",
+        "hash": "78a8834f9fc9faade9099e30ca8f81f46205c25fa3a3835324b409ef4584095a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/py_settrace_37.hpp",
+        "hash": "fc62e1f279fc7ae8bce5b969a4fc838c502f4cb2e7263e8f21e2638ae7b3f892"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/python.h",
+        "hash": "fe26a26406cf271d7bd7f412a8acec2caa140085386578f60378806e19d139c3"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/common/py_utils.hpp",
+        "hash": "bc31532c40728bacf2c14b9999be65c5f6e00cb2fdc613f758cd908bfb418966"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/system.py",
+        "hash": "2f9a19ab29faf249280e91673982646887538c595ed7fb413f06933df70acefa"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/event.py",
+        "hash": "4331cf09c1af119d4bacbdf775d55e80cb1be815114605414a2da7576d1a393b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/disasm.py",
+        "hash": "7b8e6f89d305915976b399eed98256e22139360d4a9d6a1b3560569db699b244"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/thread.py",
+        "hash": "2df0ec08f7a0eac57bbb85d6352284cfb3c966ed4229858e26abaf09b13f8f3c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/compat.py",
+        "hash": "d0a10750933d1d53c993311afdfe9c59be8b07b89c92bef13aa2afb8e5638de0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/crash.py",
+        "hash": "6c0c1ed218cc7a975991f20449f0894b14093a70b10bbca9d38ea777a6c94c8d"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/window.py",
+        "hash": "13bcceac92975e6d8e9d1a7f5efb7cebcfc1c0455d87fdfd7ada834206582e34"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/registry.py",
+        "hash": "0664e12dfe53697b0f117ce4d7a3eab591c802b64aa522bb7f5b2b1bca05a49e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/util.py",
+        "hash": "f46143e763c63a0d1ccc9734a1496913cb132551d99e66a6f38b5eabddfcc5e8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/textio.py",
+        "hash": "a2c5051eac6864174640b99fbcf5c416292f34f63f25b890b9be4ddbfb6079ed"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/__init__.py",
+        "hash": "d95539c07302d511252c725ae5cc0f568e9b2bcb110e272cf5c14cb6ac779aae"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/debug.py",
+        "hash": "4c8e7d53221ab01645ea2967f0e331b500a422fe2dea1457a986840fc6d14f38"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/interactive.py",
+        "hash": "6e40b2c564fb5466d01527c0fe0b8ec210738267d67aa9c14f58aad529dba17d"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/search.py",
+        "hash": "36e528ca853b94c668be26e06488e44cab51b31595b98dc54587ce26270cefe9"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/breakpoint.py",
+        "hash": "e3d37e0256014bc4bc642fe5397a902aad2db5d58e2a37e6469abc1127cd9fce"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/process.py",
+        "hash": "c2359b9425e30ca7d212f3c21202ea84befb3b13e1a33399eb0eec3f9fc76417"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/module.py",
+        "hash": "69039770acedcc1cc884136e11b4af68d67ec6d0c446f896ca74736d25697acc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/sql.py",
+        "hash": "bc79ce1da6ee14732ae0906eeea7fd3baa2652b4933ac386c5dc6383cd5fbeec"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/do_exploitable.py",
+        "hash": "de00ba661fd2b8e292a870f575842f802bd5bc4064ee37465fdcb62a4be5f75f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/__init__.py",
+        "hash": "322659446ef0dc5d1394eccab403dce6dbb044448501b08010040c1e63aa41f8"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/do_example.py",
+        "hash": "d00e90d76d75687ba93ee8b892ba2d4d602830d4b58add76cc554f9bb79857f0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/README",
+        "hash": "8efd4ce2c5c19a44978c21e9fb6d08a41e6726a9b8e5b665adf3817464b5e37b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/do_symfix.py",
+        "hash": "b9fe0e38f1a7d78dc8044fb235cdf6eac06a38d2e513f9e55cd279bc35c179d7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/plugins/do_exchain.py",
+        "hash": "5cc29c1d9d2391f4d849e2c3015de8667b235510a63831c7693c446ed5a0f692"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/context_amd64.py",
+        "hash": "f1e4f5fc6be67e9448d87596a9d3434498c0e93be9c1597c650715bd264508e6"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/advapi32.py",
+        "hash": "d8416fa9ebb15068a20c64f3907315e1f11e0d9bccc66ac1c83e61bbd0a533c0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/peb_teb.py",
+        "hash": "2a3097d18b5efe0eedcb6e3485e85505b69dc66848d8cfbe6d5bb449f84a4bd1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/version.py",
+        "hash": "b81b6b3e8b9bc0cbffd422d27f8da4a4f40e88eae29c2b58264c56ab33a5d3d2"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/kernel32.py",
+        "hash": "4de46c00383b799375770eda19ea5b3886686c69a22b375d4fe6ca119f7b6d02"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/__init__.py",
+        "hash": "2e33cb434a6feab7074266f7da3575d9b194c3f093b22d1ab5f36e3af920da77"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/user32.py",
+        "hash": "f9861d56b3155195a9ccc20151b78b90d96143b542061be358b759b4df6ed15a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/psapi.py",
+        "hash": "5799fd1d22e7d1fbf9ab07bcdf332318605c4de276c282734bf85d8c6421a6ce"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/dbghelp.py",
+        "hash": "c5e3ed04adc9ecf5698b55ab6cd0ef892540a520f455ad50c6d455cad4f6a5df"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/defines.py",
+        "hash": "55eadcd342a76375d2c48d0a3296fcd54e0fea4e8c50709ef8d82cc651bb21ef"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/shell32.py",
+        "hash": "4f63003e1282a867e0fc9c581999160a1ce50ed0ec44079ccec2fc7c68526030"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/gdi32.py",
+        "hash": "e62f11a46e37c0430061b7018c4c0969e9ab561ae517018a8642fde3b091fbb1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/context_i386.py",
+        "hash": "08b0f9440422ebce857c2b346eccc4821fd9545223f98ad412df0746f1c4e471"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/wtsapi32.py",
+        "hash": "3fee0920fdfcaed6d0fa21ed763481b2deb9ea67c178510158f6723ab083fdcd"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/ntdll.py",
+        "hash": "ecf4ae9e5d62c59a39cbe6e897ec39de21381a12843d8bfb291888f7f0a23a6b"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/winappdbg/win32/shlwapi.py",
+        "hash": "c7b8d5e7ff7d1ab654d30943f9e3d478cd3d52afcf27b2f533d630b9c20c504c"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/stdafx.h",
+        "hash": "974b44231c62bf45eb21e889db379d4dde1f62b765c554caf040a9064f3cd563"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/attach.h",
+        "hash": "ad6040de47737f21da13d5fd0e2b9bddca23a099578c2dd32a72d0bfe9c609e0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/attach.cpp",
+        "hash": "0c60f225887aaa8c67db4fb1f95f60d90e4d9a22bea71e995ed5ae8d5b8647a0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/targetver.h",
+        "hash": "7eac3e88fa291bf57ea454717f7de55452f4baf59f0d4076932d1b89b15b94ad"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/stdafx.cpp",
+        "hash": "34ef2a95ceec294ea81c0fc09d7252a1d1eea592e2ce9de7a414dcf841a9063f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/windows/compile_windows.bat",
+        "hash": "bb5c5cd4b8654aedf21b470cc8ff5471ef514dee4747e73b1fa15dbd4f307656"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/compile_mac.sh",
+        "hash": "e3fc7363e169907025d778362eb2fc5c6474242d73fbf52c21e97d9c979a5927"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/attach.cpp",
+        "hash": "c46f0d98ec1fba15cdf77b29b86fee11f7b4b4e9f7da19e58c2a98e5fd73df9e"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/lldb_prepare.py",
+        "hash": "79298bd4a2cb3ab1bcaf8449c9539ddd44948eca6559774a4820a79c6c8655da"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_attach_to_process/linux_and_mac/compile_linux.sh",
+        "hash": "61b05700cc1704413afa387872576a3d5f544a4eab37f7ce98675838966c1c2f"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_eval_cython_wrapper.py",
+        "hash": "7ec8e01a0d3b6a154274831edfcb1abd3c8012042d1336fbbd522576380b85f1"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.c",
+        "hash": "ca012155421a3f8e70bb8effc0ef622fe32f611d1535948a3bbce2cd795a353a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_eval_main.py",
+        "hash": "3bfa5f1a13ce5387e0e5f3f9258a1d83ff149f89c047f161b591b01cb041f9cd"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.pyx",
+        "hash": "9ebf7b519f6cf7f084a0eb9f25117bef91cafe670d58be1428c42570af3bee92"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/release_mem.h",
+        "hash": "8b0f849ce8b6138f03ce11ff9832430078b7200d52ca0b72cf4f23ea6f029bdd"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_modify_bytecode.py",
+        "hash": "136b00f1c76d79a2037f821d390f1fcc2c7839a304b5825819de7d420f989643"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_tracing.py",
+        "hash": "489fe1ac271da2fb9c95fda6a4c83a73c95715f213eb59c2cea29e2de3ebf2cc"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/_pydevd_frame_eval/pydevd_frame_evaluator.pxd",
+        "hash": "4275d7854a8c8dacd9fb1b642b7a46c00989c0031be8e0d457f39afa31778bd0"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_concurrency_analyser/__init__.py",
+        "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_concurrency_analyser/pydevd_thread_wrappers.py",
+        "hash": "649e4a96d718b793dfa7a3ff18c266b83ae7af20a1c11fa77cd7dc8c7edce6a7"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydevd_concurrency_analyser/pydevd_concurrency_logger.py",
+        "hash": "88554d12b12474883742119cfe462b86942651164a17026baf9c170165501d8a"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_sitecustomize/__not_in_default_pythonpath.txt",
+        "hash": "86791302ec52156fd38a5830d01b754552eb7c6444de16230264cf9b593eb1cf"
+      },
+      {
+        "path": "bin/ptvsd/_vendored/pydevd/pydev_sitecustomize/sitecustomize.py",
+        "hash": "9071550882d09e0b5b353822693bb489c58387b851cea2293250127942c8f16a"
+      },
+      {
+        "path": "default/debug.conf",
+        "hash": "b438aee039cce8184625f5eca198cc9d963e518eeda571045a49dccf9df5d1cf"
+      },
+      {
+        "path": "default/app.conf",
+        "hash": "aaa3f2003bfd655d95743c9eb7fd3e37c433d7494393bec235b3ae537ff506e4"
+      },
+      {
+        "path": "default/props.conf",
+        "hash": "cca3231746d5252a7e02dbb8c2ce396912a7cf9211e0e8a5b32bf6e6602fe9a5"
+      },
+      {
+        "path": "default/data/ui/nav/default.xml",
+        "hash": "8291ea195235eaed2c484edfbdb6cd0b47b652e18f05b1e459bdb658740a0f08"
+      },
+      {
+        "path": "default/data/ui/views/overview.xml",
+        "hash": "6a9b3c3548bec6751841c90544b7e5a71fbfb7c6c272a210758977cf0ed3c6fb"
+      },
+      {
+        "path": "default/data/ui/views/remote_debugging.xml",
+        "hash": "dbf0546767485244e012bb86d4f52f86b751d11a60d785ba7856cf7859de705b"
+      },
+      {
+        "path": "default/data/ui/views/debugger_options.xml",
+        "hash": "b00e1b416edd7255c87026f9b248dde0a3278dafd8938af09d23908c6e4ab7d2"
+      },
+      {
+        "path": "static/appIcon.png",
+        "hash": "19e74931d00b50424b3e97df017f190ab97ef9952cab6e86f1b1a4489533d564"
+      },
+      {
+        "path": "static/appIcon_2x.png",
+        "hash": "9ed613a7c8b832895f8f31d486df88e40fe5bd40f68cb7bd679e677b8a63f3d5"
+      },
+      {
+        "path": "static/appIconAlt.png",
+        "hash": "f1164374c41d81ea9160cbb9d17dab6b7dd57fabc5a734b61598d49cbbe5c197"
+      },
+      {
+        "path": "static/appIconAlt_2x.png",
+        "hash": "0a514b714086efa33b4a1b3e78bafeccdc601118828259b82d61fc35f31bc1e3"
+      },
+      {
+        "path": "appserver/static/SSH_python_enable.png",
+        "hash": "48e7514f08a9bb5b1b79f131a09e5eba9cb2bc007234fdc7dfdf253c1c281c48"
+      },
+      {
+        "path": "appserver/static/remote-ssh_connect_host.png",
+        "hash": "0d4d3412bbe6b3bf3f71eb9054ace56f679d2ee3e217276726f94b0d6d8af359"
+      },
+      {
+        "path": "appserver/static/SSH-creds.png",
+        "hash": "23f13c0e6bbdc14a5b5450ff4ee4d96632177709a6b6e32712ac29aee13bc72e"
+      },
+      {
+        "path": "appserver/static/open_folder.png",
+        "hash": "cbed732d59143e56090d54599cc4edcf1d6ec3c96a1b8d2803c0a5f7baa03bc7"
+      },
+      {
+        "path": "appserver/static/open_folder2.png",
+        "hash": "844dfe43bb9b8a61fb8748a755bf0adfbbc9acfde099f9cdca0b4cc15501bb8a"
+      },
+      {
+        "path": "appserver/static/SSH-button.png",
+        "hash": "662661b9b9d7acf6e2856f4537dbfd323ae6b60889dbcee350ac76deda6534be"
+      },
+      {
+        "path": "appserver/static/debug.png",
+        "hash": "ea2ba0c002063fe2b4716c607ea151b38fddffadb14c99339648b4708c787783"
+      },
+      {
+        "path": "appserver/static/appIcon.png",
+        "hash": "19e74931d00b50424b3e97df017f190ab97ef9952cab6e86f1b1a4489533d564"
+      },
+      {
+        "path": "appserver/static/appIcon_2x.png",
+        "hash": "9ed613a7c8b832895f8f31d486df88e40fe5bd40f68cb7bd679e677b8a63f3d5"
+      },
+      {
+        "path": "appserver/static/appIconAlt.png",
+        "hash": "f1164374c41d81ea9160cbb9d17dab6b7dd57fabc5a734b61598d49cbbe5c197"
+      },
+      {
+        "path": "appserver/static/appIconAlt_2x.png",
+        "hash": "0a514b714086efa33b4a1b3e78bafeccdc601118828259b82d61fc35f31bc1e3"
+      },
+      {
+        "path": "metadata/default.meta",
+        "hash": "88d505266c01de4653b8d27882510be4431812dca5b7c7bdfbe46940ce81c7c2"
+      }
+    ]
+  },
+  "products": [
+    {
+      "platform": "splunk",
+      "product": "enterprise",
+      "versions": [
+        "7.0",
+        "7.1",
+        "7.2",
+        "7.3",
+        "8.0",
+        "8.1",
+        "8.2",
+        "9.0",
+        "9.1",
+        "9.2"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    },
+    {
+      "platform": "splunk",
+      "product": "cloud",
+      "versions": [
+        "7.0",
+        "7.1",
+        "7.2",
+        "7.3",
+        "8.0",
+        "8.1",
+        "8.2",
+        "9.0",
+        "9.1",
+        "9.2"
+      ],
+      "architectures": [
+        "x86_64"
+      ],
+      "operatingSystems": [
+        "windows",
+        "linux",
+        "macos",
+        "freebsd",
+        "solaris",
+        "aix"
+      ]
+    }
+  ]
+}
