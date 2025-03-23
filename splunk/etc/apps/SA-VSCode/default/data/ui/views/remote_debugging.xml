@@ -1,0 +1,123 @@
+<dashboard version="1.1">
+  <label>Remote Debugging using SSH</label>
+  <row>
+    <panel>
+      <html>
+        <p>
+          Remote Debugging using SSH allows you to use Visual Studio Code locally regardless of where Splunk Enterprise is running, including public cloud providers, as long as SSH connectivity is available.  No source code needs to be on your local machine since all execution happens on the remote instance.
+        </p>
+        
+        <hr />
+        
+        <div id="requirements">
+
+          <h1>Requirements</h1>
+          
+          <p>
+            Local Machine:
+            <ul>
+              <li>
+                <a href="https://code.visualstudio.com/" class="external" target="_blank">Microsoft Visual Studio Code</a>
+              </li>
+              <li><a href="https://marketplace.visualstudio.com/items?itemName=Splunk.splunk" class="external" target="_blank">Visual Studio Code Splunk Extension</a></li>
+            </ul>
+          </p>
+          
+          <p>
+            Remote Machine:
+            <ul>
+              <li><a href="https://www.splunk.com" class="external" target="_blank">Splunk Enterprise</a></li>
+              <li><a href="https://splunkbase.splunk.com/app/4801" class="external" target="_blank">Microsoft Visual Studio Code Supporting Add-on for Splunk</a> (this add-on)</li>
+            </ul>
+          </p>
+        
+        </div>
+        
+        <hr />
+
+        <div id="walkthrough">
+          <h1>Walkthrough</h1>
+          
+          <h2><b>Step 1 – Set up SSH</b></h2>
+          
+          <p>
+            Remote access to a machine can be accomplished via username and password or an SSH public/private key pair.  Key-based authentication is highly recommended.
+          </p>
+          
+          <p>
+            If you do not have an SSH key pair, open a bash shell or command line and run the following command to generate one: <br />
+            <code>ssh-keygen -t rsa -b 2048</code>
+          </p>
+
+          <p>
+            You will need to add the SSH key to your remote SSH host which will vary and is beyond the scope of this walkthrough.
+          </p>
+
+          <h2><b>Step 2 – Connect to the remote Splunk Enterprise instance from Visual Studio Code</b></h2>
+          
+          <p>
+            The Remote SSH extension, which is installed by the Visual Studio Code Splunk Extension, adds an indicator to the bottom-left corner of the Status Bar in Visual Studio Code indicating the context in which Visual Studio Code is running (local or remote).  Click on this indicator to bring up a list of Remote Extension commands. <br />
+            
+            <img src="/static/app/SA-VSCode/SSH-button.png" width="300px" />
+          
+          </p>
+
+          <p>
+            Choose the Remote-SSH: Connect to Host command. <br />
+
+            <img src="/static/app/SA-VSCode/remote-ssh_connect_host.png" width="500px" />
+          </p>
+          
+          <p>
+            Specify the <code>username@hostname</code> where username is the <code>username</code> associated with the SSH key, and <code>hostname</code> is the remote Splunk instance. <br />
+            
+            <img src="/static/app/SA-VSCode/SSH-creds.png" width="500px" />
+          </p>
+         
+          <p>
+           A new instance of Visual Studio Code will open that is connected to the remote Splunk instance.
+         </p>
+         
+          <h2><b>Step 3 – Open the root folder of your Splunk app</b></h2>
+         
+          <p>
+           Choose Open folder... <br />
+           
+           <img src="/static/app/SA-VSCode/open_folder.png" width="300px" />
+         </p>
+         
+          <p>
+           Type in the path to your Splunk app location and click the OK button <br />
+           
+           <img src="/static/app/SA-VSCode/open_folder2.png" width="500px" />
+         </p>
+         
+          <h2><b>Step 4 – Enable the Python Extension in SSH</b></h2>
+         
+          <p>
+           By default, the Python extension is not enabled for SSH.  Click the Extensions button (1) in the Activity bar on the left, and then click the Install in SSH button (2) for the Python extension. <br />
+           
+           <img src="/static/app/SA-VSCode/SSH_python_enable.png" width="400px" />
+         </p>
+  
+          <p>
+          You can now debug using the same techniques as if you were connected locally.
+        </p>
+
+        </div>
+        
+        <hr />
+        
+        <div id="Troubleshooting">
+        
+          <h1>Troubleshooting</h1>
+          <p>
+            Ensure your SSH credentials have read permissions to necessary files.
+          </p>
+          
+        </div>
+
+      </html>
+    </panel>
+  </row>
+</dashboard>

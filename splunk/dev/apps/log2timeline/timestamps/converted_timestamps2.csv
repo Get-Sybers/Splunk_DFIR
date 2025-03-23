@@ -1,0 +1,13 @@
+class,"'date_time.timestamp'","filetime_epoch","uuid_epoch","posix_epoch","tems_epoch","'date_time.fat_date_time'","fat_epoch",DTG
+Filetime,,"1613134686.3104858",,,,,,"2021-02-12 12:58:06"
+PosixTime,,,,4294967295,,,,"2106-02-07 06:28:15"
+TimeElementsInMilliseconds,,,,,,,,
+FATDateTime,,,,,,,"465992300.000000","1984-10-07 10:18:20"
+UUIDTime,,,"1612684431.7034073",,,,,"2021-02-07 07:53:51"
+Systemtime,,,,,,,,unknown
+PosixTimeInMicroseconds,,,,,,,,unknown
+NotSet,,,,,,,,"not set"
+SemanticTime,,,,,,,,unknown
+WebKitTime,,,,,,,,unknown
+TimeElements,,,,,,,,unknown
+TimeElementsInMicroseconds,,,,,,,,unknown
