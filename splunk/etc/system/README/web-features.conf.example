@@ -1,0 +1,81 @@
+#   Version 9.4.1
+#
+# You can configure Splunk Web features for your custom application.
+#
+# To use one or more of these configurations, copy the configuration block into
+# the web-features.conf file located in $SPLUNK_HOME/etc/system/local/. You must restart
+# Splunk software after you make changes to this setting to enable configurations.
+#
+# For more information on configuration files, including precedence, search for
+# "Use Splunk Web to manage configuration files" in the Admin Manual in the Splunk Docs.
+
+[feature:quarantine_files]
+enable_jQuery2 = false
+enable_unsupported_hotlinked_imports = false
+
+[feature:dashboards_csp]
+enable_dashboards_external_content_restriction = true
+enable_dashboards_redirection_restriction = true
+dashboards_trusted_domain.splunk = *.splunk.com
+dashboards_trusted_domain.example = www.example.com
+
+
+
+
+[feature:page_migration]
+enable_triggered_alerts_vnext = false
+enable_home_vnext = false
+enable_datasets_vnext = false
+enable_authoverview_vnext = false
+enable_react_users_page = true
+enable_authentication_providers_LDAP_vnext = true
+enable_admin_LDAP-groups_vnext = true
+enable_password_management_page_vnext = true
+enable_authorization_tokens_vnext = true
+enable_authorization_roles_vnext = true
+enable_authentication_users_vnext = true
+enable_duo_mfa_vnext = false
+
+[feature:dashboard_studio]
+enable_show_hide = true
+
+[feature:dashboard_inputs_localization]
+enable_dashboard_inputs_localization = false
+
+[feature:share_job]
+enable_share_job_control = true
+
+[feature:search_auto_format]
+enable_autoformatted_comments = false
+
+[feature:ui_prefs_optimizations]
+optimize_ui_prefs_performance = true
+
+[feature:splunk_web_optimizations]
+enable_app_bar_performance_optimizations = true
+bypass_app_bar_performance_optimizations_apps = "search"
+enable_app_bar_caching = true
+
+[feature:spotlight_search]
+enable_spotlight_search = true
+
+[feature:search_sidebar]
+enable_sidebar_preview = true
+
+[feature:field_filters]
+enable_field_filters_ui = true
+
+[feature:identity_sidecar_scim]
+enabled = true
+
+[feature:system_namespace_redirection]
+enable_system_namespace_redirection = true
+
+
+
+[feature:appserver]
+python.version = latest
+
+[feature:federated_search]
+enable_ipv6_validations = true
+

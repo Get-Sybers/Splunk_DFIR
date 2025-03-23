@@ -1,0 +1,23 @@
+#   Version 9.4.1
+#
+# This is an example ipc_broker.conf. Use this file to configure the inter-process
+# communication (IPC) related settings, such as specifying the TCP/IP network port for
+# a helper process for splunkd. This lets the broker serve incoming requests and/or
+# facilitate communications between helper processes.
+#
+# There is an ipc_broker.conf file in the $SPLUNK_HOME/etc/system/default/ directory.
+# Never change or copy the configuration files in the default directory.
+# The files in the default directory must remain intact and in their original
+# location.
+#
+# To set custom configurations, create a new file with the name ipc_broker.conf in
+# the $SPLUNK_HOME/etc/system/local/ directory. Then add the specific settings
+# that you want to customize to the local configuration file.
+# You must restart the Splunk instance to enable configuration changes.
+#
+# To learn more about configuration files (including file precedence) see the
+# documentation located at
+# http://docs.splunk.com/Documentation/Splunk/latest/Admin/Aboutconfigurationfiles
+
+[ipc_broker_main]
+port = 8194

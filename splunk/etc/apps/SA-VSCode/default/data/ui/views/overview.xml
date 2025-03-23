@@ -1,0 +1,122 @@
+<dashboard version="1.1">
+  <label>Overview</label>
+  <row>
+    <panel>
+      <html>
+        <p>
+          The Microsoft Visual Studio Code Supporting Add-on for Splunk provides support for debugging user Python code contained in apps, add-ons, custom search commands, custom REST handlers, modular visualizations, or any user Python code run within Splunk Enterprise.  The supporting add-on can automatically create a debug configuration for your Splunk Enterprise project and provides helper methods for the Visual Studio Code Python Debug Adapter.
+        </p>
+        
+        <hr />
+        
+        <div id="getting_started">
+
+          <h1>Getting started</h1>
+          <p>
+            The information below provides a quick start guide to debugging.  Refer to the <a href="debugger_options">Debugger Options</a> section for a complete list of options and their functionality.
+          </p>
+          
+          <hr />
+          
+          <h1>Requirements</h1>
+          
+          <p>
+            <ul>
+              <li>
+                <a href="https://code.visualstudio.com/" class="external" target="_blank">Microsoft Visual Studio Code</a>
+              </li>
+              <li><a href="https://www.splunk.com/" class="external" target="_blank">Splunk Enterprise</a></li>
+              <li><a href="https://splunkbase.splunk.com/app/4801/" class="external" target="_blank">Microsoft Visual Studio Code Supporting Add-on for Splunk</a> (this add-on)</li>
+              <li><a href="https://marketplace.visualstudio.com/items?itemName=Splunk.splunk" class="external" target="_blank">Visual Studio Code Splunk extension</a></li>
+            </ul>
+          </p>
+
+          <p>
+            Full debugging documentation is available in the <a href="https://github.com/splunk/vscode-extension-splunk/wiki/Debugging" target="_blank">project repository</a>.
+          </p>
+        
+        </div>
+        
+        <hr />
+
+        <div id="mofying_your_code">
+          <h1>Modifying your code</h1>
+            <p>
+              In order to debug your Python code, some minor changes need to be made.  Place the following in your Python file you would like to debug:
+            </p>
+            <pre>import sys, os
+sys.path.append(os.path.join(os.environ['SPLUNK_HOME'],'etc','apps','SA-VSCode','bin'))
+import splunk_debug as dbg
+dbg.enable_debugging(timeout=25)</pre>
+          
+          <p>
+            The above code does 2 main things:
+            
+            <ol>
+              <li>Appends the path of the supporting add-on to the Python path.  This makes is possible for your code to import the necessary modules without copying them to your project.</li>
+              <li>Starts the debug server for your code.  The timeout parameter specifies how long, in seconds, the debug server will wait for Visual Studio Code to connect to the running process.  If a connection is not made during this time period, the Python code will continue to run as normal.</li>
+            </ol>
+          </p>
+         
+  
+          <h2>Setting a break point (optional)</h2>
+          <p>
+            Breakpoints can be set in Visual Studio Code, or you can use the following line to force a breakpoint anywhere in your Python code:
+          </p>
+          <pre>dbg.set_breakpoint()</pre>
+          
+          <h2>Configure debugging with debug.conf (optional)</h2>
+          <p>
+            The debugger can be configured for an app by creating a new file with the name debug.conf in the $SPLUNK_HOME/etc/apps/&lt;app_directory&gt;/local/ directory.
+          </p>
+          <h1>debug.conf</h1>
+          <pre>[debug]
+enabled = &lt;boolean&gt;
+* Set whether an app allows debugging
+* Enabling debugging can delay execution and introduce artificial latency.  It is recommended to either remove debug code or disable debugging options for production.
+* Default: true
+</pre>
+          
+          <p>
+            <div class="alert alert-warning">
+              <i class="icon-alert"></i>Important: enabling debugging can delay execution and introduce artificial latency.  It is recommended to either remove debug code or disable debugging options for production.
+            </div>
+          </p>
+        </div>
+        
+        <hr />
+        
+        <div id="vscode_debugging"></div>
+
+          <h1>Starting the Visual Studio Code Debugger</h1>
+          <p>
+            Visual Studio Code attaches to your modified code using a debug configuration created by the supported add-on.  This configuration is named "Splunk Enterprise: Python Debugger".
+          </p>
+
+          <h2>Step 1 - open your Splunk Enterprise folder in Visual Studio Code</h2>
+
+          <p>
+            It is necessary to open the folder in order for Visual Studio Code to read the debug configuration created by the supporting add-on. <br />
+
+            After launching Visual Studio Code, choose Open folder... <br />
+            <img src="/static/app/SA-VSCode/open_folder.png" width="300px"/>
+          </p>
+
+          <h2>Step 2 – start the debugger</h2>
+          <p>
+            Once your Python code is running, perform the following steps in Visual Studio Code:
+            <ol>
+              <li>Select debug from the Visual Studio Code side bar</li>
+              <li>Choose the "Splunk Enterprise: Python Debugger" configuration</li>
+              <li>Click the start debugging button</li>
+            </ol>
+          </p>
+          
+          <p>
+            <img src="/static/app/SA-VSCode/debug.png" width="500px" />
+          </p>
+
+      </html>
+    </panel>
+  </row>
+</dashboard>
