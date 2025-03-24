@@ -11,7 +11,7 @@ INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
 HOST_OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/log2timeline"
 
 # Ensure the host output directories exist
-mkdir -p "$HOST_OUTPUT_DIR/json"
+mkdir -p "$HOST_OUTPUT_DIR/tsv"
 mkdir -p "$HOST_OUTPUT_DIR/logs"
 
 # Change ownership and permissions
@@ -43,16 +43,20 @@ for INPUT_FILE in "${E01_FILES[@]}"; do
 
     # Run psteal inside the Plaso container for each file
     docker run --rm -v "$INPUT_DIR":/data:ro -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
-      psteal --source /data/"$(basename "$INPUT_FILE")" --output-format json_line --timezone UTC --partitions all \
-      -w /output/json/"$FILENAME".json 2> "$HOST_OUTPUT_DIR/logs/$FILENAME".log
+    psteal --source /data/"$(basename "$INPUT_FILE")" \
+    --output-format dynamic \
+    --fields date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone \
+    --timezone UTC \
+    --partitions all \
+    -w /output/tsv/"$FILENAME".tsv 2> "$HOST_OUTPUT_DIR/logs/$FILENAME".log
 
-    # Check if JSON output was created
-    if [[ ! -f "$HOST_OUTPUT_DIR/json/$FILENAME.json" ]]; then
-        echo "Error: psteal failed to produce JSON output for $FILENAME" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
+    # Check if tsv output was created
+    if [[ ! -f "$HOST_OUTPUT_DIR/tsv/$FILENAME.tsv" ]]; then
+        echo "Error: psteal failed to produce tsv output for $FILENAME" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
         continue
     fi
 
-    echo "Saved JSON output to: $HOST_OUTPUT_DIR/json/$FILENAME.json" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
+    echo "Saved tsv output to: $HOST_OUTPUT_DIR/tsv/$FILENAME.tsv" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
     echo "Saved logs to: $HOST_OUTPUT_DIR/logs/$FILENAME.log" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
 
 done

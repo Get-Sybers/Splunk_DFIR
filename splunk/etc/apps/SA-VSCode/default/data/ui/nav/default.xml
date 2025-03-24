@@ -1,6 +1,0 @@
-<nav search_view="search" color="#3d444d">
-	<view name="overview" default="true" />
-	<a href="https://github.com/splunk/vscode-extension-splunk/wiki/Remote-Debugging-using-SSH" target="_blank">Remote Debugging using SSH</a>
-	<a href="https://github.com/splunk/vscode-extension-splunk/wiki/Debugger-Options" target="_blank">Debugger Options</a>
-	<a href='search?q=index=_internal sourcetype=ptvsd*'>View Debugger Logs</a>
-</nav>
