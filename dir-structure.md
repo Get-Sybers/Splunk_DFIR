@@ -53,7 +53,7 @@
     │       │       └── cron/                         # Daemon Cron Jobs
     │       │
     │       └── log2timeline/
-    │       │   └── json/                             # Log2timeline Output
+    │       │   └── tsv/                             # Log2timeline Output
     │       │   │ 
     │       │   └── logs/                             # Log2timeline Job Logs
     │       │      
