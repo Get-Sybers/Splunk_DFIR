@@ -8,13 +8,13 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Ingest | Extract | Data Model |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line      | ✅     |         |            |
-| [Zeek](https://zeek.org/)                                     | ✅            | json_line      | ✅     | ✅      |            |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, tsv | ✅     | tsv✅   |            |
+| [Zeek](https://zeek.org/)                                     | ✅            | json_line      | ✅     |    ✅   |            |
 | [Kape](https://github.com/EricZimmerman/KapeFiles)            | manual        | json_line, csv | ✅     |   ✅✅  |            |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                |        |         |            |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx      |        |         |            |
 | [Symon](https://github.com/mandiant/Symon)                    |               |                |        |         |            |
-| [Syslog](https://syslog-ng.github.io)                                                             |               |                |        |         |            |
+| [Syslog](https://syslog-ng.github.io)                         |               |                |        |         |            |
 | Linux Logs                                                    |               |                |        |         |            |
 | CSVs                                                          |               | csv            | ✅     |         |            |
 | JSON                                                          |               | json           | ✅     |         |            |
@@ -48,11 +48,8 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 ---
 
 ## 🔄 In Progress
-### 🔹 **Field Mappings**  
-- Log2timeline field mappings
-  - Think I need to use python for this.. sourcetype "l2t:olecf" contains timestamp within json object spread accross fields `date_time.__class_name__	date_time.__type__	date_time.fat_date_time	 date_time.timestamp`
-  - contains time formats `Filetime, UUIDTime, FATDateTime`
-  - need to figure out how to handle "junk" timestamps created by `.custom_destinations`
+### 🔹 **Field Extraction**  
+
 
 ### 🔹 **Splunk Apps for Data Types**  
 - Create individual Splunk apps for each data type (Zeek, log2timeline, EVTX, KAPE). This app will handle all conf files for ingestion.
@@ -68,7 +65,13 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 ---
 
 ## ✅ Done
-### 🔹 **Field Mappings**  
+### 🔹 **Field Extractions**
+
+✅ - Log2timeline field mappings
+  - log2timeline output was changed from json to "dynamic" which outputs a "comma delimited" output. The reason for this is l2t captures more timestamp formats than I knew existed and won't convert them into epoch (one of few time formats Splunk can interpet) unless --dynamic output is made.
+  - the end result is surprisingly a looot better than I expected csv.
+  - huge benefit is I was able to pass the "datetime" field l2t outputs into splunk as the _time value. So the timeline search feature is fully integrated.
+
 ✅ - Kape CSV and JSON
   - timestamps so far are mappped correctly. Need more data to test if anything more will capture ingest time as _time
   - haven't been able to push SOF-ELK sourcetype to the rest of the Kape source types.
@@ -78,7 +81,8 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 ✅- Test `log2timeline-ALL-dynamic.sh` for processing **all E01 images**.  
 ✅- Test `zeek-process-single-dynamic.sh` and `zeek-process-all-dynamic.sh`.  
 
-### 🔹 **Splunk Deployment Enhancements**  
+### 🔹 **Splunk Deployment Enhancements**
+
 ✅ Learn how to better use Ansible for better splunk deployment
   - cry
   - write ansible playbook to install custom user apps for host directory
@@ -86,16 +90,19 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 
 ✅ - Finalize and test `deploysplunk-dynamic.sh` for **dynamic path resolution**.  
 - Integrate **Splunk authentication and security best practices**.  
-- **Repository Structure Refinement**  
+- **Repository Structure Refinement**
+
 ✅  - Review and refine folder structures in `data_store` and `scripts`.  
 - **File Path Validation**  
-✅  - Validate that all **dynamic paths** work as expected across different environments.  
-### ✅ **Deployment & Ingestion into Splunk**  
+
+✅  - Validate that all **dynamic paths** work as expected across different environments.
+
+### ✅ **Deployment & Ingestion into Splunk**
 - Splunk container is **deployed and properly configured**.  
 - All ingestion scripts successfully tested and validated.  
 
 ### ✅ **log2timeline Processing**  
-- Fully functional pipeline for **E01 images → Plaso → JSON logs → Splunk**.  
+- Fully functional pipeline for **E01 images → Plaso → JSON logs → Splunk**.  get-sybers "(output was later changed from JSON to csv)"
 
 ### ✅ **Zeek Processing**  
 - PCAPs successfully converted into Zeek logs and **ingested into Splunk**.  

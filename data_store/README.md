@@ -122,10 +122,10 @@ data_store/
       │   └── linux_logs/
       │
       └── log2timeline
-      │   └── json/
-      │   │   └── <your-disk-image>.json
-      │   │   └── <your-disk-image>.json
-      │   │   └── <your-disk-image>.json
+      │   └── tsv/
+      │   │   └── <your-disk-image>.csv
+      │   │   └── <your-disk-image>.csv
+      │   │   └── <your-disk-image>.csv
       │   │ 
       │   └── logs/
       │       └── <your-disk-image>.log

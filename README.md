@@ -60,10 +60,10 @@ Automate and clarify the DeadBox DFIR data pipeline by normalizing data fields c
 process=* action=create
 | table dtg, hostname, user, command_line, artifact
 ```
-| dtg                 | hostname       | user         | command_line                                             | artifact                 |
-|---------------------|----------------|--------------|----------------------------------------------------------|--------------------------|
-| 2025-01-01T10:14:29 | WKS-1          | analyst01    | `powershell.exe -nop -exec bypass Invoke-Mimikatz.ps1`   | Prefetch                 |
-| 2025-01-01T11:05:52 | DC-1           | svc_backup   | `powershell.exe Get-ChildItem -Path \\server\share`     | WinEVTX:Security         |
+| dtg                 | hostname       | user         | command_line                                              | artifact                 |
+|---------------------|----------------|--------------|-----------------------------------------------------------|--------------------------|
+| 2025-01-01T10:14:29 | WKS-1          | analyst01    | `powershell.exe -nop -exec bypass Invoke-Mimikatz.ps1`    | Prefetch                 |
+| 2025-01-01T11:05:52 | DC-1           | svc_backup   | `powershell.exe Get-ChildItem -Path \\server\share`       | WinEVTX:Security         |
 | 2025-01-01T11:45:17 | WKS-2          | jdoe         | `powershell.exe -EncodedCommand JABzAD0AbgBlAHQAIAB1AH...`| Volatile:Get-Process     |
 
 ---
