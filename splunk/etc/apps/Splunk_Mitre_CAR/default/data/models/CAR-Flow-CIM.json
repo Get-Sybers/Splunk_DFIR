@@ -1,0 +1,306 @@
+{
+    "modelName": "CAR-Flow",
+    "displayName": "CAR Flow",
+    "description": "A sequence of packets from a source computer to a destination, which may be another host, a multicast group, or a broadcast domain. This may be captured at network or host level.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARFlow",
+        "displayName": "CAR Flow",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "FQDN of the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the host.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "content",
+            "displayName": "content",
+            "type": "string",
+            "comment": {
+              "description": "ASCII printable characters of the flow.",
+              "example": "GET https://www.google.com/ HTTP/1.1"
+            }
+          },
+          {
+            "fieldName": "dest_ip",
+            "displayName": "dest_ip",
+            "type": "string",
+            "comment": {
+              "description": "Destination IP address of the flow.",
+              "example": "192.168.1.5"
+            }
+          },
+          {
+            "fieldName": "dest_port",
+            "displayName": "dest_port",
+            "type": "number",
+            "comment": {
+              "description": "Destination port of the flow.",
+              "example": 443
+            }
+          },
+          {
+            "fieldName": "src_ip",
+            "displayName": "src_ip",
+            "type": "string",
+            "comment": {
+              "description": "Source IP address of the flow.",
+              "example": "10.0.0.54"
+            }
+          },
+          {
+            "fieldName": "src_port",
+            "displayName": "src_port",
+            "type": "number",
+            "comment": {
+              "description": "Source port of the flow.",
+              "example": 50438
+            }
+          },
+          {
+            "fieldName": "start_time",
+            "displayName": "start_time",
+            "type": "string",
+            "comment": {
+              "description": "Start timestamp (UTC).",
+              "example": "05/14/2015 11:59:59 PM"
+            }
+          },
+          {
+            "fieldName": "end_time",
+            "displayName": "end_time",
+            "type": "string",
+            "comment": {
+              "description": "End timestamp (UTC).",
+              "example": "05/15/2015 03:59:53.176 AM"
+            }
+          },
+          {
+            "fieldName": "exe",
+            "displayName": "exe",
+            "type": "string",
+            "comment": {
+              "description": "Basename of the image_path.",
+              "example": "Chrome.exe"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "File system path of the process that opened the flow.",
+              "example": "C:\\path\\to\\example.exe"
+            }
+          },
+          {
+            "fieldName": "packet_count",
+            "displayName": "packet_count",
+            "type": "number",
+            "comment": {
+              "description": "Total packet count seen.",
+              "example": 4
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID that generated the flow.",
+              "example": 738
+            }
+          },
+          {
+            "fieldName": "ppid",
+            "displayName": "ppid",
+            "type": "number",
+            "comment": {
+              "description": "Parent process ID of the socket owner.",
+              "example": 1860
+            }
+          },
+          {
+            "fieldName": "proto_info",
+            "displayName": "proto_info",
+            "type": "string",
+            "comment": {
+              "description": "Decoded application-layer protocol information.",
+              "example": "SMB2 Write Request Len:165 ..."
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User that ran the process.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "src_fqdn",
+            "displayName": "src_fqdn",
+            "type": "string",
+            "comment": {
+              "description": "FQDN corresponding to src_ip.",
+              "example": "src_domain.example.com"
+            }
+          },
+          {
+            "fieldName": "src_hostname",
+            "displayName": "src_hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname corresponding to src_ip.",
+              "example": "src_example"
+            }
+          },
+          {
+            "fieldName": "dest_fqdn",
+            "displayName": "dest_fqdn",
+            "type": "string",
+            "comment": {
+              "description": "FQDN corresponding to dest_ip.",
+              "example": "dest_example.example.com"
+            }
+          },
+          {
+            "fieldName": "dest_hostname",
+            "displayName": "dest_hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname corresponding to dest_ip.",
+              "example": "dest_example"
+            }
+          },
+          {
+            "fieldName": "application_protocol",
+            "displayName": "application_protocol",
+            "type": "string",
+            "comment": {
+              "description": "Layer 7 protocol name.",
+              "example": "HTTP"
+            }
+          },
+          {
+            "fieldName": "in_bytes",
+            "displayName": "in_bytes",
+            "type": "number",
+            "comment": {
+              "description": "Total number of bytes received.",
+              "example": 13200
+            }
+          },
+          {
+            "fieldName": "out_bytes",
+            "displayName": "out_bytes",
+            "type": "number",
+            "comment": {
+              "description": "Total number of bytes sent.",
+              "example": 1337
+            }
+          },
+          {
+            "fieldName": "network_direction",
+            "displayName": "network_direction",
+            "type": "string",
+            "comment": {
+              "description": "Flow direction relative to perimeter.",
+              "example": "in"
+            }
+          },
+          {
+            "fieldName": "tcp_flags",
+            "displayName": "tcp_flags",
+            "type": "string",
+            "comment": {
+              "description": "TCP flags set during the flow.",
+              "example": "ACK, PSH"
+            }
+          },
+          {
+            "fieldName": "transport_protocol",
+            "displayName": "transport_protocol",
+            "type": "string",
+            "comment": {
+              "description": "Layer 4 protocol.",
+              "example": "TCP"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "User ID or SID of the flow-handling entity.",
+              "example": "S-1-5-18"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Flow_Action_Start",
+            "calculationType": "Eval",
+            "expression": "if(isnull(start) OR start==\"\", \"unknown\", start)",
+            "outputFields": [
+              {
+                "fieldName": "start",
+                "displayName": "start",
+                "type": "string",
+                "comment": {
+                  "description": "Start of flow collection."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Flow_Action_End",
+            "calculationType": "Eval",
+            "expression": "if(isnull(end) OR end==\"\", \"unknown\", end)",
+            "outputFields": [
+              {
+                "fieldName": "end",
+                "displayName": "end",
+                "type": "string",
+                "comment": {
+                  "description": "End of flow collection."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Flow_Action_Message",
+            "calculationType": "Eval",
+            "expression": "if(isnull(message) OR message==\"\", \"unknown\", message)",
+            "outputFields": [
+              {
+                "fieldName": "message",
+                "displayName": "message",
+                "type": "string",
+                "comment": {
+                  "description": "In-stream event within the flow (e.g. content transfer)."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

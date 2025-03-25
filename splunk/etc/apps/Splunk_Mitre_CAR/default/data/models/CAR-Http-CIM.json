@@ -1,0 +1,229 @@
+{
+  "modelName": "CAR-HTTP",
+  "displayName": "CAR HTTP",
+  "description": "HTTP events represent requests made over the network via the HTTP protocol.",
+  "editable": false,
+  "objects": [
+    {
+      "objectName": "CARHTTP",
+      "displayName": "CAR HTTP",
+      "parentName": "BaseEvent",
+      "fields": [
+        {
+          "fieldName": "hostname",
+          "displayName": "hostname",
+          "type": "string",
+          "comment": {
+            "description": "Hostname on which the request was seen.",
+            "example": "HOST1"
+          }
+        },
+        {
+          "fieldName": "request_body_bytes",
+          "displayName": "request_body_bytes",
+          "type": "number",
+          "comment": {
+            "description": "Total number of bytes in the request.",
+            "example": 180
+          }
+        },
+        {
+          "fieldName": "http_version",
+          "displayName": "http_version",
+          "type": "string",
+          "comment": {
+            "description": "HTTP version specified in the header.",
+            "example": "1.1"
+          }
+        },
+        {
+          "fieldName": "request_body_content",
+          "displayName": "request_body_content",
+          "type": "string",
+          "comment": {
+            "description": "Body of the HTTP request."
+          }
+        },
+        {
+          "fieldName": "request_referrer",
+          "displayName": "request_referrer",
+          "type": "string",
+          "comment": {
+            "description": "Referrer URL from which the request originated.",
+            "example": "http://cnn.com"
+          }
+        },
+        {
+          "fieldName": "requester_ip_address",
+          "displayName": "requester_ip_address",
+          "type": "string",
+          "comment": {
+            "description": "IP address from which the request was made.",
+            "example": "10.0.211.200"
+          }
+        },
+        {
+          "fieldName": "response_body_bytes",
+          "displayName": "response_body_bytes",
+          "type": "number",
+          "comment": {
+            "description": "Total number of bytes in the response.",
+            "example": 2910
+          }
+        },
+        {
+          "fieldName": "response_body_content",
+          "displayName": "response_body_content",
+          "type": "string",
+          "comment": {
+            "description": "Content of the HTTP response body."
+          }
+        },
+        {
+          "fieldName": "response_status_code",
+          "displayName": "response_status_code",
+          "type": "number",
+          "comment": {
+            "description": "HTTP status code in response.",
+            "example": 200
+          }
+        },
+        {
+          "fieldName": "url_full",
+          "displayName": "url_full",
+          "type": "string",
+          "comment": {
+            "description": "Full URL requested.",
+            "example": "https://www.mitre.org/about/corporate-overview"
+          }
+        },
+        {
+          "fieldName": "url_domain",
+          "displayName": "url_domain",
+          "type": "string",
+          "comment": {
+            "description": "Domain portion of the URL.",
+            "example": "www.mitre.org"
+          }
+        },
+        {
+          "fieldName": "url_remainder",
+          "displayName": "url_remainder",
+          "type": "string",
+          "comment": {
+            "description": "Path after the root domain.",
+            "example": "/about/corporate-overview"
+          }
+        },
+        {
+          "fieldName": "url_scheme",
+          "displayName": "url_scheme",
+          "type": "string",
+          "comment": {
+            "description": "Protocol scheme used in the URL.",
+            "example": "https"
+          }
+        },
+        {
+          "fieldName": "user_agent_full",
+          "displayName": "user_agent_full",
+          "type": "string",
+          "comment": {
+            "description": "Full user agent string.",
+            "example": "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC ...)"
+          }
+        },
+        {
+          "fieldName": "user_agent_name",
+          "displayName": "user_agent_name",
+          "type": "string",
+          "comment": {
+            "description": "Name or type of user agent used in the request.",
+            "example": "Chrome/58.0.3029.83"
+          }
+        },
+        {
+          "fieldName": "user_agent_device",
+          "displayName": "user_agent_device",
+          "type": "string",
+          "comment": {
+            "description": "Device identified from the user agent string.",
+            "example": "SM-G930VC (Samsung Galaxy S7)"
+          }
+        },
+        {
+          "fieldName": "user_agent_version",
+          "displayName": "user_agent_version",
+          "type": "string",
+          "comment": {
+            "description": "Parsed version of the user agent.",
+            "example": "4.0"
+          }
+        }
+      ],
+      "calculations": [
+        {
+          "calculationID": "HTTP_Action_Get",
+          "calculationType": "Eval",
+          "expression": "if(isnull(get) OR get==\"\", \"unknown\", get)",
+          "outputFields": [
+            {
+              "fieldName": "get",
+              "displayName": "get",
+              "type": "string",
+              "comment": {
+                "description": "HTTP GET request."
+              }
+            }
+          ]
+        },
+        {
+          "calculationID": "HTTP_Action_Post",
+          "calculationType": "Eval",
+          "expression": "if(isnull(post) OR post==\"\", \"unknown\", post)",
+          "outputFields": [
+            {
+              "fieldName": "post",
+              "displayName": "post",
+              "type": "string",
+              "comment": {
+                "description": "HTTP POST request."
+              }
+            }
+          ]
+        },
+        {
+          "calculationID": "HTTP_Action_Put",
+          "calculationType": "Eval",
+          "expression": "if(isnull(put) OR put==\"\", \"unknown\", put)",
+          "outputFields": [
+            {
+              "fieldName": "put",
+              "displayName": "put",
+              "type": "string",
+              "comment": {
+                "description": "HTTP PUT request."
+              }
+            }
+          ]
+        },
+        {
+          "calculationID": "HTTP_Action_Tunnel",
+          "calculationType": "Eval",
+          "expression": "if(isnull(tunnel) OR tunnel==\"\", \"unknown\", tunnel)",
+          "outputFields": [
+            {
+              "fieldName": "tunnel",
+              "displayName": "tunnel",
+              "type": "string",
+              "comment": {
+                "description": "HTTP TUNNEL request."
+              }
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    }
+  ]
+}

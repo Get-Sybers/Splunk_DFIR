@@ -1,0 +1,183 @@
+{
+    "modelName": "CAR-User_Session",
+    "displayName": "CAR User Session",
+    "description": "User sessions are the user activities undertaken on the computer in the course of conducting standard user actions.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARUserSession",
+        "displayName": "CAR User Session",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "dest_ip",
+            "displayName": "dest_ip",
+            "type": "string",
+            "comment": {
+              "description": "Destination IP address of the session (RDP/remote only).",
+              "example": "192.168.1.5"
+            }
+          },
+          {
+            "fieldName": "dest_port",
+            "displayName": "dest_port",
+            "type": "number",
+            "comment": {
+              "description": "Destination port of the session (RDP/remote only).",
+              "example": 1900
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the system.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "login_id",
+            "displayName": "login_id",
+            "type": "string",
+            "comment": {
+              "description": "Hex value identifying the session; persists until logout.",
+              "example": "0xf61f3"
+            }
+          },
+          {
+            "fieldName": "src_ip",
+            "displayName": "src_ip",
+            "type": "string",
+            "comment": {
+              "description": "Source IP address of the session (RDP/remote only).",
+              "example": "10.0.0.54"
+            }
+          },
+          {
+            "fieldName": "src_port",
+            "displayName": "src_port",
+            "type": "number",
+            "comment": {
+              "description": "Source port of the session (RDP/remote only).",
+              "example": 50438
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User affiliated with the session.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "login_type",
+            "displayName": "login_type",
+            "type": "string",
+            "comment": {
+              "description": "Type of login (e.g., interactive, local, rdp, remote).",
+              "example": "rdp"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "ID or SID of the user associated with the session.",
+              "example": "S-1-5-18"
+            }
+          },
+          {
+            "fieldName": "login_successful",
+            "displayName": "login_successful",
+            "type": "boolean",
+            "comment": {
+              "description": "Whether the login attempt was successful.",
+              "example": false
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "UserSession_Action_Lock",
+            "calculationType": "Eval",
+            "expression": "if(isnull(lock) OR lock==\"\", \"unknown\", lock)",
+            "outputFields": [
+              {
+                "fieldName": "lock",
+                "displayName": "lock",
+                "type": "string",
+                "comment": {
+                  "description": "User locked the system (still logged in, credentials required)."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "UserSession_Action_Login",
+            "calculationType": "Eval",
+            "expression": "if(isnull(login) OR login==\"\", \"unknown\", login)",
+            "outputFields": [
+              {
+                "fieldName": "login",
+                "displayName": "login",
+                "type": "string",
+                "comment": {
+                  "description": "User login event."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "UserSession_Action_Logout",
+            "calculationType": "Eval",
+            "expression": "if(isnull(logout) OR logout==\"\", \"unknown\", logout)",
+            "outputFields": [
+              {
+                "fieldName": "logout",
+                "displayName": "logout",
+                "type": "string",
+                "comment": {
+                  "description": "User logout event."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "UserSession_Action_Reconnect",
+            "calculationType": "Eval",
+            "expression": "if(isnull(reconnect) OR reconnect==\"\", \"unknown\", reconnect)",
+            "outputFields": [
+              {
+                "fieldName": "reconnect",
+                "displayName": "reconnect",
+                "type": "string",
+                "comment": {
+                  "description": "RDP reconnect without logout event."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "UserSession_Action_Unlock",
+            "calculationType": "Eval",
+            "expression": "if(isnull(unlock) OR unlock==\"\", \"unknown\", unlock)",
+            "outputFields": [
+              {
+                "fieldName": "unlock",
+                "displayName": "unlock",
+                "type": "string",
+                "comment": {
+                  "description": "User unlocked the previously locked system."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

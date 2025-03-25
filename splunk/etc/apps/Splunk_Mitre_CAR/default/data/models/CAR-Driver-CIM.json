@@ -1,0 +1,147 @@
+{
+    "modelName": "CAR-Driver",
+    "displayName": "CAR Driver",
+    "description": "A driver is software that runs in the operating system kernel. Drivers are generally used to allow a computer to communicate with hardware devices but have access to important kernel resources.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARDriver",
+        "displayName": "CAR Driver",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "The fully qualified domain name of the host in which the process ran. Contains the hostname appended with the domain.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "The hostname of the host, without the domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "base_address",
+            "displayName": "base_address",
+            "type": "string",
+            "comment": {
+              "description": "A hex address indicating where the driver is loaded into the kernel.",
+              "example": "0xFFFFF8000405F000"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "The file system location of the driver.",
+              "example": "C:\\Windows\\System32\\drivers\\scsiport.sys"
+            }
+          },
+          {
+            "fieldName": "md5_hash",
+            "displayName": "md5_hash",
+            "type": "string",
+            "comment": {
+              "description": "The MD5 hash of the contents of the file located at `image_path`. The field is in hex notation, without the 0x prefix.",
+              "example": "5eb63bbbe01eeed093cb22bb8f5acdc3"
+            }
+          },
+          {
+            "fieldName": "sha1_hash",
+            "displayName": "sha1_hash",
+            "type": "string",
+            "comment": {
+              "description": "The SHA1 hash of the contents of the file located at `image_path`.",
+              "example": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"
+            }
+          },
+          {
+            "fieldName": "sha256_hash",
+            "displayName": "sha256_hash",
+            "type": "string",
+            "comment": {
+              "description": "The SHA256 hash of the contents of the file located at `image_path`.",
+              "example": "68e656b251e67e8358bef8483ab0d51c6619f3e7a1a9f0e75838d41ff368f728"
+            }
+          },
+          {
+            "fieldName": "module_name",
+            "displayName": "module_name",
+            "type": "string",
+            "comment": {
+              "description": "The name of the driver or program.",
+              "example": "NvStreamKms.sys"
+            }
+          },
+          {
+            "fieldName": "signer",
+            "displayName": "signer",
+            "type": "string",
+            "comment": {
+              "description": "The name of the organization which signed the driver.",
+              "example": "Microsoft Corporation"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "The Process ID that loaded or unloaded the driver.",
+              "example": "1533"
+            }
+          },
+          {
+            "fieldName": "signature_valid",
+            "displayName": "signature_valid",
+            "type": "boolean",
+            "comment": {
+              "description": "Boolean indicator of whether the driver is signed and whether the signature is current and not revoked.",
+              "example": "true"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Driver_Load_Action",
+            "calculationType": "Eval",
+            "expression": "if(isnull(load) OR load==\"\", \"unknown\", load)",
+            "outputFields": [
+              {
+                "fieldName": "load",
+                "displayName": "load",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the operating system kernel loading a driver into memory."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Driver_Unload_Action",
+            "calculationType": "Eval",
+            "expression": "if(isnull(unload) OR unload==\"\", \"unknown\", unload)",
+            "outputFields": [
+              {
+                "fieldName": "unload",
+                "displayName": "unload",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the operating system kernel unloading a driver from memory."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

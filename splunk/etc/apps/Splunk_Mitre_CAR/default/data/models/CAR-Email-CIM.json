@@ -1,0 +1,281 @@
+{
+    "modelName": "CAR-Email",
+    "displayName": "CAR Email",
+    "description": "Email events are at the mail server level.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CAREmail",
+        "displayName": "CAR Email",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "action_reason",
+            "displayName": "action_reason",
+            "type": "string",
+            "comment": {
+              "description": "The rationale given for blocking, redirecting, or quarantining an email.",
+              "example": "Malformed Message"
+            }
+          },
+          {
+            "fieldName": "attachment_name",
+            "displayName": "attachment_name",
+            "type": "string",
+            "comment": {
+              "description": "Filename of any email attachment that may exist.",
+              "example": "cuddly-cats.pdf"
+            }
+          },
+          {
+            "fieldName": "attachment_size",
+            "displayName": "attachment_size",
+            "type": "string",
+            "comment": {
+              "description": "Filesize of the attachment.",
+              "example": "567 Kb"
+            }
+          },
+          {
+            "fieldName": "attachment_mime_type",
+            "displayName": "attachment_mime_type",
+            "type": "string",
+            "comment": {
+              "description": "The MIME type of the attachment.",
+              "example": ".docx"
+            }
+          },
+          {
+            "fieldName": "dest_ip",
+            "displayName": "dest_ip",
+            "type": "string",
+            "comment": {
+              "description": "The destination IP address for the email.",
+              "example": "221.174.222.111"
+            }
+          },
+          {
+            "fieldName": "dest_port",
+            "displayName": "dest_port",
+            "type": "number",
+            "comment": {
+              "description": "The destination port for the email.",
+              "example": "993"
+            }
+          },
+          {
+            "fieldName": "dest_address",
+            "displayName": "dest_address",
+            "type": "string",
+            "comment": {
+              "description": "Recipient email address, taken from the SMTP 'Recipient' field.",
+              "example": "adam@example.com"
+            }
+          },
+          {
+            "fieldName": "date",
+            "displayName": "date",
+            "type": "string",
+            "comment": {
+              "description": "SMTP date header, which is actually a date time group.",
+              "example": "Thu Jul 18 09:30:00 PDT 2019"
+            }
+          },
+          {
+            "fieldName": "server_relay",
+            "displayName": "server_relay",
+            "type": "string",
+            "comment": {
+              "description": "The Received portion of the SMTP header, showing the chain of hosts the email passed through."
+            }
+          },
+          {
+            "fieldName": "from",
+            "displayName": "from",
+            "type": "string",
+            "comment": {
+              "description": "Displayed sender name from the Message Information header; can be easily forged.",
+              "example": "eve@trusted-advisors.com"
+            }
+          },
+          {
+            "fieldName": "smtp_uid",
+            "displayName": "smtp_uid",
+            "type": "string",
+            "comment": {
+              "description": "Distinct ID used to distinguish emails.",
+              "example": "MN2PR09MB4876CCE7F183A83E6BA1C4C1CBF50@PP34399.prod.outlook.com"
+            }
+          },
+          {
+            "fieldName": "message_links",
+            "displayName": "message_links",
+            "type": "string",
+            "comment": {
+              "description": "URLs extracted from the email body.",
+              "example": "https://www.cnn.com"
+            }
+          },
+          {
+            "fieldName": "src_address",
+            "displayName": "src_address",
+            "type": "string",
+            "comment": {
+              "description": "Email address of the sender, taken from the 'Sender' SMTP field.",
+              "example": "eve@example.com"
+            }
+          },
+          {
+            "fieldName": "src_domain",
+            "displayName": "src_domain",
+            "type": "string",
+            "comment": {
+              "description": "The domain portion of the src_address.",
+              "example": "example.com"
+            }
+          },
+          {
+            "fieldName": "return_address",
+            "displayName": "return_address",
+            "type": "string",
+            "comment": {
+              "description": "Email address to which replies should be sent. Known as Return-Path or Reply-To.",
+              "example": "eve_secondary@example.com"
+            }
+          },
+          {
+            "fieldName": "message_body",
+            "displayName": "message_body",
+            "type": "string",
+            "comment": {
+              "description": "Content of the email, not including subject.",
+              "example": "Hello World"
+            }
+          },
+          {
+            "fieldName": "subject",
+            "displayName": "subject",
+            "type": "string",
+            "comment": {
+              "description": "Subject line of the email.",
+              "example": "Lo0k Younger Whl1e L0slng We19ht!!"
+            }
+          },
+          {
+            "fieldName": "src_ip",
+            "displayName": "src_ip",
+            "type": "string",
+            "comment": {
+              "description": "Originating IP address.",
+              "example": "172.183.195.200"
+            }
+          },
+          {
+            "fieldName": "src_port",
+            "displayName": "src_port",
+            "type": "number",
+            "comment": {
+              "description": "Originating port.",
+              "example": "1248"
+            }
+          },
+          {
+            "fieldName": "message_type",
+            "displayName": "message_type",
+            "type": "string",
+            "comment": {
+              "description": "Content protocol of the message body.",
+              "example": "html"
+            }
+          },
+          {
+            "fieldName": "to",
+            "displayName": "to",
+            "type": "string",
+            "comment": {
+              "description": "The content of the To field in the email header.",
+              "example": "adam@example.com"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Email_Action_Deliver",
+            "calculationType": "Eval",
+            "expression": "if(isnull(deliver) OR deliver==\"\", \"unknown\", deliver)",
+            "outputFields": [
+              {
+                "fieldName": "deliver",
+                "displayName": "deliver",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to an email being sent to an end recipient."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Email_Action_Block",
+            "calculationType": "Eval",
+            "expression": "if(isnull(block) OR block==\"\", \"unknown\", block)",
+            "outputFields": [
+              {
+                "fieldName": "block",
+                "displayName": "block",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to an email being blocked by the email server."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Email_Action_Redirect",
+            "calculationType": "Eval",
+            "expression": "if(isnull(redirect) OR redirect==\"\", \"unknown\", redirect)",
+            "outputFields": [
+              {
+                "fieldName": "redirect",
+                "displayName": "redirect",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to an email being redirected."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Email_Action_Quarantine",
+            "calculationType": "Eval",
+            "expression": "if(isnull(quarantine) OR quarantine==\"\", \"unknown\", quarantine)",
+            "outputFields": [
+              {
+                "fieldName": "quarantine",
+                "displayName": "quarantine",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to an email being quarantined for security reasons."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Email_Action_Delete",
+            "calculationType": "Eval",
+            "expression": "if(isnull(delete) OR delete==\"\", \"unknown\", delete)",
+            "outputFields": [
+              {
+                "fieldName": "delete",
+                "displayName": "delete",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to an email being deleted."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

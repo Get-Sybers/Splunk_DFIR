@@ -1,0 +1,183 @@
+{
+    "modelName": "CAR-Service",
+    "displayName": "CAR Service",
+    "description": "Services, or a service application, can be started automatically at system boot, by a user through the services control panel applet, or by an application that uses service functions. Services can execute even when no user is logged into the system.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARService",
+        "displayName": "CAR Service",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "Fully qualified domain name of the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the host without domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User token that the service was created with.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "command_line",
+            "displayName": "command_line",
+            "type": "string",
+            "comment": {
+              "description": "Command line used to start the service.",
+              "example": "C:\\windows\\system32\\svchost.exe -k rpcss"
+            }
+          },
+          {
+            "fieldName": "exe",
+            "displayName": "exe",
+            "type": "string",
+            "comment": {
+              "description": "Executable name for the service.",
+              "example": "svchost.exe"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "Filesystem path to the service executable.",
+              "example": "C:\\path\\to\\example.exe"
+            }
+          },
+          {
+            "fieldName": "name",
+            "displayName": "name",
+            "type": "string",
+            "comment": {
+              "description": "Name of the service.",
+              "example": "RpcSs"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID of the service process.",
+              "example": 718
+            }
+          },
+          {
+            "fieldName": "ppid",
+            "displayName": "ppid",
+            "type": "number",
+            "comment": {
+              "description": "Parent process ID for the service process.",
+              "example": 1860
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "User ID or SID of the user who acted on the service.",
+              "example": "S-1-5-18"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Service_Action_Create",
+            "calculationType": "Eval",
+            "expression": "if(isnull(create) OR create==\"\", \"unknown\", create)",
+            "outputFields": [
+              {
+                "fieldName": "create",
+                "displayName": "create",
+                "type": "string",
+                "comment": {
+                  "description": "Event when a new service is created."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Service_Action_Delete",
+            "calculationType": "Eval",
+            "expression": "if(isnull(delete) OR delete==\"\", \"unknown\", delete)",
+            "outputFields": [
+              {
+                "fieldName": "delete",
+                "displayName": "delete",
+                "type": "string",
+                "comment": {
+                  "description": "Event when a service is deleted."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Service_Action_Pause",
+            "calculationType": "Eval",
+            "expression": "if(isnull(pause) OR pause==\"\", \"unknown\", pause)",
+            "outputFields": [
+              {
+                "fieldName": "pause",
+                "displayName": "pause",
+                "type": "string",
+                "comment": {
+                  "description": "Event when a running service is paused."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Service_Action_Start",
+            "calculationType": "Eval",
+            "expression": "if(isnull(start) OR start==\"\", \"unknown\", start)",
+            "outputFields": [
+              {
+                "fieldName": "start",
+                "displayName": "start",
+                "type": "string",
+                "comment": {
+                  "description": "Event when a service is started."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Service_Action_Stop",
+            "calculationType": "Eval",
+            "expression": "if(isnull(stop) OR stop==\"\", \"unknown\", stop)",
+            "outputFields": [
+              {
+                "fieldName": "stop",
+                "displayName": "stop",
+                "type": "string",
+                "comment": {
+                  "description": "Event when a service is stopped."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

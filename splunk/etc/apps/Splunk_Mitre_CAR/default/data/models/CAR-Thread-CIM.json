@@ -1,0 +1,213 @@
+{
+    "modelName": "CAR-Thread",
+    "displayName": "CAR Thread",
+    "description": "A thread of execution is the smallest sequence of programmed instructions that can be managed independently by a scheduler, which is typically part of the operating system. Threads share memory and other resources within the same process.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARThread",
+        "displayName": "CAR Thread",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the active host, without the domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "src_pid",
+            "displayName": "src_pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID of the process that created the thread.",
+              "example": 6016
+            }
+          },
+          {
+            "fieldName": "src_tid",
+            "displayName": "src_tid",
+            "type": "number",
+            "comment": {
+              "description": "Thread ID of the thread that created the event.",
+              "example": 9012
+            }
+          },
+          {
+            "fieldName": "tgt_pid",
+            "displayName": "tgt_pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID in which the new thread runs.",
+              "example": 232
+            }
+          },
+          {
+            "fieldName": "tgt_tid",
+            "displayName": "tgt_tid",
+            "type": "number",
+            "comment": {
+              "description": "Thread ID of the newly created thread.",
+              "example": 6964
+            }
+          },
+          {
+            "fieldName": "stack_base",
+            "displayName": "stack_base",
+            "type": "string",
+            "comment": {
+              "description": "Base address of the thread’s stack.",
+              "example": "0xfffff880081a9000"
+            }
+          },
+          {
+            "fieldName": "stack_limit",
+            "displayName": "stack_limit",
+            "type": "string",
+            "comment": {
+              "description": "Stack limit of the thread.",
+              "example": "0xfffff880081a3000"
+            }
+          },
+          {
+            "fieldName": "start_address",
+            "displayName": "start_address",
+            "type": "string",
+            "comment": {
+              "description": "Memory address where the thread’s execution starts.",
+              "example": "0xfffff880046dc3e0"
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User context in which the thread was running.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "user_stack_base",
+            "displayName": "user_stack_base",
+            "type": "string",
+            "comment": {
+              "description": "Base address of the user-mode stack.",
+              "example": "0x0"
+            }
+          },
+          {
+            "fieldName": "user_stack_limit",
+            "displayName": "user_stack_limit",
+            "type": "string",
+            "comment": {
+              "description": "Limit of the user-mode stack.",
+              "example": "0x0"
+            }
+          },
+          {
+            "fieldName": "start_function",
+            "displayName": "start_function",
+            "type": "string",
+            "comment": {
+              "description": "Function that the thread begins executing.",
+              "example": "LoadLibrary"
+            }
+          },
+          {
+            "fieldName": "start_module",
+            "displayName": "start_module",
+            "type": "string",
+            "comment": {
+              "description": "Module where start_address resides.",
+              "example": "C:\\windows\\system32\\ntdll.dll"
+            }
+          },
+          {
+            "fieldName": "start_module_name",
+            "displayName": "start_module_name",
+            "type": "string",
+            "comment": {
+              "description": "Filename of the start module.",
+              "example": "ntdll.dll"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "SID or user ID responsible for the thread.",
+              "example": "S-1-5-18"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Thread_Action_Create",
+            "calculationType": "Eval",
+            "expression": "if(isnull(create) OR create==\"\", \"unknown\", create)",
+            "outputFields": [
+              {
+                "fieldName": "create",
+                "displayName": "create",
+                "type": "string",
+                "comment": {
+                  "description": "Thread was created."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Thread_Action_Suspend",
+            "calculationType": "Eval",
+            "expression": "if(isnull(suspend) OR suspend==\"\", \"unknown\", suspend)",
+            "outputFields": [
+              {
+                "fieldName": "suspend",
+                "displayName": "suspend",
+                "type": "string",
+                "comment": {
+                  "description": "Thread was suspended."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Thread_Action_Terminate",
+            "calculationType": "Eval",
+            "expression": "if(isnull(terminate) OR terminate==\"\", \"unknown\", terminate)",
+            "outputFields": [
+              {
+                "fieldName": "terminate",
+                "displayName": "terminate",
+                "type": "string",
+                "comment": {
+                  "description": "Thread was terminated."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Thread_Action_RemoteCreate",
+            "calculationType": "Eval",
+            "expression": "if(isnull(remote_create) OR remote_create==\"\", \"unknown\", remote_create)",
+            "outputFields": [
+              {
+                "fieldName": "remote_create",
+                "displayName": "remote_create",
+                "type": "string",
+                "comment": {
+                  "description": "Thread injection where a thread is created in a different process."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }
