@@ -1,4 +1,4 @@
 
 []
 access = read : [ * ], write : [ admin, power ]
-export = system
+export = app
