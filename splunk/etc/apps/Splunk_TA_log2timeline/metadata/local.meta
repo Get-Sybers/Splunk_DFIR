@@ -1,17 +1,24 @@
 [props]
-export = system
+export = app
 access = read : [ * ], write : [ admin ]
 
 [transforms]
-export = system
+export = app
 access = read : [ * ], write : [ admin ]
 
 [inputs]
-export = system
+export = app
 access = read : [ * ], write : [ admin ]
 
-[]
+[lookups/modules.csv]
+export = app
 access = read : [ * ], write : [ * ]
-export = system
+owner = nobody
 version = 9.4.1
-modtime = 1742547518.438779000
+modtime = 1742108879.922150000
+
+[]
+export = app
+access = read : [ * ], write : [ * ]
+version = 9.4.1
+modtime = 1742547529.563741000

@@ -1,6 +1,6 @@
 [default]
 access = read : [ * ], write: [admin, sc_admin]
-export = systen
+export = app
 
 [checklist]
 export = system
@@ -16,6 +16,6 @@ modtime = 1741904012.781475000
 
 []
 access = read : [ * ], write : [ admin ]
-export = system
+export = app
 version = 9.4.1
 modtime = 1742547497.899821000
