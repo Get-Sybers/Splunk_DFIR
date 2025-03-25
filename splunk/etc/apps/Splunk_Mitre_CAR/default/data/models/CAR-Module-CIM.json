@@ -1,0 +1,165 @@
+{
+    "modelName": "CAR-Module",
+    "displayName": "CAR Module",
+    "description": "Modules correspond to executable (and potentially non-executable) content, and are loaded as a contiguous region of memory into the address space of a process.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARModule",
+        "displayName": "CAR Module",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "The fully qualified domain name of the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "The hostname of the host, without the domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "base_address",
+            "displayName": "base_address",
+            "type": "string",
+            "comment": {
+              "description": "Hex address where the module is loaded in memory.",
+              "example": "0xFFFFF8000405F000"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "The file system location of the process image.",
+              "example": "C:\\path\\to\\example.exe"
+            }
+          },
+          {
+            "fieldName": "md5_hash",
+            "displayName": "md5_hash",
+            "type": "string",
+            "comment": {
+              "description": "MD5 hash of the file at module_path.",
+              "example": "5eb63bbbe01eeed093cb22bb8f5acdc3"
+            }
+          },
+          {
+            "fieldName": "sha1_hash",
+            "displayName": "sha1_hash",
+            "type": "string",
+            "comment": {
+              "description": "SHA1 hash of the file at image_path.",
+              "example": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"
+            }
+          },
+          {
+            "fieldName": "sha256_hash",
+            "displayName": "sha256_hash",
+            "type": "string",
+            "comment": {
+              "description": "SHA256 hash of the file at image_path.",
+              "example": "68e656b251e67e8358bef8483ab0d51c6619f3e7a1a9f0e75838d41ff368f728"
+            }
+          },
+          {
+            "fieldName": "module_path",
+            "displayName": "module_path",
+            "type": "string",
+            "comment": {
+              "description": "Full path to the module loaded in memory.",
+              "example": "C:\\windows\\system32\\kernel32.exe"
+            }
+          },
+          {
+            "fieldName": "module_name",
+            "displayName": "module_name",
+            "type": "string",
+            "comment": {
+              "description": "Filename of the module loaded on disk.",
+              "example": "kernel32.exe"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID in which the module is loaded or unloaded.",
+              "example": 738
+            }
+          },
+          {
+            "fieldName": "signer",
+            "displayName": "signer",
+            "type": "string",
+            "comment": {
+              "description": "Name of the organization that signed the module.",
+              "example": "Microsoft Corporation"
+            }
+          },
+          {
+            "fieldName": "tid",
+            "displayName": "tid",
+            "type": "number",
+            "comment": {
+              "description": "Thread ID responsible for the load/unload event.",
+              "example": 50
+            }
+          },
+          {
+            "fieldName": "signature_valid",
+            "displayName": "signature_valid",
+            "type": "boolean",
+            "comment": {
+              "description": "Whether the signature is valid and current.",
+              "example": true
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Module_Action_Load",
+            "calculationType": "Eval",
+            "expression": "if(isnull(load) OR load==\"\", \"unknown\", load)",
+            "outputFields": [
+              {
+                "fieldName": "load",
+                "displayName": "load",
+                "type": "string",
+                "comment": {
+                  "description": "Module load event (e.g. DLL loaded into process)."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Module_Action_Unload",
+            "calculationType": "Eval",
+            "expression": "if(isnull(unload) OR unload==\"\", \"unknown\", unload)",
+            "outputFields": [
+              {
+                "fieldName": "unload",
+                "displayName": "unload",
+                "type": "string",
+                "comment": {
+                  "description": "Module unload event triggered manually or by process termination."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

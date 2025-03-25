@@ -1,0 +1,153 @@
+{
+    "modelName": "CAR-Socket",
+    "displayName": "CAR Socket",
+    "description": "Socket events are low-level events that may or may not result in a flow. Socket listening events in particular can be helpful in detecting malicious activity.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARSocket",
+        "displayName": "CAR Socket",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID that acted on the socket.",
+              "example": 3930
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "Path to the executable that initiated the socket event.",
+              "example": "C:/user/adam/malware.exe"
+            }
+          },
+          {
+            "fieldName": "success",
+            "displayName": "success",
+            "type": "boolean",
+            "comment": {
+              "description": "Whether the socket event was successful.",
+              "example": true
+            }
+          },
+          {
+            "fieldName": "family",
+            "displayName": "family",
+            "type": "string",
+            "comment": {
+              "description": "Type of socket used.",
+              "example": "AF_UNIX, AF_INET, AF_INET6"
+            }
+          },
+          {
+            "fieldName": "protocol",
+            "displayName": "protocol",
+            "type": "string",
+            "comment": {
+              "description": "Connection protocol attempted.",
+              "example": "TCP"
+            }
+          },
+          {
+            "fieldName": "local_address",
+            "displayName": "local_address",
+            "type": "string",
+            "comment": {
+              "description": "Local IP address socket is bound to.",
+              "example": "10.0.211.200"
+            }
+          },
+          {
+            "fieldName": "local_port",
+            "displayName": "local_port",
+            "type": "number",
+            "comment": {
+              "description": "Local port the socket is bound to.",
+              "example": 48777
+            }
+          },
+          {
+            "fieldName": "remote_port",
+            "displayName": "remote_port",
+            "type": "number",
+            "comment": {
+              "description": "Remote port the socket is connected to.",
+              "example": 559
+            }
+          },
+          {
+            "fieldName": "remote_address",
+            "displayName": "remote_address",
+            "type": "string",
+            "comment": {
+              "description": "Remote IP address the socket is communicating with.",
+              "example": "199.121.21.20"
+            }
+          },
+          {
+            "fieldName": "local_path",
+            "displayName": "local_path",
+            "type": "string",
+            "comment": {
+              "description": "Local filesystem path used by AF_UNIX socket types.",
+              "example": "/tmp/foo"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Socket_Action_Bind",
+            "calculationType": "Eval",
+            "expression": "if(isnull(bind) OR bind==\"\", \"unknown\", bind)",
+            "outputFields": [
+              {
+                "fieldName": "bind",
+                "displayName": "bind",
+                "type": "string",
+                "comment": {
+                  "description": "Socket was bound to a specific address."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Socket_Action_Listen",
+            "calculationType": "Eval",
+            "expression": "if(isnull(listen) OR listen==\"\", \"unknown\", listen)",
+            "outputFields": [
+              {
+                "fieldName": "listen",
+                "displayName": "listen",
+                "type": "string",
+                "comment": {
+                  "description": "Socket entered listening state on a local port."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Socket_Action_Close",
+            "calculationType": "Eval",
+            "expression": "if(isnull(close) OR close==\"\", \"unknown\", close)",
+            "outputFields": [
+              {
+                "fieldName": "close",
+                "displayName": "close",
+                "type": "string",
+                "comment": {
+                  "description": "Socket was closed."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

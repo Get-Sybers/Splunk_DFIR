@@ -56,6 +56,24 @@ Step-by-step guide on installing and configuring the app.
 
 ---
 
+## [MITRE CAR Data Models](https://github.com/mitre-attack/car/tree/master/docs/data_model)
+- [authentication](https://github.com/mitre-attack/car/blob/master/docs/data_model/authentication.md)
+- [driver](https://github.com/mitre-attack/car/blob/master/docs/data_model/driver.md)
+- [email](https://github.com/mitre-attack/car/blob/master/docs/data_model/email.md)
+- [file](https://github.com/mitre-attack/car/blob/master/docs/data_model/file.md)
+- [flow](https://github.com/mitre-attack/car/blob/master/docs/data_model/flow.md)
+- [http](https://github.com/mitre-attack/car/blob/master/docs/data_model/http.md)
+- [module](https://github.com/mitre-attack/car/blob/master/docs/data_model/module.md)
+- [process](https://github.com/mitre-attack/car/blob/master/docs/data_model/process.md)
+- [registry](https://github.com/mitre-attack/car/blob/master/docs/data_model/registry.md)
+- [service](https://github.com/mitre-attack/car/blob/master/docs/data_model/service.md)
+- [socket](https://github.com/mitre-attack/car/blob/master/docs/data_model/socket.md)
+- [thread](https://github.com/mitre-attack/car/blob/master/docs/data_model/thread.md)
+- [user-session](https://github.com/mitre-attack/car/blob/master/docs/data_model/user_session.md)
+
+## Custom CAR Data Models
+- usb
+
 ## Usage
 
 Explain how to use the app, including any notable dashboards, searches, or alerts.

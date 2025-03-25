@@ -1,0 +1,177 @@
+{
+    "modelName": "CAR-Registry",
+    "displayName": "CAR Registry",
+    "description": "The registry is a system-defined database in which applications and system components store and retrieve configuration data.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARRegistry",
+        "displayName": "CAR Registry",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "Fully qualified domain name for the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the host without domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "key",
+            "displayName": "key",
+            "type": "string",
+            "comment": {
+              "description": "Registry key of the event.",
+              "example": "HKLM\\SYSTEM\\CurrentControlSet\\services\\RpcSs"
+            }
+          },
+          {
+            "fieldName": "value",
+            "displayName": "value",
+            "type": "string",
+            "comment": {
+              "description": "Descriptive name for the registry data.",
+              "example": "InstalledVersion"
+            }
+          },
+          {
+            "fieldName": "data",
+            "displayName": "data",
+            "type": "string",
+            "comment": {
+              "description": "Content of the registry value.",
+              "example": "%SystemRoot%\\system32\\svchost.exe -k rpcss"
+            }
+          },
+          {
+            "fieldName": "type",
+            "displayName": "type",
+            "type": "string",
+            "comment": {
+              "description": "Type of registry data (e.g. REG_BINARY).",
+              "example": "REG_BINARY"
+            }
+          },
+          {
+            "fieldName": "hive",
+            "displayName": "hive",
+            "type": "string",
+            "comment": {
+              "description": "Logical group of keys and values in the registry.",
+              "example": "HKEY_CURRENT_USER"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "Path of the process that accessed the registry.",
+              "example": "C:\\path\\to\\example.exe"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID that made the registry access.",
+              "example": 738
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User context of the process that accessed the registry.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "new_content",
+            "displayName": "new_content",
+            "type": "string",
+            "comment": {
+              "description": "New data written or new name of key after edit.",
+              "example": "%SystemRoot%\\system32\\svchost.exe"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Registry_Action_Add",
+            "calculationType": "Eval",
+            "expression": "if(isnull(add) OR add==\"\", \"unknown\", add)",
+            "outputFields": [
+              {
+                "fieldName": "add",
+                "displayName": "add",
+                "type": "string",
+                "comment": {
+                  "description": "Registry key, hive, type, or value was added."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Registry_Action_Remove",
+            "calculationType": "Eval",
+            "expression": "if(isnull(remove) OR remove==\"\", \"unknown\", remove)",
+            "outputFields": [
+              {
+                "fieldName": "remove",
+                "displayName": "remove",
+                "type": "string",
+                "comment": {
+                  "description": "Registry key, hive, type, or value was deleted."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Registry_Action_ValueEdit",
+            "calculationType": "Eval",
+            "expression": "if(isnull(value_edit) OR value_edit==\"\", \"unknown\", value_edit)",
+            "outputFields": [
+              {
+                "fieldName": "value_edit",
+                "displayName": "value_edit",
+                "type": "string",
+                "comment": {
+                  "description": "Content of an existing registry value was modified."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Registry_Action_KeyEdit",
+            "calculationType": "Eval",
+            "expression": "if(isnull(key_edit) OR key_edit==\"\", \"unknown\", key_edit)",
+            "outputFields": [
+              {
+                "fieldName": "key_edit",
+                "displayName": "key_edit",
+                "type": "string",
+                "comment": {
+                  "description": "Name of an existing registry key was edited."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }
