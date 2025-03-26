@@ -1,0 +1,56 @@
+<form version="1.1" theme="dark">
+  <label>MitreCAR Landing</label>
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken" searchWhenChanged="true">
+      <label>Time Ranage</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>Available Sourcetypes</title>
+        <search>
+          <query>index=host sourcetype=l2t*
+| stats count by sourcetype
+| sort -count</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>This data is extracted from the following hosts</title>
+        <search>
+          <query>index=host sourcetype=l2t*
+| eval host = upper(host)
+| stats count by host</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Ingested Files</title>
+        <search>
+          <query>index=host sourcetype=l2t*
+| stats count by source
+| sort -count</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

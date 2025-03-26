@@ -1,3 +1,0 @@
-<view isVisible="false" template="builder.html" isDashboard="False" type="redirect" target="report">
-    <label>Display Report</label>
-</view>

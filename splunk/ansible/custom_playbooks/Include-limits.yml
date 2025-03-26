@@ -21,3 +21,13 @@
     group: splunk
     mode: "0755"
   when: not limits_conf_stat.stat.exists
+
+- name: Copy indexes.conf if it does not exist
+  ansible.builtin.copy:
+    src: /data/etc/system/local/indexes.conf
+    dest: /opt/splunk/etc/system/local/indexes.conf
+    remote_src: yes
+    owner: splunk
+    group: splunk
+    mode: "0755"
+  when: not limits_conf_stat.stat.exists

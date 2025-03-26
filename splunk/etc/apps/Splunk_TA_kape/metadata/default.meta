@@ -1,0 +1,26 @@
+[app/ui]
+version = 9.4.1
+
+[app/launcher]
+version = 9.4.1
+
+[views/landing]
+export = none
+owner = admin
+version = 9.4.1
+
+[]
+access = read : [ * ], write : [ admin, power ]
+export = none
+
+[tags]
+export = system
+
+[props]
+export = system
+
+[transforms]
+export = system
+
+[lookups]
+export = system
