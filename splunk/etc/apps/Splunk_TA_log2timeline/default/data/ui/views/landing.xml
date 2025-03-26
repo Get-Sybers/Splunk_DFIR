@@ -1,5 +1,5 @@
 <form version="1.1" theme="dark">
-  <label>Kape Landing</label>
+  <label>Log2timeline Landing</label>
   <fieldset submitButton="false">
     <input type="time" token="timetoken" searchWhenChanged="true">
       <label>Time Ranage</label>
