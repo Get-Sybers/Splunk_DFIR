@@ -1,6 +1,0 @@
-<endpoint name="login_page_settings" template="pages/system.html">
-    <capabilities>
-        <read>edit_server</read>
-    </capabilities>
-    <header>Login Page Settings</header>
-</endpoint>

@@ -1,5 +1,0 @@
-<endpoint name="licenseusage" template="licensing/usage.html">
-  <capabilities>
-    <read>license_edit</read>
-  </capabilities>
-</endpoint>

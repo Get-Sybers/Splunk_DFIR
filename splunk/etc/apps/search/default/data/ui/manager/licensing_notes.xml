@@ -1,3 +1,0 @@
-<endpoint name="licensing_notes" template="pages/system.html">
-    <header>Edit Licensing Notes</header>
-</endpoint>
