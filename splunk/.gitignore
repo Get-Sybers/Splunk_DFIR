@@ -1,7 +1,7 @@
 # ───────────────────────────────────────────────────────────
 # Ignore all of `apps/` recursively
 apps/**
-
+*.License
 # ───────────────────────────────────────────────────────────
 # Re-allow important app components (default folders, scripts, etc.)
 !apps/**/default/
