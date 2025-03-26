@@ -1,3 +1,24 @@
+[app/ui]
+version = 9.4.1
+
+[views/landing]
+export = none
+owner = admin
+version = 9.4.1
+
+[app/launcher]
+version = 9.4.1
+
+[views/sample_simple_dashboard_studio]
+export = none
+owner = admin
+version = 9.4.1
+
+[nav/default]
+export = none
+owner = admin
+version = 9.4.1
+
 [props]
 export = app
 access = read : [ * ], write : [ admin ]

@@ -15,10 +15,18 @@ export = app
 access = read : [ * ], write : [ * ]
 owner = nobody
 version = 9.4.1
-modtime = 1742108879.922150000
+
+[nav/default]
+export = none
+owner = admin
+version = 9.4.1
 
 []
 export = app
 access = read : [ * ], write : [ * ]
 version = 9.4.1
-modtime = 1742547529.563741000
+
+[views/sample_simple_dashboard_studio]
+export = none
+owner = admin
+version = 9.4.1
