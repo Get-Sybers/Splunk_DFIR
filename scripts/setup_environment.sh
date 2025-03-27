@@ -1,133 +1,97 @@
 #!/bin/bash
 
-set -e  # Exit on error
-set -o pipefail  # Exit if any command in a pipeline fails
-set -u  # Treat unset variables as an error
-
-# Ensure correct filepath assigned when referenced
+################################################################################
+# Establish Splunk_DFIR repo filepath
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" &> /dev/null
-}
+echo "$REPO_ROOT_DIR"
 
-# Ask if the user intends to use this setup offline
-read -p "Do you intend to use this setup offline? (yes/no): " USE_OFFLINE
+# docker images to download
+IMAGES=(
+    "log2timeline/plaso:latest"
+    "zeek/zeek:latest"
+    "splunk/splunk:latest"
+)
 
-### Install Docker securely
-if ! command_exists docker; then
-    echo "🔹 Docker is not installed. Proceeding with secure installation..."
+################################################################################
+# Present user with what this script will do
+echo -e "\n================== Setup Actions ==================\n"
+echo "This script will:"
+echo -e "\n1. Check and install Docker if not present"
+echo -e "2. Set up Docker group permissions"
+echo -e "3. Download required Docker images:"
+printf '   • %s\n' "${IMAGES[@]}"
+echo -e "4. Set up Splunk DFIR environment permissions"
+echo -e "\n==================================================\n"
 
-    # Install prerequisites
-    sudo apt-get update
-    sudo apt-get install -y ca-certificates curl gnupg
-
-    # Ensure keyrings directory exists
-    sudo install -m 0755 -d /etc/apt/keyrings
-
-    # Fetch and verify Docker GPG key
-    DOCKER_GPG_KEY="/etc/apt/keyrings/docker.gpg"
-    sudo curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o "$DOCKER_GPG_KEY"
-    echo "🔹 Verifying Docker GPG key..."
-    gpg --show-keys "$DOCKER_GPG_KEY"
-
-    # Add Docker repository securely
-    echo "🔹 Adding the Docker repository..."
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=$DOCKER_GPG_KEY] \
-    https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    # Install Docker with version locking
-    echo "🔹 Installing Docker with verified packages..."
-    sudo apt-get update
-    DOCKER_VERSION=$(apt-cache madison docker-ce | awk '{print $3}' | head -n 1)
-    sudo apt-get install -y docker-ce=$DOCKER_VERSION docker-ce-cli=$DOCKER_VERSION containerd.io
-
-    echo "✅ Docker installation complete."
-else
-    echo "✅ Docker is already installed. Skipping installation."
+# Prompt user if they wish to proceed
+read -p "Do you wish to proceed? (y/n) " -n 1 -r
+echo -e "\n"
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Setup cancelled."
+    exit 1
 fi
 
-### Ensure docker group exists
+# Ask user if they would like to download the docker images as tar balls
+read -p "Would you like to download Docker images as tar balls? (y/n) " -n 1 -r
+echo
+echo
+echo
+SAVE_TARBALLS=$([[ $REPLY =~ ^[Yy]$ ]] && echo true || echo false)
+
+################################################################################
+# Install Docker if not already installed
+if ! command -v docker &> /dev/null; then
+    echo "Docker not found. Installing Docker..."
+    # Add Docker's official GPG key:
+    sudo apt-get update
+    sudo apt-get install ca-certificates curl
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+    # Add the repository to Apt sources:
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+else
+    echo "Docker version: $(docker --version)"
+fi
+
+# Create docker group if it does not exist
 if ! getent group docker > /dev/null; then
-    echo "🔹 Creating 'docker' group..."
     sudo groupadd docker
 fi
 
-# Prompt user before adding them to the 'docker' group
-if ! groups | grep -q '\bdocker\b'; then
-    read -p "Would you like to add $(whoami) to the 'docker' group? This allows running Docker without sudo. (yes/no): " ADD_USER
-    if [[ "$ADD_USER" == "yes" ]]; then
-        sudo usermod -aG docker $USER
-        echo "⚠️  You must log out and back in (or restart your session) for changes to take effect."
-        echo "Alternatively, run: newgrp docker"
-        exit 1
-    else
-        echo "🔹 Skipping 'docker' group addition. You will need sudo to run Docker commands."
+# Add current user to docker group
+sudo usermod -aG docker "$USER"
+
+################################################################################
+# Download and optionally save Docker images
+for image in "${IMAGES[@]}"; do
+    echo "Pulling $image..."
+    sudo docker pull "$image"
+    
+    if [ "$SAVE_TARBALLS" = true ]; then
+        image_filename=$(echo "$image" | tr '/' '_' | tr ':' '_')
+        echo "Saving $image as $image_filename.tar..."
+        sudo docker save "$image" -o "$REPO_ROOT_DIR/data_store/docker_images/$image_filename.tar"
     fi
-else
-    echo "✅ User $(whoami) is already in the 'docker' group."
+done
+
+################################################################################
+# Set permissions for Splunk_DFI
+
+if [ -d "$REPO_ROOT_DIR" ]; then
+    echo "Setting secure permissions for Splunk etc directory..."
+    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
+    sudo chmod -R 744 "$REPO_ROOT_DIR"
 fi
-
-### Handle offline mode
-if [[ "$USE_OFFLINE" == "yes" ]]; then
-    echo "🔹 Preparing Docker images for offline use..."
-    mkdir -p "$REPO_ROOT_DIR/offline_container_tarballs"
-
-    IMAGES=(
-        "log2timeline/plaso:latest"
-        "zeek/zeek:latest"
-        "splunk/splunk:latest"
-    )
-
-    export DOCKER_CONTENT_TRUST=1  # Enable Docker image verification
-
-    for IMAGE in "${IMAGES[@]}"; do
-        IMAGE_NAME=$(echo "$IMAGE" | sed 's/[:\/]/_/g').tar
-        if [ -f "$REPO_ROOT_DIR/offline_container_tarballs/$IMAGE_NAME" ]; then
-            echo "✅ Image $IMAGE already exists in offline storage. Skipping download."
-        else
-            echo "🔹 Pulling $IMAGE with verification..."
-            docker pull "$IMAGE"
-            echo "🔹 Saving $IMAGE for offline use..."
-            docker save -o "$REPO_ROOT_DIR/offline_container_tarballs/$IMAGE_NAME" "$IMAGE"
-        fi
-    done
-
-    echo "🔹 Checking for missing images in the Docker daemon..."
-    MISSING_IMAGES=()
-    for IMAGE in "${IMAGES[@]}"; do
-        if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^$IMAGE$"; then
-            echo "⚠️  Image $IMAGE is missing from the daemon."
-            MISSING_IMAGES+=("$IMAGE")
-        else
-            echo "✅ Image $IMAGE is already loaded in the daemon."
-        fi
-    done
-
-    if [ ${#MISSING_IMAGES[@]} -gt 0 ]; then
-        echo "🔹 Loading missing images into the Docker daemon..."
-        for IMAGE in "${MISSING_IMAGES[@]}"; do
-            IMAGE_TAR=$(echo "$IMAGE" | sed 's/[:\/]/_/g').tar
-            echo "🔹 Loading $IMAGE from offline tarball..."
-            docker load -i "$REPO_ROOT_DIR/offline_container_tarballs/$IMAGE_TAR"
-        done
-    else
-        echo "✅ All images are already present in the Docker daemon."
-    fi
-
-    echo "✅ Offline image setup complete."
-fi
-
-### Set permissions for Splunk_DFIR/splunk/etc securely
-if [ -d "$REPO_ROOT_DIR/splunk/etc" ]; then
-    echo "🔹 Setting permissions for Splunk_DFIR/splunk/etc/*..."
-    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR/splunk/etc"
-    sudo chmod -R 770 "$REPO_ROOT_DIR/splunk/etc"  # More restrictive permissions
-else
-    echo "⚠️  Directory $REPO_ROOT_DIR/splunk/etc does not exist. Skipping permission changes."
-fi
-
-echo "✅ Docker setup complete. You can now use Docker."
+echo
+echo "Setup complete! Please log out and back in for docker group changes to take effect."
+echo
+echo "To install docker tar images run: $REPO_ROOT_DIR/scripts/setup_load_docker_tar.sh"
