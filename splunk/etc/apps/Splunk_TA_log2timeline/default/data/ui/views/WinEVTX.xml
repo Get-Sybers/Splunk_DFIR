@@ -1,0 +1,63 @@
+<form version="1.1" theme="dark">
+  <label>WinEVTX - Windows Event Logs</label>
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken">
+      <label>Time Picker</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Sexy Rexy</title>
+      <input type="checkbox" token="hostToken">
+        <label>host</label>
+      </input>
+      <input type="multiselect" token="event_idToken">
+        <label>event_id</label>
+      </input>
+      <input type="multiselect" token="sourceToken">
+        <label>source</label>
+      </input>
+      <table>
+        <title>she needs some serious work</title>
+        <search>
+          <query>index=host sourcetype="l2t:winevtx" 4688
+| rex field=message "^\[(?&lt;event_id&gt;\d+)\s.*Provider identifier:\s*(?&lt;Provider_identifier&gt;\{[0-9a-fA-F-]+\})\s.*Source Name:\s*(?&lt;Source_Name&gt;[\w\s\-\_]+)\s*Strings:\s*(?&lt;Strings&gt;.*)$"
+| eval dynamic_part = replace(Strings, "^\[.*?\]\s*", "")
+| rex field=dynamic_part max_match=0 "(?&lt;dyn_key&gt;[\w\-\_ ]+):\s*(?&lt;dyn_value&gt;[^:]+?)(?=\s+[\w\-\_ ]+:\s|$)"
+| stats values(dyn_value) as dyn_value by event_id dyn_key
+| xyseries event_id dyn_key dyn_value
+| rename event_id as dyn_event_id
+| join type=left [ 
+    search index=host sourcetype="l2t:winevtx" 4688
+    | rex field=message "^\[(?&lt;event_id&gt;\d+)\s.*Provider identifier:\s*(?&lt;Provider_identifier&gt;\{[0-9a-fA-F-]+\})\s.*Source Name:\s*(?&lt;Source_Name&gt;[\w\s\-\_]+)"
+    | table event_id Provider_identifier Source_Name
+]
+| eval event_id = coalesce(dyn_event_id, event_id)
+| table event_id Provider_identifier Source_Name *</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>l2t:winevtx fields without rex extraction</title>
+        <search>
+          <query>index=host sourcetype="l2t:winevtx"
+| table host, display_name, datetime, description, message, timezone, timestamp_desc, type</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+</form>
