@@ -11,45 +11,18 @@
   </fieldset>
   <row>
     <panel>
+      <title>Mitre CAR Data Models Loaded</title>
       <table>
-        <title>Available Sourcetypes</title>
         <search>
-          <query>index=host sourcetype=l2t*
-| stats count by sourcetype
-| sort -count</query>
+          <query>| datamodel | spath modelName | search modelName="CAR*" | spath "objects{}.fields{}.displayName" |spath "objects{}.calculations{}.outputFields{}.fieldName"
+| rename modelName AS CAR_Object
+| rename "objects{}.calculations{}.outputFields{}.fieldName" AS action
+| rename "objects{}.fields{}.displayName" AS fields
+| table CAR_Object, action, fields</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
         <option name="drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>This data is extracted from the following hosts</title>
-        <search>
-          <query>index=host sourcetype=l2t*
-| eval host = upper(host)
-| stats count by host</query>
-          <earliest>$timetoken.earliest$</earliest>
-          <latest>$timetoken.latest$</latest>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
-      </table>
-    </panel>
-    <panel>
-      <table>
-        <title>Ingested Files</title>
-        <search>
-          <query>index=host sourcetype=l2t*
-| stats count by source
-| sort -count</query>
-          <earliest>$timetoken.earliest$</earliest>
-          <latest>$timetoken.latest$</latest>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
       </table>
     </panel>
   </row>
