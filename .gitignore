@@ -24,4 +24,4 @@ TestResults.xml
 *.pem
 *.key
 *.crt
-*.License
+**.License
