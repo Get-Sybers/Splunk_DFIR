@@ -92,3 +92,6 @@
 **.[Nn][Dd][Jj][Ss][Oo][Nn]
 **.[Mm][Ss][Gg][Pp][Aa][Cc][Kk]
 **.[Tt][Ii][Mm][Ee][Ll][Ii][Nn][Ee]
+
+# ignore docker tar balls
+**.[Tt][Aa][Rr]
