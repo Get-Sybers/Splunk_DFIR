@@ -1,4 +1,5 @@
-# 🚀 Script Overview
+# setup_environment.sh
+## 🚀 Script Overview
 
 - Installs Docker if it is not already present on the system.
 - Installs Docker.
@@ -18,5 +19,23 @@
 
 ---
 
+# setup_load_docker_tar.sh
+## 🚀 Script Overview
 
+- Loads Docker images from local tar files
+- Verifies image integrity after loading
+- Handles offline Docker image deployment
 
+---
+
+## 📋 Operation Steps
+
+1. Checks for presence of Docker image tar files
+2. Loads Docker images from tar files:
+   - Plaso
+   - Zeek
+   - Splunk
+3. Verifies successful image loading
+4. Reports loading status for each image
+
+---
