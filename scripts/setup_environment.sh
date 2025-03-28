@@ -15,6 +15,34 @@ IMAGES=(
 )
 
 ################################################################################
+# 🚨 Check if running as root
+if [[ "$EUID" -eq 0 ]]; then
+    cat << "EOF"
+        ⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣤⣤⣤⣤⣤⣤⣤⣀⡀⠀⠀⠀⠀⠀⠀
+        ⠀⠀⠀⠀⢀⣴⣿⣿⣿⠿⠟⠛⠉⠉⠀⠀⠉⠙⠻⢿⣷⣦⡀⠀⠀⠀
+        ⠀⠀⠀⢠⣿⡿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⢿⣆⠀⠀
+        ⠀⠀⢠⣿⠋⠀⠀⠀⣠⣶⣶⣶⣶⣶⣦⣄⠀⠀⠀⠀⠀⠀⠈⣿⣆⠀
+        ⠀⢀⣿⠁⠀⠀⠀⠘⠛⠋⠁⠀⠀⠈⠉⠛⠀⠀⠀⠀⠀⠀⠀⢹⣿⠀
+        ⠀⢸⣿⠀⠀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⠀⠀⠀⣿⡇
+        ⠀⠈⢿⣧⠀⢀⡿⠛⠛⠃⠀⠀⠀⠀⠀⠀⠀⠘⠿⠟⠛⠂⠀⣼⡟⠀
+        ⠀⠀⠀⠙⢿⣮⣅⣀⣀⣀⣀⣀⠀⠀⠀⠀⢀⣀⣀⣠⣤⣴⡾⠋⠀⠀
+
+       🤨  NOT SURE IF YOU'RE SUPPOSED TO BE ROOT...
+       ❌  OR YOU'RE ABOUT TO BREAK SOMETHING IMPORTANT
+
+             This script doesn’t need root, buddy.
+
+EOF
+
+    read -p "Are you *sure* you want to continue as root? [y/N]: " confirm_root
+    confirm_root="${confirm_root,,}"  # to lowercase
+    if [[ "$confirm_root" != "y" && "$confirm_root" != "yes" ]]; then
+        echo "❌ Aborting to prevent running as root."
+        exit 1
+    fi
+fi
+
+################################################################################
 # Present user with what this script will do
 echo -e "\n================== Setup Actions ==================\n"
 echo "This script will:"
@@ -72,6 +100,9 @@ sudo usermod -aG docker "$USER"
 
 ################################################################################
 # Download and optionally save Docker images
+echo "Preparing Splunk_DFIR directory permissions and setting ownership to $(whoami):docker"
+sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
+sudo chmod -R 744 "$REPO_ROOT_DIR"
 for image in "${IMAGES[@]}"; do
     echo "Pulling $image..."
     sudo docker pull "$image"
@@ -84,10 +115,10 @@ for image in "${IMAGES[@]}"; do
 done
 
 ################################################################################
-# Set permissions for Splunk_DFI
+# Set permissions for Splunk_DFIR
 
 if [ -d "$REPO_ROOT_DIR" ]; then
-    echo "Setting secure permissions for Splunk etc directory..."
+    echo "Setting permissions for Splunk etc directory... to $(whoami):docker"
     sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
     sudo chmod -R 744 "$REPO_ROOT_DIR"
 fi
