@@ -48,23 +48,7 @@ echo "📖 Qued Ansible Playbooks: Include-Custom-Apps.yml"
 echo "- find the rest @ $REPO_ROOT_DIR/splunk/ansible" 
 wait 3
 
-# Run Splunk Enterprise container with ansible_pre_tasks defined
-docker run -d --name splunk-enterprise \
-    --hostname splunk-enterprise \
-    -p 8000:8000 \
-    -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
-    -v "$REPO_ROOT_DIR/splunk/var":/data/var \
-    -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
-    -v "$REPO_ROOT_DIR/splunk/ansible":/data/ansible:ro \
-    -e SPLUNK_HTTP_ENABLESSL=true \
-    -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
-    -e SPLUNK_START_ARGS='--accept-license' \
-    -e SPLUNK_DISABLE_POPUPS='True' \
-    -e SPLUNK_ROLE=splunk_standalone \
-    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml, file:///data/ansible/custom_playbooks/Include-limits.yml" \
-    splunk/splunk:latest
-
-# Wait for Splunk to start up
+# insert memes
 echo "🚀 docker go brrr"
 echo "🫡 loading in your apps now with ansible"
 sleep 0.1
@@ -109,10 +93,54 @@ sleep 0.1
 echo "        ⠀ |       ULTRA    |"
 sleep 0.1
 echo "        ⠀ \________________/"
-sleep 0.1
+sleep 1
+echo
 echo "done. punch it chewie 🧌"
+echo
 
+# Run Splunk Enterprise container with ansible_pre_tasks defined
+docker run -d --name splunk-enterprise \
+    --hostname splunk-enterprise \
+    -p 8000:8000 \
+    -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
+    -v "$REPO_ROOT_DIR/splunk/var":/data/var \
+    -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
+    -v "$REPO_ROOT_DIR/splunk/ansible":/data/ansible:ro \
+    -e SPLUNK_HTTP_ENABLESSL=true \
+    -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
+    -e SPLUNK_START_ARGS='--accept-license' \
+    -e SPLUNK_DISABLE_POPUPS='True' \
+    -e SPLUNK_ROLE=splunk_standalone \
+    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml, file:///data/ansible/custom_playbooks/Include-limits.yml" \
+    splunk/splunk:latest
+
+# 🪵 Stream all logs immediately in background
 docker logs -f splunk-enterprise &
+
+# ⏳ In parallel, wait until Ansible is complete
+echo "⏳ Waiting for Ansible to complete inside container..."
+
+timeout=60
+elapsed=0
+interval=1
+
+while ! docker logs splunk-enterprise 2>&1 | grep -q "Ansible playbook complete, will begin streaming splunkd_stderr.log"; do
+    sleep $interval
+    ((elapsed+=interval))
+    if [[ $elapsed -ge $timeout ]]; then
+        echo "❌ Timeout waiting for Ansible playbook to complete."
+        exit 1
+    fi
+done
+
+# Step 3: Stream splunkd_stderr.log from inside the container in background
+echo "✅ Ansible complete."
+wait 1
+echo
+echo "Splunk initialising..."
+echo
+echo "Splunk will be available at: https://localhost:8000"
+echo
 
 
 # Ensure the container is running before proceeding
