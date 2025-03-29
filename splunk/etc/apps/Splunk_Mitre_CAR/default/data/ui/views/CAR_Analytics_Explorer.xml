@@ -1,0 +1,391 @@
+<dashboard version="1.1" theme="dark">
+<label>CAR_Analytics_Explorer</label>
+  <label>CAR Analytics Explorer</label>
+  <description>Explore MITRE CAR (Cyber Analytics Repository) analytics using the carfind command</description>
+  
+  <fieldset submitButton="true" autoRun="true">
+    <input type="text" token="search_term" searchWhenChanged="false">
+      <label>Search Term (Optional)</label>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+    <input type="dropdown" token="platform_filter" searchWhenChanged="true">
+      <label>Platform</label>
+      <choice value="*">All</choice>
+      <choice value="Windows">Windows</choice>
+      <choice value="Linux">Linux</choice>
+      <choice value="macOS">macOS</choice>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="technique_filter" searchWhenChanged="false">
+      <label>MITRE Technique (Optional)</label>
+      <choice value="">All</choice>
+      <choice value="T1562">T1562 - Impair Defenses</choice>
+      <choice value="T1055">T1055 - Process Injection</choice>
+      <choice value="T1059">T1059 - Command and Scripting Interpreter</choice>
+      <choice value="T1036">T1036 - Masquerading</choice>
+      <choice value="T1112">T1112 - Modify Registry</choice>
+      <default></default>
+      <initialValue></initialValue>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <title>CAR Analytics Overview</title>
+      <chart>
+        <search>
+          <query>| carfind | stats count by information_domain</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Analytics by Platform</title>
+      <chart>
+        <search>
+          <query>| carfind | stats count by platforms_list</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Analytics by Analytic Type</title>
+      <chart>
+        <search>
+          <query>| carfind | stats count by analytic_types_list</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Top MITRE ATTACK Techniques</title>
+      <table>
+        <search>
+          <query>| carfind 
+| mvexpand coverage.techniques 
+| stats count by coverage.techniques 
+| sort -count 
+| rename coverage.techniques as "Technique ID" count as "Number of Analytics"
+| head 10</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Top MITRE ATTACK Tactics</title>
+      <table>
+        <search>
+          <query>| carfind 
+| mvexpand coverage.tactics 
+| stats count by coverage.tactics 
+| sort -count 
+| rename coverage.tactics as "Tactic ID" count as "Number of Analytics"
+| head 10</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Implementation Types Distribution</title>
+      <chart>
+        <search>
+          <query>| carfind 
+| mvexpand implementations.types 
+| stats count by implementations.types 
+| sort -count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Search Results: Analytics matching criteria</title>
+      <table>
+        <search>
+          <query>| carfind technique="$technique_filter$" platform="$platform_filter$" $search_term$
+| table id title submission_date information_domain platforms_list coverage.techniques coverage.levels</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="selected_id">$row.id$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$selected_id$">
+    <panel>
+      <title>Analytic Details: $selected_id$</title>
+      <table>
+        <search>
+          <query>| carfind id="$selected_id$" 
+| table id title description information_domain platforms_list analytic_types_list subtypes_list contributors_list submission_date</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$selected_id$">
+    <panel>
+      <title>MITRE ATTACK Coverage</title>
+      <table>
+        <search>
+          <query>| carfind id="$selected_id$" 
+| stats values(coverage.technique) as Technique values(coverage.tactics) as Tactics values(coverage.subtechniques) as Subtechniques values(coverage.coverage) as "Coverage Level" by id</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>D3FEND Mappings</title>
+      <table>
+        <search>
+          <query>| carfind id="$selected_id$" 
+| table d3fend_mappings.ids d3fend_mappings.labels</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$selected_id$">
+    <panel>
+      <title>Implementations</title>
+      <table>
+        <search>
+          <query>| carfind id="$selected_id$" 
+| mvexpand implementations 
+| eval implementation = json_extract(implementations, "type") 
+| rename implementation as "Implementation Type"
+| table "Implementation Type"</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">row</option>
+        <drilldown>
+          <set token="implementation_type">$row.Implementation Type$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$implementation_type$">
+    <panel>
+      <title>$implementation_type$ Implementation</title>
+      <event>
+        <search>
+          <query>| carfind id="$selected_id$" implementation_type="$implementation_type$" 
+| fields implementations.*.code 
+| head 1</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </event>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Example: Finding Analytics by MITRE Technique</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind technique="T1562" 
+| table id title platforms_list</pre></p>
+      </html>
+      <table>
+        <search>
+          <query>| carfind technique="T1562" 
+| table id title platforms_list</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Example: Finding Analytics with Specific Implementation Code</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind code_contains="EventCode=4688" 
+| table id title implementations.types</pre></p>
+      </html>
+      <table>
+        <search>
+          <query>| carfind code_contains="EventCode=4688" 
+| table id title implementations.types</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Example: Finding Analytics by Coverage Quality</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind 
+| stats values(coverage.levels) as coverage_levels by id title 
+| search coverage_levels="*Low*" 
+| table id title coverage_levels</pre></p>
+      </html>
+      <table>
+        <search>
+          <query>| carfind 
+| stats values(coverage.levels) as coverage_levels by id title 
+| search coverage_levels="*Low*" 
+| table id title coverage_levels</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Example: Finding Analytics by Unit Test Description</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind test_description="Registry" 
+| table id title unit_tests.*.description</pre></p>
+      </html>
+      <table>
+        <search>
+          <query>| carfind test_description="Registry" 
+| table id title unit_tests.*.description</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Example: Analytics by Data Model Reference</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind
+| mvexpand data_model_references 
+| stats count by data_model_references 
+| sort -count</pre></p>
+      </html>
+      <table>
+        <search>
+          <query>| carfind
+| mvexpand data_model_references 
+| stats count by data_model_references 
+| sort -count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Example: Analytics by Submission Date</title>
+      <html>
+        <p><strong>SPL Query:</strong><pre>| carfind 
+| eval year_month=substr(submission_date,1,7) 
+| stats count by year_month 
+| sort year_month</pre></p>
+      </html>
+      <chart>
+        <search>
+          <query>| carfind 
+| eval year_month=substr(submission_date,1,7) 
+| stats count by year_month 
+| sort year_month</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Command Reference</title>
+      <html>
+        <h3>Basic Search Syntax</h3>
+        <pre>| carfind [options]</pre>
+        
+        <h3>Common Search Examples</h3>
+        <ol>
+          <li><strong>Find a specific CAR rule by ID:</strong>
+            <pre>| carfind id="CAR-2022-03-001"</pre>
+          </li>
+          <li><strong>Search for Windows techniques:</strong>
+            <pre>| carfind platform="Windows" technique="T1562"</pre>
+          </li>
+          <li><strong>Find implementations:</strong>
+            <pre>| carfind implementation_type="Splunk" code_contains="EventCode=4688"</pre>
+          </li>
+          <li><strong>Find by MITRE ATTACK constructs:</strong>
+            <pre>| carfind technique="T1562" subtechnique="T1562.002" tactic="TA0005"</pre>
+          </li>
+          <li><strong>Search by date range:</strong>
+            <pre>| carfind daterange="2021/01/01..2022/12/31"</pre>
+          </li>
+          <li><strong>Find rules with specific tests:</strong>
+            <pre>| carfind test_description="Registry"</pre>
+          </li>
+          <li><strong>Find D3FEND mappings:</strong>
+            <pre>| carfind d3fend_id="D3-PSA"</pre>
+          </li>
+        </ol>
+      </html>
+    </panel>
+  </row>
+</dashboard>
