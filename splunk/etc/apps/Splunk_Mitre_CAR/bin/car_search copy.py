@@ -17,20 +17,17 @@ class CARSearchCommand(GeneratingCommand):
     ##Syntax
     
     .. code-block::
-        | carfind [field1=value1] [field2=value2] ... [fieldN=valueN]
-        
-        Common fields:
-        [id=<CAR-ID>] [technique=<technique>] [subtechnique=<subtechnique>] 
-        [tactic=<tactic>] [platform=<platform>] [title=<title>] 
-        [type=<analytic_type>] [subtype=<subtype>] [contributor=<contributor>]
-        [information_domain=<domain>] [d3fend_id=<id>]
-        [daterange=<start_date>..<end_date>] [implementation_type=<type>]
-        [data_model=<data_model>]
+        | carfind [id=<CAR-ID>] [technique=<technique>] [subtechnique=<subtechnique>] 
+                 [tactic=<tactic>] [platform=<platform>] [title=<title>] 
+                 [type=<analytic_type>] [subtype=<subtype>] [contributor=<contributor>]
+                 [information_domain=<domain>] [d3fend_id=<id>]
+                 [daterange=<start_date>..<end_date>] [implementation_type=<type>]
+                 [data_model=<data_model>] [test_description=<description>]
+                 [true_positive_source=<source>] [code_contains=<text>]
     
     ##Description
     
     Search through CAR analytics rules stored as YAML files based on the complete schema.
-    Any field extracted from the YAML files can be used directly in the search syntax.
     """
     
     # Basic fields
@@ -173,60 +170,8 @@ class CARSearchCommand(GeneratingCommand):
         **Description:** Filter by D3FEND mapping label''',
         require=False, default=None)
 
-    # The field_search option is kept for backward compatibility but not documented
-    field_search = Option(
-        doc='''Hidden option for backward compatibility''',
-        require=False, default=None)
-        
-    # Add dynamic options support
-    def __init__(self):
-        super(CARSearchCommand, self).__init__()
-        self.dynamic_options = {}
-
-    def prepare(self):
-        """Process dynamic field options from the command line arguments"""
-        # Call parent prepare method
-        super(CARSearchCommand, self).prepare()
-        
-        # Get any additional options beyond the predefined ones
-        known_options = set(opt.name for opt in self.options.values())
-        
-        # Store all options that aren't predefined as dynamic options
-        for arg in self.fieldnames:
-            if arg not in known_options:
-                self.dynamic_options[arg] = getattr(self, arg)
-        
-        return self
-
     def generate(self):
         try:
-            # Build a list of all field search conditions from explicit options
-            # and the field_search parameter (for backward compatibility)
-            field_search_conditions = []
-            
-            # Add conditions from dynamic options
-            for field_name, field_value in self.dynamic_options.items():
-                if field_value is not None:
-                    field_search_conditions.append((field_name, field_value))
-            
-            # Also process field_search option if provided (for backward compatibility)
-            if self.field_search:
-                # Split by commas, but respect quotes
-                import re
-                parts = re.findall(r'(?:[^,"]|"(?:\\.|[^"])*")++', self.field_search)
-                
-                for part in parts:
-                    part = part.strip()
-                    if '=' in part:
-                        field_name, field_value = part.split('=', 1)
-                        field_name = field_name.strip()
-                        
-                        # Handle quoted values
-                        if field_value.startswith('"') and field_value.endswith('"'):
-                            field_value = field_value[1:-1].replace('\\"', '"')
-                        
-                        field_search_conditions.append((field_name, field_value))
-
             # Determine the app directory (assumes script is in app/bin)
             script_dir = os.path.dirname(os.path.abspath(__file__))
             app_dir = os.path.dirname(script_dir)
@@ -680,58 +625,6 @@ class CARSearchCommand(GeneratingCommand):
                             record['d3fend_mappings.ids'] = json.dumps(d3fend_ids)
                             record['d3fend_mappings.labels'] = json.dumps(d3fend_labels)
                             record['d3fend_mappings.iris'] = json.dumps(d3fend_iris)
-                        
-                        # Apply custom field search conditions
-                        match = True
-                        for field_name, field_value in field_search_conditions:
-                            # Handle nested fields with dot notation
-                            if '.' in field_name:
-                                parts = field_name.split('.')
-                                current = car_rule
-                                found = True
-                                
-                                # Navigate the nested structure
-                                for i, part in enumerate(parts):
-                                    if isinstance(current, dict) and part in current:
-                                        if i == len(parts) - 1:  # Last part
-                                            # Check if value matches
-                                            if str(field_value).lower() not in str(current[part]).lower():
-                                                match = False
-                                                break
-                                        else:
-                                            current = current[part]
-                                    else:
-                                        # Also check if the field exists in the flattened record
-                                        if field_name in record:
-                                            if str(field_value).lower() not in str(record[field_name]).lower():
-                                                match = False
-                                                break
-                                        else:
-                                            match = False
-                                            break
-                            else:  # Top-level field
-                                # Check in both original YAML and flattened record
-                                found = False
-                                
-                                # Check in flattened record first (it contains processed fields)
-                                if field_name in record:
-                                    found = True
-                                    if str(field_value).lower() not in str(record[field_name]).lower():
-                                        match = False
-                                        break
-                                # Then check in original YAML
-                                elif field_name in car_rule:
-                                    found = True
-                                    if str(field_value).lower() not in str(car_rule[field_name]).lower():
-                                        match = False
-                                        break
-                                
-                                if not found:
-                                    match = False
-                                    break
-                        
-                        if not match:
-                            continue
                         
                         yield record
                         

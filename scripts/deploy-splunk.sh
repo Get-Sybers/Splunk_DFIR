@@ -135,7 +135,7 @@ done
 
 # Step 3: Stream splunkd_stderr.log from inside the container in background
 echo "✅ Ansible complete."
-wait 1
+sleep 1
 echo
 echo "Splunk initialising..."
 echo
