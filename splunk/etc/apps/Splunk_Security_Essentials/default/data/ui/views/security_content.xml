@@ -1,3 +1,0 @@
-<view template="Splunk_Security_Essentials:/templates/generic.html" type="html" isDashboard="true" isVisible="true">
-  <label> Security Content </label>
-</view>

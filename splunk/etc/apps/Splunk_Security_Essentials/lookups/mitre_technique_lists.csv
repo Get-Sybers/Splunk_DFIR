@@ -1,8 +1,0 @@
-List,Techniques,Reference
-List - Splunk SURGe 2023 Top 10 Macro-ATT&CK List,"T1190,T1059.001,T1027,T1083,T1059,T1569.002,T1082,T1218.011,T1059.003,T1070.004",https://www.splunk.com/en_us/blog/security/revisiting-the-big-picture-macro-level-att-ck-updates-for-2023.html
-List - Splunk SURGe 2022 Top 20 Macro-ATT&CK List,"T1059.001,T1027,T1190,T1083,T1059,T1133,T1082,T1071.001,T1566.002,T1569.002,T1057,T1059.003,T1070.004,T1505.003,T1016,T1105,T1553,T1053.005,T1033,T1560.001",https://www.splunk.com/en_us/blog/security/zoom-enhance-finding-value-in-macro-level-att-ck-reporting.html
-List - MITRE ATT&CK Ransomware Top Ten List,"T1486,T1490,T1027,T1047,T1036,T1059,T1562,T1112,T1204,T1055",https://top-attack-techniques.mitre-engenuity.org/
-List - MITRE Engenuity Adversary Sightings  Top 15 List,"T1059,T1090,T1036,T1543,T1562,T1027,T1021,T1053,T1574,T1095,T1218,T1055,T1047,T1112,T1105",https://medium.com/mitre-engenuity/informing-defense-with-adversary-sightings-3d54fe39290
-List - Mandiant M-Trends 2023 Top Techniques,"T1059,T1027,T1071,T1082,T1070,T1083,T1140,T1021,T1105,T1543",https://www.mandiant.com/m-trends
-List - Red Canary Top techniques 2023,"T1059.003,T1059.001,T1047,T1027,T218.011,T1105,T1055,T1569.002,T1036.003,T1003.001",https://redcanary.com/threat-detection-report/techniques/
-List - Red Canary Top techniques 2021,"T1059,T1218,T1047,T1003,T1105,T1055,T1053,T1027,T1036,T1574",https://redcanary.com/threat-detection-report/techniques/
