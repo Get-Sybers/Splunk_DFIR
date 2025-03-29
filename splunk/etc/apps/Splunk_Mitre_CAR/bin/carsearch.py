@@ -2,35 +2,37 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import time
 import json
 
-# Strictly handle the getinfo probe
-if "--getinfo" in sys.argv:
+# Getinfo probe: If the first argument equals "__GETINFO__" (ignoring case and whitespace),
+# output a single JSON line and exit immediately.
+if len(sys.argv) > 1 and sys.argv[1].strip().upper() == "__GETINFO__":
     info = {
         "version": "1.0",
         "build": "1.0",
         "display": {
             "title": "Car Search Command",
-            "description": "Searches MITRE CAR analytics YAML files."
+            "description": "Searches YAML files for MITRE CAR analytics."
         },
-        "searchmode": "oneshot"
+        "searchmode": "oneshot",
+        "generating": True
     }
-    sys.stdout.write(json.dumps(info))
+    sys.stdout.write(json.dumps(info) + "\n")
     sys.stdout.flush()
     sys.exit(0)
 
+# Now import Splunk libraries and other modules.
 try:
     from splunklib.searchcommands import dispatch, GeneratingCommand, Configuration, Option
-except ModuleNotFoundError:
-    sys.stderr.write("[!] This script is meant to be run by Splunk, not directly.\n")
+except Exception as e:
+    sys.stderr.write("Error importing Splunk libraries: " + str(e) + "\n")
     sys.exit(1)
 
-# Locate app root and analytics directory
-APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-ANALYTICS_DIR = os.path.join(APP_ROOT, 'analytics')
+# Determine the app root and the analytics directory.
+APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ANALYTICS_DIR = os.path.join(APP_ROOT, "analytics")
 
-# Add vendored PyYAML to path
+# Add the local directory (which should contain PyYAML) to the Python path.
 sys.path.insert(0, os.path.dirname(__file__))
 import yaml
 
@@ -41,22 +43,25 @@ class CarSearchCommand(GeneratingCommand):
 
     def generate(self):
         if not os.path.exists(ANALYTICS_DIR):
-            self.error("Analytics directory not found: {}".format(ANALYTICS_DIR))
+            self.error("Analytics directory not found: " + ANALYTICS_DIR)
             return
 
+        # Iterate over YAML files in the analytics directory.
         for filename in os.listdir(ANALYTICS_DIR):
             if not filename.endswith(".yaml"):
                 continue
-            path = os.path.join(ANALYTICS_DIR, filename)
+
+            file_path = os.path.join(ANALYTICS_DIR, filename)
             try:
-                with open(path, "r") as f:
+                with open(file_path, "r") as f:
                     analytic = yaml.safe_load(f)
             except Exception as e:
                 self.error("Error loading file {}: {}".format(filename, e))
                 continue
 
+            # Filter on platform: support both "platform" and "platforms" keys.
             if self.platform:
-                file_platforms = analytic.get('platform') or analytic.get('platforms')
+                file_platforms = analytic.get("platform") or analytic.get("platforms")
                 if file_platforms:
                     if isinstance(file_platforms, list):
                         if not any(self.platform.lower() == p.lower() for p in file_platforms):
@@ -67,9 +72,10 @@ class CarSearchCommand(GeneratingCommand):
                 else:
                     continue
 
+            # Filter on tactic: check direct "tactic" or inside a "coverage" list.
             if self.tactic:
                 tactic_match = False
-                file_tactic = analytic.get('tactic')
+                file_tactic = analytic.get("tactic")
                 if file_tactic:
                     if isinstance(file_tactic, list):
                         if any(self.tactic.lower() == t.lower() for t in file_tactic):
@@ -78,27 +84,30 @@ class CarSearchCommand(GeneratingCommand):
                         if file_tactic.lower() == self.tactic.lower():
                             tactic_match = True
                 else:
-                    coverage = analytic.get('coverage', [])
+                    coverage = analytic.get("coverage", [])
                     for cov in coverage:
-                        tactics_list = cov.get('tactics')
-                        if tactics_list:
-                            if isinstance(tactics_list, list):
-                                if any(self.tactic.lower() == t.lower() for t in tactics_list):
+                        tactics = cov.get("tactics")
+                        if tactics:
+                            if isinstance(tactics, list):
+                                if any(self.tactic.lower() == t.lower() for t in tactics):
                                     tactic_match = True
                                     break
-                            elif isinstance(tactics_list, str):
-                                if self.tactic.lower() == tactics_list.lower():
+                            elif isinstance(tactics, str):
+                                if self.tactic.lower() == tactics.lower():
                                     tactic_match = True
                                     break
                 if not tactic_match:
                     continue
 
+            # Yield an event with field variables (CSV headers will be generated automatically).
+            # Here we yield only the fields we want (for example, filename, id, and title).
             event = {
                 "filename": filename,
-                "analytic": analytic,
-                "_time": time.time()
+                "id": analytic.get("id", ""),
+                "title": analytic.get("title", ""),
+                "analytic": analytic
             }
             yield event
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dispatch(CarSearchCommand, sys.argv, sys.stdin, sys.stdout, __name__)
