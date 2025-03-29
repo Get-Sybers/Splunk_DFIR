@@ -1,0 +1,61 @@
+<form version="1.1" theme="dark">
+  <label>MitreCAR Landing</label>
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken" searchWhenChanged="true">
+      <label>Time Ranage</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <table>
+        <title>CAR Analytics</title>
+        <search>
+          <query>| carfind
+| table id, submission_date, subtypes, platforms, title, information_domain, analytic_types, d3fend_mappings, contributors</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="idtoken">$click.value$</set>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>CAR Analytics</title>
+        <search>
+          <query>| carfind id=$idtoken$
+| table description</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Mitre CAR Data Models Loaded</title>
+      <table>
+        <search>
+          <query>| datamodel | spath modelName | search modelName="CAR*" | spath "objects{}.fields{}.displayName" |spath "objects{}.calculations{}.outputFields{}.fieldName"
+| rename modelName AS CAR_Object
+| rename "objects{}.calculations{}.outputFields{}.fieldName" AS action
+| rename "objects{}.fields{}.displayName" AS fields
+| table CAR_Object, action, fields</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>

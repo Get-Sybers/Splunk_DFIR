@@ -27,7 +27,7 @@ owner = nobody
 
 [views/sample_simple_dashboard_studio]
 export = none
-owner = admin
+owner = nobody
 version = 9.4.1
 modtime = 1742987236.993619000
 
