@@ -1,2 +1,0 @@
-<dashboard version="1.1" script="runPageScript.js,vendor/bootstrap/bootstrap.js,vendor/bootstrap-multiselect/bootstrap-multiselect.js" stylesheet="vendor/bootstrap/bootstrap.css,vendor/bootstrap-multiselect/bootstrap-multiselect.css,securityjourney.css,style/app.css,style/contents.css">
-</dashboard>

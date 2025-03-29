@@ -1,9 +1,0 @@
-<nav search_view="search" color="#CF5300">
-  <view name="contents" default="true"/>
-  <view name="experiments"/>
-  <view name="search"/>
-  <view name="models"/>
-  <view name="settings"/>
-  <a href="http://docs.splunk.com/Documentation/MLApp" target="_blank">Docs</a>
-  <a href="http://tiny.cc/splunkmlvideos" target="_blank">Video Tutorials</a>
-</nav>
