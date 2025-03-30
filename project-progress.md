@@ -8,7 +8,7 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Ingest | Extract | Data Model |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, tsv | ✅     | tsv✅   |            |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, csv | ✅     | tsv✅   |            |
 | [Zeek](https://zeek.org/)                                     | ✅            | tsv      | ✅     |    ✅   |            |
 | [Kape](https://github.com/EricZimmerman/KapeFiles)            | manual        | json_line, csv | ✅     |   ✅✅  |            |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                |        |         |            |
