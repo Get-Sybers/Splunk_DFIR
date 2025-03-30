@@ -9,18 +9,30 @@ export = none
 owner = admin
 version = 9.4.1
 
-[]
-access = read : [ * ], write : [ admin, power ]
+[nav/default]
 export = none
+owner = admin
+version = 9.4.1
 
-[tags]
-export = system
+[inputs]
+export = app
+access = read : [ * ], write : [ admin ]
 
 [props]
-export = system
+export = app
+access = read : [ * ], write : [ admin ]
 
 [transforms]
-export = system
+export = app
+access = read : [ * ], write : [ admin ]
 
-[lookups]
-export = system
+[lookups/modules.csv]
+export = app
+access = read : [ * ], write : [ * ]
+owner = nobody
+version = 9.4.1
+
+[]
+export = app
+access = read : [ * ], write : [ * ]
+version = 9.4.1

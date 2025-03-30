@@ -9,6 +9,36 @@
       </default>
     </input>
   </fieldset>
+    <row>
+    <panel>
+      <title>Sexy Rexy</title>
+      <input type="checkbox" token="hostToken">
+        <label>host</label>
+      </input>
+      <input type="multiselect" token="event_idToken">
+        <label>event_id</label>
+      </input>
+      <input type="multiselect" token="sourceToken">
+        <label>source</label>
+      </input>
+      <table>
+        <title>she getting there</title>
+        <search>
+          <query>index=host sourcetype=l2t:winevtx 
+| rex field=message max_match=0 "(?<field_name>(?<!\\\)[A-Za-z][A-Za-z0-9 ]+):\s+(?<field_value>[^,\n;]+?)(?=\s+[A-Za-z][A-Za-z0-9 ]+[:\;]|$)"
+| rex field=message max_match=0 "(?<field_name>(?<!\\\)[A-Za-z][A-Za-z0-9 ]+) = (?<field_value>[^,\n;]+?)(?=\s+[A-Za-z][A-Za-z0-9 ]+[:\;=]|$)"
+| eval pair=mvzip(field_name, field_value, "=")
+| mvexpand pair
+| rex field=pair "(?<extracted_field>.+)=(?<extracted_value>.*)"
+| stats count by extracted_field extracted_value</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
   <row>
     <panel>
       <title>Sexy Rexy</title>

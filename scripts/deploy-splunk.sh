@@ -111,7 +111,7 @@ docker run -d --name splunk-enterprise \
     -e SPLUNK_START_ARGS='--accept-license' \
     -e SPLUNK_DISABLE_POPUPS='True' \
     -e SPLUNK_ROLE=splunk_standalone \
-    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml, file:///data/ansible/custom_playbooks/Include-limits.yml" \
+    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml, file:///data/ansible/custom_playbooks/Include-local-conf.yml" \
     splunk/splunk:latest
 
 # 🪵 Stream all logs immediately in background
