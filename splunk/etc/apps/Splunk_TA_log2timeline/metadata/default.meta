@@ -3,13 +3,46 @@ access = read : [ * ], write : [ admin, power ]
 export = none
 
 [tags]
-export = system
+export = app
 
 [props]
-export = system
+export = app
+access = read : [ * ], write : [ admin ]
 
 [transforms]
-export = system
+export = app
+access = read : [ * ], write : [ admin ]
+
+[inputs]
+export = app
+access = read : [ * ], write : [ admin ]
 
 [lookups]
-export = system
+export = app
+
+[app/ui]
+version = 9.4.1
+
+[views/landing]
+export = none
+owner = admin
+version = 9.4.1
+
+[app/launcher]
+version = 9.4.1
+
+[nav/default]
+export = none
+owner = admin
+version = 9.4.1
+
+[lookups/parsers.csv]
+export = app
+access = read : [ * ], write : [ * ]
+owner = nobody
+version = 9.4.1
+
+[]
+export = app
+access = read : [ * ], write : [ * ]
+version = 9.4.1
