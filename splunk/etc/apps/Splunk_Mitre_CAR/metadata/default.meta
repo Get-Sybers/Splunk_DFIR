@@ -1,35 +1,20 @@
-[app/ui]
-version = 9.4.1
-modtime = 1742986967.188361000
-
-[app/launcher]
-version = 9.4.1
-modtime = 1742986967.189688000
-
-[views/landing]
-export = none
-owner = admin
-version = 9.4.1
-modtime = 1742988223.133644000
-
-[nav/default]
-export = none
-owner = admin
-version = 9.4.1
-modtime = 1742987236.980464000
-
 []
 access = read : [ * ], write : [ admin ]
 
-[props/sendmail/]
-export = system
-owner = nobody
-
-[views/sample_simple_dashboard_studio]
-export = none
-owner = nobody
+[app/ui]
 version = 9.4.1
-modtime = 1742987236.993619000
+
+[app/launcher]
+version = 9.4.1
+
+[views/landing]
+owner = admin
+version = 9.4.1
+
+[nav/default]
+owner = admin
+version = 9.4.1
+
 
 ### VIEWSTATES: even normal users should be able to create shared viewstates
 
