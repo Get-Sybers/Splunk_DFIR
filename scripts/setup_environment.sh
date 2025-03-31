@@ -72,7 +72,6 @@ SAVE_TARBALLS=$([[ $REPLY =~ ^[Yy]$ ]] && echo true || echo false)
 # Install Docker if not already installed
 if ! command -v docker &> /dev/null; then
     echo "Docker not found. Installing Docker..."
-    # Add Docker's official GPG key:
     sudo apt-get update
     sudo apt-get install ca-certificates curl
     sudo install -m 0755 -d /etc/apt/keyrings

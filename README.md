@@ -1,8 +1,8 @@
 # 🚀 Splunk DFIR Pipeline
 ## 📚 Repo
 - [1. Overview](#overview)
-- [2. Get-Started](/get-started.md)
-- [3. Dir-Structure](/dir-structure.md)
+- [2. Get-Started](/docs/Get-Started.md)
+- [3. Dir-Structure](docs/Dir-Structure.md)
 - [4. Project-Progress](/project-progress.md)
 - [5. Docs](/docs/)
 
