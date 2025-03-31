@@ -20,6 +20,13 @@
 
 ---
 
+# ‼️ Disclaimer
+Running DFIR tools in a containerized environment can be risky. Ensure you understand the implications and risks before proceeding. This project is intended for educational purposes only. Use at your own risk. 
+
+I have begun to consoidate resources in [research.md](/docs/research.md) if you have any resources you would like to add please feel free to submit a PR.
+
+This project is not affiliated with or endorsed by any of the tools used or organizations mentioned.
+
 ## 🚀 Overview
 <a name="overview"></a>
 
