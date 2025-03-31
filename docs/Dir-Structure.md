@@ -3,7 +3,7 @@
   $Splunk_DFIR                                 
     └── scripts/                                      # Processing scripts for forensic data
     │
-    └── ansible-playbooks
+    └── ansible-playbooks/
     │
     └── docs/                                         # Documentation for project usage and setup
     │

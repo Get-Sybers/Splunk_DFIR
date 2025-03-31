@@ -8,18 +8,20 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Ingest | Extract | Data Model |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, csv | ✅     | tsv✅   |            |
-| [Zeek](https://zeek.org/)                                     | ✅            | tsv      | ✅     |    ✅   |            |
-| [Kape](https://github.com/EricZimmerman/KapeFiles)            | manual        | json_line, csv | ✅     |   ✅✅  |            |
-| [Zimmerman](https://github.com/EricZimmerman)                 |               |                |        |         |            |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx      |        |         |            |
-| [Symon](https://github.com/mandiant/Symon)                    |               |                |        |         |            |
-| [Syslog](https://syslog-ng.github.io)                         |               |                |        |         |            |
-| Linux Logs                                                    |               |                |        |         |            |
-| CSVs                                                          |               | csv            | ✅     |         |            |
-| JSON                                                          |               | json           | ✅     |         |            |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                |        |         |            |
-| [Chainsaw](https://github.com/countercept/chainsaw)           |               |                |        |         |            |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, csv  | ✅     | csv✅   |            |
+| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅     |    ✅   |            |
+| [Kape](https://github.com/EricZimmerman/KapeFiles)            |               | json_line, csv  | ✅     |   ✅✅  |            |
+| CSVs                                                          |               | csv             | ✅     |         |           |
+| JSON                                                          |               | json            | ✅     |         |           |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx       |        |         |           |
+| Linux Logs                                                    |               |                 |        |         |           |
+| [Symon](https://github.com/mandiant/Symon)                    |               |                 |        |         |           |
+| [Syslog](https://syslog-ng.github.io)                         |               |                 |        |         |           |
+| [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |        |         |           |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |        |         |           |
+| [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |        |         |           |
+
+# Update log
 
 ## 🔜 To Do
 ### 🔹 **KAPE & Raw EVTX Processing**  

@@ -118,11 +118,11 @@ data_store/
       │           └── yyyymmddhhmmss_EvtxECmd_Output.json
       │           └── yyyymmddhhmmss_PECmd_Output.json
       │       
-      └── linux_logs
+      └── linux_logs/
       │   └── linux_logs/
       │
       └── log2timeline
-      │   └── tsv/
+      │   └── csv/
       │   │   └── <your-disk-image>.csv
       │   │   └── <your-disk-image>.csv
       │   │   └── <your-disk-image>.csv
@@ -130,7 +130,7 @@ data_store/
       │   └── logs/
       │       └── <your-disk-image>.log
       │       └── <your-disk-image>.log
-      │       └── /<your-disk-image>.log
+      │       └── <your-disk-image>.log
       │      
       └── zeek/
       │   └── your-pcap-filename/
@@ -159,12 +159,12 @@ data_store/
       │       └── pe.log
       │       └── socks.log
       │ 
-      └── zimmerman
+      └── zimmerman/
       │
-      └── csv
+      └── csv/
       │   └── csv-file.csv
       │
-      └── json
+      └── json/
          └── json-file.json
 ```
 

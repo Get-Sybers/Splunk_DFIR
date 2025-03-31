@@ -7,9 +7,9 @@ This section lists the required Docker containers for the DFIR automation pipeli
 ## 📦 Pull Required Containers
 
 ```sh
-docker pull log2timeline/plaso:latest
-docker pull zeek/zeek:latest
-docker pull splunk/splunk:latest
+log2timeline/plaso:latest
+zeek/zeek:latest
+splunk/splunk:latest
 ```
 
 ---
