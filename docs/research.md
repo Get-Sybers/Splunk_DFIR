@@ -1,10 +1,21 @@
+# Container Security
+**Container Security with Matt Moore (podcast - Software Engineering Daily)**
+
+    Matt Moore (Guest)
+    Founder and CTO of Chainguard
+    https://youtu.be/T2f4BmnjfQQ?si=QcHobdiXzu8HGs1i
+
+POI:
+- Container images are often built without removing unnecessary files, which can lead to security vulnerabilities.
+- [Chainguard's](https://github.com/chainguard-dev) focus is on providing secure container images and tools for developers.
+- Chainguard's also offers container image with applications that are built with security in mind.
+
 # Container Isolation
 ## Containers and malware analysis (REMNUX)
 **Docker Containers for Malware Analysis**
 
     Lenny Zeltser
     Senior Faculty Member, SANS Institute
-    Product Management Director, NCR Corp
     https://zeltser.com/media/archive/docker.pdf
 
 POI:
