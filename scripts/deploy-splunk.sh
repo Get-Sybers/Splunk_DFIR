@@ -46,7 +46,7 @@ echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/ansible --> /data/ansible:ro"
 echo ""
 echo "📖 Qued Ansible Playbooks: Include-Custom-Apps.yml"
 echo "- find the rest @ $REPO_ROOT_DIR/splunk/ansible" 
-wait 3
+sleep 3
 
 # insert memes
 echo "🚀 docker go brrr"

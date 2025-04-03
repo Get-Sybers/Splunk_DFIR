@@ -65,7 +65,7 @@ docker exec temp-splunk-setup ls -la /data/ansible/custom_playbooks
 docker rm temp-splunk-setup
 
 echo "📖 Qued Ansible Playbooks: Include-Custom-Apps.yml" 
-wait 3
+sleep 3
 
 # insert memes
 echo "🚀 docker go brrr"

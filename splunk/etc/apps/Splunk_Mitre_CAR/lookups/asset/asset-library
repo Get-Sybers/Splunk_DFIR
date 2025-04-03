@@ -1,0 +1,13 @@
+Mitre-CAR:
+  - https://github.com/mitre-attack/car/blob/master/docs/car_attack/car_attack.json
+  - https://github.com/mitre-attack/car/blob/master/docs/data/analytics.json
+  - https://github.com/mitre-attack/car/blob/master/docs/data/data_model.json
+  - https://github.com/mitre-attack/car/blob/master/docs/data/sensors.json
+  - https://github.com/mitre-attack/car/blob/master/docs/true_positive/CAR*-.json
+
+Mitre-CTI:
+  - https://github.com/mitre/cti/blob/master/capec/2.1/stix-capec.json
+  - https://github.com/mitre/cti/blob/master/enterprise-attack/enterprise-attack.json
+
+Mire-attack-stix-data:
+  - https://github.com/mitre-attack/attack-stix-data/blob/master/enterprise-attack/enterprise-attack.json
