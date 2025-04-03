@@ -1,0 +1,305 @@
+<dashboard version="1.1" theme="dark">
+  <label>MITRE CAR Analytics Dashboard</label>
+  <description>Dashboard for visualizing data from the Splunk MITRE CAR app</description>
+  <search id="base_attack_search">
+    <query>index=mitre sourcetype="mitre:car-attack" | table techniqueID, comment, color, enabled, showSubtechniques</query>
+    <earliest>-7d@h</earliest>
+    <latest>now</latest>
+  </search>
+  
+  <fieldset submitButton="false">
+    <input type="time" token="time">
+      <label>Time Range</label>
+      <default>
+        <earliest>-7d@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="index_token">
+      <label>Index</label>
+      <default>mitre</default>
+      <choice value="mitre">mitre</choice>
+      <choice value="*">All</choice>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <title>MITRE ATT&amp;CK Dashboard Overview</title>
+      <html>
+        <style>
+          .dashboard-overview {
+            padding: 10px;
+            background-color: #272727;
+            border-radius: 5px;
+          }
+          .dashboard-overview h2 {
+            margin-top: 0;
+            color: #5cb85c;
+          }
+        </style>
+        <div class="dashboard-overview">
+          <h2>MITRE ATT&amp;CK and CAR Analytics Dashboard</h2>
+          <p>This dashboard provides visibility into MITRE ATT&amp;CK and CAR data indexed in Splunk. Use this dashboard to validate your field extractions and explore the relationships between techniques, tactics, and analytics.</p>
+          <p>Select a time range and index from the filters above to begin exploring your data.</p>
+        </div>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>1. MITRE CAR Attack Techniques</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-attack" 
+| stats count by techniqueID, comment 
+| rex field=comment "(?&lt;car_analytics&gt;CAR-\d{4}-\d{2}-\d{3}.*?)\s*\|" max_match=0 
+| mvexpand car_analytics 
+| rex field=car_analytics "(?&lt;car_id&gt;CAR-\d{4}-\d{2}-\d{3})"
+| table techniqueID, car_id, car_analytics</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">row</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="tech_id">$row.techniqueID$</set>
+        </drilldown>
+      </table>
+    </panel>
+    <panel depends="$tech_id$">
+      <title>Technique Details: $tech_id$</title>
+      <table>
+        <search base="base_attack_search">
+          <query>| search techniqueID="$tech_id$" | table techniqueID, comment, color, enabled, showSubtechniques</query>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>2. MITRE CAR Analytics</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-analytics" 
+| table name, id, title, description, shortName, tactics, techniques, coverage
+| sort name</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">cell</option>
+        <drilldown>
+          <set token="selected_analytic">$row.name$</set>
+        </drilldown>
+      </table>
+    </panel>
+    <panel depends="$selected_analytic$">
+      <title>Analytic Details: $selected_analytic$</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-analytics" name="$selected_analytic$"
+| fields name, shortName, description, fields, attack*, implementations*
+| mvexpand attack 
+| mvexpand fields
+| table name, shortName, description, fields, attack.technique, attack.tactics, attack.coverage, implementations*</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>3. MITRE CAR Data Model</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-datamodel" 
+| spath
+| table datamodel_name, datamodel_properties
+| rename datamodel_name as "Data Model", datamodel_properties as "Properties"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>4. MITRE CAR Sensors</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-sensors"
+| spath path=sensors{} output=sensor_data
+| mvexpand sensor_data
+| spath input=sensor_data
+| table name, description, car_id, sensor_data
+| rename name as "Sensor Name", description as "Description", car_id as "CAR ID"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>5. MITRE CAR Snippets</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-snippet"
+| table process_name, event_action, target_process, detected_thread_id, thread_start_function, event_timestamp
+| sort event_timestamp desc</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>6. MITRE CAR True Positives</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:car-tp-analytics"
+| table detection_event_id, event_timestamp, command_executed
+| sort event_timestamp desc</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>7. MITRE CTI Enterprise ATT&amp;CK</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:cti-enterprise-attack"
+| spath path=cti_objects{} output=cti_object
+| mvexpand cti_object
+| spath input=cti_object path=type output=object_type
+| spath input=cti_object path=name output=object_name
+| spath input=cti_object path=id output=object_id
+| where object_type="attack-pattern"
+| table object_id, object_name, object_type
+| rename object_id as "ID", object_name as "Name", object_type as "Type"
+| sort ID</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>8. MITRE CTI STIX CAPEC</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:cti-stix-capec"
+| spath path=capec_objects{} output=capec_object
+| mvexpand capec_object
+| spath input=capec_object path=type output=object_type
+| spath input=capec_object path=name output=object_name
+| spath input=capec_object path=id output=object_id
+| table object_id, object_name, object_type
+| rename object_id as "ID", object_name as "Name", object_type as "Type"
+| sort ID</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>9. MITRE ATT&amp;CK Enterprise</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype="mitre:stix-enterprise-attack"
+| stats count by host 
+| sort count desc</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>10. MITRE Sourcetype Distribution</title>
+      <chart>
+        <search>
+          <query>index=$index_token$ sourcetype=mitre:* 
+| stats count by sourcetype 
+| sort -count</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>11. MITRE Host Distribution</title>
+      <chart>
+        <search>
+          <query>index=$index_token$ sourcetype=mitre:* 
+| stats count by host 
+| sort -count</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>12. Field Extractions Validation</title>
+      <table>
+        <search>
+          <query>index=$index_token$ sourcetype=mitre:* 
+| stats count as event_count, values(source) as source_files by sourcetype 
+| eval extraction_validation = case(
+  sourcetype=="mitre:car-attack" AND event_count > 0, "Success",
+  sourcetype=="mitre:car-analytics" AND event_count > 0, "Success",
+  sourcetype=="mitre:car-datamodel" AND event_count > 0, "Success",
+  sourcetype=="mitre:car-sensors" AND event_count > 0, "Success",
+  sourcetype=="mitre:car-snippet" AND event_count > 0, "Success",
+  sourcetype=="mitre:car-tp-analytics" AND event_count > 0, "Success",
+  sourcetype=="mitre:cti-enterprise-attack" AND event_count > 0, "Success",
+  sourcetype=="mitre:cti-stix-capec" AND event_count > 0, "Success",
+  sourcetype=="mitre:stix-enterprise-attack" AND event_count > 0, "Success",
+  1=1, "Missing Data"
+)
+| table sourcetype, event_count, source_files, extraction_validation</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <format field="extraction_validation" type="color">
+          <colorPalette type="map">{"Success":#5CC05C,"Missing Data":#D85D3D}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+</dashboard>
