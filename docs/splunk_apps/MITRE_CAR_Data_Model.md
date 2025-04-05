@@ -332,3 +332,4 @@ The command outputs the following field types:
 ---
 
 _Last Updated: YYYY-MM-DD_
+link go mitre and then determine the vacancy
