@@ -1,0 +1,101 @@
+name: Windows Defacement Modify Transcodedwallpaper File
+id: e11c3d90-5bc7-42ad-94cd-ba75db10d897
+version: 5
+date: '2024-11-13'
+author: Teoderick Contreras, Splunk
+status: production
+type: Anomaly
+description: The following analytic identifies modifications to the TranscodedWallpaper
+  file in the wallpaper theme directory, excluding changes made by explorer.exe. This
+  detection leverages the Endpoint.Processes and Endpoint.Filesystem data models to
+  correlate process activity with file modifications. This activity is significant
+  as it may indicate an adversary attempting to deface or change the desktop wallpaper
+  of a targeted host, a tactic often used to signal compromise or deliver a message.
+  If confirmed malicious, this could be a sign of unauthorized access and tampering,
+  potentially leading to further system compromise or data exfiltration.
+data_source:
+- Sysmon EventID 1 AND Sysmon EventID 11
+search: '| tstats prestats=t `security_content_summariesonly` count min(_time) as
+  firstTime max(_time) as lastTime FROM datamodel=Endpoint.Processes where Processes.process_path
+  !="*\\Windows\\Explorer.EXE" by Processes.action Processes.dest Processes.original_file_name
+  Processes.parent_process Processes.parent_process_exec Processes.parent_process_guid
+  Processes.parent_process_id Processes.parent_process_name Processes.parent_process_path
+  Processes.process Processes.process_exec Processes.process_guid Processes.process_hash
+  Processes.process_id Processes.process_integrity_level Processes.process_name Processes.process_path
+  Processes.user Processes.user_id Processes.vendor_product | `drop_dm_object_name(Processes)`
+  | tstats prestats=t append=t `security_content_summariesonly` count min(_time) as
+  firstTime max(_time) as lastTime FROM datamodel=Endpoint.Filesystem where Filesystem.file_path
+  = "*\\AppData\\Roaming\\Microsoft\\Windows\\Themes\\TranscodedWallpaper" by Filesystem.action
+  Filesystem.dest Filesystem.file_access_time Filesystem.file_create_time Filesystem.file_hash
+  Filesystem.file_modify_time Filesystem.file_name Filesystem.file_path Filesystem.file_acl
+  Filesystem.file_size Filesystem.process_guid Filesystem.process_id Filesystem.user
+  Filesystem.vendor_product | `drop_dm_object_name(Filesystem)` | table action dest
+  original_file_name parent_process parent_process_exec parent_process_guid parent_process_id
+  parent_process_name parent_process_path process process_exec process_guid process_hash
+  process_id process_integrity_level process_name process_path user user_id vendor_product
+  file_access_time file_create_time file_hash file_modify_time file_name file_path
+  file_acl file_size firstTime lastTime | stats values(action) as action values(dest)
+  as dest values(original_file_name) as original_file_name values(parent_process)
+  as parent_process values(parent_process_exec) as parent_process_exec values(parent_process_guid)
+  as parent_process_guid values(parent_process_id) as parent_process_id values(parent_process_name)
+  as parent_process_name values(parent_process_path) as parent_process_path values(process)
+  as process values(process_exec) as process_exec values(process_hash) as process_hash
+  values(process_id) as process_id values(process_integrity_level) as process_integrity_level
+  values(process_name) as process_name values(process_path) as process_path values(user)
+  as user values(user_id) as user_id values(vendor_product) as vendor_product values(file_access_time)
+  as file_access_time values(file_create_time) as file_create_time values(file_hash)
+  as file_hash values(file_modify_time) as file_modify_time values(file_name) as file_name
+  values(file_path) as file_path values(file_acl) as file_acl values(file_size) as
+  file_size by process_guid | where isnotnull(process_name) AND isnotnull(file_name)
+  | `windows_defacement_modify_transcodedwallpaper_file_filter`'
+how_to_implement: To successfully implement this search you need to be ingesting information
+  on process that include the name of the process responsible for the changes from
+  your endpoints into the `Endpoint` datamodel in the `Filesystem` node. In addition,
+  confirm the latest CIM App 4.20 or higher is installed and the latest TA for the
+  endpoint product.
+known_false_positives: 3rd part software application can change the wallpaper. Filter
+  is needed.
+references:
+- https://forums.ivanti.com/s/article/Wallpaper-Windows-Settings-Desktop-Settings-and-the-transcodedwallpaper-jpg?language=en_US
+- https://www.trendmicro.com/vinfo/us/threat-encyclopedia/malware/ransom_sifreli.a
+drilldown_searches:
+- name: View the detection results for - "$dest$"
+  search: '%original_detection_search% | search  dest = "$dest$"'
+  earliest_offset: $info_min_time$
+  latest_offset: $info_max_time$
+- name: View risk events for the last 7 days for - "$dest$"
+  search: '| from datamodel Risk.All_Risk | search normalized_risk_object IN ("$dest$")
+    starthoursago=168  | stats count min(_time) as firstTime max(_time) as lastTime
+    values(search_name) as "Search Name" values(risk_message) as "Risk Message" values(analyticstories)
+    as "Analytic Stories" values(annotations._all) as "Annotations" values(annotations.mitre_attack.mitre_tactic)
+    as "ATT&CK Tactics" by normalized_risk_object | `security_content_ctime(firstTime)`
+    | `security_content_ctime(lastTime)`'
+  earliest_offset: $info_min_time$
+  latest_offset: $info_max_time$
+rba:
+  message: modification or creation of transcodedwallpaper file by $process_name$
+    on $dest$
+  risk_objects:
+  - field: dest
+    type: system
+    score: 9
+  threat_objects:
+  - field: process_name
+    type: process_name
+tags:
+  analytic_story:
+  - Brute Ratel C4
+  asset_type: Endpoint
+  mitre_attack_id:
+  - T1491
+  product:
+  - Splunk Enterprise
+  - Splunk Enterprise Security
+  - Splunk Cloud
+  security_domain: endpoint
+tests:
+- name: True Positive Test
+  attack_data:
+  - data: https://media.githubusercontent.com/media/splunk/attack_data/master/datasets/malware/brute_ratel/wallpaper_via_transcodedwallpaper/sysmon.log
+    source: XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+    sourcetype: XmlWinEventLog
