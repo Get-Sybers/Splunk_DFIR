@@ -1,4 +1,0 @@
-process,allow_list
-winword.exe,true
-excel.exe,true
-outlook.exe,true
