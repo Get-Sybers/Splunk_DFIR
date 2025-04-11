@@ -7,7 +7,8 @@
 # Ensure the container is running and that Ansible and the playbooks are available inside it.
 
 CONTAINER="splunk-enterprise"
-PLAYBOOK="data/ansible/default_playbooks/stop_splunk.yml"
+PLAYBOOK="stop_splunk.yml"
+
 
 # Verify the container is running
 if ! docker ps --format '{{.Names}}' | grep -qw "$CONTAINER"; then

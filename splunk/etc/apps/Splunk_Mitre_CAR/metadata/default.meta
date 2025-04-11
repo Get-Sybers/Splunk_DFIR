@@ -1,5 +1,6 @@
 []
 access = read : [ * ], write : [ admin ]
+export = system
 
 [app/ui]
 version = 9.4.1
