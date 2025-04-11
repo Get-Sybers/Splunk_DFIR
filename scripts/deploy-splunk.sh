@@ -34,8 +34,11 @@ done
 
 # Make sure all items in SPLUNK_DFIR/splunk and accessible by splunk
 echo "⚙️ Setting permissions of Splunk_DFIR/splunk/etc/* to $(whoami):docker and 777"
-sudo chown -R $(whoami):docker $REPO_ROOT_DIR/splunk/etc
-sudo chmod -R 777 $REPO_ROOT_DIR/splunk/etc
+sudo chown -R $(whoami):docker $REPO_ROOT_DIR/splunk/*
+sudo chmod -R 777 $REPO_ROOT_DIR/splunk/*
+echo "⚙️ Setting permissions of $REPO_ROOT_DIR/data_store/* to $(whoami):docker and 777"
+sudo chown -R $(whoami):docker $REPO_ROOT_DIR/data_store/*
+sudo chmod -R 777 $REPO_ROOT_DIR/data_store/*
 
 echo "🚀 Building Splunk Enterprise Docker container..."
 
