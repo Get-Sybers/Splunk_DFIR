@@ -5,6 +5,21 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
 echo "$REPO_ROOT_DIR"
 
 # docker images to download
@@ -117,9 +132,9 @@ done
 # Set permissions for Splunk_DFIR
 
 if [ -d "$REPO_ROOT_DIR" ]; then
-    echo "Setting permissions for Splunk etc directory... to $(whoami):docker"
-    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
-    sudo chmod -R 744 "$REPO_ROOT_DIR"
+    echo "Setting permissions for Splunk_DFIR repo $(whoami):docker"
+    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR/*"
+    sudo chmod -R 744 "$REPO_ROOT_DIR/*"
 fi
 echo
 echo "Setup complete! Please log out and back in for docker group changes to take effect."
