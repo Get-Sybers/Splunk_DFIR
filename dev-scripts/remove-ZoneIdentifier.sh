@@ -11,7 +11,8 @@ remove_zone_identifiers() {
     
     ## Print zone identifier files found
     echo "Searching for Zone.Identifier files in $target_dir..."
-    zone_files=($(find "$target_dir" -name "*.Zone.Identifier" 2>/dev/null))
+    # This find command is already recursive - it will search through all subdirectories
+    zone_files=($(find "$target_dir" -name "*:Zone.Identifier" 2>/dev/null))
     
     if [ ${#zone_files[@]} -eq 0 ]; then
         echo "No Zone.Identifier files found."
@@ -20,7 +21,9 @@ remove_zone_identifiers() {
     
     echo "Found ${#zone_files[@]} Zone.Identifier files:"
     for file in "${zone_files[@]}"; do
-        echo "  - $file"
+        # Extract the parent file name
+        parent_file="${file%:Zone.Identifier}"
+        echo "  - $file (attached to: $parent_file)"
     done
     
     ## prompt user if they wish to remove

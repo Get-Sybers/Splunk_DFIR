@@ -9,6 +9,24 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 RAW_DISK_IMAGES_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
 RAW_PCAPS_DIR="$REPO_ROOT_DIR/data_store/raw/pcaps"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
+echo "$REPO_ROOT_DIR"
+echo ""
+
 # Check that the host raw directories exist
 if [ ! -d "$RAW_DISK_IMAGES_DIR" ]; then
     echo "Error: Directory '$RAW_DISK_IMAGES_DIR' does not exist."

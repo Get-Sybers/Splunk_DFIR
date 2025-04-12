@@ -1,0 +1,13 @@
+---
+- name: Update Splunk directory owner
+  file:
+    path: "{{ splunk.home }}"
+    owner: "{{ splunk.user }}"
+    group: "{{ splunk.group }}"
+    recurse: yes
+  become: yes
+  become_user: "{{ privileged_user }}"
+  register: cmd_result
+  retries: "{{ retry_num }}"
+  delay: "{{ retry_delay }}"
+  until: not cmd_result.failed

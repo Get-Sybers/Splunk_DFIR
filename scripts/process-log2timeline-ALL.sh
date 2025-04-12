@@ -10,6 +10,24 @@ INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
 # Set the host output directory
 HOST_OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/log2timeline"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
+echo "$REPO_ROOT_DIR"
+echo ""
+
 # Ensure the host output directories exist
 mkdir -p "$HOST_OUTPUT_DIR/csv"
 mkdir -p "$HOST_OUTPUT_DIR/logs"

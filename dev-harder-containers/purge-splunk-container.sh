@@ -5,6 +5,24 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 SPLUNK_CONTAINER="splunk-enterprise"
 SPLUNK_VOLUME="splunk_data"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
+echo "$REPO_ROOT_DIR"
+echo ""
+
 echo -e "⚠️ WARNING: This will stop and remove the Splunk container, and DELETE the splunk_data volume."
 echo -e "❌ This action CANNOT be undone. All Splunk indexes and configurations will be lost."
 

@@ -1,0 +1,119 @@
+---
+- name: Enable DFS feature in server.conf
+  splunk_api:
+    url: system/configs/conf-server/dfs
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    user: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      disabled: "false"
+      port: "{{ splunk.dfs.port }}"
+      spark_master_host: "{{ splunk.dfs.spark_master_host }}"
+      spark_master_webui_port: "{{ splunk.dfs.spark_master_webui_port }}"
+  register: dfs_enable_result
+  changed_when: dfs_enable_result.status == 200
+
+- name: Update DFS settings in limits.conf
+  splunk_api:
+    url: /servicesNS/nobody/system/configs/conf-limits/dfs
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      dfc_num_slots: "{{ splunk.dfs.dfc_num_slots }}"
+      dfw_num_slots: "{{ splunk.dfs.dfw_num_slots }}"
+      dfw_num_slots_enabled: "{{ splunk.dfs.dfw_num_slots_enabled }}"
+    status_codes: "200"
+    timeout: 10
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    use_proxy: no
+  register: dfs_limits_result
+  changed_when: dfs_limits_result.status == 200
+
+- name: Update search settings in limits.conf
+  splunk_api:
+    url: system/configs/conf-limits/search
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    user: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      phased_execution: "true"
+      max_searches_per_process: "1"
+  register: search_limits_result
+  changed_when: search_limits_result.changed
+  failed_when: search_limits_result.failed
+  when: splunk is defined
+
+- name: Check for search_optimization::dfs_job_extractor in limits.conf"
+  splunk_api:
+    url: servicesNS/nobody/system/configs/conf-limits/search_optimization%3a%3adfs_job_extractor
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    user: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+  register: check_dfs_job_extractor_result
+  failed_when: False
+  changed_when: False
+
+- name: Create search_optimization::dfs_job_extractor in limits.conf
+  splunk_api:
+    url: servicesNS/nobody/system/configs/conf-limits
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    user: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      name: "search_optimization::dfs_job_extractor"
+      enabled: "true"
+      commands: "stats,join,sort,head,tail,reverse,dedup,rename,fields,union,from,eval"
+    status_code: 201
+    timeout: 10
+    use_proxy: no
+  register: create_dfs_job_extractor_result
+  changed_when: create_dfs_job_extractor_result.status == 201
+  when: check_dfs_job_extractor_result.status != 200
+
+- name: Update search_optimization::dfs_job_extractor in limits.conf
+  splunk_api:
+    url: servicesNS/nobody/system/configs/conf-limits/search_optimization%3a%3adfs_job_extractor
+    method: POST
+    cert_prefix: "{{ cert_prefix }}"
+    user: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      enabled: "true"
+      commands: "stats,join,sort,head,tail,reverse,dedup,rename,fields,union,from,eval"
+    status_code: [200]
+    timeout: 10
+    use_proxy: no
+  register: update_dfs_job_extractor_result
+  changed_when: update_dfs_job_extractor_result.status == 200
+  when: check_dfs_job_extractor_result.status == 200
+
+- name: Set JAVA_HOME in splunk-launch.conf
+  become: yes
+  become_user: "{{ splunk.user }}"
+  lineinfile:
+    path: "{{ splunk.home }}/etc/splunk-launch.conf"
+    regexp: '^JAVA_HOME'
+    line: "JAVA_HOME={{ lookup('env', 'JAVA_HOME') }}"
+  notify:
+    - Restart the splunkd service
+
+- name: Set SPARK_HOME in splunk-launch.conf
+  become: yes
+  become_user: "{{ splunk.user }}"
+  lineinfile:
+    path: "{{ splunk.home }}/etc/splunk-launch.conf"
+    regexp: '^SPARK_HOME'
+    line: "SPARK_HOME={{ lookup('env', 'SPARK_HOME')  }}"
+  notify:
+    - Restart the splunkd service
