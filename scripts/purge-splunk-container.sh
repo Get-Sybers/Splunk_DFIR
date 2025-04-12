@@ -7,6 +7,22 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 SPLUNK_CONTAINER="splunk-enterprise"
 SPLUNK_VAR_DIR="$(realpath "$REPO_ROOT_DIR/splunk/var")"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
+echo "$REPO_ROOT_DIR"
 
 echo -e "⚠️ WARNING: This will stop and remove the Splunk container, and DELETE all Splunk indexes."
 echo -e "❌ This action CANNOT be undone."

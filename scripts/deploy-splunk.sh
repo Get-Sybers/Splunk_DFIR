@@ -4,6 +4,24 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
+################################################################################
+echo ""
+echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
+sleep 0.1
+echo "██╔════╝ ██╔════╝╚══██╔══╝   ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝"
+sleep 0.1
+echo "██║  ███╗█████╗     ██║█████╗███████╗ ╚████╔╝ ██████╔╝█████╗  ██████╔╝███████╗"
+sleep 0.1
+echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
+sleep 0.1
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+sleep 0.1
+echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
+echo ""
+
+echo "$REPO_ROOT_DIR"
+echo ""
+
 # Function to securely prompt for password and confirm it
 while true; do
     read -s -p "Enter Splunk admin password (or press Ctrl+C to exit): " SPLUNK_PASSWORD
@@ -39,6 +57,9 @@ sudo chmod -R 777 $REPO_ROOT_DIR/splunk/*
 echo "⚙️ Setting permissions of $REPO_ROOT_DIR/data_store/* to $(whoami):docker and 777"
 sudo chown -R $(whoami):docker $REPO_ROOT_DIR/data_store/*
 sudo chmod -R 777 $REPO_ROOT_DIR/data_store/*
+echo "⚙️ Setting permissions of $REPO_ROOT_DIR/ansible/* to $(whoami):docker and 777"
+sudo chown -R $(whoami):docker $REPO_ROOT_DIR/ansible/*
+sudo chmod -R 777 $REPO_ROOT_DIR/ansible/*
 
 echo "🚀 Building Splunk Enterprise Docker container..."
 
@@ -47,9 +68,18 @@ echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/var --> /data/var"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/ansible --> /data/ansible:ro"
 echo ""
-echo "📖 Qued Ansible Playbooks: Include-Custom-Apps.yml"
-echo "- find the rest @ $REPO_ROOT_DIR/splunk/ansible" 
+
+# Define Ansible pre-tasks
+ANSIBLE_PRE_TASKS="file:///data/ansible/playbooks/Include-Custom-Apps.yml,file:///data/ansible/playbooks/Include-local-conf.yml,file:///data/ansible/playbooks/remove_first_login.yml"
+
+echo "📖 Queued Ansible Playbooks:"
+IFS=',' read -ra TASKS <<< "$ANSIBLE_PRE_TASKS"
+for task in "${TASKS[@]}"; do
+    echo "📋 ${task#file:///data/ansible/playbooks/}"
+done
+echo "- find more @ $REPO_ROOT_DIR/ansible" 
 sleep 3
+echo ""
 
 # insert memes
 echo "🚀 docker go brrr"
@@ -108,13 +138,13 @@ docker run -d --name splunk-enterprise \
     -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
     -v "$REPO_ROOT_DIR/splunk/var":/data/var \
     -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
-    -v "$REPO_ROOT_DIR/splunk/ansible":/data/ansible:ro \
+    -v "$REPO_ROOT_DIR/ansible/playbooks":/data/ansible/playbooks:ro \
     -e SPLUNK_HTTP_ENABLESSL=true \
     -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
     -e SPLUNK_START_ARGS='--accept-license' \
     -e SPLUNK_DISABLE_POPUPS='True' \
     -e SPLUNK_ROLE=splunk_standalone \
-    -e SPLUNK_ANSIBLE_PRE_TASKS="file:///data/ansible/custom_playbooks/Include-Custom-Apps.yml, file:///data/ansible/custom_playbooks/Include-local-conf.yml" \
+    -e SPLUNK_ANSIBLE_PRE_TASKS="$ANSIBLE_PRE_TASKS" \
     splunk/splunk:latest
 
 # 🪵 Stream all logs immediately in background

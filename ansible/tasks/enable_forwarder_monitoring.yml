@@ -1,0 +1,51 @@
+---
+- name: Establish DMC forwarder monitor API
+  set_fact:
+    dmc_forwarder_assets_url: "/servicesNS/nobody/splunk_monitoring_console/saved/searches/DMC+Forwarder+-+Build+Asset+Table"
+
+- name: Retrieve forwarder assets query
+  splunk_api:
+    method: GET
+    url: "{{ dmc_forwarder_assets_url }}?output_mode=json"
+    cert_prefix: "{{ cert_prefix }}"
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body_format: "form-urlencoded"
+    status_code: [200,201]
+    timeout: 10
+  register: dmc_forwarder_build_assets
+  no_log: "{{ hide_password }}"
+
+# Is Use of Proxy Important
+- name: Configure forwarder assets search
+  splunk_api:
+    method: POST
+    url: "{{ dmc_forwarder_assets_url }}"
+    cert_prefix: "{{ cert_prefix }}"
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body:
+      search: "{{ dmc_forwarder_build_assets.content['entry'][0]['content']['search'] }}"
+      request.ui_dispatch_app: splunk_monitoring_console
+      cron_schedule: "{{ dmc_asset_interval }}"
+      alert.track: 0
+      disabled: 0
+    body_format: "form-urlencoded"
+    status_code: [200,201]
+    timeout: 10
+  no_log: "{{ hide_password }}"
+
+- name: Build forwarder assets
+  splunk_api:
+    method: POST
+    url: "{{ dmc_forwarder_assets_url }}/dispatch"
+    cert_prefix: "{{ cert_prefix }}"
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body_format: "form-urlencoded"
+    status_code: [200, 201]
+    timeout: 10
+  no_log: "{{ hide_password }}"

@@ -1,0 +1,15 @@
+---
+# TODO: Can we convert the following task to be OS agnostic?
+#- name: Check if listening on SVC Port {{ splunk.svc_port }}
+#  shell: "netstat -lnt"
+#  register: port_status
+
+- name: UF is configured to use UDS
+  debug:
+    msg: "cli.socket exists in $SPLUNK_HOME/var/run/splunk. This UF instance might be configured to use UDS socket for API communications."
+  when: uds_enabled | bool
+
+- name: UF is configured to use TCP
+  debug:
+    msg: "cli.socket does not exists in $SPLUNK_HOME/var/run/splunk. This UF instance might be configured to use TCP."
+  when: not uds_enabled | bool
