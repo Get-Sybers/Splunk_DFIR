@@ -1,1 +1,0 @@
-# Splunk Development Area
