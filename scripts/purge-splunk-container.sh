@@ -44,4 +44,15 @@ docker rm "$SPLUNK_CONTAINER"
 echo -e "\n🧹 Purging all Splunk index data from: $SPLUNK_VAR_DIR..."
 sudo rm -rf "$SPLUNK_VAR_DIR"/*
 
+echo -e "\n🔍 Checking for dangling Docker volumes related to Splunk..."
+# Identify and remove volumes related to the Splunk container
+DANGLING_VOLUMES=$(docker volume ls -qf dangling=true)
+if [ -n "$DANGLING_VOLUMES" ]; then
+    echo -e "🗑️ Removing dangling Docker volumes..."
+    echo "$DANGLING_VOLUMES" | xargs docker volume rm
+    echo -e "✅ Dangling volumes removed."
+else
+    echo -e "ℹ️ No dangling volumes found."
+fi
+
 echo -e "\n✅ Splunk container and indexes have been purged."
