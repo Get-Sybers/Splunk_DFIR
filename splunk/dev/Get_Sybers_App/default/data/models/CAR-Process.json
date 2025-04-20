@@ -1,0 +1,321 @@
+{
+    "modelName": "CAR-Process",
+    "displayName": "CAR Process",
+    "description": "A process is a running program on a computer.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARProcess",
+        "displayName": "CAR Process",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "FQDN of the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the host.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "command_line",
+            "displayName": "command_line",
+            "type": "string",
+            "comment": {
+              "description": "Full command line used to start the process.",
+              "example": "example.exe arg1 arg2"
+            }
+          },
+          {
+            "fieldName": "exe",
+            "displayName": "exe",
+            "type": "string",
+            "comment": {
+              "description": "Basename of the image_path.",
+              "example": "example.exe"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "Full path to the executable associated with the process.",
+              "example": "C:\\path\\to\\example.exe"
+            }
+          },
+          {
+            "fieldName": "md5_hash",
+            "displayName": "md5_hash",
+            "type": "string",
+            "comment": {
+              "description": "MD5 hash of the file at image_path.",
+              "example": "5eb63bbbe01eeed093cb22bb8f5acdc3"
+            }
+          },
+          {
+            "fieldName": "sha1_hash",
+            "displayName": "sha1_hash",
+            "type": "string",
+            "comment": {
+              "description": "SHA1 hash of the file at image_path.",
+              "example": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"
+            }
+          },
+          {
+            "fieldName": "sha256_hash",
+            "displayName": "sha256_hash",
+            "type": "string",
+            "comment": {
+              "description": "SHA256 hash of the file at image_path.",
+              "example": "68e656b251e67e8358bef8483ab0d51c6619f3e7a1a9f0e75838d41ff368f728"
+            }
+          },
+          {
+            "fieldName": "parent_exe",
+            "displayName": "parent_exe",
+            "type": "string",
+            "comment": {
+              "description": "Name of the parent process executable.",
+              "example": "example_parent.exe"
+            }
+          },
+          {
+            "fieldName": "parent_image_path",
+            "displayName": "parent_image_path",
+            "type": "string",
+            "comment": {
+              "description": "Full path to the parent process executable.",
+              "example": "C:\\path\\to\\example_parent.exe"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID of the process.",
+              "example": 738
+            }
+          },
+          {
+            "fieldName": "ppid",
+            "displayName": "ppid",
+            "type": "number",
+            "comment": {
+              "description": "Parent process ID.",
+              "example": 1860
+            }
+          },
+          {
+            "fieldName": "sid",
+            "displayName": "sid",
+            "type": "string",
+            "comment": {
+              "description": "Windows SID of the user token.",
+              "example": "S-1-5-18"
+            }
+          },
+          {
+            "fieldName": "signer",
+            "displayName": "signer",
+            "type": "string",
+            "comment": {
+              "description": "Organization that signed the process binary.",
+              "example": "FooCorp"
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User token that the process was created under.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "integrity_level",
+            "displayName": "integrity_level",
+            "type": "string",
+            "comment": {
+              "description": "Windows integrity level.",
+              "example": "High"
+            }
+          },
+          {
+            "fieldName": "parent_command_line",
+            "displayName": "parent_command_line",
+            "type": "string",
+            "comment": {
+              "description": "Arguments passed to the parent process.",
+              "example": "c:\\windows\\system32\\dism.exe foo.xml"
+            }
+          },
+          {
+            "fieldName": "current_working_directory",
+            "displayName": "current_working_directory",
+            "type": "string",
+            "comment": {
+              "description": "Current working directory of the process.",
+              "example": "c:\\temp"
+            }
+          },
+          {
+            "fieldName": "env_vars",
+            "displayName": "env_vars",
+            "type": "string",
+            "comment": {
+              "description": "String of environment variables.",
+              "example": "SHELL=/bin/zsh"
+            }
+          },
+          {
+            "fieldName": "access_level",
+            "displayName": "access_level",
+            "type": "string",
+            "comment": {
+              "description": "Permission level of access (for process access events).",
+              "example": "0x40"
+            }
+          },
+          {
+            "fieldName": "call_trace",
+            "displayName": "call_trace",
+            "type": "string",
+            "comment": {
+              "description": "Stack trace showing access context."
+            }
+          },
+          {
+            "fieldName": "guid",
+            "displayName": "guid",
+            "type": "string",
+            "comment": {
+              "description": "Global unique identifier for the process.",
+              "example": "{f81d4fae-7dec-11d0-a765-00a0c91e6bf6}"
+            }
+          },
+          {
+            "fieldName": "parent_guid",
+            "displayName": "parent_guid",
+            "type": "string",
+            "comment": {
+              "description": "GUID of the parent process.",
+              "example": "{f81d4fae-7dec-11d0-a765-00a0c91e6bf6}"
+            }
+          },
+          {
+            "fieldName": "signature_valid",
+            "displayName": "signature_valid",
+            "type": "boolean",
+            "comment": {
+              "description": "Whether the binary’s signature is valid.",
+              "example": true
+            }
+          },
+          {
+            "fieldName": "target_guid",
+            "displayName": "target_guid",
+            "type": "string",
+            "comment": {
+              "description": "GUID for target process (access events)."
+            }
+          },
+          {
+            "fieldName": "target_pid",
+            "displayName": "target_pid",
+            "type": "number",
+            "comment": {
+              "description": "Process ID of the target (access events)."
+            }
+          },
+          {
+            "fieldName": "target_address",
+            "displayName": "target_address",
+            "type": "string",
+            "comment": {
+              "description": "Memory address range accessed in target.",
+              "example": "08048000-0804c000"
+            }
+          },
+          {
+            "fieldName": "target_name",
+            "displayName": "target_name",
+            "type": "string",
+            "comment": {
+              "description": "Name of the target process.",
+              "example": "C:\\Windows\\System32\\winlogon.exe"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "number",
+            "comment": {
+              "description": "User ID running the process.",
+              "example": 509
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "Process_Action_Create",
+            "calculationType": "Eval",
+            "expression": "if(isnull(create) OR create==\"\", \"unknown\", create)",
+            "outputFields": [
+              {
+                "fieldName": "create",
+                "displayName": "create",
+                "type": "string",
+                "comment": {
+                  "description": "Process creation event."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Process_Action_Terminate",
+            "calculationType": "Eval",
+            "expression": "if(isnull(terminate) OR terminate==\"\", \"unknown\", terminate)",
+            "outputFields": [
+              {
+                "fieldName": "terminate",
+                "displayName": "terminate",
+                "type": "string",
+                "comment": {
+                  "description": "Process termination event."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "Process_Action_Access",
+            "calculationType": "Eval",
+            "expression": "if(isnull(access) OR access==\"\", \"unknown\", access)",
+            "outputFields": [
+              {
+                "fieldName": "access",
+                "displayName": "access",
+                "type": "string",
+                "comment": {
+                  "description": "Process accessed another process’s memory space."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }
