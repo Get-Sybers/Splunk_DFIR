@@ -1,5 +1,5 @@
 index=host
 | stats count by sourcetype 
 | map maxsearches=10000 search="search index=host sourcetype=\"$sourcetype$\" | fieldsummary | eval sourcetype=\"$sourcetype$\" | fields field sourcetype"
-| stats values(field) as time_related_fields by sourcetype
+| stats values(field) as sourcetype_fields by sourcetype
 | sort sourcetype
