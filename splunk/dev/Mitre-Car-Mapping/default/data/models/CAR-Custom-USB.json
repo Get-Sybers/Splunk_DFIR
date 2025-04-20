@@ -1,0 +1,186 @@
+{
+    "modelName": "CAR-CUSTOM-USB",
+    "displayName": "CAR CUSTOM USB",
+    "description": "USB events capture device connections, disconnections, and related activity on the system. These are typically monitored for data movement, exfiltration, or unauthorized device usage.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARCustomUSB",
+        "displayName": "CAR Custom USB",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "Hostname of the system where the USB event occurred.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "Fully qualified domain name of the host.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "User context under which the USB device was accessed.",
+              "example": "DOMAIN\\user"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "SID or user ID of the acting user.",
+              "example": "S-1-5-21-1234567890-123456789-123456789-1001"
+            }
+          },
+          {
+            "fieldName": "device_vendor",
+            "displayName": "device_vendor",
+            "type": "string",
+            "comment": {
+              "description": "Vendor name of the USB device.",
+              "example": "SanDisk"
+            }
+          },
+          {
+            "fieldName": "device_product",
+            "displayName": "device_product",
+            "type": "string",
+            "comment": {
+              "description": "Product name or description of the USB device.",
+              "example": "Cruzer Glide"
+            }
+          },
+          {
+            "fieldName": "serial_number",
+            "displayName": "serial_number",
+            "type": "string",
+            "comment": {
+              "description": "Unique serial number of the USB device.",
+              "example": "4C530001241223117271"
+            }
+          },
+          {
+            "fieldName": "device_class",
+            "displayName": "device_class",
+            "type": "string",
+            "comment": {
+              "description": "Type or class of USB device.",
+              "example": "Mass Storage"
+            }
+          },
+          {
+            "fieldName": "volume_name",
+            "displayName": "volume_name",
+            "type": "string",
+            "comment": {
+              "description": "Label or name of the mounted volume (if any).",
+              "example": "USB_DRIVE"
+            }
+          },
+          {
+            "fieldName": "volume_mount_point",
+            "displayName": "volume_mount_point",
+            "type": "string",
+            "comment": {
+              "description": "Path where the volume was mounted.",
+              "example": "E:\\"
+            }
+          },
+          {
+            "fieldName": "vendor_id",
+            "displayName": "vendor_id",
+            "type": "string",
+            "comment": {
+              "description": "USB vendor ID (hex).",
+              "example": "0781"
+            }
+          },
+          {
+            "fieldName": "product_id",
+            "displayName": "product_id",
+            "type": "string",
+            "comment": {
+              "description": "USB product ID (hex).",
+              "example": "5567"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "USB_Action_Connect",
+            "calculationType": "Eval",
+            "expression": "if(isnull(connect) OR connect==\"\", \"unknown\", connect)",
+            "outputFields": [
+              {
+                "fieldName": "connect",
+                "displayName": "connect",
+                "type": "string",
+                "comment": {
+                  "description": "USB device was connected to the system."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "USB_Action_Disconnect",
+            "calculationType": "Eval",
+            "expression": "if(isnull(disconnect) OR disconnect==\"\", \"unknown\", disconnect)",
+            "outputFields": [
+              {
+                "fieldName": "disconnect",
+                "displayName": "disconnect",
+                "type": "string",
+                "comment": {
+                  "description": "USB device was disconnected from the system."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "USB_Action_Mount",
+            "calculationType": "Eval",
+            "expression": "if(isnull(mount) OR mount==\"\", \"unknown\", mount)",
+            "outputFields": [
+              {
+                "fieldName": "mount",
+                "displayName": "mount",
+                "type": "string",
+                "comment": {
+                  "description": "USB volume was mounted to a drive letter or path."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "USB_Action_Unmount",
+            "calculationType": "Eval",
+            "expression": "if(isnull(unmount) OR unmount==\"\", \"unknown\", unmount)",
+            "outputFields": [
+              {
+                "fieldName": "unmount",
+                "displayName": "unmount",
+                "type": "string",
+                "comment": {
+                  "description": "USB volume was unmounted or ejected."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

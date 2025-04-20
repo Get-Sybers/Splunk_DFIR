@@ -1,0 +1,24 @@
+I need help creating a Splunk field alias configuration file that maps PowerShell DFIR sourcetypes to MITRE CAR data models. 
+
+First, review my fieldsummary.json file which contains sourcetypes from the PowerShell_DFIR_App, each with fields that start with "data." and "meta." prefixes (I've already removed fields that don't start with these prefixes).
+
+Then, create a field_aliases.conf file that maps these fields to standardized CAR data model fields. The mappings should follow this pattern:
+- data.CommandLine = process.command_line
+- data.Name = process.exe
+- meta.hostname = process.hostname
+
+Create mappings for these key data models:
+1. Process - map PS_DFIR:Processes and PS_DFIR_v6:Processes fields
+2. Service - map PS_DFIR:RunningServices and PS_DFIR_v6:RunningServices fields
+3. Driver - map PS_DFIR:Drivers and PS_DFIR_v6:Drivers fields
+4. File - map PS_DFIR:PrefetchFiles and PS_DFIR_v6:PrefetchFiles fields
+5. Flow - map PS_DFIR_v6:OpenTCPConnections and PS_DFIR_v6:Netstat fields
+6. Socket - map PS_DFIR_v6:OpenTCPConnections and PS_DFIR_v6:Netstat fields
+7. Registry - map PS_DFIR_v6:ExtensiveRegistry fields
+8. USB - map PS_DFIR:USBDevices and PS_DFIR_v6:USBDevices fields
+9. Authentication - map PS_DFIR:RDPConnectionLogs and PS_DFIR_v6:RDPConnectionLogs fields
+10. Host Information - map PS_DFIR:BasicInfo and PS_DFIR_v6:BasicInfo fields
+
+Please organize the file with clear section headers for each data model. If any data model is incomplete, add appropriate fields based on the standard CAR model structure.
+
+Place the completed file_aliases.conf in the /opt/github/Splunk_DFIR/splunk/etc/apps/Splunk_Mitre_CAR/local/ directory.

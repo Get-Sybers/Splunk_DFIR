@@ -1,0 +1,356 @@
+{
+    "modelName": "CAR-File",
+    "displayName": "CAR File",
+    "description": "A resource for storing information available to a computer program.",
+    "editable": false,
+    "objects": [
+      {
+        "objectName": "CARFile",
+        "displayName": "CAR File",
+        "parentName": "BaseEvent",
+        "fields": [
+          {
+            "fieldName": "creation_time",
+            "displayName": "creation_time",
+            "type": "string",
+            "comment": {
+              "description": "The creation time of the file as described in UTC and including the date.",
+              "example": "05/14/2015 12:47:06"
+            }
+          },
+          {
+            "fieldName": "file_name",
+            "displayName": "file_name",
+            "type": "string",
+            "comment": {
+              "description": "The name of the file.",
+              "example": "MyWordDoc.docx"
+            }
+          },
+          {
+            "fieldName": "fqdn",
+            "displayName": "fqdn",
+            "type": "string",
+            "comment": {
+              "description": "The fully qualified domain name of the host. Contains the hostname appended with the domain.",
+              "example": "HOST1.EXAMPLE_DOMAIN.COM"
+            }
+          },
+          {
+            "fieldName": "hostname",
+            "displayName": "hostname",
+            "type": "string",
+            "comment": {
+              "description": "The hostname of the host, without the domain.",
+              "example": "HOST1"
+            }
+          },
+          {
+            "fieldName": "image_path",
+            "displayName": "image_path",
+            "type": "string",
+            "comment": {
+              "description": "The file system location of the executable associated with the pid that generated this event.",
+              "example": "C:\\Windows\\system32\\notepad.exe"
+            }
+          },
+          {
+            "fieldName": "md5_hash",
+            "displayName": "md5_hash",
+            "type": "string",
+            "comment": {
+              "description": "An MD5 hash of the file located at `image_path`. Hex without 0x.",
+              "example": "5eb63bbbe01eeed093cb22bb8f5acdc3"
+            }
+          },
+          {
+            "fieldName": "sha1_hash",
+            "displayName": "sha1_hash",
+            "type": "string",
+            "comment": {
+              "description": "The SHA1 hash of the file located at `image_path`.",
+              "example": "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed"
+            }
+          },
+          {
+            "fieldName": "sha256_hash",
+            "displayName": "sha256_hash",
+            "type": "string",
+            "comment": {
+              "description": "The SHA256 hash of the file located at `image_path`.",
+              "example": "68e656b251e67e8358bef8483ab0d51c6619f3e7a1a9f0e75838d41ff368f728"
+            }
+          },
+          {
+            "fieldName": "pid",
+            "displayName": "pid",
+            "type": "number",
+            "comment": {
+              "description": "The process ID for the process that generated this file event.",
+              "example": "738"
+            }
+          },
+          {
+            "fieldName": "ppid",
+            "displayName": "ppid",
+            "type": "number",
+            "comment": {
+              "description": "The parent process ID of the process associated with this file event.",
+              "example": "1860"
+            }
+          },
+          {
+            "fieldName": "previous_creation_time",
+            "displayName": "previous_creation_time",
+            "type": "string",
+            "comment": {
+              "description": "The creation_time of the file before it was changed.",
+              "example": "05/14/2015 12:47:06"
+            }
+          },
+          {
+            "fieldName": "signer",
+            "displayName": "signer",
+            "type": "string",
+            "comment": {
+              "description": "The company listed on the certificate of the signed program at `image_path`.",
+              "example": "Microsoft Corporation"
+            }
+          },
+          {
+            "fieldName": "user",
+            "displayName": "user",
+            "type": "string",
+            "comment": {
+              "description": "The user context in which the thread that caused this event was running.",
+              "example": "HOST1\\LOCALUSER"
+            }
+          },
+          {
+            "fieldName": "company",
+            "displayName": "company",
+            "type": "string",
+            "comment": {
+              "description": "The name of the organization listed in the file located at `image_path`."
+            }
+          },
+          {
+            "fieldName": "file_path",
+            "displayName": "file_path",
+            "type": "string",
+            "comment": {
+              "description": "The full path to the file on the file system.",
+              "example": "C:\\users\\fakeuser\\documents\\MyFile"
+            }
+          },
+          {
+            "fieldName": "owner_uid",
+            "displayName": "owner_uid",
+            "type": "string",
+            "comment": {
+              "description": "The user ID of the owner of the file.",
+              "example": "501"
+            }
+          },
+          {
+            "fieldName": "owner",
+            "displayName": "owner",
+            "type": "string",
+            "comment": {
+              "description": "The username of the owner of the file.",
+              "example": "adam"
+            }
+          },
+          {
+            "fieldName": "content",
+            "displayName": "content",
+            "type": "string",
+            "comment": {
+              "description": "The contents of the file.",
+              "example": "Hello World"
+            }
+          },
+          {
+            "fieldName": "extension",
+            "displayName": "extension",
+            "type": "string",
+            "comment": {
+              "description": "The file extension.",
+              "example": ".docx"
+            }
+          },
+          {
+            "fieldName": "gid",
+            "displayName": "gid",
+            "type": "number",
+            "comment": {
+              "description": "The group ID of the file.",
+              "example": "801"
+            }
+          },
+          {
+            "fieldName": "group",
+            "displayName": "group",
+            "type": "string",
+            "comment": {
+              "description": "The group owner of the file.",
+              "example": "admin"
+            }
+          },
+          {
+            "fieldName": "link_target",
+            "displayName": "link_target",
+            "type": "string",
+            "comment": {
+              "description": "The target path of a symbolic link.",
+              "example": "C:\\my_special_file.exe"
+            }
+          },
+          {
+            "fieldName": "mime_type",
+            "displayName": "mime_type",
+            "type": "string",
+            "comment": {
+              "description": "The MIME type of the file.",
+              "example": "PE"
+            }
+          },
+          {
+            "fieldName": "mode",
+            "displayName": "mode",
+            "type": "string",
+            "comment": {
+              "description": "The mode or permissions set of the file.",
+              "example": "0644 (linux) or NTFS ACL"
+            }
+          },
+          {
+            "fieldName": "signature_valid",
+            "displayName": "signature_valid",
+            "type": "boolean",
+            "comment": {
+              "description": "Whether the signature is valid; empty if not signed.",
+              "example": "true"
+            }
+          },
+          {
+            "fieldName": "uid",
+            "displayName": "uid",
+            "type": "string",
+            "comment": {
+              "description": "The user ID or SID for the acting entity.",
+              "example": "S-1-5-18"
+            }
+          }
+        ],
+        "calculations": [
+          {
+            "calculationID": "File_Action_Timestomp",
+            "calculationType": "Eval",
+            "expression": "if(isnull(timestomp) OR timestomp==\"\", \"unknown\", timestomp)",
+            "outputFields": [
+              {
+                "fieldName": "timestomp",
+                "displayName": "timestomp",
+                "type": "string",
+                "comment": {
+                  "description": "Modification of a file attribute like creation time without changing content."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_Create",
+            "calculationType": "Eval",
+            "expression": "if(isnull(create) OR create==\"\", \"unknown\", create)",
+            "outputFields": [
+              {
+                "fieldName": "create",
+                "displayName": "create",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the creation of a file."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_Delete",
+            "calculationType": "Eval",
+            "expression": "if(isnull(delete) OR delete==\"\", \"unknown\", delete)",
+            "outputFields": [
+              {
+                "fieldName": "delete",
+                "displayName": "delete",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the deletion of a file."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_Modify",
+            "calculationType": "Eval",
+            "expression": "if(isnull(modify) OR modify==\"\", \"unknown\", modify)",
+            "outputFields": [
+              {
+                "fieldName": "modify",
+                "displayName": "modify",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the modification of a file or its metadata."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_Read",
+            "calculationType": "Eval",
+            "expression": "if(isnull(read) OR read==\"\", \"unknown\", read)",
+            "outputFields": [
+              {
+                "fieldName": "read",
+                "displayName": "read",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to the accessing of a file to be read."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_Write",
+            "calculationType": "Eval",
+            "expression": "if(isnull(write) OR write==\"\", \"unknown\", write)",
+            "outputFields": [
+              {
+                "fieldName": "write",
+                "displayName": "write",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding to writing new content into a file."
+                }
+              }
+            ]
+          },
+          {
+            "calculationID": "File_Action_ACL_Modify",
+            "calculationType": "Eval",
+            "expression": "if(isnull(acl_modify) OR acl_modify==\"\", \"unknown\", acl_modify)",
+            "outputFields": [
+              {
+                "fieldName": "acl_modify",
+                "displayName": "acl_modify",
+                "type": "string",
+                "comment": {
+                  "description": "The event corresponding with changing permissions on a file."
+                }
+              }
+            ]
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  }

@@ -1,0 +1,126 @@
+service,description,category
+*mpssvc*,Windows Firewall Service,security
+*wscsvc*,Windows Security Center Service,security
+*sysmon*,Sysmon Driver,security
+*csc_iseagent*,Cisco Secure Client - ISE Posture Agent,security
+*csc_nvmagent*,Cisco Secure Client - Network Visibility Agent,security
+*csc_umbrellaagent*,Cisco Secure Client - Umbrella Agent,security
+*csc_swgagent*,Cisco Secure Client - Umbrella SWG Agent,security
+*CiscoAMP*,Cisco Secure Endpoint,security
+*CiscoOrbital*,Cisco AMP Orbital,security
+*CiscoSCMS*,Cisco Security Connector Monitoring,security
+*avast! Antivirus*,Avast,security
+*aswBcc*,Avast,security
+*Avast Business Console Client Antivirus Service*,Avast,security
+*epag*,Bitdefender Endpoint Agent,security
+*CylanceSvc*,Cylance,security
+*CynetLauncher*,Cynet Launcher Service,security
+*xagt*,FireEye Endpoint Agent,security
+*fgprocsvc*,ForeScout Remote Inspection Service,security
+*SecureConnector*, ForeScout SecureConnector Service,security
+*fsdevcon*,F-Secure,security
+*FSDFWD*,F-Secure,security
+*F-Secure Network Request Broker*,F-Secure,security
+*FSMA*,F-Secure,security
+*FSORSPClient*,F-Secure,security
+*klif*,Kasperksky,security
+*klim*,Kasperksky,security
+*kltdi*,Kasperksky,security
+*enterceptagent*,MacAfee,security
+*McAfeeFramework*,MacAfee Agent Backwards Compatiblity Service,security
+*McAfeeEngineService*,MacAfee,security
+*mfevtp*,MacAfee Validation Trust Protection Service,security
+*cyverak*,PaloAlto Traps KernelDriver,security
+*cyvrmtgn*,PaloAlto Traps KernelDriver,security
+*cyvrfsfd*,PaloAlto Traps FileSystemDriver,security
+*CyveraService*,PaloAlto Traps,security
+*tlaservice*,PaloAlto Traps Local Analysis Service,security
+*twdservice*,PaloAlto Traps Watchdog Service,security
+*SentinelHelperService*,SentinelOne,security
+*sophosssp*,Sophos,security
+*Sophos Agent*,Sophos,security
+*Sophos AutoUpdate Service*,Sophos,security
+*Sophos Clean Service*,Sophos,security
+*Sophos Device Control Service*,Sophos,security
+*Sophos Message Router*,Sophos,security
+*Sophos Safestore Service*,Sophos,security
+*Sophos Web Control Service*,Sophos,security
+*sophossps*,Sophos,security
+*Symantec System Recovery*, Symantec System Recovery,security
+*Smcinst*,Symantec Connect,security
+*SmcService*,Symantec Connect,security
+*AMSP*,Trend,security
+*tmcomm*,Trend,security
+*tmactmon*,Trend,security
+*tmevtmgr*,Trend,security
+*ntrtscan*,Trend Micro Worry Free Business,security
+*WRSVC*,Webroot,security
+*AcronisActiveProtectionService*,Acronis Active Protection Service,security
+*bdredline_agent*,Bitdefender Agent RedLine Service,security
+*BDAuxSrv*,Bitdefender Auxiliary Service,security
+*UPDATESRV*,Bitdefender Desktop Update Service,security
+*VSSERV*,Bitdefender Virus Shield,security
+*bdredline*,Bitdefender RedLine Service,security
+*EPRedline*,Bitdefender Endpoint Redline Service,security
+*EPUpdateService*,Bitdefender Endpoint Update Service,security
+*EPSecurityService*,Bitdefender Endpoint Security Service,security
+*EPProtectedService*,Bitdefender Endpoint Protected Service,security
+*EPIntegrationService*,Bitdefender Endpoint Integration Service,security
+*Parity*,Carbon Black App Control Agent,security
+*CSFalconService*,CrowdStrike Falcon Sensor Service,security
+*xdrhealth*,Cortex XDR Health Helper,security
+*cyserver*, Cortex XDR,security
+*CybereasonActiveProbe*,Cybereason Active Probe,security
+*CybereasonCRS*,Cybereason Anti-Ransomware,security
+*CybereasonBlocki*,Cybereason Execution Prevention,security
+*ekm*,ESET,security
+*epfw*,ESET,security
+*epfwlwf*,ESET,security
+*epfwwfp*,ESET,security
+*EraAgentSvc*,ESET Management Agent service,security
+*ERAAgent*,ESET Management Agent service,security
+*efwd*,ESET Communication Forwarding Service,security
+*ehttpsrv*,ESET HTTP Server,security
+*AVKWCtl*,Anti-virus Kit Window Control,security
+*AVKProxy*,G Data AntiVirus Proxy Service,security
+*GDScan*,GDSG Data AntiVirus Scan Service,security
+*kavfsslp*,Kaspersky Security Exploit Prevention Service,security
+*KAVFS*,Kaspersky Security Service,security
+*KAVFSGT*,Kaspersky Security Management Service,security
+*klnagent*,Kaspersky Security Center,security
+*PandaAetherAgent*,Panda Endpoint Agent,security
+*PSUAService*,Panda Product Service,security
+*NanoServiceMain*,Panda Cloud Antivirus Service,security
+*SentinelAgent*,SentinelOne Endpoint Protection Agent,security
+*SentinelStaticEngine*,Manage static engines for SentinelOne Endpoint Protection,security
+*LogProcessorService*,Manage logs for SentinelOne Endpoint Protection,security
+*SepMasterService*,Symantec Endpoint Protection,security
+*SepScanService*,Symantec Endpoint Protection Scan Services,security
+*SNAC*,Symantec Network Access Control,security
+*SntpService*,Sophos Network Threat Protection,security
+*Sophos Endpoint Defense Service*,Sophos Endpoint Defense Service,security
+*Sophos File Scanner Service*,Sophos File Scanner Service,security
+*Sophos Health Service*,Sophos Health Service,security
+*Sophos Live Query*,Sophos Live Query,security
+*Sophos Managed Threat Response*,Sophos Managed Threat Response,security
+*Sophos MCS Agent*,Sophos MCS Agent,security
+*Sophos MCS Client*,Sophos MCS Client,security
+*Sophos System Protection Service*,Sophos System Protection Service,security
+*McAfee Endpoint Security Platform Service*,Trellix Core Service,security
+*mfemactl*,Trellix Management Service,security
+*mfemms*,McAfee Management Service,security
+*mfefire*,Trellix Firewall Core Service,security
+*masvc*,Trellix Agent Service,security
+*macmnsvc*,Trellix Agent Common Service,security
+*mfetp*,Trellix Endpoint Threat Prevention Service,security
+*mfewc*,Trellix Endpoint Security Web Control Service*,security
+*mfeaack*,Trellix Anti-Malware Core Service,security
+*Trend Micro Endpoint Basecamp*,Trend Micro Endpoint Basecamp,security
+*TMBMServer*,Trend Micro Unauthorized Change Prevention Service,security
+*Trend Micro Web Service Communicator*,Trend Micro Web Service Communicator,security
+*TMiACAgentSvc*,Trend Micro Application Control Service (Agent),security
+*CETASvc*,Trend Micro Cloud Endpoint Telemetry Service,security
+*iVPAgent*,Trend Micro Vulnerability Protection Service (Agent),security
+*WinDefend*,Windows Defender Antivirus Service,security
+*Sense*,Windows Defender Advanced Threat Protection Service,security
+*WdNisSvc*,Windows Defender Antivirus Network Inspection Service,security
