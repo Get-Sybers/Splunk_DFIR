@@ -1,5 +1,5 @@
 <form version="1.1" theme="dark">
-  <label>WinEVTX - Windows Event Logs</label>
+  <label> l2t - WinEVTX</label>
   <fieldset submitButton="false">
     <input type="time" token="timetoken">
       <label>Time Picker</label>
@@ -8,15 +8,37 @@
         <latest>now</latest>
       </default>
     </input>
+    <input type="multiselect" token="hostFilter">
+      <label>Host Filter</label>
+      <choice value="*">All Hosts</choice>
+      <default>*</default>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">
+        <![CDATA[index=host sourcetype="l2t:winevtx" | stats count by host]]>
+      </populatingSearch>
+    </input>
+    <input type="dropdown" token="winevent_source">
+      <label>Windows Event Source</label>
+      <choice value="*">All Sources</choice>
+      <default>*</default>
+      <populatingSearch fieldForLabel="winevent_source" fieldForValue="winevent_source">
+        <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| stats count by winevent_source
+| sort -count]]>
+      </populatingSearch>
+    </input>
   </fieldset>
   <row>
     <panel>
       <title>Count By WinEventLog</title>
       <chart>
         <search>
-          <query>index=host sourcetype="l2t:winevtx" 
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| stats count by winevent_source</query>
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| search winevent_source=$winevent_source$
+| stats count by winevent_source]]>
+          </query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
@@ -29,9 +51,13 @@
       <title>Count By Event Id</title>
       <chart>
         <search>
-          <query>index=host sourcetype="l2t:winevtx" 
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| stats count by event_id</query>
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| search winevent_source=$winevent_source$
+| rex field=message "\[(?<event_id>\d+)\s"
+| stats count by event_id]]>
+          </query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
@@ -43,26 +69,64 @@
   </row>
   <row>
     <panel>
-      <title>Sexy Rexy</title>
-      <input type="checkbox" token="hostToken">
-        <label>host</label>
-      </input>
-      <input type="multiselect" token="event_idToken">
-        <label>event_id</label>
-      </input>
-      <input type="multiselect" token="sourceToken">
-        <label>source</label>
-      </input>
-      <table>
-        <title>list of all the fields extracted for l2t:winEVTX</title>
+      <title>Events Over Time</title>
+      <chart>
         <search>
-          <query>index=host sourcetype="l2t:winevtx"
-| fieldsummary
-| table field count
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| search winevent_source=$winevent_source$
+| rex field=message "\[(?<event_id>\d+)\s"
+| timechart count by event_id limit=10]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Event Activity Heatmap</title>
+      <chart>
+        <search>
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| search winevent_source=$winevent_source$
+| rex field=message "\[(?<event_id>\d+)\s"
+| eval hour=strftime(_time, "%H"), dow=strftime(_time, "%w")
+| stats count by hour dow
+| sort dow hour]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">heatmap</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top Hosts and Sources</title>
+      <table>
+        <search>
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx" host=$hostFilter$
+| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
+| search winevent_source=$winevent_source$
+| rex field=message "Provider Name: (?<provider>[^,\s]+)"
+| rex field=message "\[(?<event_id>\d+)\s"
+| stats count by host, winevent_source, event_id, provider
 | sort -count
-| dedup field</query>
-          <earliest>0</earliest>
-          <latest></latest>
+| head 20]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
         </search>
         <option name="drilldown">none</option>
         <option name="refresh.display">progressbar</option>
@@ -71,15 +135,41 @@
   </row>
   <row>
     <panel>
+      <title>Field Extraction Analysis</title>
+      <input type="checkbox" token="hostToken">
+        <label>host</label>
+      </input>
+      <input type="multiselect" token="event_idToken">
+        <label>event_id</label>
+        <populatingSearch fieldForValue="event_id" fieldForLabel="event_id">
+          <![CDATA[index=host sourcetype="l2t:winevtx" | rex field=message "\[(?<event_id>\d+)\s" | stats count by event_id | sort -count]]>
+        </populatingSearch>
+        <choice value="*">All</choice>
+        <default>*</default>
+      </input>
+      <input type="multiselect" token="sourceToken">
+        <label>source</label>
+        <populatingSearch fieldForValue="winevent_source" fieldForLabel="winevent_source">
+          <![CDATA[index=host sourcetype="l2t:winevtx" | rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx" | stats count by winevent_source | sort -count]]>
+        </populatingSearch>
+        <choice value="*">All</choice>
+        <default>*</default>
+      </input>
       <table>
-        <title>l2t:winevtx fields without rex extraction</title>
+        <title>list of all the fields extracted for l2t:winEVTX</title>
         <search>
-          <query>index=host sourcetype="l2t:winevtx"
-| table host, display_name, datetime, description, message, timezone, timestamp_desc, type</query>
-          <earliest>$timetoken.earliest$</earliest>
-          <latest>$timetoken.latest$</latest>
+          <query>
+            <![CDATA[index=host sourcetype="l2t:winevtx"
+| fieldsummary
+| table field count
+| sort -count
+| dedup field]]>
+          </query>
+          <earliest>0</earliest>
+          <latest></latest>
         </search>
         <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
       </table>
     </panel>
   </row>
