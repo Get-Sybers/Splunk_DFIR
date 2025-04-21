@@ -1,4 +1,4 @@
-index=host
+index=host sourcetype=l2t*
 | stats count by sourcetype 
 | map maxsearches=10000 search="search index=host sourcetype=\"$sourcetype$\" | fieldsummary | eval sourcetype=\"$sourcetype$\" | fields field sourcetype"
 | stats values(field) as sourcetype_fields by sourcetype

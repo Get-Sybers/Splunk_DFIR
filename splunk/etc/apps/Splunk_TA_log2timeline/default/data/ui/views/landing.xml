@@ -1,5 +1,5 @@
 <form version="1.1" theme="dark">
-  <label>Log2timeline Landing</label>
+  <label>l2t - Landing</label>
   <fieldset submitButton="false">
     <input type="time" token="timetoken" searchWhenChanged="true">
       <label>Time Range</label>
