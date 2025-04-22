@@ -95,3 +95,8 @@
 
 # ignore docker tar balls
 **.[Tt][Aa][Rr]
+
+# Kape Dependencies
+dependencies\**
+dependencies\**\**
+!dependencies\.gitkeep
