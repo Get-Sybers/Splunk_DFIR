@@ -4,6 +4,16 @@
 .vscode/
 .code-workspace
 
+# Zone Identifier
+# Windows
+**Thumbs.db
+**ehthumbs.db
+**Desktop.ini
+**$RECYCLE.BIN/
+
+# macOS
+**.DS_Store
+**.AppleDouble
 
 # Cred files
 *.pem
@@ -19,3 +29,8 @@
 **.spl
 **.tar.gz
 **.zip
+
+# Kape Dependencies
+data_store\dependencies\**
+!data_store\dependencies\.gitkeep
+/data_store/dependencies
