@@ -8,18 +8,18 @@ This board tracks tasks for the DFIR automation project—from forensic data pro
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Ingest | Extract | Data Model |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line, csv  | ✅     | csv✅   |            |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅     |    ✅   |            |
 | [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅     |    ✅   |            |
-| [Kape](https://github.com/EricZimmerman/KapeFiles)            |               | json_line, csv  | ✅     |   ✅✅  |            |
-| CSVs                                                          |               | csv             | ✅     |         |           |
-| JSON                                                          |               | json            | ✅     |         |           |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx       |        |         |           |
-| Linux Logs                                                    |               |                 |        |         |           |
-| [Symon](https://github.com/mandiant/Symon)                    |               |                 |        |         |           |
-| [Syslog](https://syslog-ng.github.io)                         |               |                 |        |         |           |
-| [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |        |         |           |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |        |         |           |
-| [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |        |         |           |
+| [Kape](https://github.com/EricZimmerman/KapeFiles)            | ✅            | json, csv       | ✅✅    |   ✅✅  |            |
+| CSVs                                                          |               | csv             | ✅     |         |            |
+| JSON                                                          |               | json            | ✅     |         |            |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx       |        |         |            |
+| Linux Logs                                                    |               |                 |        |         |            |
+| [Symon](https://github.com/mandiant/Symon)                    |               |                 |        |         |            |
+| [Syslog](https://syslog-ng.github.io)                         |               |                 |        |         |            |
+| [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |        |         |            |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |        |         |            |
+| [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |        |         |            |
 
 # Update log
 
