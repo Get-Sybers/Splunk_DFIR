@@ -1,5 +1,5 @@
 <form version="1.1" theme="dark">
-  <label>BSL - Host-Triage)</label>
+  <label>BSL - Host-Triage</label>
   <!-- Base search to populate tokens -->
   <search id="base_info_search" depends="$host_ip_token$">
     <query>
@@ -67,6 +67,47 @@
             <strong>Data Source:</strong> Zeek Network Logs</span>
         </div>
       </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <search>
+          <query>index=network sourcetype=zeek:conn id_orig_h=$host_ip_token$
+| stats count by id_orig_h, id_resp_p
+| sort id_orig_h, id_resp_p</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <search>
+          <query>index=network sourcetype=zeek:conn id_orig_h=$host_ip_token$
+| stats count by id_resp_p, service
+| sort id_resp_p, service</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <search>
+          <query>index=network sourcetype=zeek:conn id_orig_h=$host_ip_token$
+| stats count by id_resp_p, id_resp_h
+| sort id_resp_p, id_resp_h</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
     </panel>
   </row>
   <row>

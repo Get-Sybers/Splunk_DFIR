@@ -41,6 +41,8 @@
         <earliest>$timetoken.earliest$</earliest>
         <latest>$timetoken.latest$</latest>
       </search>
+      <default>*</default>
+      <initialValue>*</initialValue>
     </input>
     <input type="dropdown" token="ip_token" depends="$host_token$">
       <label>IP Address</label>
@@ -53,6 +55,9 @@
         <earliest>$timetoken.earliest$</earliest>
         <latest>$timetoken.latest$</latest>
       </search>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
     </input>
     <input type="dropdown" token="OS_token" depends="$host_token$,$ip_token$">
       <label>Operating System</label>
@@ -148,42 +153,44 @@
       <title>Network Shares Summary</title>
       <table>
         <search>
-          <query><![CDATA[
+          <query>
+            <![CDATA[
             index=powershell "Command.Module"=GetNetworkShares ComputerName=$host_token$
             | eval ShareInfo="Data.Name" + " (" + "Data.Path" + ")"
             | eval Alert=if(match("Data.Name", "^(C\$|ADMIN\$)$"), "⚠️", "")
             | table Alert, ShareInfo, "Data.Status"
             | rename ShareInfo as "Share (Path)", "Data.Status" as "Status"
-            ]]></query>
+            ]]>
+          </query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
-          </search>
-          <option name="refresh.display">progressbar</option>
-          <option name="drilldown">none</option>
-          <option name="count">10</option>
-        </table>
-      </panel>
-      <panel>
-        <title>recent files by &amp;usertkoken$</title>
-        <event>
-          <search>
-            <query>placehodler</query>
-            <earliest>$timetoken.earliest$</earliest>
-            <latest>$timetoken.latest$</latest>
-          </search>
-          <option name="list.drilldown">none</option>
-        </event>
-      </panel>
-      <panel>
-        <title>some other bad stuff</title>
-        <event>
-          <search>
-            <query>placeholder</query>
-            <earliest>$timetoken.earliest$</earliest>
-            <latest>$timetoken.latest$</latest>
-          </search>
-          <option name="list.drilldown">none</option>
-        </event>
-      </panel>
+        </search>
+        <option name="refresh.display">progressbar</option>
+        <option name="drilldown">none</option>
+        <option name="count">10</option>
+      </table>
+    </panel>
+    <panel>
+      <title>recent files by &amp;usertkoken$</title>
+      <event>
+        <search>
+          <query>placehodler</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="list.drilldown">none</option>
+      </event>
+    </panel>
+    <panel>
+      <title>some other bad stuff</title>
+      <event>
+        <search>
+          <query>placeholder</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="list.drilldown">none</option>
+      </event>
+    </panel>
   </row>
 </form>
