@@ -1,0 +1,406 @@
+<form version="1.1" theme="dark">
+  <label>DOC - Host Components</label>
+  <description>Comprehensive guide for host baselining and forensic analysis</description>
+  
+  <row>
+    <panel>
+      <html>
+        <h1>Host Baseline Components</h1>
+        <p>This dashboard provides comprehensive guidance for establishing host baselines and conducting forensic analysis on Linux systems.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Search Installed Programs</h2>
+        <p>Effective methods to search for installed programs on Debian and RedHat systems.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Debian Package Information</title>
+      <html>
+        <p>Inspect package status and installation logs:</p>
+        <pre><code># Package status
+cat /var/lib/dpkg/status | grep -E "Package:|Status:"
+
+# Installation log
+cat /var/log/dpkg.log | grep installed</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>RedHat RPM Database</title>
+      <html>
+        <p>Query RPM database for installed packages:</p>
+        <pre><code># List all installed packages
+rpm -qa --root=/mntpath/var/lib/rpm</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Manual Installation Detection</title>
+      <html>
+        <p>Search for manually installed software in common directories:</p>
+        <pre><code># List directories for manual installations
+ls /usr/sbin /usr/bin /bin /sbin
+
+# Find executable files
+find / -type f -executable | grep &lt;something&gt;</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>Non-Package Executables</title>
+      <html>
+        <p>Identify executables not associated with packages:</p>
+        <pre><code># Debian
+find /sbin/ -exec dpkg -S {} \; | grep "no path found"
+
+# RedHat
+find /sbin/ -exec rpm -qf {} \; | grep "is not"</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Recover Deleted Running Binaries</h2>
+        <p>Extract deleted binaries that are still running in memory.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Binary Recovery Process</title>
+      <html>
+        <p>Example: Recover a deleted binary from a running process:</p>
+        <pre><code># Navigate to process directory (replace 3746 with actual PID)
+cd /proc/3746/
+
+# Get memory address from maps file
+head -1 maps  # Address example: 08048000-08049000
+
+# Extract binary from memory
+dd if=mem bs=1 skip=08048000 count=1000 of=/tmp/exec2</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Inspect Autostart Locations</h2>
+        <p>Critical locations where malware might establish persistence.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Scheduled Tasks</title>
+      <html>
+        <pre><code>cat /var/spool/cron/crontabs/* \
+    /var/spool/cron/atjobs \
+    /var/spool/anacron \
+    /etc/cron* \
+    /etc/at* \
+    /etc/anacrontab \
+    /etc/incron.d/* \
+    /var/spool/incron/*</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>macOS Scheduled Tasks</title>
+      <html>
+        <pre><code>ls -l /usr/lib/cron/tabs/ \
+      /Library/LaunchAgents/ \
+      /Library/LaunchDaemons/ \
+      ~/Library/LaunchAgents/</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Service Locations</title>
+      <html>
+        <p>Critical paths where malware could install as a service:</p>
+        <ul>
+          <li><code>/etc/inittab</code> - Initialization scripts</li>
+          <li><code>/etc/rc.d/</code> and <code>/etc/rc.boot/</code> - Service startup scripts</li>
+          <li><code>/etc/init.d/</code> - Startup scripts (Debian)</li>
+          <li><code>/etc/inetd.conf</code> or <code>/etc/xinetd/</code> - Service activation</li>
+          <li><code>/etc/systemd/system</code> - System manager scripts</li>
+          <li><code>/etc/systemd/system/multi-user.target.wants/</code> - Multi-user services</li>
+          <li><code>/usr/local/etc/rc.d/</code> - Custom services</li>
+          <li><code>~/.config/autostart/</code> - User autostart applications</li>
+          <li><code>/lib/systemd/system/</code> - System-wide unit files</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Kernel Modules</title>
+      <html>
+        <p>Kernel module locations (potential rootkit components):</p>
+        <ul>
+          <li><code>/lib/modules/$(uname -r)</code> - Current kernel modules</li>
+          <li><code>/etc/modprobe.d</code> - Module configuration files</li>
+          <li><code>/etc/modprobe</code> and <code>/etc/modprobe.conf</code> - Global module settings</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Other Autostart Locations</title>
+      <html>
+        <p>Additional locations for automatic program execution:</p>
+        <ul>
+          <li><code>/etc/profile.d/*</code>, <code>/etc/profile</code>, <code>/etc/bash.bashrc</code> - Global login scripts</li>
+          <li><code>~/.bashrc</code>, <code>~/.bash_profile</code>, <code>~/.profile</code> - User login scripts</li>
+          <li><code>~/.config/autostart</code> - User autostart directory</li>
+          <li><code>/etc/rc.local</code> - Final multiuser startup script</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Examine Logs</h2>
+        <p>Critical log files for security investigation and baseline establishment.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>System Logs</title>
+      <html>
+        <ul>
+          <li><code>/var/log/syslog</code> (Debian) or <code>/var/log/messages</code> (RedHat) - System-wide messages</li>
+          <li><code>/var/log/auth.log</code> (Debian) or <code>/var/log/secure</code> (RedHat) - Authentication attempts</li>
+          <li><code>/var/log/boot.log</code> - System startup messages</li>
+          <li><code>/var/log/kern.log</code> - Kernel messages</li>
+          <li><code>/var/log/dmesg</code> - Device driver messages</li>
+          <li><code>/var/log/faillog</code> - Failed login attempts</li>
+          <li><code>/var/log/cron</code> - Cron job executions</li>
+          <li><code>/var/log/daemon.log</code> - Background service activities</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Authentication Log Analysis</title>
+      <html>
+        <p>Filter relevant authentication events:</p>
+        <pre><code>grep -iE "session opened for|accepted password|new session|not in sudoers" /var/log/auth.log</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Application Logs</title>
+      <html>
+        <ul>
+          <li><code>/var/log/maillog</code> or <code>/var/log/mail.log</code> - Email server activities</li>
+          <li><code>/var/log/btmp</code> - Failed login attempts</li>
+          <li><code>/var/log/httpd/</code> - Apache HTTPD logs</li>
+          <li><code>/var/log/mysqld.log</code> or <code>/var/log/mysql.log</code> - MySQL database activities</li>
+          <li><code>/var/log/xferlog</code> - FTP file transfers</li>
+          <li><code>/var/log/</code> - Always check for unexpected logs</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Command History</title>
+      <html>
+        <p>User command history files:</p>
+        <ul>
+          <li><code>~/.bash_history</code></li>
+          <li><code>~/.zsh_history</code></li>
+          <li><code>~/.zsh_sessions/*</code></li>
+          <li><code>~/.python_history</code></li>
+          <li><code>~/.*_history</code></li>
+        </ul>
+        <p>Check login history:</p>
+        <pre><code>last -Faiwx</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Privilege Files</title>
+      <html>
+        <p>Check files that can grant extra privileges:</p>
+        <ul>
+          <li><code>/etc/sudoers</code> - Sudo privileges</li>
+          <li><code>/etc/sudoers.d/</code> - Additional sudo configurations</li>
+          <li><code>/etc/groups</code> - Group memberships</li>
+          <li><code>/etc/passwd</code> - User accounts</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Application-Specific Logs</title>
+      <html>
+        <ul>
+          <li><code>~/.ssh/authorized_keys</code>, <code>~/.ssh/known_hosts</code> - SSH connections</li>
+          <li><code>~/.recently-used.xbel</code> - Gnome recent files</li>
+          <li><code>~/.mozilla/firefox</code>, <code>~/.config/google-chrome</code> - Browser data</li>
+          <li><code>~/.viminfo</code> - VIM usage details</li>
+          <li><code>~/.mysql_history</code> - MySQL queries</li>
+          <li><code>~/.lesshst</code> - Less command history</li>
+          <li><code>~/.gitconfig</code>, <code>.git/logs</code> - Git activities</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>USB Logs Analysis</h2>
+        <p>Using usbrip to analyze USB device usage history.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Installation</title>
+      <html>
+        <pre><code># Install usbrip
+pip3 install usbrip
+
+# Download USB ID database
+usbrip ids download</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>Usage Examples</title>
+      <html>
+        <pre><code># Get USB history
+usbrip events history
+
+# Search by specific criteria
+usbrip events history --pid 0002 --vid 0e0f --user kali
+
+# Search USB database
+usbrip ids search --pid 0002 --vid 0e0f</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>File System Analysis</h2>
+        <p>Techniques for analyzing file system structures during malware investigation.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Timeline Analysis</title>
+      <html>
+        <p>Tools and techniques for file system timeline analysis:</p>
+        <ul>
+          <li>Use Autopsy for visualizing event timelines</li>
+          <li>Use Sleuth Kit's <code>mactime</code> for detailed timeline data</li>
+          <li>Investigate unexpected scripts in system's <code>$PATH</code></li>
+          <li>Examine <code>/dev</code> for atypical files</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Hidden Files Detection</title>
+      <html>
+        <p>Search for hidden malicious content:</p>
+        <ul>
+          <li>Look for directories named ".. " (dot dot space)</li>
+          <li>Search for "..^G" (dot dot control-G) directories</li>
+          <li>Find setuid root files: <code>find / -user root -perm -04000 -print</code></li>
+          <li>Review deletion timestamps in inode tables</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>File Analysis Commands</title>
+      <html>
+        <p>Useful commands for file system analysis:</p>
+        <pre><code># List recent files by time
+ls -laR --sort=time /bin
+
+# Sort files by inode
+ls -lai /bin | sort -n</code></pre>
+        <p><strong>Note:</strong> Attackers can modify timestamps, but cannot modify inodes. Unexpectedly large inodes may indicate timestamp manipulation.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Filesystem Version Comparison</h2>
+        <p>Compare filesystem versions to identify changes using git diff commands.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>New Files Detection</title>
+      <html>
+        <pre><code>git diff --no-index --diff-filter=A path/to/old_version/ path/to/new_version/</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>Modified Content Detection</title>
+      <html>
+        <pre><code>git diff --no-index --diff-filter=M path/to/old_version/ path/to/new_version/ | grep -E "^\+" | grep -v "Installed-Time"</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Deleted Files Detection</title>
+      <html>
+        <pre><code>git diff --no-index --diff-filter=D path/to/old_version/ path/to/new_version/</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>Filter Options</title>
+      <html>
+        <p>Git diff filter options:</p>
+        <ul>
+          <li><strong>A:</strong> Added files</li>
+          <li><strong>C:</strong> Copied files</li>
+          <li><strong>D:</strong> Deleted files</li>
+          <li><strong>M:</strong> Modified files</li>
+          <li><strong>R:</strong> Renamed files</li>
+          <li><strong>T:</strong> Type changes (e.g., file to symlink)</li>
+          <li><strong>U:</strong> Unmerged files</li>
+          <li><strong>X:</strong> Unknown files</li>
+          <li><strong>B:</strong> Broken files</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+</form>
