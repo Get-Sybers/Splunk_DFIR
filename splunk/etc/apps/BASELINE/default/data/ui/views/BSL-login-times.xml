@@ -1,0 +1,139 @@
+<form version="1.1" theme="dark">
+  <label>Baseline Login Times</label>
+  <fieldset submitButton="false"></fieldset>
+
+  <!-- BASE SEARCH -->
+  <search id="base_search">
+    <query>
+      index=bro sourcetype=bro_kerberos client!="" success=true
+      | rex field=client "(?<Domain_Name>[^\/]([^/]+)$)"
+      | eval Domain_Name=upper(Domain_Name)
+      | eval Day=strftime(_time, "%Y-%m-%d")
+      | eval Hour=strftime(_time, "%H")
+      | eval Hour_With_Minutes=strftime(_time, "%H:00")
+    </query>
+    <earliest>-7d@d</earliest>
+    <latest>now</latest>
+  </search>
+  <!-- BASE SEARCH END -->
+
+  <row>
+    <panel>
+      <title>Baselining Time</title>
+      <input type="time" token="time0" searchWhenChanged="true">
+        <label>Recommend: Adjust to last 5-7 days</label>
+        <default>
+          <earliest>-7d@d</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Average Hourly Authentications Per Domain</title>
+      <table>
+        <title>Displays the average hourly Kerberos authentications received by each domain for a specified period of time (preferably the last 5-7 days). Additionally, this panel calculates the Hourly Threshold for each domain to be used for hunting anomalies.</title>
+        <search base="base_search">
+          <query>
+            | stats count by Day Hour Domain_Name
+            | dedup Day Hour Domain_Name
+            | stats avg(count) as AvgHourlyAuths by Domain_Name
+            | eval HourlyThreshold=(AvgHourlyAuths*0.3)
+            | table Domain_Name AvgHourlyAuths HourlyThreshold
+          </query>
+          <earliest>$time0.earliest$</earliest>
+          <latest>$time0.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Usual Login Hours Per Domain</title>
+      <table>
+        <title>Displays the usual login hours for each domain in a specified period of time (preferably the last 5-7 days).</title>
+        <search base="base_search">
+          <query>
+            | stats count by Day Hour_With_Minutes Domain_Name
+            | lookup Base-HourlyThreshold.csv Domain_Name
+            | eval IsUsualHour=if(count > HourlyThreshold, 1, 0)
+            | dedup Hour_With_Minutes Domain_Name IsUsualHour
+            | sort Domain_Name Day Hour_With_Minutes
+            | stats values(Hour_With_Minutes) as UsualLoginHours by Domain_Name
+          </query>
+          <earliest>$time0.earliest$</earliest>
+          <latest>$time0.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Search Time</title>
+      <input type="time" token="time1" searchWhenChanged="true">
+        <label>Recommend: Adjust to last 24 hours</label>
+        <default>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <html>
+        <h1>Auth Anomalies</h1>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <title>Lists the domain name and hour of authentication when a domain receives a number of Kerberos authentications above the threshold AND outside of the usual login hours calculated in above panels</title>
+      <search base="base_search">
+        <query>
+          | stats count by Day Hour_With_Minutes Domain_Name
+          | lookup Base-UsualLoginHours.csv Domain_Name
+          | eval HourlyThresholdForDomain=mvindex(HourlyThreshold, 0)
+          | eval IsUsualHour=if(count > HourlyThresholdForDomain, 1, 0)
+          | search IsUsualHour=0
+          | stats count by Domain_Name Hour_With_Minutes
+          | eval IsOverThreshold=if(count > HourlyThresholdForDomain, 1, 0)
+          | search IsOverThreshold=1
+          | table Domain_Name Hour_With_Minutes count
+        </query>
+        <earliest>$time1.earliest$</earliest>
+        <latest>$time1.latest$</latest>
+      </search>
+      <option name="count">50</option>
+      <option name="drilldown">none</option>
+    </panel>
+    <panel>
+      <event>
+        <title>Displays Kerberos authentication events relating to previous panel</title>
+        <search base="base_search">
+          <query>
+            | stats count by Day Hour_With_Minutes Domain_Name
+            | lookup Base-UsualLoginHours.csv Domain_Name
+            | eval HourlyThresholdForDomain=mvindex(HourlyThreshold, 0)
+            | eval IsUsualHour=if(count > HourlyThresholdForDomain, 1, 0)
+            | search IsUsualHour=0
+            | stats count by Domain_Name Hour_With_Minutes
+            | eval IsOverThreshold=if(count > HourlyThresholdForDomain, 1, 0)
+            | search IsOverThreshold=1
+            | table Domain_Name Hour_With_Minutes count
+          </query>
+          <earliest>$time1.earliest$</earliest>
+          <latest>$time1.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="list.drilldown">none</option>
+        <option name="list.wrap">1</option>
+        <option name="raw.drilldown">none</option>
+        <option name="rowNumbers">1</option>
+        <option name="table.drilldown">none</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+      </event>
+    </panel>
+  </row>
+</form>

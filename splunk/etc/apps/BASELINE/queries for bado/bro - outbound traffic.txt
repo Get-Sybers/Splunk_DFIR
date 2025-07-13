@@ -1,0 +1,141 @@
+<form theme="dark">
+  <label>Bro - Outbound Traffic Analysis</label>
+  <description>place all discuded subnets in here so operators know what they're not seeing</description>
+  <!-- IPv4 BaseSearch -->
+  <search id="IPv4BaseSearch">
+    <query> 
+    index=bro  NOT id.resp_h IN(<!--insert any internal network subnets-->) id.resp_h!=null | table *
+    </query>
+    <earliest>$timetoken.earliest$</earliest>
+    <latest>$timetoken.latest$</latest>
+  </search>
+  <!-- IPv6 BaseSearch -->
+  <search id="IPv6BaseSearch">
+    <query> 
+    index=bro id.resp_h IN("a*", "b*", "c*", "d*", "e*", "f*" ) id.resp_h!=null | table *
+    </query>
+    <earliest>$timetoken.earliest$</earliest>
+    <latest>$timetoken.latest$</latest>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken">
+      <label></label>
+      <default>
+        <earliest>-60m@m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>This is the list of known external (AND EXLUCDED) from these queries</title>
+      <table>
+        <search>
+          <query>| inputlookup IgnoreOutboundIP.csv | table IP_Range Description | sort -IP_Range</query>
+          <earliest>-15m</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>IPv4 Outbound traffic</title>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv4BaseSearch">
+          <query>| stats count by  id.orig_h id.resp_h  | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">935</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>IPv4 Drill Down on Ports</title>
+      <input type="dropdown" token="ipv4token">
+        <label>Select IP Address</label>
+        <choice value="*">All</choice>
+        <fieldForLabel>id.resp_h</fieldForLabel>
+        <fieldForValue>id.resp_h</fieldForValue>
+        <search>
+          <query>index=bro NOT id.resp_h IN( <!--- enter in subnets you want to exlude-->) id.resp_h!=null | table id.resp_h | dedup id.resp_h
+| sort -id.resp_h</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <default>*</default>
+      </input>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv4BaseSearch">
+          <query>| search id.resp_h=$ipv4token$ | stats count by  id.resp_h id.resp_p | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">all</option>
+        <option name="height">935</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <link target="_blank">/app/DCOT/host__network__bado?targetIPtoken=$click.name2$</link>
+        </drilldown>
+      </viz>
+    </panel>
+    <panel>
+      <title>IPv4 Drill Down on Services</title>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv4BaseSearch">
+          <query>| search id.resp_h=$ipv4token$ | stats count by  id.resp_h service | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">935</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>IPv6 Outbound traffic</title>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv6BaseSearch">
+          <query>| stats count by  id.orig_h id.resp_h  | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">610</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>IPv6 Drill Down on Ports</title>
+      <input type="dropdown" token="ipv6token">
+        <label>Select IP Address</label>
+        <choice value="*">All</choice>
+        <fieldForLabel>id.resp_h</fieldForLabel>
+        <fieldForValue>id.resp_h</fieldForValue>
+        <search>
+          <query> index=bro id.resp_h IN("a*", "b*", "c*", "d*", "e*", "f*" ) id.resp_h!=null | table id.resp_h | dedup id.resp_h</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <default>*</default>
+      </input>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv6BaseSearch">
+          <query>| search id.resp_h=$ipv6token$ | stats count by  id.resp_h id.resp_p | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">526</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>IPv6 Drill Down on services</title>
+      <viz type="DCOT.sankey_diagram">
+        <search base="IPv6BaseSearch">
+          <query>| search id.resp_h=$ipv6token$ | stats count by  id.resp_h service | sort -id.resp_h</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">935</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+  </row>
+</form>

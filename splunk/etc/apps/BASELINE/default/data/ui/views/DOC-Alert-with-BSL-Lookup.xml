@@ -1,0 +1,342 @@
+<form version="1.1" theme="dark">
+  <label>DOC - Alert From BSL Lookups</label>
+  <description>DOC - guide for filtering non-baseline matches using Splunk lookup techniques</description>
+  
+  <row>
+    <panel>
+      <html>
+        <h1>Splunk Lookup Filtering Methods for Non-Matches</h1>
+        <p>This dashboard provides various methods for filtering events that don't match your baseline lookup tables in Splunk.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Overview</h2>
+        <p>When performing baseline analysis, you often need to identify events that are NOT in your baseline lookup table. These methods help you filter out baselined events to focus on potential anomalies.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>🏆 Method 1: Using lookup and filtering for non-matches (RECOMMENDED)</title>
+      <html>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| lookup baseline_lookup.csv "process name" processport OUTPUT baselined
+| where isnull(baselined)</code></pre>
+        
+        <p><strong>Best for:</strong> Most scenarios due to simplicity and performance</p>
+        
+        <p><strong>Why this is recommended:</strong></p>
+        <ul>
+          <li>Simple and clean syntax</li>
+          <li>Optimal performance</li>
+          <li>Easy to understand and maintain</li>
+          <li>Minimal resource usage</li>
+          <li>Direct filtering approach</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Method 2: Using subsearch with NOT IN for both fields</title>
+      <html>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| eval process_port_combo = 'process name' + ":" + processport
+| where NOT process_port_combo IN [
+    | inputlookup baseline_lookup.csv 
+    | eval process_port_combo = 'process name' + ":" + processport
+    | return 1000 process_port_combo
+]</code></pre>
+        
+        <p><strong>Best for:</strong> Complex scenarios where you need to combine multiple fields for comparison</p>
+        
+        <p><strong>Use when:</strong></p>
+        <ul>
+          <li>You need to create composite keys from multiple fields</li>
+          <li>Complex field combinations are required</li>
+          <li>Advanced matching logic is needed</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Method 3: Multiple field lookup check</title>
+      <html>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| lookup baseline_lookup.csv "process name" processport OUTPUT baselined as is_baselined
+| where isnull(is_baselined)
+| fields - is_baselined</code></pre>
+        
+        <p><strong>Best for:</strong> When you want to rename the output field for clarity and clean up the results</p>
+        
+        <p><strong>Advantages:</strong></p>
+        <ul>
+          <li>Clear field naming with aliases</li>
+          <li>Explicit cleanup of temporary fields</li>
+          <li>Better documentation and readability</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Method 4: More explicit approach with join</title>
+      <html>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| join type=left "process name" processport [
+    | inputlookup baseline_lookup.csv 
+    | fields "process name" processport baselined
+]
+| where isnull(baselined)
+| fields - baselined</code></pre>
+        
+        <p><strong>Best for:</strong> When you need more control over the join operation or when working with complex lookup relationships</p>
+        
+        <p><strong>Use when:</strong></p>
+        <ul>
+          <li>Complex join logic is required</li>
+          <li>Multiple lookup tables need to be combined</li>
+          <li>Explicit control over join behavior is needed</li>
+        </ul>
+        
+        <p><strong>Note:</strong> Less performant than Method 1, but more explicit</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Method 5: Explicit categorization approach</title>
+      <html>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| lookup baseline_lookup.csv "process name" processport OUTPUT baselined
+| eval status = if(isnull(baselined), "NOT_BASELINED", "BASELINED")
+| where status="NOT_BASELINED"</code></pre>
+        
+        <p><strong>Best for:</strong> When you want to explicitly categorize and potentially analyze both baselined and non-baselined results</p>
+        
+        <p><strong>Advantages:</strong></p>
+        <ul>
+          <li>Clear categorization of all events</li>
+          <li>Useful for comparative analysis</li>
+          <li>Easy to modify filters</li>
+          <li>Good for reporting and dashboards</li>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Performance Comparison</h2>
+        <p>Understanding the performance characteristics of each method helps you choose the right approach for your use case.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Performance Ranking</title>
+      <html>
+        <table>
+          <tr>
+            <th>Rank</th>
+            <th>Method</th>
+            <th>Performance</th>
+            <th>Complexity</th>
+            <th>Best Use Case</th>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>Method 1 (lookup + where)</td>
+            <td>Excellent</td>
+            <td>Low</td>
+            <td>Most scenarios</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Method 3 (aliased lookup)</td>
+            <td>Excellent</td>
+            <td>Low</td>
+            <td>Clear documentation needs</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Method 5 (categorization)</td>
+            <td>Good</td>
+            <td>Medium</td>
+            <td>Comparative analysis</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Method 2 (subsearch)</td>
+            <td>Fair</td>
+            <td>High</td>
+            <td>Complex field combinations</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Method 4 (join)</td>
+            <td>Fair</td>
+            <td>High</td>
+            <td>Complex relationships</td>
+          </tr>
+        </table>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Implementation Tips</h2>
+        <p>Best practices for implementing these lookup filtering methods in production environments.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Lookup Table Optimization</title>
+      <html>
+        <p><strong>Baseline Lookup CSV Structure:</strong></p>
+        <pre><code>"process name",processport,baselined
+"svchost.exe",80,true
+"chrome.exe",443,true
+"outlook.exe",993,true</code></pre>
+        
+        <p><strong>Optimization Tips:</strong></p>
+        <ul>
+          <li>Keep lookup tables as small as possible</li>
+          <li>Use appropriate field types (string, number, boolean)</li>
+          <li>Regularly update and maintain lookup tables</li>
+          <li>Consider using automatic lookups for frequently used tables</li>
+          <li>Index key fields for better performance</li>
+        </ul>
+      </html>
+    </panel>
+    <panel>
+      <title>Query Optimization</title>
+      <html>
+        <p><strong>Performance Best Practices:</strong></p>
+        <ul>
+          <li>Filter data as early as possible in the search pipeline</li>
+          <li>Use specific time ranges to limit data volume</li>
+          <li>Leverage summary indexing for frequently accessed baselines</li>
+          <li>Consider using acceleration for large lookup tables</li>
+          <li>Use the stats command instead of transaction when possible</li>
+        </ul>
+        
+        <p><strong>Example Optimized Query:</strong></p>
+        <pre><code>index=security earliest=-1h@h latest=@h sourcetype=windows:security
+| lookup baseline_processes.csv process_name OUTPUT is_baseline
+| where isnull(is_baseline)
+| stats count by process_name, dest</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Common Pitfalls and Solutions</title>
+      <html>
+        <p><strong>Common Issues:</strong></p>
+        <ul>
+          <li><strong>Field Name Mismatches:</strong> Ensure field names in lookup match exactly (case-sensitive)</li>
+          <li><strong>Data Type Issues:</strong> Convert fields to appropriate types before lookup</li>
+          <li><strong>Large Lookup Tables:</strong> Consider using KV store or summary indexing</li>
+          <li><strong>Memory Issues:</strong> Use subsearches carefully with large datasets</li>
+        </ul>
+        
+        <p><strong>Solutions:</strong></p>
+        <pre><code># Handle field name issues
+| eval process_name=lower('Process Name')
+| lookup baseline.csv process_name OUTPUT baselined
+
+# Handle data type conversion
+| eval port_num=tonumber(port)
+| lookup baseline.csv process port_num OUTPUT baselined</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Real-World Examples</h2>
+        <p>Practical examples of using these methods in security monitoring scenarios.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Process Monitoring Example</title>
+      <html>
+        <p><strong>Scenario:</strong> Detect non-baseline processes running on endpoints</p>
+        <pre><code>index=endpoint_data sourcetype=sysmon EventCode=1
+| lookup approved_processes.csv Image OUTPUT approved
+| where isnull(approved)
+| stats count by Image, Computer
+| sort - count</code></pre>
+        
+        <p><strong>Network Connection Example:</strong></p>
+        <pre><code>index=network_data sourcetype=zeek:conn
+| lookup baseline_connections.csv id_orig_h id_resp_h id_resp_p OUTPUT baselined  
+| where isnull(baselined)
+| stats count by id_orig_h, id_resp_h, id_resp_p
+| sort - count</code></pre>
+      </html>
+    </panel>
+    <panel>
+      <title>User Behavior Example</title>
+      <html>
+        <p><strong>Scenario:</strong> Identify unusual user login locations</p>
+        <pre><code>index=authentication sourcetype=windows:security EventCode=4624
+| lookup user_normal_locations.csv user src_ip OUTPUT normal_location
+| where isnull(normal_location)
+| stats count by user, src_ip, dest
+| sort - count</code></pre>
+        
+        <p><strong>DNS Query Example:</strong></p>
+        <pre><code>index=dns_data sourcetype=zeek:dns
+| lookup approved_domains.csv query OUTPUT approved
+| where isnull(approved)
+| stats count by query, id_orig_h
+| sort - count</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>Advanced Use Cases</title>
+      <html>
+        <p><strong>Multi-Field Baseline Matching:</strong></p>
+        <pre><code>index=web_logs sourcetype=access_combined
+| lookup baseline_web_activity.csv clientip uri_path method OUTPUT normal_activity
+| where isnull(normal_activity)
+| stats count by clientip, uri_path, method, status
+| where count > 5</code></pre>
+        
+        <p><strong>Time-Based Baseline Filtering:</strong></p>
+        <pre><code>index=security_events
+| eval hour=strftime(_time, "%H")
+| lookup normal_activity_by_hour.csv user hour OUTPUT expected
+| where isnull(expected)
+| stats count by user, hour, activity</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+</form>

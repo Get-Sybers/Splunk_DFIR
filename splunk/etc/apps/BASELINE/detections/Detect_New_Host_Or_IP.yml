@@ -1,0 +1,76 @@
+name: Detect_Outbound_Traffic
+id: 
+version: 1
+date: '2024-08-01'
+author: Jake Badoino
+status: experimental
+type: anomaly
+description: This detection identifies new Client_IP or Client_Name on the network by comparing current DNS data against a baseline of known clients and IPs. It is designed to flag any previously unseen devices or hosts that appear in the network traffic. This can help in quickly identifying unauthorized access or new devices that may need to be investigated to ensure they are legitimate and not a potential security threat.
+data_source: []
+search: '
+        # Load the baseline lookup table
+        | inputlookup Baseline_DomainName_ClientName_ClientIP.csv
+        | rename Client_IP as known_Client_IP, Client_Name as known_Client_Name
+
+        # Extract current Client_IPs and Client_Names from DNS logs
+        | multisearch 
+            [ search index=powershell "Command.Module"=GetDomainComputers
+              | rex field=Data.DNSName "^(?<Client_Name>[^.]+)"
+              | rex field=Data.DNSName "^[^.]+\.(?<Domain_Name>.+)"
+              | eval source = "powershell"
+              | eval Client_IP=Data.IPAddress ]
+            [ search index=network sourcetype="bro:dns:json" query!="*\.arpa" query!="" answers!="0.0.0.0" query!="0.0.0.0"
+              | rex field=answers "(?<Client_IP>\b(?:\d{1,3}\.){3}\d{1,3}\b)"
+              | rex field=query "^(?<Client_Name>[^.]+)"
+              | rex field=query "^[^.]+\.(?<Domain_Name>.+)"
+              | eval source="zeek" ]
+        | eval Domain_Name=upper(Domain_Name), Client_IP=upper(Client_IP), Client_Name=upper(Client_Name)
+        | dedup Domain_Name, Client_IP, Client_Name, source
+
+        # Identify new Client_IPs or Client_Names not in the baseline
+        | join type=left Client_IP [ | inputlookup Baseline_DomainName_ClientName_ClientIP.csv ]
+        | where isnull(known_Client_IP)
+        | table Domain_Name, Client_IP, Client_Name, source'
+        
+ow_to_implement: This detection utilizes the lookup Baseline_DomainName_ClientName_ClientIP.csv to compare current DNS logs against the baseline of known clients and IPs. Ensure that this baseline lookup is regularly updated with legitimate devices to minimize false positives.
+known_false_positives: It is likely that new legitimate devices connecting to the network will be detected as false positives. Regularly update the baseline to minimize false positives. Any new, unknown devices should be investigated.
+references: []
+tags:
+  analytic_story:
+  - 
+  asset_type: Endpoint
+  confidence: 
+  impact: 
+  message: A new client IP $Client_IP$ or client name $Client_Name$ was detected on the network.
+  mitre_attack_id:
+  - 
+  observable:
+  - name: Client_IP
+    type: IP Address
+    role:
+    - Victim
+  - name: Client_Name
+    type: String
+    role:
+    - Victim
+  product:
+  - Splunk Enterprise
+  - Splunk Enterprise Security
+  - Splunk Cloud
+  required_fields:
+  - _time
+  - Data.DNSName
+  - Data.IPAddress
+  - Client_Name
+  - Domain_Name
+  - Client_IP
+  - answers
+  - query
+  risk_score: 25
+  security_domain: network
+tests:
+- name: True Positive Test
+  attack_data:
+  - data: 
+    sourcetype: zeek:conn
+    source: conn.log
