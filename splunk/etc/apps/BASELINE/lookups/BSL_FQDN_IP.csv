@@ -1,1 +1,1 @@
-FQDN,"ip_address",count,"first_seen","last_seen"
+"FQDN","ip_address", "hostname", "domain", "first_seen","last_seen"
