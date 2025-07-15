@@ -110,7 +110,7 @@
         <search>
           <query>| inputlookup BSL_FQDN_IP.csv
 | search FQDN="$FQDNtoken$" ip_address="$ipv4token$"
-| table FQDN, ip_address, first_seen, last_seen
+| table FQDN, ip_address, hostname, domain, first_seen, last_seen
 | sort -count, FQDN</query>
           <earliest>$earliest$</earliest>
           <latest>$latest$</latest>
