@@ -1,0 +1,512 @@
+<form version="1.1" theme="dark">
+  <label>L2T - AppCompatCache (ShimCache) Forensics</label>
+  <description>Comprehensive analysis of Windows Application Compatibility Cache for tracking executed programs and application forensics</description>
+  <!-- Summary Statistics Row -->
+  <!-- Execution Timeline Row -->
+  <!-- Most Executed Applications Row -->
+  <!-- Security Analysis Row -->
+  <!-- Host Activity Analysis Row -->
+  <!-- Detailed Cache Analysis Row -->
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="hostFilter">
+      <label>Host Filter</label>
+      <choice value="*">All Hosts</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
+      <search>
+        <query>
+          <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| stats count by hostname
+| sort hostname
+        ]]>
+        </query>
+      </search>
+    </input>
+    <input type="dropdown" token="timestampFilter">
+      <label>Timestamp Type</label>
+      <choice value="*">All Timestamps</choice>
+      <default>*</default>
+      <fieldForLabel>timestamp_desc</fieldForLabel>
+      <fieldForValue>timestamp_desc</fieldForValue>
+      <search>
+        <query>
+          <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| stats count by timestamp_desc
+| sort timestamp_desc
+        ]]>
+        </query>
+      </search>
+    </input>
+    <input type="dropdown" token="controlSetFilter">
+      <label>Control Set</label>
+      <choice value="*">All Control Sets</choice>
+      <default>*</default>
+      <fieldForLabel>control_set</fieldForLabel>
+      <fieldForValue>control_set</fieldForValue>
+      <search>
+        <query>
+          <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| stats count by control_set
+| sort control_set
+        ]]>
+        </query>
+      </search>
+    </input>
+    <input type="text" token="executableSearch">
+      <label>Executable Name Search</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="pathSearch">
+      <label>Path Search</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="entrySearch">
+      <label>Cache Entry Search</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Total Cache Entries</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| dedup filename, source_long
+| stats count
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Unique Cache Entries</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Unique Executables</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?<executable_path>[^\\s]+.*?)(?:\s|$)"
+| rex field=executable_path "(?<executable_name>[^\\\\]+)$"
+| eval executable_name=ltrim(rtrim(executable_name))
+| stats dc(executable_name)
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Distinct Programs</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Registry Sources</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| dedup filename, source_long
+| stats dc(filename)
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Registry Files</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Suspicious Paths</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?<executable_path>[^\\s]+.*?)(?:\s|$)"
+| eval risk_level=case(
+    match(executable_path, "(?i)temp|tmp|downloads|desktop|recycle"), "High",
+    match(executable_path, "(?i)users\\\\.*\\\\appdata|programdata"), "Medium",
+    match(executable_path, "(?i)tsclient|removable"), "Medium",
+    true(), "Low"
+)
+| where risk_level!="Low"
+| dedup filename, source_long
+| stats count
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Risky Locations</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Suspicious Application Analysis</title>
+      <table>
+        <search>
+          <query>index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?&lt;control_set&gt;\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?&lt;executable_path&gt;[^\\s]+.*?)(?:\s|$)"
+| rex field=executable_path "(?&lt;executable_name&gt;[^\\\\]+)$"
+| eval executable_name=ltrim(rtrim(executable_name))
+| eval risk_level=case(
+    match(executable_path, "(?i)temp|tmp|downloads|desktop"), "High",
+    match(executable_path, "(?i)users\\\\.*\\\\appdata|programdata"), "Medium",
+    match(executable_path, "(?i)tsclient|removable|recycle"), "Medium",
+    match(executable_name, "(?i).*\\.(bat|cmd|vbs|ps1|scr)$"), "Medium",
+    match(executable_name, "(?i).*(hack|crack|keygen|patch|loader).*"), "High",
+    true(), "Low"
+)
+| eval risk_indicators=case(
+    match(executable_path, "(?i)temp|tmp"), "Temporary Directory",
+    match(executable_path, "(?i)downloads"), "Downloads Folder",
+    match(executable_path, "(?i)desktop"), "Desktop Location",
+    match(executable_path, "(?i)tsclient"), "Remote Drive Access",
+    match(executable_path, "(?i)recycle"), "Recycle Bin",
+    match(executable_path, "(?i)appdata\\\\roaming"), "User Roaming Profile",
+    match(executable_name, "(?i)\\.(bat|cmd|vbs|ps1)$"), "Script File",
+    match(executable_name, "(?i).*(hack|crack|keygen).*"), "Suspicious Name Pattern",
+    true(), "Standard Location"
+)
+| where risk_level!="Low"
+| stats count as cache_count,
+        values(hostname) as hosts,
+        values(control_set) as control_sets,
+        earliest(_time) as first_seen,
+        latest(_time) as last_seen
+        by executable_name, executable_path, risk_level, risk_indicators
+| eval first_seen=strftime(first_seen, "%Y-%m-%d %H:%M:%S")
+| eval last_seen=strftime(last_seen, "%Y-%m-%d %H:%M:%S")
+| sort -risk
+| head 20</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="risk_level">
+          <colorPalette type="map">{"High":#DC4E41,"Medium":#F8BE34,"Low":#53A051}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="executable_name">
+            <set token="executableSearch">$row.executable_name$</set>
+          </condition>
+          <condition field="executable_path">
+            <set token="pathSearch">$row.executable_path$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Registry Control Set Distribution</title>
+      <chart>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| eval control_set_name=case(
+    control_set=="001", "ControlSet001 (Current)",
+    control_set=="002", "ControlSet002 (LastKnownGood)",
+    control_set=="003", "ControlSet003 (Backup)",
+    isnotnull(control_set), "ControlSet"+control_set,
+    true(), "Unknown"
+)
+| dedup filename, source_long
+| stats count by control_set_name
+| sort -count
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="controlSetFilter">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Execution Paths by Category</title>
+      <chart>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?<executable_path>[^\\s]+.*?)(?:\s|$)"
+| eval path_category=case(
+    match(executable_path, "(?i)\\\\windows\\\\system32"), "System32",
+    match(executable_path, "(?i)\\\\windows\\\\syswow64"), "SysWOW64",
+    match(executable_path, "(?i)\\\\program files"), "Program Files",
+    match(executable_path, "(?i)\\\\users\\\\"), "User Directories",
+    match(executable_path, "(?i)\\\\temp\\\\|\\\\tmp\\\\"), "Temporary",
+    match(executable_path, "(?i)tsclient"), "Remote/Network",
+    match(executable_path, "(?i)recycle"), "Recycle Bin",
+    match(executable_path, "(?i)\\\\windows\\\\"), "Windows Other",
+    true(), "Other Locations"
+)
+| dedup filename, source_long
+| stats count by path_category
+| sort -count
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.axisTitleX.text">Path Category</option>
+        <option name="charting.axisTitleY.text">Cache Entries</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="pathSearch">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Most Frequently Cached Applications</title>
+      <table>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?<executable_path>[^\\s]+.*?)(?:\s|$)"
+| rex field=executable_path "(?<executable_name>[^\\\\]+)$"
+| eval executable_name=ltrim(rtrim(executable_name))
+| eval full_path=executable_path
+| eval path_category=case(
+    match(executable_path, "(?i)\\\\windows\\\\system32"), "System32",
+    match(executable_path, "(?i)\\\\windows\\\\syswow64"), "SysWOW64",
+    match(executable_path, "(?i)\\\\program files"), "Program Files",
+    match(executable_path, "(?i)\\\\users\\\\"), "User Directories",
+    match(executable_path, "(?i)\\\\temp\\\\|\\\\tmp\\\\"), "Temporary",
+    match(executable_path, "(?i)tsclient"), "Remote/Network",
+    match(executable_path, "(?i)recycle"), "Recycle Bin",
+    true(), "Other Locations"
+)
+| stats count as cache_entries,
+        values(hostname) as hosts,
+        values(control_set) as control_sets,
+        values(path_category) as locations,
+        dc(filename) as registry_sources
+        by executable_name, full_path
+| sort -cache_entries
+| head 20
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">5</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <condition field="executable_name">
+            <set token="executableSearch">$row.executable_name$</set>
+          </condition>
+          <condition field="full_path">
+            <set token="pathSearch">$row.full_path$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Registry Source Analysis</title>
+      <table>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| eval registry_location=case(
+    match(filename, "(?i)\\\\config\\\\system$"), "Active Registry",
+    match(filename, "(?i)\\\\regback\\\\"), "Registry Backup",
+    match(filename, "(?i)recycle"), "Deleted Registry",
+    true(), "Other Registry Source"
+)
+| stats count as cache_entries,
+        dc(description) as unique_applications,
+        values(hostname) as hosts
+        by filename, registry_location
+| sort -cache_entries
+| head 15
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">8</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="registry_location">
+          <colorPalette type="map">{"Active Registry":#53A051,"Registry Backup":#F8BE34,"Deleted Registry":#DC4E41,"Other Registry Source":#6DB7C6}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Comprehensive AppCompatCache Timeline</title>
+      <table>
+        <search>
+          <query>
+            <![CDATA[
+index=host sourcetype="l2t:AppCompatCache"
+| search hostname=$hostFilter$ timestamp_desc=$timestampFilter$
+| search (description="*$executableSearch$*" OR description_short="*$executableSearch$*")
+| search (description="*$pathSearch$*" OR description_short="*$pathSearch$*")
+| search description="*$entrySearch$*"
+| rex field=description "ControlSet(?<control_set>\d+)"
+| search control_set=$controlSetFilter$
+| rex field=description "Path:\s*(?<executable_path>[^\\s]+.*?)(?:\s|$)"
+| rex field=description "Cached entry:\s*(?<entry_number>\d+)"
+| rex field=executable_path "(?<executable_name>[^\\\\]+)$"
+| eval executable_name=ltrim(rtrim(executable_name))
+| eval risk_level=case(
+    match(executable_path, "(?i)temp|tmp|downloads|desktop"), "High",
+    match(executable_path, "(?i)users\\\\.*\\\\appdata|tsclient|recycle"), "Medium",
+    true(), "Low"
+)
+| eval registry_source=case(
+    match(filename, "(?i)\\\\config\\\\system$"), "Active",
+    match(filename, "(?i)\\\\regback\\\\"), "Backup",
+    match(filename, "(?i)recycle"), "Deleted",
+    true(), "Other"
+)
+| eval short_path=if(len(executable_path)>60, "..."+substr(executable_path, len(executable_path)-57, 60), executable_path)
+| dedup filename, source_long
+| table datetime, hostname, executable_name, short_path, entry_number, control_set, registry_source, timestamp_desc, risk_level
+| sort -datetime
+          ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">15</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="risk_level">
+          <colorPalette type="map">{"High":#DC4E41,"Medium":#F8BE34,"Low":#53A051}</colorPalette>
+        </format>
+        <format type="color" field="registry_source">
+          <colorPalette type="map">{"Active":#1f77b4,"Backup":#ff7f0e,"Deleted":#d62728,"Other":#9467bd}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="executable_name">
+            <set token="executableSearch">$row.executable_name$</set>
+          </condition>
+          <condition field="hostname">
+            <set token="hostFilter">$row.hostname$</set>
+          </condition>
+          <condition field="control_set">
+            <set token="controlSetFilter">$row.control_set$</set>
+          </condition>
+          <condition field="entry_number">
+            <set token="entrySearch">$row.entry_number$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>
