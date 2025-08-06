@@ -27,7 +27,6 @@
         <query>
           <![CDATA[
 index=host sourcetype="l2t:winevtx" 
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
 | stats count by computer_name
 | sort computer_name
         ]]>
@@ -45,8 +44,6 @@ index=host sourcetype="l2t:winevtx"
         <query>
           <![CDATA[
 index=host sourcetype="l2t:winevtx" 
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
 | search event_id=4624 new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON" new_logon_account_name!="LOCAL SERVICE" new_logon_account_name!="NETWORK SERVICE"
 | stats count by new_logon_account_name
 | sort new_logon_account_name
@@ -94,8 +91,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
 | search computer_name=$hostFilter$ event_id=4624
 | stats dc(computer_name) as unique_hosts
           ]]>
@@ -118,10 +113,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
 | stats dc(new_logon_account_name)
           ]]>
@@ -144,10 +135,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
 | stats count
           ]]>
@@ -168,8 +155,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
 | search computer_name=$hostFilter$ event_id=4625
 | stats count
           ]]>
@@ -192,11 +177,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
-| rex field=message "Network Information:.*?Source Network Address:\\\\t(?<source_network_address>[^\\\\n]+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ source_network_address!="-" source_network_address!="127.0.0.1"
 | stats count
           ]]>
@@ -219,9 +199,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search computer_name=$hostFilter$ event_id=4624
 | eval logon_description=case(
     logon_type=="2", "Interactive (2)",
@@ -255,9 +232,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "Detailed Authentication Information:.*?Authentication Package:\\\\t(?<authentication_package>[^\\\\n]+)"
 | search computer_name=$hostFilter$ event_id=4624 authentication_package!="-"
 | stats count by authentication_package
 | sort -count
@@ -279,9 +253,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?&lt;logon_type&gt;\d+)"
 | search computer_name=$hostFilter$ (event_id=4624 OR event_id=4625)
 | eval event_type=case(
     event_id=="4624" AND logon_type=="2", "Interactive",
@@ -315,16 +286,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "New Logon:.*?Account Domain:\\\\t\\\\t(?<new_logon_account_domain>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
-| rex field=message "Network Information:.*?Source Network Address:\\\\t(?<source_network_address>[^\\\\n]+)"
-| rex field=message "Network Information:.*?Source Port:\\\\t\\\\t(?<source_port>[^\\\\n]+)"
-| rex field=message "Network Information:\\\\n\\\\tWorkstation Name:\\\\t(?<workstation_name>[^\\\\n]*)"
-| rex field=message "Detailed Authentication Information:.*?Authentication Package:\\\\t(?<authentication_package>[^\\\\n]+)"
-| rex field=message "Process Information:.*?Process Name:\\\\t\\\\t(?<process_name>.+?)\\\\n"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
 | eval logon_description=case(
     logon_type=="2", "Interactive",
@@ -370,10 +331,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "Network Information:.*?Source Network Address:\\\\t(?<source_network_address>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search computer_name=$hostFilter$ event_id=4624 logon_type="3" source_network_address!="-" source_network_address!="127.0.0.1"
 | stats count by source_network_address
 | sort -count
@@ -400,10 +357,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON" new_logon_account_name!="LOCAL SERVICE" new_logon_account_name!="NETWORK SERVICE"
 | stats count by new_logon_account_name
 | sort -count
@@ -432,10 +385,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
 | stats count by computer_name
 | sort -count
@@ -466,12 +415,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "Account For Which Logon Failed:.*?Account Name:\\\\t\\\\t(?<failed_account_name>[^\\\\n]+)"
-| rex field=message "Network Information:.*?Source Network Address:\\\\t\\\\t(?<source_network_address>[^\\\\n]+)"
-| rex field=message "Failure Information:.*?Failure Reason:\\\\t\\\\t(?<failure_reason>[^\\\\n]+)"
-| rex field=message "Failure Information:.*?Status:\\\\t\\\\t(?<failure_status>[^\\\\n]+)"
 | search computer_name=$hostFilter$ event_id=4625 failed_account_name!="-"
 | stats count, values(failure_reason) as reasons, values(source_network_address) as source_ips by failed_account_name, computer_name
 | sort -count
@@ -496,12 +439,6 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "New Logon:.*?Account Domain:\\\\t\\\\t(?<new_logon_account_domain>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
-| rex field=message "Network Information:.*?Source Network Address:\\\\t(?<source_network_address>[^\\\\n]+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
 | eval full_username=if(new_logon_account_domain!="-", new_logon_account_domain + "\\" + new_logon_account_name, new_logon_account_name)
 | eval logon_description=case(
@@ -553,10 +490,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
 | stats count by computer_name, new_logon_account_name
 | eventstats sum(count) as host_total by computer_name
@@ -594,10 +527,6 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=message "\[(?<event_id>\d+)\s"
-| rex field=message "New Logon:.*?Account Name:\\\\t\\\\t(?<new_logon_account_name>[^\\\\n]+)"
-| rex field=message "Logon Type:\\\\t\\\\t\\\\t(?<logon_type>\d+)"
 | search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
 | stats count by new_logon_account_name, computer_name
 | eventstats sum(count) as user_total by new_logon_account_name
