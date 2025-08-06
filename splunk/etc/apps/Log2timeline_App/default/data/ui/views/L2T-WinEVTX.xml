@@ -26,21 +26,18 @@
       <fieldForValue>computer_name</fieldForValue>
       <search>
         <query>index=host sourcetype="l2t:winevtx" 
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
 | stats count by computer_name
 | sort computer_name</query>
       </search>
     </input>
-    <input type="dropdown" token="winevent_source">
+    <input type="dropdown" token="provider_token">
       <label>Windows Event Source</label>
       <choice value="*">All Sources</choice>
       <default>*</default>
-      <populatingSearch fieldForLabel="winevent_source" fieldForValue="winevent_source">
+      <populatingSearch fieldForLabel="provider" fieldForValue="provider">
         <![CDATA[index=host sourcetype="l2t:winevtx"
-        | rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
 | search computer_name=$hostFilter$
-| stats count by winevent_source
+| stats count by provider
 | sort -count]]>
       </populatingSearch>
     </input>
@@ -50,10 +47,7 @@
       <default>*</default>
       <populatingSearch fieldForLabel="event_id" fieldForValue="event_id">
         <![CDATA[index=host sourcetype="l2t:winevtx"
-| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$
-| rex field=message "\[(?<event_id>\d+)\s"
+| search provider=$provider_token$ computer_name=$hostFilter$
 | stats count by event_id
 | sort -count]]>
       </populatingSearch>
@@ -71,11 +65,7 @@
         <search>
           <query>
             <![CDATA[index=host sourcetype="l2t:winevtx" 
-| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$
-| rex field=message "\[(?<event_id>\d+)\s"
-| search event_id=$event_id$
+| search event_id=$event_id$ provider=$provider_token$ computer_name=$hostFilter$
 | stats count]]>
           </query>
           <earliest>$timetoken.earliest$</earliest>
@@ -99,10 +89,7 @@
         <search>
           <query>
             <![CDATA[index=host sourcetype="l2t:winevtx" 
-| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| search winevent_source=$winevent_source$
-| rex field=message "\[(?<event_id>\d+)\s"
+| search provider=$provider_token$
 | search event_id=$event_id$ computer_name=$hostFilter$
 | stats dc(event_id)]]>
           </query>
@@ -127,10 +114,7 @@
         <search>
           <query>
             <![CDATA[index=host sourcetype="l2t:winevtx"
-| rex field=display_name "\\\\(?<winevent_source>[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?<computer_name>[^,\s\n]+)"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$
-| rex field=message "\[(?<event_id>\d+)\s"
+| search provider=$provider_token$ computer_name=$hostFilter$
 | search event_id=$event_id$
 | sort -_time
 | head 1
@@ -158,13 +142,8 @@
       <table>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
-| table datetime, computer_name, winevent_source, event_id, message
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
+| table datetime, computer_name, provider, event_id, message
 | sort -datetime</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
@@ -185,15 +164,7 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
 | timechart span=30m count</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
@@ -225,15 +196,7 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
 | timechart count by event_id limit=10</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
@@ -251,16 +214,8 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
-| stats count by winevent_source</query>
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
+| stats count by provider</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
@@ -274,15 +229,7 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
 | stats count by event_id</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
@@ -299,25 +246,17 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
 | eval category=case(
-    match(winevent_source, "Security"), "Security",
-    match(winevent_source, "System"), "System",
-    match(winevent_source, "Application"), "Application",
-    match(winevent_source, "Setup"), "Setup",
-    match(winevent_source, "Microsoft-Windows-PowerShell"), "PowerShell",
-    match(winevent_source, "BITS"), "Background Tasks",
-    match(winevent_source, "Microsoft-Windows-TerminalServices"), "Remote Desktop",
-    match(winevent_source, "Microsoft-Windows-Sysmon"), "Sysmon",
-    match(winevent_source, "Microsoft-Windows-Windows Defender"), "Windows Defender",
+    match(provider, "Security"), "Security",
+    match(provider, "System"), "System",
+    match(provider, "Application"), "Application",
+    match(provider, "Setup"), "Setup",
+    match(provider, "Microsoft-Windows-PowerShell"), "PowerShell",
+    match(provider, "BITS"), "Background Tasks",
+    match(provider, "Microsoft-Windows-TerminalServices"), "Remote Desktop",
+    match(provider, "Microsoft-Windows-Sysmon"), "Sysmon",
+    match(provider, "Microsoft-Windows-Windows Defender"), "Windows Defender",
     true(), "Other"
 )
 | stats count by category
@@ -335,15 +274,7 @@
       <chart>
         <search>
           <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| rex field=message "Provider Name: (?&lt;provider&gt;[^,\s]+)"
-| rex field=message "Channel: (?&lt;channel&gt;[^,\s]+)"
-| rex field=display_name "\\\\(?&lt;winevent_source&gt;[^\\\\]+)\\.evtx"
-| rex field=message "Computer Name: (?&lt;computer_name&gt;[^,\s\n]+)"
-| rex field=message "\[(?&lt;event_id&gt;\d+)\s"
-| search winevent_source=$winevent_source$ computer_name=$hostFilter$ event_id=$event_id$
+| search provider=$provider_token$ computer_name=$hostFilter$ event_id=$event_id$
 | stats count by computer_name</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>

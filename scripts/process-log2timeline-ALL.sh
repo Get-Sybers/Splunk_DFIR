@@ -33,7 +33,7 @@ mkdir -p "$HOST_OUTPUT_DIR/csv"
 mkdir -p "$HOST_OUTPUT_DIR/logs"
 
 # Change ownership and permissions
-chmod -R 777 "$INPUT_DIR"
+sudo chmod -R 777 "$INPUT_DIR"
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
@@ -65,7 +65,9 @@ for INPUT_FILE in "${E01_FILES[@]}"; do
     --output-format dynamic \
     --fields date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone \
     --timezone UTC \
+    --vss-stores all \
     --partitions all \
+    --quiet \
     -w /output/csv/"$FILENAME".csv 2> "$HOST_OUTPUT_DIR/logs/$FILENAME".log
 
     # Check if csv output was created
