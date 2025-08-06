@@ -31,7 +31,7 @@
       </search>
     </input>
     <input type="dropdown" token="provider_token">
-      <label>Windows Event Source</label>
+      <label>Windows Event Provider</label>
       <choice value="*">All Sources</choice>
       <default>*</default>
       <populatingSearch fieldForLabel="provider" fieldForValue="provider">
