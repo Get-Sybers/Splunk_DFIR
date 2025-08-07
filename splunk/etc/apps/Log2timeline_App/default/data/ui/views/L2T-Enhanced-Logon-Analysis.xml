@@ -38,17 +38,15 @@ index=host sourcetype="l2t:winevtx"
       <choice value="*">All Users</choice>
       <default>*</default>
       <initialValue>*</initialValue>
-      <fieldForLabel>new_logon_account_name</fieldForLabel>
-      <fieldForValue>new_logon_account_name</fieldForValue>
+      <fieldForLabel>full_username</fieldForLabel>
+      <fieldForValue>full_username</fieldForValue>
       <search>
-        <query>
-          <![CDATA[
-index=host sourcetype="l2t:winevtx" 
-| search event_id=4624 new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON" new_logon_account_name!="LOCAL SERVICE" new_logon_account_name!="NETWORK SERVICE"
-| stats count by new_logon_account_name
-| sort new_logon_account_name
-        ]]>
-        </query>
+        <query>index=host sourcetype="l2t:winevtx" 
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| stats count by full_username
+| sort full_username</query>
       </search>
     </input>
     <input type="dropdown" token="logonTypeFilter">
@@ -110,19 +108,20 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
       <title>Unique Users</title>
       <single>
         <search>
-          <query>
-            <![CDATA[
-index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
-| stats dc(new_logon_account_name)
-          ]]>
-          </query>
+          <query>index=host sourcetype="l2t:winevtx"
+| search event_id=4624 computer_name=$hostFilter$ logon_type=$logonTypeFilter$ subject_account_name!="-" subject_account_name!="SYSTEM" subject_account_name!="ANONYMOUS LOGON"
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| search full_username=$userFilter$
+| stats dc(subject_account_name)</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
-        <option name="drilldown">none</option>
         <option name="colorBy">value</option>
         <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
         <option name="underLabel">Distinct Users</option>
       </single>
     </panel>
@@ -135,7 +134,7 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$
 | stats count
           ]]>
           </query>
@@ -177,7 +176,7 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ source_network_address!="-" source_network_address!="127.0.0.1"
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$ source_network_address!="-" source_network_address!="127.0.0.1"
 | stats count
           ]]>
           </query>
@@ -190,8 +189,6 @@ index=host sourcetype="l2t:winevtx"
         <option name="underLabel">From Remote IPs</option>
       </single>
     </panel>
-  </row>
-  <row>
     <panel>
       <title>Logon Type Analysis</title>
       <chart>
@@ -225,35 +222,76 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
         <option name="refresh.display">progressbar</option>
       </chart>
     </panel>
-    <panel>
-      <title>Authentication Packages</title>
-      <chart>
-        <search>
-          <query>
-            <![CDATA[
-index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| search computer_name=$hostFilter$ event_id=4624 authentication_package!="-"
-| stats count by authentication_package
-| sort -count
-          ]]>
-          </query>
-          <earliest>$timetoken.earliest$</earliest>
-          <latest>$timetoken.latest$</latest>
-        </search>
-        <option name="charting.chart">pie</option>
-        <option name="charting.drilldown">none</option>
-        <option name="charting.legend.placement">bottom</option>
-        <option name="refresh.display">progressbar</option>
-      </chart>
-    </panel>
   </row>
   <row>
     <panel>
       <title>Logon Activity Timeline</title>
+      <input type="dropdown" token="hostFilter">
+        <label>Host Filter</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>computer_name</fieldForLabel>
+        <fieldForValue>computer_name</fieldForValue>
+        <search>
+          <query>
+          <![CDATA[
+index=host sourcetype="l2t:winevtx" 
+| stats count by computer_name
+| sort computer_name
+        ]]>
+        </query>
+        </search>
+      </input>
+      <input type="dropdown" token="userFilter">
+        <label>User Filter</label>
+        <choice value="*">All Users</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>full_username</fieldForLabel>
+        <fieldForValue>full_username</fieldForValue>
+        <search>
+          <query>index=host sourcetype="l2t:winevtx" 
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| stats count by full_username
+| sort full_username</query>
+        </search>
+      </input>
+      <input type="dropdown" token="logonTypeFilter">
+        <label>Logon Type Filter</label>
+        <choice value="*">All Types</choice>
+        <choice value="2">Interactive (2)</choice>
+        <choice value="3">Network (3)</choice>
+        <choice value="4">Batch (4)</choice>
+        <choice value="5">Service (5)</choice>
+        <choice value="7">Unlock (7)</choice>
+        <choice value="8">Network Cleartext (8)</choice>
+        <choice value="9">New Credentials (9)</choice>
+        <choice value="10">Remote Interactive/RDP (10)</choice>
+        <choice value="11">Cached Interactive (11)</choice>
+        <default>*</default>
+      </input>
+      <input type="dropdown" token="eventTypeFilter">
+        <label>Event Type Focus</label>
+        <choice value="*">All Events</choice>
+        <choice value="4624 OR 4625 OR 4634 OR 4647">Logon/Logoff Events</choice>
+        <choice value="4624">Successful Logons (4624)</choice>
+        <choice value="4625">Failed Logons (4625)</choice>
+        <choice value="4634 OR 4647">Logoff Events</choice>
+        <choice value="4648">Explicit Credential Use</choice>
+        <choice value="4720 OR 4722 OR 4724 OR 4726">Account Management</choice>
+        <choice value="4732 OR 4733 OR 4756 OR 4757">Group Management</choice>
+        <default>4624 OR 4625 OR 4634 OR 4647</default>
+      </input>
       <chart>
         <search>
-          <query>index=host sourcetype="l2t:winevtx" message=$stringtoken$
-| search computer_name=$hostFilter$ (event_id=4624 OR event_id=4625)
+          <query>index=host sourcetype="l2t:winevtx" computer_name=$hostFilter$ logon_type=$logonTypeFilter$ event_id=$eventTypeFilter$
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| search full_username=$userFilter$
 | eval event_type=case(
     event_id=="4624" AND logon_type=="2", "Interactive",
     event_id=="4624" AND logon_type=="3", "Network",
@@ -283,33 +321,32 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
       <title>Detailed Logon Events (Filtered Results)</title>
       <table>
         <search>
-          <query>
-            <![CDATA[
-index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
+          <query>index=host sourcetype="l2t:winevtx"
+| search event_id=4624 computer_name=* (subject_account_name=* OR new_account_name=*) logon_type=*
 | eval logon_description=case(
-    logon_type=="2", "Interactive",
-    logon_type=="3", "Network", 
-    logon_type=="4", "Batch",
-    logon_type=="5", "Service",
-    logon_type=="7", "Unlock",
-    logon_type=="8", "Network Cleartext",
-    logon_type=="9", "New Credentials",
-    logon_type=="10", "Remote Interactive",
-    logon_type=="11", "Cached Interactive",
+    logon_type=="2", "2-Interactive",
+    logon_type=="3", "3-Network", 
+    logon_type=="4", "4-Batch",
+    logon_type=="5", "5-Service",
+    logon_type=="7", "7-Unlock",
+    logon_type=="8", "8-Network Cleartext",
+    logon_type=="9", "9-New Credentials",
+    logon_type=="10", "10-Remote Interactive",
+    logon_type=="11", "11-Cached Interactive",
     true(), "Other (" + logon_type + ")"
 )
-| eval full_username=if(new_logon_account_domain!="-", new_logon_account_domain + "\\" + new_logon_account_name, new_logon_account_name)
-| table datetime, computer_name, full_username, logon_description, source_network_address, workstation_name, authentication_package, process_name
-| sort -datetime
-          ]]>
-          </query>
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| table datetime, computer_name, full_username, logon_description, source_network_address, auth_package, process_name
+| sort -datetime</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
         <option name="count">10</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="wrap">true</option>
         <drilldown>
@@ -354,15 +391,14 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
       <title>Logon Activity by User</title>
       <chart>
         <search>
-          <query>
-            <![CDATA[
-index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON" new_logon_account_name!="LOCAL SERVICE" new_logon_account_name!="NETWORK SERVICE"
-| stats count by new_logon_account_name
+          <query>index=host sourcetype="l2t:winevtx"
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$ subject_account_name!="-" subject_account_name!="SYSTEM" subject_account_name!="ANONYMOUS LOGON" subject_account_name!="LOCAL SERVICE" subject_account_name!="NETWORK SERVICE"
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
+| stats count by full_username
 | sort -count
-| head 20
-          ]]>
-          </query>
+| head 20</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
@@ -385,7 +421,7 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$
 | stats count by computer_name
 | sort -count
 | head 20
@@ -436,11 +472,11 @@ index=host sourcetype="l2t:winevtx" message=$stringtoken$
       <title>User-Host Activity Matrix</title>
       <table>
         <search>
-          <query>
-            <![CDATA[
-index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
-| eval full_username=if(new_logon_account_domain!="-", new_logon_account_domain + "\\" + new_logon_account_name, new_logon_account_name)
+          <query>index=host sourcetype="l2t:winevtx"
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$ subject_account_name!="-" subject_account_name!="SYSTEM" subject_account_name!="ANONYMOUS LOGON"
+| eval logon_account_name=if(isnull(logon_account_name), "-", logon_account_name)
+| eval logon_account_domain=if(isnull(logon_account_domain), "-", logon_account_domain)
+| eval full_username=if(logon_account_name="-", subject_account_name + "\\" + subject_account_domain, logon_account_name + "\\" + logon_account_domain)
 | eval logon_description=case(
     logon_type=="2", "Interactive",
     logon_type=="3", "Network", 
@@ -456,15 +492,14 @@ index=host sourcetype="l2t:winevtx"
         by full_username, computer_name
 | eval first_logon=strftime(first_logon, "%Y-%m-%d %H:%M:%S")
 | eval last_logon=strftime(last_logon, "%Y-%m-%d %H:%M:%S")
-| sort -count
-          ]]>
-          </query>
+| sort -count</query>
           <earliest>$timetoken.earliest$</earliest>
           <latest>$timetoken.latest$</latest>
         </search>
         <option name="count">10</option>
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="wrap">true</option>
         <format type="color" field="count">
@@ -490,8 +525,8 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
-| stats count by computer_name, new_logon_account_name
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$ subject_account_name!="-" subject_account_name!="SYSTEM" subject_account_name!="ANONYMOUS LOGON"
+| stats count by computer_name, subject_account_name
 | eventstats sum(count) as host_total by computer_name
 | eval percentage=round((count/host_total)*100, 1)
 | sort computer_name, -count
@@ -514,8 +549,8 @@ index=host sourcetype="l2t:winevtx"
           <condition field="computer_name">
             <set token="hostFilter">$row.computer_name$</set>
           </condition>
-          <condition field="new_logon_account_name">
-            <set token="userFilter">$row.new_logon_account_name$</set>
+          <condition field="subject_account_name">
+            <set token="userFilter">$row.subject_account_name$</set>
           </condition>
         </drilldown>
       </table>
@@ -527,11 +562,11 @@ index=host sourcetype="l2t:winevtx"
           <query>
             <![CDATA[
 index=host sourcetype="l2t:winevtx"
-| search event_id=4624 computer_name=$hostFilter$ new_logon_account_name=$userFilter$ logon_type=$logonTypeFilter$ new_logon_account_name!="-" new_logon_account_name!="SYSTEM" new_logon_account_name!="ANONYMOUS LOGON"
-| stats count by new_logon_account_name, computer_name
-| eventstats sum(count) as user_total by new_logon_account_name
+| search event_id=4624 computer_name=$hostFilter$ (subject_account_name=$userFilter$ OR new_account_name=$userFilter$) logon_type=$logonTypeFilter$ subject_account_name!="-" subject_account_name!="SYSTEM" subject_account_name!="ANONYMOUS LOGON"
+| stats count by subject_account_name, computer_name
+| eventstats sum(count) as user_total by subject_account_name
 | eval percentage=round((count/user_total)*100, 1)
-| sort new_logon_account_name, -count
+| sort subject_account_name, -count
 | head 50
           ]]>
           </query>
@@ -548,8 +583,8 @@ index=host sourcetype="l2t:winevtx"
           <scale type="minMidMax" midType="percent" midValue="50"></scale>
         </format>
         <drilldown>
-          <condition field="new_logon_account_name">
-            <set token="userFilter">$row.new_logon_account_name$</set>
+          <condition field="subject_account_name">
+            <set token="userFilter">$row.subject_account_name$</set>
           </condition>
           <condition field="computer_name">
             <set token="hostFilter">$row.computer_name$</set>
