@@ -1,6 +1,0 @@
-file_extension, module, artefact
-.pf, PECmd, Prefetch
-.lnk , LECmd, Link Files
- .evtx, EvtxECmd, WinEVTX
-.automaticDestinations-ms, FileFolderAccess
-.customDestinations-ms, customDestinations-ms, FileFolderAccess

@@ -1,9 +1,0 @@
-#   Version 9.4.1
-
-[pubsub-server:deploymentServer]
-disabled=false
-targetUri=somehost:8089
-
-[pubsub-server:internalbroker]
-disabled=false
-targetUri=direct
