@@ -1,0 +1,9 @@
+name: is_nirsoft_software
+date: 2024-12-23
+version: 2
+id: 28966a08-55e4-4ccb-a20d-dc4cc154b09c
+author: Splunk Threat Research Team
+lookup_type: csv
+description: A subset of utilities provided by NirSoft that may be used by adversaries.
+min_matches: 1
+case_sensitive_match: false

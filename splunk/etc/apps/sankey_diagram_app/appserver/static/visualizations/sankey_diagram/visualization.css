@@ -1,0 +1,255 @@
+/*
+ * CSS rules for Sankey viz.
+ */
+
+.splunk-sankey div {
+    color: #555;
+    font-family: 'Lucida Grande', 'Lucida Sans Unicode', Arial, Helvetica;
+    font-size: 12px;
+}
+
+div.splunk-sankey div {
+    float: left;
+}
+
+/* === Nodes === */
+
+.splunk-sankey .node rect {
+    cursor: -webkit-ns-resize;
+    cursor: ns-resize;
+    fill-opacity: 0.7;
+    shape-rendering: crispEdges;
+}
+
+.splunk-sankey .node text {
+    cursor: default;
+}
+
+.splunk-sankey .node.mute rect,
+.splunk-sankey .node.mute text {
+    fill-opacity: 0.1;
+}
+
+.splunk-sankey .node rect:hover,
+.node.highlight rect,
+.splunk-sankey .node text:hover,
+.node.highlight text {
+    fill-opacity: 1;
+}
+
+/* === Links === */
+
+.splunk-sankey .link {
+    fill: none;
+    stroke-opacity: 0.5;
+}
+
+.splunk-sankey .link:hover,
+.link.highlight {
+    stroke-opacity: 0.8;
+}
+
+.splunk-sankey .link.mute {
+    stroke-opacity: 0.1;
+}
+
+.splunk-sankey .link.backwards {
+    stroke-dasharray: 3, 3; /* 9,1 */
+}
+
+.splunk-sankey .link.hide {
+    stroke-opacity: 0;
+    pointer-events: none;
+}
+
+.splunk-sankey .link.link-drilldown {
+    cursor: pointer;
+}
+
+/* === Tooltip === */
+
+.splunk-sankey .tooltip {
+    font-family: 'Lucida Grande', 'Lucida Sans Unicode', Arial, Helvetica;
+    position: absolute;
+    text-align: center;
+    background: #000000;
+    color: #ffffff;
+    z-index: 100;
+    width: 270px;
+    padding: 10px;
+    border: 0px;
+    border-radius: 2px;
+    pointer-events: none;
+    opacity: 1;
+    word-wrap: break-word;
+}
+
+.splunk-sankey .tooltipDouble {
+    width: 340px;
+}
+
+.splunk-sankey .tooltip h4 {
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.splunk-sankey .tooltip table.measures {
+    margin-top: 4px;
+}
+
+.splunk-sankey .tooltip table.padded {
+    margin-top: 8px;
+}
+
+.splunk-sankey .tooltip td.labelTxt {
+    margin-bottom: 2px;
+    padding-left: 5px;
+    padding-bottom: 2px;
+    min-width: 45px;
+    max-width: 45px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.splunk-sankey .tooltip td.header {
+    font-weight: 300;
+    margin-bottom: 2px;
+    padding-right: 5px;
+    padding-bottom: 2px;
+    min-width: 215px;
+    max-width: 215px;
+    text-align: right;
+}
+
+.splunk-sankey .tooltip td.header2 {
+    min-width: 65px;
+    max-width: 65px;
+}
+
+.splunk-sankey .tooltip td.nodeName {
+    font-weight: 300;
+    margin-bottom: 2px;
+    padding-right: 5px;
+    padding-bottom: 2px;
+    min-width: 215px;
+    max-width: 215px;
+    text-align: right;
+}
+
+.splunk-sankey .tooltip td.title {
+    margin-bottom: 2px;
+    padding-left: 5px;
+    padding-bottom: 2px;
+    min-width: 215px;
+    max-width: 215px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.splunk-sankey .tooltip td.value {
+    font-weight: 300;
+    margin-bottom: 2px;
+    padding-right: 5px;
+    padding-bottom: 2px;
+    min-width: 45px;
+    max-width: 45px;
+    text-align: right;
+}
+
+.splunk-sankey .tooltip td.value2 {
+    min-width: 65px;
+    max-width: 65px;
+}
+
+.splunk-sankey .tooltip-top-left:before {
+    content: '';
+    position: absolute;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid black;
+    left: -8px;
+    top: 7px;
+}
+
+.splunk-sankey .tooltip-top-right:before {
+    content: '';
+    position: absolute;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-left: 8px solid black;
+    right: -8px;
+    top: 7px;
+}
+
+.splunk-sankey .tooltip-bottom-left:before {
+    content: '';
+    position: absolute;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid black;
+    left: -8px;
+    bottom: 7px;
+}
+
+.splunk-sankey .tooltip-bottom-right:before {
+    content: '';
+    position: absolute;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-left: 8px solid black;
+    right: -8px;
+    bottom: 7px;
+}
+
+/* === Legend === */
+
+.splunk-sankey .legend {
+    float: right;
+}
+
+.splunk-sankey .legend ul {
+    margin: 10px 0px;
+    list-style-type: none;
+    width: 120px;
+}
+
+.splunk-sankey li.key {
+    color: #000;
+    border-left-width: 12px;
+    border-left-style: solid;
+    font-size: 9px;
+    line-height: 10px;
+    width: 105px;
+    padding-left: 2px;
+    opacity: 0.85;
+    margin-bottom: 5px;
+}
+
+.splunk-sankey li.key span {
+    height: 25px;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.splunk-sankey .legend ul text {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+/* Dark Theme */
+
+.splunk-sankey.dark .legend ul text {
+    color: #e1e6eb;
+}
+
+.splunk-sankey.dark .node text {
+    fill: #e1e6eb;
+}
+
+.splunk-sankey.dark li.key {
+    color: #ffffff;
+}

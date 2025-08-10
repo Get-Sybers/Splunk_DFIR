@@ -1,0 +1,13 @@
+# a list of simple known good baselines to make
+- usersnames, domain
+- process, execution path
+- powershell, users
+- ip/url, process
+- user, domain priv
+- user, rdp user
+- user, ssh user
+- user, pss remote
+- process, handles
+- process, signature
+- autoruns, approved
+- users, baselined?

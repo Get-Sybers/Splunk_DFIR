@@ -1,0 +1,161 @@
+<form version="1.1" theme="dark">
+  <label>DOC - Create and Modify BSL Lookup</label>
+  <description>Complete guide for creating, modifying, and purging Splunk lookup tables</description>
+  
+  <row>
+    <panel>
+      <html>
+        <h1>Splunk Lookup Management Guide</h1>
+        <p>This dashboard provides comprehensive methods for managing Splunk lookup tables - creation, modification, and purging operations.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <html>
+        <h2>Overview</h2>
+        <p>Lookup tables are essential for enriching data and establishing baselines. This guide covers all aspects of lookup management from initial creation to maintenance and cleanup.</p>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>📋 Creating Lookup Tables</title>
+      <html>
+        <h3>Method 1: Create from Search Results</h3>
+        <pre><code>index=your_index sourcetype=your_sourcetype
+| stats count by process_name, process_port
+| eval baselined="true"
+| outputlookup baseline_processes.csv</code></pre>
+        </ul>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>✏️ Modifying Lookup Tables</title>
+      <html>
+        <h3>Method 1: Add New Entries</h3>
+        <pre><code># Load existing lookup, add new entries, save back
+| inputlookup baseline_processes.csv
+| append [
+    | makeresults 
+    | eval process_name="notepad.exe", process_port="0", baselined="true"
+  ]
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 2: Update Existing Entries</h3>
+        <pre><code># Update specific entries based on conditions
+| inputlookup baseline_processes.csv
+| eval baselined=if(process_name="old_process.exe", "false", baselined)
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 3: Bulk Updates from Search Results</h3>
+        <pre><code># Merge new data with existing lookup
+| inputlookup baseline_processes.csv
+| append [
+    search index=new_data sourcetype=processes
+    | stats count by process_name, process_port
+    | eval baselined="true"
+  ]
+| stats first(baselined) as baselined by process_name, process_port
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 4: Conditional Updates</h3>
+        <pre><code># Update only if conditions are met
+| inputlookup baseline_processes.csv
+| eval last_updated=if(process_name="target_process", now(), last_updated)
+| eval baselined=if(process_name="target_process", "updated", baselined)
+| outputlookup baseline_processes.csv</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>🗑️ Purging and Cleanup Operations</title>
+      <html>
+        <h3>Method 1: Remove Specific Entries</h3>
+        <pre><code># Remove entries matching criteria
+| inputlookup baseline_processes.csv
+| where NOT (process_name="unwanted_process.exe" AND process_port="80")
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 2: Purge Based on Age</h3>
+        <pre><code># Remove entries older than 30 days
+| inputlookup baseline_processes.csv
+| where isnull(last_updated) OR last_updated > (now() - (30*24*60*60))
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 3: Clean Invalid Entries</h3>
+        <pre><code># Remove entries with null or invalid data
+| inputlookup baseline_processes.csv
+| where isnotnull(process_name) AND process_name!="" AND isnotnull(process_port)
+| outputlookup baseline_processes.csv</code></pre>
+        
+        <h3>Method 4: Complete Purge and Rebuild</h3>
+        <pre><code># Completely rebuild lookup from current data
+index=current_data sourcetype=processes earliest=-7d@d
+| stats count by process_name, process_port
+| where count > 10
+| eval baselined="true", created_date=now()
+| outputlookup baseline_processes.csv</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>🔧 Lookup Management</title>
+      <html>
+        <h3>Backup Before Modifications</h3>
+        <pre><code># Always backup before major changes
+| inputlookup baseline_processes.csv
+| eval backup_timestamp=now()
+| outputlookup baseline_processes_backup.csv</code></pre>
+        
+        <h3>Merge Multiple Lookups</h3>
+        <pre><code># Combine multiple lookup tables
+| inputlookup baseline_processes.csv
+| append [| inputlookup additional_processes.csv]
+| stats first(baselined) as baselined, first(created_date) as created_date by process_name, process_port
+| outputlookup merged_baseline.csv</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <title>⚡ Performance Optimization</title>
+      <html>
+        <h3>Optimize Lookup Performance</h3>
+        <ul>
+          <li>Keep lookup tables under 10MB when possible</li>
+          <li>Use appropriate field types</li>
+          <li>Index frequently used lookup fields</li>
+          <li>Regular cleanup of unused entries</li>
+          <li>Use KV store for large, frequently updated lookups</li>
+        </ul>
+        
+        <h3>Best Practices</h3>
+        <ul>
+          <li>Always backup before modifications</li>
+          <li>Test changes in a development environment first</li>
+          <li>Document lookup table purposes and maintenance schedules</li>
+          <li>Monitor lookup performance impact</li>
+          <li>Implement automated validation checks</li>
+        </ul>
+        
+        <h3>Troubleshooting</h3>
+        <pre><code># Check if lookup is working
+| makeresults | eval process_name="test_process"
+| lookup baseline_processes.csv process_name OUTPUT baselined
+| table process_name, baselined</code></pre>
+      </html>
+    </panel>
+  </row>
+  
+</form>

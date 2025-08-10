@@ -1,0 +1,71 @@
+<dashboard version="1.1">
+  <label>Sankey Diagram Gallery</label>
+  <row>
+    <panel>
+      <title>Categorical Colors</title>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <search>
+          <query>|inputlookup webstore_requests.csv  | rex field=referer "https?://.*(?&lt;referer_path&gt;/.*)\?.*"  | stats count, avg(bytes) by referer_path uri_path</query>
+          <earliest></earliest>
+          <latest></latest>
+        </search>
+        <option name="sankey_diagram_app.sankey_diagram.colorMode">categorical</option>
+        <option name="sankey_diagram_app.sankey_diagram.maxColor">#3fc77a</option>
+        <option name="sankey_diagram_app.sankey_diagram.minColor">#d93f3c</option>
+        <option name="sankey_diagram_app.sankey_diagram.numOfBins">6</option>
+        <option name="sankey_diagram_app.sankey_diagram.showBackwards">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLabels">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLegend">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showSelf">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.showTooltip">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.styleBackwards">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.useColors">1</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Sequential Colors</title>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <title>Color here indicates average bytes transferred between two requested pages.</title>
+        <search>
+          <query>|inputlookup webstore_requests.csv  | rex field=referer "https?://.*(?&lt;referer_path&gt;/.*)\?.*"  | stats count, avg(bytes) by referer_path uri_path</query>
+        </search>
+        <option name="sankey_diagram_app.sankey_diagram.colorMode">sequential</option>
+        <option name="sankey_diagram_app.sankey_diagram.maxColor">#65a637</option>
+        <option name="sankey_diagram_app.sankey_diagram.minColor">#f7bc38</option>
+        <option name="sankey_diagram_app.sankey_diagram.numOfBins">6</option>
+        <option name="sankey_diagram_app.sankey_diagram.showBackwards">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLabels">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLegend">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showSelf">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.showTooltip">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.styleBackwards">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.useColors">1</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>With Backwards Links Enabled</title>
+      <viz type="sankey_diagram_app.sankey_diagram">
+        <title>Includes links that go back to previous steps</title>
+        <search>
+          <query>|inputlookup webstore_requests.csv  | rex field=referer "https?://.*(?&lt;referer_path&gt;/.*)\?.*"  | stats count, avg(bytes) by referer_path uri_path  | where count &gt; 10</query>
+          <earliest>0</earliest>
+        </search>
+        <option name="sankey_diagram_app.sankey_diagram.colorMode">categorical</option>
+        <option name="sankey_diagram_app.sankey_diagram.maxColor">#3fc77a</option>
+        <option name="sankey_diagram_app.sankey_diagram.minColor">#d93f3c</option>
+        <option name="sankey_diagram_app.sankey_diagram.numOfBins">6</option>
+        <option name="sankey_diagram_app.sankey_diagram.showBackwards">true</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLabels">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showLegend">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.showSelf">false</option>
+        <option name="sankey_diagram_app.sankey_diagram.showTooltip">1</option>
+        <option name="sankey_diagram_app.sankey_diagram.styleBackwards">0</option>
+        <option name="sankey_diagram_app.sankey_diagram.useColors">1</option>
+      </viz>
+    </panel>
+  </row>
+</dashboard>

@@ -1,0 +1,40 @@
+---
+- name: GET OptInVersion
+  splunk_api:
+    method: GET
+    url: "/servicesNS/nobody/splunk_instrumentation/admin/telemetry/general?output_mode=json"
+    cert_prefix: "{{ cert_prefix }}"
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    status_code: [200]
+    timeout: 10
+    return_content: yes
+  register: telemetry
+  no_log: "{{ hide_password }}"
+
+- name: Disable Popups
+  splunk_api:
+    method: POST
+    url: "{{ item.url }}"
+    cert_prefix: "{{ cert_prefix }}"
+    username: "{{ splunk.admin_user }}"
+    password: "{{ splunk.password }}"
+    svc_port: "{{ splunk.svc_port }}"
+    body: "{{ item.body }}"
+    body_format: "form-urlencoded"
+    status_code: 200,201,409
+  with_items:
+    - url: "/servicesNS/admin/user-prefs/data/user-prefs/general"
+      body:
+        hideInstrumentationOptInModal: 1
+        notification_python_3_impact: false
+        showWhatsNew: 0
+    - url: "/servicesNS/nobody/splunk_instrumentation/admin/telemetry/general"
+      body:
+        showOptInModal: 0
+        optInVersionAcknowledged: "{{ telemetry['json']['entry'][0]['content']['optInVersion'] }}"
+    - url: "/servicesNS/admin/search/data/ui/ui-tour/search-tour"
+      body:
+        tourPage: search
+        viewed: 1

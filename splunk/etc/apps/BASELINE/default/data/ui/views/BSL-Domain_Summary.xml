@@ -1,0 +1,126 @@
+<form version="1.1" theme="dark">
+  <label>BSL - Domain Summary</label>
+  <search id="format_time">
+    <query>| makeresults | eval formatted_time=strftime($timetoken.earliest$, "%B %d, %Y at %I:%M %p")</query>
+    <done>
+      <set token="formatted_earliest">$result.formatted_time$</set>
+    </done>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="text" token="FQDNtoken">
+      <label>FQDN Filter</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="ipv4token">
+      <label>IPv4 Address Filter</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="ipv6token">
+      <label>IPv6 Address Filter</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row depends="$hide_time_panel$">
+    <panel></panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+        <title>Analysis - Active FQDNs Since $formatted_earliest$</title>
+        <search>
+          <query>index=network sourcetype="zeek:dns" NOT query IN ("*default-first-site-name*", "_ldap*", "*-addr.arpa") answers!="-" AA=T
+| rename query AS FQDN
+| search FQDN="$FQDNtoken$"
+| stats dc(FQDN) as current_count</query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Total Baseline FQDN-IP Pairs</title>
+        <search>
+          <query>| inputlookup BSL_FQDN_IP.csv 
+| search FQDN="$FQDNtoken$" ip_address="$ipv4token$"
+| stats count as total_pairs</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="useColors">0</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Unique FQDNs in Baseline</title>
+        <search>
+          <query>| inputlookup BSL_FQDN_IP.csv 
+| search FQDN="$FQDNtoken$" ip_address="$ipv4token$"
+| stats dc(FQDN) as unique_fqdns</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="useColors">0</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Total Observations</title>
+        <search>
+          <query>| inputlookup BSL_FQDN_IP.csv 
+| search FQDN="$FQDNtoken$" ip_address="$ipv4token$"
+| stats sum(count) as total_observations</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="useColors">0</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Baseline FQDN - IP Address Mapping (Updated every 24hrs)</title>
+        <search>
+          <query>| inputlookup BSL_FQDN_IP.csv
+| search FQDN="$FQDNtoken$" ip_address="$ipv4token$"
+| table FQDN, ip_address, hostname, domain, first_seen, last_seen
+| sort -count, FQDN</query>
+          <earliest>$earliest$</earliest>
+          <latest>$latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

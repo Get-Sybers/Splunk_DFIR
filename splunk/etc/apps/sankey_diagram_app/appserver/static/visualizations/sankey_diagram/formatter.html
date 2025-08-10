@@ -1,0 +1,76 @@
+<form class="splunk-formatter-section" section-label="General">
+    <splunk-control-group label="Show labels">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showLabels" value="true">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Show tooltips">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showTooltip" value="true">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Color">
+    <splunk-control-group label="Use colors">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.useColors" value="true">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Color mode">
+        <splunk-select name="{{VIZ_NAMESPACE}}.colorMode" value="categorical">
+            <option value="categorical">Categorical</option>
+            <option value="sequential">Sequential</option>
+        </splunk-select>
+    </splunk-control-group>
+    <div>
+        <span style="display: block; margin: 15px 0px 15px 20px; font-size: 85%; color: #999;">
+            Sequential mode settings
+        </span>
+    </div>
+    <splunk-control-group label="Show legend">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showLegend" value="true">
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Min color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.minColor" value="#d93f3c"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Max color">
+        <splunk-color-picker name="{{VIZ_NAMESPACE}}.maxColor" value="#3fc77a"></splunk-color-picker>
+    </splunk-control-group>
+    <splunk-control-group label="Number of bins">
+        <splunk-select name="{{VIZ_NAMESPACE}}.numOfBins" value="6">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+        </splunk-select>
+    </splunk-control-group>
+</form>
+<form class="splunk-formatter-section" section-label="Links">
+    <splunk-control-group label="Self-referential links">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showSelf" value="false">
+            <option value="true">Show</option>
+            <option value="false">Hide</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Backwards links">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.showBackwards" value="false">
+            <option value="true">Show</option>
+            <option value="false">Hide</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+    <splunk-control-group label="Backwards link style">
+        <splunk-radio-input name="{{VIZ_NAMESPACE}}.styleBackwards" value="false">
+            <option value="false">Solid</option>
+            <option value="true">Dashed</option>
+        </splunk-radio-input>
+    </splunk-control-group>
+</form>

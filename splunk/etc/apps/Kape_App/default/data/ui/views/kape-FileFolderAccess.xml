@@ -1,0 +1,135 @@
+<form version="1.1" theme="dark">
+  <label>KAPE File Folder Access</label>
+  <description>Analysis of Windows File Folder Access captured by KAPE</description>
+  <!-- Summary Stats Panel -->
+  <!-- Visualization Row -->
+  <!-- Main Results Table -->
+  <!-- Additional Analysis -->
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken" searchWhenChanged="true">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="hosttoken" searchWhenChanged="true">
+      <label>Host</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>host</fieldForLabel>
+      <fieldForValue>host</fieldForValue>
+      <search>
+        <query>index=host sourcetype=kape*
+| stats count by host
+| sort host</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+    </input>
+    <input type="dropdown" token="kapesourceshorttoken" searchWhenChanged="true">
+      <label>Kape Source</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>kape_source_short</fieldForLabel>
+      <fieldForValue>kape_source_short</fieldForValue>
+      <search>
+        <query>index=host sourcetype=kape:*FileFolderAccess
+| stats count by kape_source_short
+| sort kape_source_short</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Total Events</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[index=host host=$hosttoken$ sourcetype=kape:*FileFolderAccess kape_source_short=$kapesourceshorttoken$   
+| stats count as "Total Events"]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Total Events</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Unique Users</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[index=host host=$hosttoken$ sourcetype=kape:*FileFolderAccess kape_source_short=$kapesourceshorttoken$  
+| stats dc(UserName) as "Unique Users"]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Users Associated with Events</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Unique kape_source_shorts</title>
+      <single>
+        <search>
+          <query>
+            <![CDATA[index=host host=$hosttoken$ sourcetype=kape:*FileFolderAccess kape_source_short=$kapesourceshorttoken$  
+| stats dc(kape_source_short) as "Unique kape_source_shorts"]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="underLabel">Kape Sources</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Events Over Time</title>
+      <chart>
+        <search>
+          <query>
+            <![CDATA[
+index=host host=$hosttoken$ sourcetype=kape:*FileFolderAccess kape_source_short=$kapesourceshorttoken$  
+| timechart span=1h count by host
+            ]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Top Hosts</title>
+      <chart>
+        <search>
+          <query>
+            <![CDATA[index=host host=$hosttoken$ sourcetype=kape:*FileFolderAccess kape_source_short=$kapesourceshorttoken$  
+| stats count by host
+| sort -count
+| head 10]]>
+          </query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">bottom</option>
+      </chart>
+    </panel>
+  </row>
+</form>
