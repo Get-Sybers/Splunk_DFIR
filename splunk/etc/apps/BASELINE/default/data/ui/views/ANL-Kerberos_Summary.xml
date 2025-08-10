@@ -1,0 +1,309 @@
+<form version="1.1" theme="dark">
+  <label>ANL - Kerberos Summary</label>
+  <!-- First Row - Overview Metrics -->
+  <!-- Second Row - Timeline and Failed Auths -->
+  <!-- Third Row - Request Types and Error Analysis -->
+  <!-- Fourth Row - Services and Source Analysis -->
+  <!-- Fifth Row - Security Analysis -->
+  <!-- Sixth Row - Time Analysis -->
+  <fieldset submitButton="false">
+    <input type="time" token="time_token">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Analysis - Domain Accounts</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" client!="" client!="-"
+            | rex field=client "(?<account>[^/\\$]+)"
+            | stats dc(account) as unique_accounts
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Success Rate</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos"
+            | stats count(eval(success="T")) as successful, count as total
+            | eval success_rate=round((successful/total)*100,1)
+            | eval display_value=success_rate." %"
+            | table display_value
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Unique Services</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" service!="" service!="-"
+            | stats dc(service) as unique_services
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Source IPs</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos"
+            | stats dc(id_orig_h) as unique_sources
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Kerberos Auth's Last 24hrs per 10 min chunks, with trend line looking back since time picker</title>
+        <search>
+          <query>index=network sourcetype="zeek:kerberos"
+            | bucket _time span=10m
+            | stats count by _time
+            | sort _time</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Authentication Count</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Authentication Activity by Hour of Day</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos"
+            | eval hour=strftime(_time, "%H")
+            | stats count by hour
+            | sort hour
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.axisTitleX.text">Hour of Day</option>
+        <option name="charting.axisTitleY.text">Authentication Count</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Failed Kerberos Auths Since $time_token.earliest$</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" success="F" client!="" client!="-"
+            | rex field=client "(?<account>[^/\\$]+)"
+            | stats count by account
+            | sort -count
+            | head 10
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.chart.showPercent">true</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Request Types (AS vs TGS)</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" request_type!="" request_type!="-"
+            | stats count by request_type
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.chart.showPercent">true</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Top Error Messages</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" success="F" error_msg!="" error_msg!="-"
+            | stats count by error_msg
+            | sort -count
+            | head 10
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Top Requested Services</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" service!="" service!="-"
+            | stats count, dc(client) as unique_clients by service
+            | sort -count
+            | head 15
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <format type="number" field="count">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="unique_clients">
+          <option name="precision">0</option>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Top Source IPs</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos"
+            | stats count, dc(client) as unique_accounts by id_orig_h
+            | sort -count
+            | head 15
+            | rename id_orig_h as "Source IP", count as "Auth Count", unique_accounts as "Unique Accounts"
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <format type="number" field="Auth Count">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="Unique Accounts">
+          <option name="precision">0</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Encryption Ciphers Used</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" cipher!="" cipher!="-"
+            | stats count by cipher
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.chart.showPercent">true</option>
+      </chart>
+    </panel>
+    <panel>
+      <table>
+        <title>Accounts with Most Failed Auths</title>
+        <search>
+          <query>
+            <![CDATA[
+            index=network sourcetype="zeek:kerberos" client!="" client!="-"
+            | rex field=client "(?<account>[^/\\$]+)"
+            | stats 
+                count(eval(success="F")) as failed_auths,
+                count(eval(success="T")) as successful_auths,
+                count as total_auths
+                by account
+            | eval failure_rate=round((failed_auths/total_auths)*100,1)
+            | where failed_auths > 0
+            | sort -failed_auths
+            | head 10
+            ]]>
+          </query>
+          <earliest>$time_token.earliest$</earliest>
+          <latest>$time_token.latest$</latest>
+        </search>
+        <option name="drilldown">cell</option>
+        <format type="number" field="failed_auths">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="successful_auths">
+          <option name="precision">0</option>
+        </format>
+        <format type="number" field="failure_rate">
+          <option name="precision">1</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>

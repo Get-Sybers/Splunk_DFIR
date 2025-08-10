@@ -1,0 +1,8 @@
+<nav search_view="search" theme="dark">
+  <view name="search" />
+  <view name="analytics_workspace" />
+  <view name="datasets" />
+  <view name="reports" />
+  <view name="alerts" />
+  <view name="dashboards" default="true" />
+</nav>

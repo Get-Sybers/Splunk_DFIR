@@ -1,0 +1,572 @@
+<form version="1.1" theme="dark">
+  <label>L2T - Network Connection Forensics</label>
+  <description>Comprehensive network connection analysis from Windows registry artifacts for digital forensics</description>
+  
+  <fieldset submitButton="false">
+    <input type="time" token="timetoken">
+      <label>Time Range</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="hostFilter">
+      <label>Host Filter</label>
+      <choice value="*">All Hosts</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>hostname</fieldForLabel>
+      <fieldForValue>hostname</fieldForValue>
+      <search>
+        <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| stats count by hostname
+| sort hostname
+        ]]></query>
+      </search>
+    </input>
+    <input type="dropdown" token="connectionTypeFilter">
+      <label>Connection Type</label>
+      <choice value="*">All Types</choice>
+      <default>*</default>
+      <fieldForLabel>source_long</fieldForLabel>
+      <fieldForValue>source_long</fieldForValue>
+      <search>
+        <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| stats count by source_long
+| sort source_long
+        ]]></query>
+      </search>
+    </input>
+    <input type="dropdown" token="timestampFilter">
+      <label>Timestamp Type</label>
+      <choice value="*">All Timestamps</choice>
+      <default>*</default>
+      <fieldForLabel>timestamp_desc</fieldForLabel>
+      <fieldForValue>timestamp_desc</fieldForValue>
+      <search>
+        <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| stats count by timestamp_desc
+| sort timestamp_desc
+        ]]></query>
+      </search>
+    </input>
+    <input type="text" token="networkSearch">
+      <label>Network/Domain Search</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="contentSearch">
+      <label>Content Search</label>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+
+  <!-- Summary Statistics Row -->
+  <row>
+    <panel>
+      <title>Total Network Events</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| stats count
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Network Connections</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Unique Networks</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| rex field=message "SSID:\s*(?<ssid>[^\s]+)"
+| rex field=message "RemoteServer:\s*(?<remote_server>[^\s]+)"
+| eval network_identifier=coalesce(ssid, remote_server, "Unknown")
+| stats dc(network_identifier)
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Distinct Networks</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Active Hosts</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| stats dc(hostname)
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Connected Hosts</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Recent Connections</title>
+      <single>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| where _time > relative_time(now(), "-24h")
+| stats count
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="colorBy">value</option>
+        <option name="underLabel">Last 24 Hours</option>
+      </single>
+    </panel>
+  </row>
+
+  <!-- Network Activity Timeline Row -->
+  <row>
+    <panel>
+      <title>Network Connection Timeline</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| eval connection_category=case(
+    like(source_long, "*WiFi*") OR like(message, "*WiFi*"), "WiFi",
+    like(source_long, "*Wired*") OR like(message, "*Wired*"), "Wired",
+    like(source_long, "*Drive*") OR like(message, "*Drive*"), "Network Drive",
+    like(source_long, "*VPN*") OR like(message, "*VPN*"), "VPN",
+    like(message, "*SSID*"), "Wireless",
+    like(message, "*RemoteServer*"), "File Share",
+    true(), "Other"
+)
+| timechart span=1h count by connection_category
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleY.text">Connection Count</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Connection Type Distribution</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| stats count by source_long
+| sort -count
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+
+  <!-- Network Infrastructure Analysis Row -->
+  <row>
+    <panel>
+      <title>Top Connected Networks</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| rex field=message "SSID:\s*(?<ssid>[^\s]+)"
+| rex field=message "Description:\s*(?<network_desc>[^\s]+)"
+| rex field=message "RemoteServer:\s*(?<remote_server>[^\s]+)"
+| eval network_name=coalesce(ssid, network_desc, remote_server, "Unknown")
+| where network_name!="Unknown" AND network_name!=""
+| stats count by network_name
+| sort -count
+| head 15
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.axisTitleX.text">Network Name</option>
+        <option name="charting.axisTitleY.text">Connection Count</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="networkSearch">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Host Connection Activity</title>
+      <chart>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| stats count by hostname
+| sort -count
+| head 10
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.axisTitleX.text">Hostname</option>
+        <option name="charting.axisTitleY.text">Connection Count</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <set token="hostFilter">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+
+  <!-- Security & Forensics Analysis Row -->
+  <row>
+    <panel>
+      <title>Suspicious Network Activity</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| rex field=message "SSID:\s*(?<ssid>[^\s]+)"
+| rex field=message "RemoteServer:\s*(?<remote_server>[^\s\n]+)"
+| rex field=message "DriveLetter:\s*(?<drive_letter>[^\s]+)"
+| rex field=message "Default Gateway Mac:\s*(?<gateway_mac>[^\s]+)"
+| eval risk_level=case(
+    like(message, "*open*") OR like(message, "*unsecured*"), "High",
+    match(ssid, "(?i).*(guest|public|free|temp).*"), "Medium",
+    match(remote_server, "(?i).*(temp|test|dev).*"), "Medium",
+    like(message, "*external*") OR like(message, "*internet*"), "Medium",
+    match(drive_letter, "[a-zA-Z]:") AND like(remote_server, "*external*"), "High",
+    like(timestamp_desc, "*night*") OR like(timestamp_desc, "*weekend*"), "Medium",
+    true(), "Low"
+)
+| eval network_identifier=coalesce(ssid, remote_server, "Unknown")
+| where risk_level!="Low"
+| stats count,
+        values(source_long) as connection_types,
+        values(drive_letter) as drive_letters,
+        values(gateway_mac) as gateway_macs,
+        earliest(_time) as first_seen,
+        latest(_time) as last_seen
+        by network_identifier, hostname, risk_level
+| eval first_seen=strftime(first_seen, "%Y-%m-%d %H:%M:%S")
+| eval last_seen=strftime(last_seen, "%Y-%m-%d %H:%M:%S")
+| sort risk_level
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="risk_level">
+          <colorPalette type="map">{"High":#DC4E41,"Medium":#F8BE34,"Low":#53A051}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="network_identifier">
+            <set token="networkSearch">$row.network_identifier$</set>
+          </condition>
+          <condition field="hostname">
+            <set token="hostFilter">$row.hostname$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+    <panel>
+      <title>Network Drive Mappings</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| search message="*DriveLetter*"
+| rex field=message "DriveLetter:\s*(?<drive_letter>[^\s]+)"
+| rex field=message "RemoteServer:\s*(?<remote_server>[^\s\n]+)"
+| rex field=message "RemotePath:\s*(?<remote_path>[^\s\n]*)"
+| where isnotnull(drive_letter)
+| eval server_risk=case(
+    match(remote_server, "(?i).*(external|internet|temp|test).*"), "High",
+    match(remote_server, "(?i).*(dev|staging).*"), "Medium",
+    like(remote_server, "*corp*") OR like(remote_server, "*domain*"), "Low",
+    true(), "Medium"
+)
+| stats count,
+        values(remote_path) as remote_paths,
+        values(timestamp_desc) as timestamp_types,
+        earliest(_time) as first_mapped,
+        latest(_time) as last_accessed
+        by drive_letter, remote_server, hostname, server_risk
+| eval first_mapped=strftime(first_mapped, "%Y-%m-%d %H:%M:%S")
+| eval last_accessed=strftime(last_accessed, "%Y-%m-%d %H:%M:%S")
+| sort server_risk, drive_letter
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="server_risk">
+          <colorPalette type="map">{"High":#DC4E41,"Medium":#F8BE34,"Low":#53A051}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="remote_server">
+            <set token="networkSearch">$row.remote_server$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+  <!-- WiFi and Wireless Analysis Row -->
+  <row>
+    <panel>
+      <title>WiFi Network Analysis</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| search (message="*SSID*" OR message="*WiFi*" OR message="*Wireless*")
+| rex field=message "SSID:\s*(?<ssid>[^\s]+)"
+| rex field=message "Description:\s*(?<network_desc>[^\s]+)"
+| rex field=message "Connection Type:\s*(?<connection_type>[^\n]+)"
+| rex field=message "Default Gateway Mac:\s*(?<gateway_mac>[^\s]+)"
+| rex field=message "DNS Suffix:\s*(?<dns_suffix>[^\s\n]+)"
+| where isnotnull(ssid)
+| eval security_assessment=case(
+    like(ssid, "*guest*") OR like(ssid, "*public*"), "Low Security",
+    like(ssid, "*corp*") OR like(ssid, "*domain*"), "Corporate",
+    like(connection_type, "*Wired*"), "Wired Connection",
+    like(connection_type, "*Wireless*"), "Wireless Connection",
+    true(), "Unknown"
+)
+| stats count,
+        values(connection_type) as connection_types,
+        values(gateway_mac) as gateway_macs,
+        values(dns_suffix) as dns_suffixes,
+        earliest(_time) as first_connection,
+        latest(_time) as last_connection
+        by ssid, network_desc, hostname, security_assessment
+| eval first_connection=strftime(first_connection, "%Y-%m-%d %H:%M:%S")
+| eval last_connection=strftime(last_connection, "%Y-%m-%d %H:%M:%S")
+| sort -count
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="security_assessment">
+          <colorPalette type="map">{"Low Security":#DC4E41,"Corporate":#53A051,"Wired Connection":#6DB7C6,"Wireless Connection":#F8BE34,"Unknown":#CCCCCC}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="ssid">
+            <set token="networkSearch">$row.ssid$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+  <!-- Connection Timeline and Patterns Row -->
+  <row>
+    <panel>
+      <title>Connection Patterns Heatmap</title>
+      <viz type="heatmap_app.heatmap">
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| eval hour=strftime(_time, "%H")
+| eval day=strftime(_time, "%A")
+| stats count by day, hour
+| eval day_order=case(
+    day=="Monday", 1,
+    day=="Tuesday", 2,
+    day=="Wednesday", 3,
+    day=="Thursday", 4,
+    day=="Friday", 5,
+    day=="Saturday", 6,
+    day=="Sunday", 7
+)
+| sort day_order, hour
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>MAC Address Analysis</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| rex field=message "Default Gateway Mac:\s*(?<gateway_mac>[0-9a-fA-F:]+)"
+| rex field=message "Mac:\s*(?<mac_address>[0-9a-fA-F:]+)"
+| eval mac_addr=coalesce(gateway_mac, mac_address)
+| where isnotnull(mac_addr) AND mac_addr!=""
+| rex field=mac_addr "^(?<oui>[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})"
+| eval vendor=case(
+    oui=="00:50:56", "VMware",
+    oui=="00:0C:29", "VMware",
+    oui=="08:00:27", "VirtualBox",
+    oui=="00:15:5D", "Microsoft Hyper-V",
+    oui=="00:1C:42", "Parallels",
+    true(), "Unknown/Physical"
+)
+| stats count,
+        values(hostname) as connected_hosts,
+        earliest(_time) as first_seen,
+        latest(_time) as last_seen
+        by mac_addr, vendor
+| eval first_seen=strftime(first_seen, "%Y-%m-%d %H:%M:%S")
+| eval last_seen=strftime(last_seen, "%Y-%m-%d %H:%M:%S")
+| sort -count
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="vendor">
+          <colorPalette type="map">{"VMware":#F8BE34,"VirtualBox":#F58F39,"Microsoft Hyper-V":#6DB7C6,"Parallels":#D93F3C,"Unknown/Physical":#53A051}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+
+  <!-- Detailed Network Events Table -->
+  <row>
+    <panel>
+      <title>Detailed Network Connection Timeline</title>
+      <table>
+        <search>
+          <query><![CDATA[
+index=host sourcetype="l2t:Network"
+| search hostname=$hostFilter$ source_long=$connectionTypeFilter$ timestamp_desc=$timestampFilter$
+| search (message="*$networkSearch$*" OR description="*$networkSearch$*" OR display_name="*$networkSearch$*")
+| search (message="*$contentSearch$*" OR description="*$contentSearch$*")
+| rex field=message "SSID:\s*(?<ssid>[^\s]+)"
+| rex field=message "RemoteServer:\s*(?<remote_server>[^\s\n]+)"
+| rex field=message "DriveLetter:\s*(?<drive_letter>[^\s]+)"
+| rex field=message "Connection Type:\s*(?<connection_type>[^\n]+)"
+| rex field=message "Default Gateway Mac:\s*(?<gateway_mac>[^\s]+)"
+| eval network_identifier=coalesce(ssid, remote_server, "Unknown")
+| eval activity_risk=case(
+    like(message, "*guest*") OR like(message, "*public*"), "High",
+    match(network_identifier, "(?i).*(temp|test|external).*"), "Medium",
+    like(connection_type, "*Wired*") AND like(network_identifier, "*corp*"), "Low",
+    true(), "Medium"
+)
+| eval connection_summary=case(
+    isnotnull(ssid), "WiFi: " + ssid,
+    isnotnull(remote_server), "Drive: " + drive_letter + " -> " + remote_server,
+    true(), "Network Connection"
+)
+| table datetime, hostname, source_long, timestamp_desc, connection_summary, connection_type, gateway_mac, activity_risk
+| sort activity_risk
+          ]]></query>
+          <earliest>$timetoken.earliest$</earliest>
+          <latest>$timetoken.latest$</latest>
+        </search>
+        <option name="count">25</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="activity_risk">
+          <colorPalette type="map">{"High":#DC4E41,"Medium":#F8BE34,"Low":#53A051}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="connection_summary">
+            <set token="networkSearch">$row.connection_summary$</set>
+          </condition>
+          <condition field="hostname">
+            <set token="hostFilter">$row.hostname$</set>
+          </condition>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

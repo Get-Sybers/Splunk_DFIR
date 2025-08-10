@@ -1,0 +1,71 @@
+#   Version 9.4.1
+#
+# This is an example agent_management.conf. Use this file to configure the Agent Management
+# settings, such as specifying the connection pool size or timeouts.
+#
+# There is an agent_management.conf file in the $SPLUNK_HOME/etc/system/default/ directory.
+# Never change or copy the configuration files in the default directory.
+# The files in the default directory must remain intact and in their original
+# location.
+#
+# To set custom configurations, create a new file with the name agent_management.conf in
+# the $SPLUNK_HOME/etc/system/local/ directory. Then add the specific settings
+# that you want to customize to the local configuration file.
+# You must restart the Splunk instance to enable configuration changes.
+#
+# To learn more about configuration files (including file precedence) see the
+# documentation located at
+# http://docs.splunk.com/Documentation/Splunk/latest/Admin/Aboutconfigurationfiles
+
+[general]
+# Indicates which UI the forwarder_management should use. When set to 'false', the forwarder_management uses the agent management UI, When set to 'true', the forwarder_management uses the deployment server UI.
+fallback_to_deployment_server_ui = false
+# How verbose the logs are.
+log_level=ERROR
+# A global request timeout setting that defines how long the Agent Manager processes a request before it times out.
+request_timeout=90s
+
+[search_client]
+# How long the Agent Manager waits between HTTP calls to retrieve search results.
+polling_interval = 500ms
+
+# The SPL search that is run to obtain a list of agents with a status of "error".
+query_agents_with_error = | tstats latest(data.result) as latestResult where index=_dsappevent by data.clientId, data.appName \
+| search latestResult!="Ok" \
+| join data.clientId [ tstats dc(data.clientId) where earliest=%d index=_dsphonehome by data.clientId ] \
+| stats dc(data.clientId) as count
+
+# The SPL search that is run to obtain a list of offline agents.
+query_agents_offline = | tstats min(data.lastPhoneHomeTime) as min_time max(data.lastPhoneHomeTime) as max_time count where index=_dsphonehome earliest=%d by data.clientId \
+| eval averagePhoneHomeInterval=(max_time-min_time)/(count-1), seconds=(now()-max_time) \
+| eval offlineThresholdSeconds=(1.05*averagePhoneHomeInterval+20) \
+| where seconds>offlineThresholdSeconds \
+| stats count
+
+# The SPL search that is run to obtain a list of agents with updated configurations.
+query_agents_updated_config = | tstats dc(data.clientId) as count where index=_dsappevent earliest=%d \
+(data.action="Install" OR data.action="Uninstall") AND data.result="Ok"
+
+# The SPL search that is run to obtain a list of agents and their corresponding versions.
+query_agent_version = search index=_dsclient \
+| stats latest(data.splunkVersion) as version by data.clientId data.package \
+| dedup version data.package \
+| table version data.package \
+| rename data.package as agentType
+
+# The SPL search that is run to obtain a summary of the status of each application.
+query_app_summary = | tstats latest(data.action) as lastAction latest(data.result) as lastResult where index=_dsappevent %s by data.clientId data.appName \
+| join data.clientId [ tstats dc(data.clientId) where index=_dsphonehome earliest=%d by data.clientId ] \
+| stats count(eval(lastAction="Install" AND lastResult="Ok")) AS installedApplications, count(eval(lastResult!="Ok")) AS failedApplications by data.appName
+
+[splunkd_client]
+# The number of HTTP connections that can be handled simultaneously by the Agent Manager.
+connection_pool_size = 10
+# A time limit for HTTP requests made by the Agent Manager to splunkd.
+request_timeout = 60s
+# The maximum amount of time an idle connection made by the Agent Manager to splunkd remains idle before closing.
+connection_keep_alive = 5m
+
+[settings_sync]
+# How long the Agent Manager waits between HTTP calls to retrieve the Deployment Server settings.
+polling_interval = 5m
