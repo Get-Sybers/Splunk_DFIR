@@ -41,7 +41,7 @@
 **.[Cc][Aa][Pp]
 
 # Disk images (Forensic disk captures - EnCase, raw, AFF)
-**.[Ee]01
+**.[Ee]0[1-9]
 **.[Ee][Xx]01
 **.[Ll]01
 **.[Ll][Xx]01
