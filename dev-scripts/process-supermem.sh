@@ -198,8 +198,19 @@ fi
 # Check if SuperMem image exists
 if ! docker image inspect supermem-image >/dev/null 2>&1; then
     echo "Error: SuperMem Docker image 'supermem-image' not found."
-    echo "Please build the image first using: docker build -t supermem-image ."
-    exit 1
+    read -p "Would you like to build it now? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Building SuperMem Docker image..."
+        $REPO_ROOT_DIR/data_store/dependencies/SuperMem/build-Supermem.sh
+        if [[ $? -ne 0 ]]; then
+            echo "Error: Failed to build SuperMem Docker image."
+            exit 1
+        fi
+    else
+        echo "Exiting script. Please build the SuperMem image before running this script."
+        exit 1
+    fi
 fi
 
 # Loop through each memory dump file
