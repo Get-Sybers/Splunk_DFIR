@@ -106,3 +106,4 @@
 dependencies\**
 dependencies\**\**
 !dependencies\.gitkeep
+!dependencies/SuperMem/*
