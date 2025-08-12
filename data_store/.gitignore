@@ -25,6 +25,7 @@
 **.[Ss][Qq][Ll][Ii][Tt][Ee]
 **.[Dd][Bb]
 **.[Ss][Qq][Ll][Ii][Tt][Ee]3
+**.[Ss][Qq][Ll]
 
 # Memory dumps (Volatility, DumpIt, raw memory captures)
 **.[Vv][Mm][Ee][Mm]
@@ -62,6 +63,7 @@
 
 # Windows Event Logs (EVTX)
 **.[Ee][Vv][Tt][Xx]
+**.[Ee][Vv][Tt]
 
 # Shadow copies & system restore points
 **.[Vv][Ss][Ss]
