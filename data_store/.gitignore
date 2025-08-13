@@ -103,7 +103,7 @@
 **.[Tt][Aa][Rr]
 
 # Kape Dependencies
+!dependencies\SuperMem\*
 dependencies\**
 dependencies\**\**
 !dependencies\.gitkeep
-!dependencies/SuperMem/*
