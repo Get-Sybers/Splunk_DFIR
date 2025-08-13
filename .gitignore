@@ -29,8 +29,3 @@
 **.spl
 **.tar.gz
 **.zip
-
-# Kape Dependencies
-data_store\dependencies\**
-!data_store\dependencies\.gitkeep
-/data_store/dependencies
