@@ -105,4 +105,3 @@
 # Kape Dependencies
 !dependencies/SuperMem/**
 !dependencies/.gitkeep
-dependencies/**
