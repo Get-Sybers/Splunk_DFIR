@@ -16,25 +16,18 @@ MEMORY_EXTENSIONS=(
 # Define plugin lists for different operating systems
 GENERIC_PLUGIN_LIST=(
     "pslist"
-    "pstree"
+    "psscan"
     "netstat"
-    
-)
-
-WINDOWS_PLUGIN_LIST=(
-    "netscan"
-    "filescan"
     "dlllist"
     "hives"
-    "psscan"
     "malfind"
     "cmdscan"
+    'connections'
     "consoles"
     "handles"
     "mutantscan"
-)
-
-LINUX_PLUGIN_LIST=(
+    "netscan"
+    "filescan"
     "arp"
     "bash"
     "ifconfig"
@@ -43,6 +36,19 @@ LINUX_PLUGIN_LIST=(
     "psaux"
     "maps"
     "zsh"
+    
+)
+
+WINDOWS_PLUGIN_LIST=(
+    "netscan"
+    "filescan"
+
+)
+
+LINUX_PLUGIN_LIST=(
+    "arp"
+    "bash"
+
 )
 
 MAC_PLUGIN_LIST=(
@@ -59,11 +65,11 @@ echo "██║  ███╗█████╗     ██║█████╗�
 sleep 0.1
 echo "██║   ██║██╔══╝     ██║╚════╝╚════██║  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗╚════██║"
 sleep 0.1
-echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████║"
+echo "╚██████╔╝███████╗   ██║      ███████║   ██║   ██████╔╝███████╗██║  ██║███████╗"
 sleep 0.1
 echo "╚═════╝ ╚══════╝   ╚═╝      ╚══════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝"
 echo ""
-echo "Rekall Memory Timeline Generation"
+echo "Rekall Memory Analysis - JSON Format Output"
 echo ""
 echo "Repository Root: $REPO_ROOT_DIR"
 echo "Input Directory: $INPUT_DIR"
@@ -71,13 +77,13 @@ echo "Output Directory: $HOST_OUTPUT_DIR"
 echo ""
 
 # Ensure the host output directories exist
-mkdir -p "$HOST_OUTPUT_DIR/json"
 mkdir -p "$HOST_OUTPUT_DIR/logs"
 mkdir -p "$HOST_OUTPUT_DIR/profiles"
-mkdir -p "$HOST_OUTPUT_DIR/raw_output"
+mkdir -p "$HOST_OUTPUT_DIR/json_output"
 
-# Change ownership and permissions
+# Fix permissions for input and output directories
 sudo chmod -R 777 "$INPUT_DIR"
+sudo chmod -R 777 "$HOST_OUTPUT_DIR"
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
@@ -179,363 +185,55 @@ detect_profile() {
     fi
 }
 
-# Function to convert Rekall text output to JSON format
-convert_to_json() {
-    local input_file="$1"
-    local output_file="$2"
-    local plugin_name="$3"
-    
-    # Use Python to parse Rekall output and convert to JSON
-    python3 -c "
-import re
-import json
-import sys
-from datetime import datetime
-
-def parse_rekall_output(input_file, output_file, plugin_name):
-    with open(input_file, 'r', encoding='utf-8', errors='ignore') as f:
-        content = f.read()
-    
-    lines = content.split('\n')
-    json_data = []
-    headers = []
-    found_separator = False
-    
-    # Different parsing logic based on plugin
-    if plugin_name == 'pslist':
-        header_line = None
-        separator_line = None
-        
-        # First pass: find header and separator
-        for i, line in enumerate(lines):
-            line_stripped = line.strip()
-            if '_EPROCESS' in line_stripped and 'name' in line_stripped and 'pid' in line_stripped:
-                header_line = line
-                continue
-            elif re.match(r'^-+\s+-+', line_stripped) and header_line:
-                separator_line = line
-                found_separator = True
-                break
-        
-        # Parse using fixed-width columns based on header positions
-        if header_line and separator_line:
-            # Find column positions from the header
-            eprocess_start = header_line.find('_EPROCESS')
-            name_start = header_line.find('name')
-            fullpath_start = header_line.find('fullpath')
-            pid_start = header_line.find('pid')
-            ppid_start = header_line.find('ppid', pid_start + 3)  # Skip first 'ppid' column
-            thread_start = header_line.find('thread_count')
-            handle_start = header_line.find('handle_count')
-            session_start = header_line.find('session_id')
-            wow64_start = header_line.find('wow64')
-            create_time_start = header_line.find('process_create_time')
-            exit_time_start = header_line.find('process_exit_time')
-            
-            # Define column boundaries
-            columns = [
-                ('_EPROCESS', eprocess_start, name_start),
-                ('name', name_start, fullpath_start),
-                ('fullpath', fullpath_start, pid_start),
-                ('pid', pid_start, ppid_start),
-                ('ppid', ppid_start, thread_start),
-                ('thread_count', thread_start, handle_start),
-                ('handle_count', handle_start, session_start),
-                ('session_id', session_start, wow64_start),
-                ('wow64', wow64_start, create_time_start),
-                ('process_create_time', create_time_start, exit_time_start),
-                ('process_exit_time', exit_time_start, len(header_line))
-            ]
-            
-            # Parse data lines using fixed positions
-            for line in lines:
-                line_stripped = line.strip()
-                if found_separator and re.match(r'^0x[0-9a-fA-F]+', line_stripped):
-                    row_data = {}
-                    
-                    for col_name, start_pos, end_pos in columns:
-                        if start_pos < len(line) and start_pos >= 0:
-                            if end_pos > len(line):
-                                end_pos = len(line)
-                            value = line[start_pos:end_pos].strip()
-                            row_data[col_name] = value if value and value != '-' else ''
-                        else:
-                            row_data[col_name] = ''
-                    
-                    # Add metadata
-                    row_data['extraction_timestamp'] = datetime.now().isoformat()
-                    row_data['plugin'] = plugin_name
-                    row_data['event_type'] = 'process'
-                    json_data.append(row_data)
-        
-        # Fallback for simple parsing if fixed-width fails
-        if not json_data:
-            for i, line in enumerate(lines):
-                line_stripped = line.strip()
-                if found_separator and re.match(r'^0x[0-9a-fA-F]+', line_stripped):
-                    # Simple space-split with maximum splits to preserve paths
-                    parts = line_stripped.split(None, 10)
-                    if len(parts) >= 4:
-                        row_data = {
-                            '_EPROCESS': parts[0] if len(parts) > 0 else '',
-                            'name': parts[1] if len(parts) > 1 else '',
-                            'fullpath': parts[2] if len(parts) > 2 else '',
-                            'pid': parts[3] if len(parts) > 3 else '',
-                            'ppid': parts[4] if len(parts) > 4 else '',
-                            'thread_count': parts[5] if len(parts) > 5 else '',
-                            'handle_count': parts[6] if len(parts) > 6 else '',
-                            'session_id': parts[7] if len(parts) > 7 else '',
-                            'wow64': parts[8] if len(parts) > 8 else '',
-                            'process_create_time': parts[9] if len(parts) > 9 else '',
-                            'process_exit_time': parts[10] if len(parts) > 10 else '',
-                            'extraction_timestamp': datetime.now().isoformat(),
-                            'plugin': plugin_name,
-                            'event_type': 'process'
-                        }
-                        json_data.append(row_data)
-    
-    elif plugin_name == 'netscan':
-        for i, line in enumerate(lines):
-            line = line.strip()
-            
-            # Find header line
-            if 'offset' in line and 'protocol' in line and 'local_addr' in line:
-                header_parts = line.split()
-                headers = [h.strip() for h in header_parts if h.strip()]
-                continue
-                
-            # Find separator
-            elif re.match(r'^-+\s+-+', line):
-                found_separator = True
-                continue
-                
-            # Parse data lines
-            elif found_separator and re.match(r'^0x[0-9a-fA-F]+', line):
-                parts = line.split()
-                if len(parts) >= 6:
-                    row_data = {}
-                    for idx, header in enumerate(headers[:len(parts)]):
-                        row_data[header] = parts[idx] if idx < len(parts) else ''
-                    # Add metadata for network analysis
-                    row_data['extraction_timestamp'] = datetime.now().isoformat()
-                    row_data['plugin'] = plugin_name
-                    row_data['event_type'] = 'network_connection'
-                    json_data.append(row_data)
-        
-        # Fallback headers
-        if not headers:
-            headers = ['offset', 'protocol', 'local_addr', 'remote_addr', 'state', 'pid', 'owner', 'created']
-    
-    elif plugin_name == 'filescan':
-        for i, line in enumerate(lines):
-            line = line.strip()
-            
-            # Find header line with 'offset', 'ptr_no', etc.
-            if 'offset' in line and 'ptr_no' in line and 'hnd_no' in line:
-                header_parts = line.split()
-                headers = [h.strip() for h in header_parts if h.strip() and h != '-']
-                continue
-                
-            # Find separator
-            elif re.match(r'^-\s+-+', line):
-                found_separator = True
-                continue
-                
-            # Parse data lines
-            elif found_separator and re.match(r'^0x[0-9a-fA-F]+', line):
-                # Split carefully to preserve file paths
-                parts = line.split(None, len(headers)-1) if headers else line.split(None, 7)
-                row_data = {}
-                for idx, header in enumerate(headers[:len(parts)]):
-                    row_data[header] = parts[idx] if idx < len(parts) else ''
-                # Add metadata for file analysis
-                row_data['extraction_timestamp'] = datetime.now().isoformat()
-                row_data['plugin'] = plugin_name
-                row_data['event_type'] = 'file_object'
-                json_data.append(row_data)
-        
-        # Fallback headers
-        if not headers:
-            headers = ['offset', 'ptr_no', 'hnd_no', 'access', 'Owner', 'name', 'pid', 'path']
-    
-    elif plugin_name == 'hives':
-        for i, line in enumerate(lines):
-            line = line.strip()
-            
-            # Find header line
-            if 'Offset' in line and 'Name' in line and not line.startswith('0x'):
-                header_parts = line.split()
-                headers = [h.strip() for h in header_parts if h.strip()]
-                continue
-                
-            # Find separator
-            elif re.match(r'^-+\s+-+', line):
-                found_separator = True
-                continue
-                
-            # Parse data lines
-            elif found_separator and re.match(r'^0x[0-9a-fA-F]+', line):
-                parts = line.split(None, 1)  # Split into offset and name
-                row_data = {
-                    'Offset': parts[0] if len(parts) > 0 else '', 
-                    'Name': parts[1] if len(parts) > 1 else '',
-                    'extraction_timestamp': datetime.now().isoformat(),
-                    'plugin': plugin_name,
-                    'event_type': 'registry_hive'
-                }
-                json_data.append(row_data)
-        
-        # Fallback headers
-        if not headers:
-            headers = ['Offset', 'Name']
-    
-    elif plugin_name == 'dlllist':
-        current_process = {}
-        for i, line in enumerate(lines):
-            line = line.strip()
-            
-            # Skip process separators and metadata
-            if (line.startswith('-') or 
-                'Unable to read' in line or 
-                not line):
-                continue
-                
-            # Process info lines
-            if line.startswith('Process:'):
-                current_process = {'process_info': line}
-            elif line.startswith('Command line:'):
-                current_process['command_line'] = line
-            elif line.startswith('pid:'):
-                current_process['pid_info'] = line
-            # Find header line
-            elif 'base' in line and 'size' in line and 'reason' in line:
-                header_parts = line.split()
-                headers = [h.strip() for h in header_parts if h.strip()]
-                continue
-            # Parse DLL entries (start with 0x)
-            elif re.match(r'^0x[0-9a-fA-F]+', line):
-                parts = line.split(None, 3)  # Split into max 4 parts
-                if len(parts) >= 3:
-                    dll_entry = current_process.copy()
-                    dll_entry.update({
-                        'base': parts[0] if len(parts) > 0 else '',
-                        'size': parts[1] if len(parts) > 1 else '',
-                        'reason': parts[2] if len(parts) > 2 else '',
-                        'dll_path': parts[3] if len(parts) > 3 else '',
-                        'extraction_timestamp': datetime.now().isoformat(),
-                        'plugin': plugin_name,
-                        'event_type': 'dll_loaded'
-                    })
-                    json_data.append(dll_entry)
-        
-        # Fallback headers
-        if not headers:
-            headers = ['base', 'size', 'reason', 'dll_path']
-    
-    elif plugin_name == 'malfind':
-        # Parse suspicious processes - different format
-        current_process = ''
-        
-        for line in lines:
-            line = line.strip()
-            if line.startswith('Process:'):
-                current_process = line
-            elif line.startswith('Vad Tag:') or line.startswith('Address:'):
-                entry = {
-                    'process_info': current_process,
-                    'vad_info': line,
-                    'extraction_timestamp': datetime.now().isoformat(),
-                    'plugin': plugin_name,
-                    'event_type': 'suspicious_process_vad'
-                }
-                json_data.append(entry)
-            elif re.match(r'^0x[0-9a-fA-F]+', line):
-                entry = {
-                    'process_info': current_process,
-                    'hex_data': line,
-                    'extraction_timestamp': datetime.now().isoformat(),
-                    'plugin': plugin_name,
-                    'event_type': 'suspicious_process_hex'
-                }
-                json_data.append(entry)
-    
-    # Write JSON file - one JSON object per line for SIEM ingestion
-    if json_data:
-        with open(output_file, 'w', encoding='utf-8') as jsonfile:
-            for entry in json_data:
-                jsonfile.write(json.dumps(entry) + '\n')
-    else:
-        # Create error entry if no data found
-        error_entry = {
-            'error': 'No data extracted',
-            'plugin': plugin_name,
-            'extraction_timestamp': datetime.now().isoformat(),
-            'event_type': 'error',
-            'details': 'Plugin produced no parseable output'
-        }
-        with open(output_file, 'w', encoding='utf-8') as jsonfile:
-            jsonfile.write(json.dumps(error_entry) + '\n')
-
-parse_rekall_output('$input_file', '$output_file', '$plugin_name')
-"
-}
-
-# Function to run individual Rekall plugins with better error handling
+# Function to run individual Rekall plugins with JSON output
 run_rekall_plugin() {
     local plugin="$1"
     local filename="$2"
     local profile="$3"
     local memory_file="$4"
 
-    local json_output="$HOST_OUTPUT_DIR/json/${filename}_${plugin}.json"
     local log_file="$HOST_OUTPUT_DIR/logs/$filename.log"
-    local temp_output="$HOST_OUTPUT_DIR/raw_output/${filename}_${plugin}.txt"
+    local json_output="$HOST_OUTPUT_DIR/json_output/${filename}/${plugin}.json"
 
     # Custom messages for different plugins
-    echo "Running Rekall plugin: $plugin on $filename with profile: $profile"
+    echo "Running Rekall plugin: $plugin on $filename with profile: $profile (JSON format)"
 
-    # Run the Rekall plugin and save raw output
-    docker run --rm -v "$INPUT_DIR":/data:ro -v "$HOST_OUTPUT_DIR/raw_output":/output remnux/rekall \
-    bash -c "rekall -f /data/\"$(basename "$memory_file")\" --profile \"$profile\" $plugin --output_style full" \
-    > "$temp_output" 2>> "$log_file"
+    # Create output directory for this file if it doesn't exist
+    mkdir -p "$HOST_OUTPUT_DIR/json_output/$filename"
+
+    # Run the Rekall plugin with JSON format output
+    docker run --rm -v "$INPUT_DIR":/data:ro remnux/rekall \
+    bash -c "rekall -f /data/\"$(basename "$memory_file")\" --profile \"$profile\" --format json $plugin --output_style full" \
+    > "$json_output" 2>> "$log_file"
     
     local exit_code=$?
     
     # Check exit codes
     if [[ $exit_code -eq 124 ]]; then
         echo "Warning: $plugin timed out for $filename" | tee -a "$log_file"
-        echo '{"error": "Plugin timeout", "plugin": "'$plugin'", "extraction_timestamp": "'$(date -Iseconds)'", "details": "Plugin execution timed out after 300 seconds"}' > "$json_output"
+        echo '{"error": "Plugin timeout", "plugin": "'$plugin'", "timestamp": "'$(date)'", "message": "Plugin execution timed out after 300 seconds"}' > "$json_output"
         return 1
     elif [[ $exit_code -ne 0 ]]; then
         echo "Warning: $plugin failed with exit code $exit_code for $filename" | tee -a "$log_file"
-        echo '{"error": "Plugin failed", "plugin": "'$plugin'", "extraction_timestamp": "'$(date -Iseconds)'", "exit_code": '$exit_code', "details": "Plugin execution failed"}' > "$json_output"
+        echo '{"error": "Plugin failed", "plugin": "'$plugin'", "exit_code": '$exit_code', "timestamp": "'$(date)'", "message": "Plugin execution failed"}' > "$json_output"
         return 1
     fi
     
-    # Check if we got valid output
-    if [[ -s "$temp_output" ]] && ! grep -q -E "Error:|Traceback|No profiles match" "$temp_output"; then
-        # Convert text output to JSON
-        convert_to_json "$temp_output" "$json_output" "$plugin"
-        
-        # Verify JSON was created successfully
-        if [[ -f "$json_output" ]] && [[ -s "$json_output" ]]; then
-            echo "SUCCESS: $plugin completed for $filename"
-        else
-            echo "Warning: $plugin text-to-JSON conversion failed for $filename" | tee -a "$log_file"
-            echo '{"error": "Conversion failed", "plugin": "'$plugin'", "extraction_timestamp": "'$(date -Iseconds)'", "details": "Text to JSON conversion failed"}' > "$json_output"
-        fi
-    else
-        echo "Warning: $plugin failed for $filename" | tee -a "$log_file"
+    # Verify the JSON file was created and has content
+    if [[ ! -f "$json_output" ]] || [[ ! -s "$json_output" ]]; then
+        echo "Warning: $plugin did not produce any output for $filename" | tee -a "$log_file"
+        echo '{"error": "No output", "plugin": "'$plugin'", "timestamp": "'$(date)'", "message": "Plugin completed but produced no output"}' > "$json_output"
+        return 1
     fi
 }
 
-# Function to run Rekall analysis and create timeline
+# Function to run Rekall analysis and create JSON output
 analyze_memory() {
     local memory_file="$1"
     local filename="$2"
     local profile="$3"
     
-    echo "Analyzing memory dump: $filename using profile: $profile"
+    echo "Analyzing memory dump: $filename using profile: $profile (JSON output)"
     
     # Define the plugins to run
     if [[ $profile =~ ^Win.*$ ]]; then
@@ -555,33 +253,6 @@ analyze_memory() {
     # Run each plugin with improved error handling
     for plugin in "${plugins[@]}"; do
         run_rekall_plugin "$plugin" "$filename" "$profile" "$memory_file"
-    done
-    
-    # Validate JSON output files
-    echo "Validating JSON output files for $filename..."
-    for plugin in "${plugins[@]}"; do
-        json_file="$HOST_OUTPUT_DIR/json/${filename}_${plugin}.json"
-        if [[ -f "$json_file" ]]; then
-            # Basic JSON validation
-            if python3 -c "import json; json.load(open('$json_file'))" 2>/dev/null; then
-                echo "  ✅ $plugin: Valid JSON format"
-            elif python3 -c "
-import json
-with open('$json_file', 'r') as f:
-    for line_num, line in enumerate(f, 1):
-        if line.strip():
-            try:
-                json.loads(line.strip())
-            except json.JSONDecodeError as e:
-                print(f'Line {line_num}: {e}')
-                exit(1)
-print('Valid JSON lines format')
-" 2>/dev/null; then
-                echo "  ✅ $plugin: Valid JSON lines format"
-            else
-                echo "  ⚠️  $plugin: Invalid JSON format - check output"
-            fi
-        fi
     done
 }
 
@@ -665,6 +336,48 @@ for memory_file in "${ALL_FILES[@]}"; do
     
     if [[ "$profile" != "FAILED" ]]; then
         analyze_memory "$memory_file" "$filename" "$profile"
+        
+        # Check if any substantial JSON output was created
+        successful_files=0
+        failed_files=0
+        for json_file in "$HOST_OUTPUT_DIR/json_output/${filename}"/*.json; do
+            if [[ -f "$json_file" ]] && [[ "$(basename "$json_file")" ]]; then
+                if grep -q '"error":' "$json_file" || [[ ! -s "$json_file" ]]; then
+                    ((failed_files++))
+                else
+                    ((successful_files++))
+                fi
+            fi
+        done
+
+        echo ""
+        echo "Results for $filename:"
+        echo "  Successful JSON extractions: $successful_files"
+        echo "  Failed JSON extractions: $failed_files"
+        
+        if [[ $successful_files -eq 0 ]]; then
+            echo "WARNING: All Rekall plugins failed for $filename - check logs for details"
+        else
+            echo "SUCCESS: Processed $filename with $successful_files successful JSON extractions"
+        fi
+        
+        # Log file locations
+        echo "JSON output files for $filename:"
+        for json_file in "$HOST_OUTPUT_DIR/json_output/${filename}"/*.json; do
+            if [[ -f "$json_file" ]]; then
+                plugin_name=$(basename "$json_file" | sed "s/\.json$//" | sed "s/${filename}_consolidated/consolidated/")
+                if [[ "$plugin_name" == "consolidated" ]]; then
+                    echo "  📊 $plugin_name: $(basename "$json_file") (summary)"
+                elif grep -q '"error":' "$json_file" || [[ ! -s "$json_file" ]]; then
+                    echo "  ❌ $plugin_name: $(basename "$json_file") (failed)"
+                else
+                    echo "  ✅ $plugin_name: $(basename "$json_file") (success)"
+                fi
+            fi
+        done
+        echo "  📋 Profile: $HOST_OUTPUT_DIR/profiles/${filename}_profile.txt"
+        echo "  📝 Logs: $HOST_OUTPUT_DIR/logs/$filename.log"
+        echo ""
     else
         echo "Skipping $filename - profile detection failed"
     fi
@@ -675,10 +388,15 @@ total_files=$((${#MEMORY_FILES[@]} + ${#LINUX_FILES[@]} + ${#MACOS_FILES[@]}))
 echo "COMPLETE: Processing complete. Analyzed $total_files memory dump files across all platforms."
 echo ""
 echo "Output directories:"
-echo "  - JSON extractions: $HOST_OUTPUT_DIR/json/"
+echo "  - JSON extractions: $HOST_OUTPUT_DIR/json_output/"
 echo "  - Profile information: $HOST_OUTPUT_DIR/profiles/"
-echo "  - Raw output: $HOST_OUTPUT_DIR/raw_output/"
 echo "  - Processing logs: $HOST_OUTPUT_DIR/logs/"
+echo ""
+echo "JSON Format Notes:"
+echo "  - Individual plugin results are saved as separate JSON files"
+echo "  - Consolidated JSON files combine all plugin results per memory dump"
+echo "  - All outputs use Rekall's native JSON renderer format"
+echo "  - Failed plugins will have error information in JSON format"
 echo ""
 echo "Note: Some plugins may fail due to Rekall/Capstone compatibility issues."
 echo "Check individual JSON files and logs for detailed results."

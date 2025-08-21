@@ -15,9 +15,27 @@ MEMORY_EXTENSIONS=(
 
 # Define plugin lists for different operating systems
 GENERIC_PLUGIN_LIST=(
-    "pslist"
-    "pstree"
+    "arp"
+    "bash"
+    "cmdscan"
+    "consoles"
+    "dlllist"
+    "filescan"
+    "handles"
+    "hives"
+    "ifconfig"
+    "malfind"
+    "maps"
+    "mfind"
+    "mls" 
+    "mutantscan"
+    "netscan"
     "netstat"
+    "psaux"
+    "pslist"
+    "psscan"
+    "pstree"
+    "zsh"
     
 )
 
