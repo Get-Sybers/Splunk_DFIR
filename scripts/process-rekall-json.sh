@@ -436,9 +436,9 @@ run_rekall_plugin() {
     local profile="$3"
     local memory_file="$4"
 
-    local json_output="$HOST_OUTPUT_DIR/json/${filename}_${plugin}.json"
+    local json_output="$HOST_OUTPUT_DIR/json/${filename}/${plugin}.json"
     local log_file="$HOST_OUTPUT_DIR/logs/$filename.log"
-    local temp_output="$HOST_OUTPUT_DIR/raw_output/${filename}_${plugin}.txt"
+    local temp_output="$HOST_OUTPUT_DIR/raw_output/${filename}/${plugin}.txt"
 
     # Custom messages for different plugins
     case "$plugin" in
@@ -510,7 +510,7 @@ analyze_memory() {
     # Validate JSON output files
     echo "Validating JSON output files for $filename..."
     for plugin in "${plugins[@]}"; do
-        json_file="$HOST_OUTPUT_DIR/json/${filename}_${plugin}.json"
+        json_file="$HOST_OUTPUT_DIR/json/${filename}/${plugin}.json"
         if [[ -f "$json_file" ]]; then
             # Basic JSON validation
             if python3 -c "import json; json.load(open('$json_file'))" 2>/dev/null; then
