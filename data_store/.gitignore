@@ -3,6 +3,7 @@
 # ============================
 
 # JSON / JSN (log2timeline, Plaso, memory forensic outputs)
+**.[Jj][Ss][Oo][Nn][Ll]
 **.[Jj][Ss][Oo][Nn]
 **.[Jj][Ss][Nn]
 
@@ -94,7 +95,6 @@
 **.[Rr][Aa][Rr]
 
 # Misc forensic artifacts (Rekall, Volatility, memory analysis)
-**.[Jj][Ss][Oo][Nn][Ll]
 **.[Nn][Dd][Jj][Ss][Oo][Nn]
 **.[Mm][Ss][Gg][Pp][Aa][Cc][Kk]
 **.[Tt][Ii][Mm][Ee][Ll][Ii][Nn][Ee]
