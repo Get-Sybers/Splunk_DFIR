@@ -134,6 +134,7 @@ echo
 # Run Splunk Enterprise container with ansible_pre_tasks defined
 docker run -d --name splunk-enterprise \
     --hostname splunk-enterprise \
+    -p 8088:8088 \
     -p 8000:8000 \
     -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
     -v "$REPO_ROOT_DIR/splunk/var":/data/var \
@@ -141,7 +142,8 @@ docker run -d --name splunk-enterprise \
     -v "$REPO_ROOT_DIR/ansible/playbooks":/data/ansible/playbooks:ro \
     -e SPLUNK_HTTP_ENABLESSL=true \
     -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
-    -e SPLUNK_START_ARGS='--accept-license' \
+    -e SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com \
+    -e SPLUNK_START_ARGS=--accept-license \
     -e SPLUNK_DISABLE_POPUPS='True' \
     -e SPLUNK_ROLE=splunk_standalone \
     -e SPLUNK_ANSIBLE_PRE_TASKS="$ANSIBLE_PRE_TASKS" \
