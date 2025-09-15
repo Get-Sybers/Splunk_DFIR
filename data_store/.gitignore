@@ -94,6 +94,10 @@
 **.[Xx][Zz]
 **.[Rr][Aa][Rr]
 
+# Yara rules
+**.[Yy][Aa][Rr][Aa]
+**.[Yy][Aa][Rr]
+
 # Misc forensic artifacts (Rekall, Volatility, memory analysis)
 **.[Nn][Dd][Jj][Ss][Oo][Nn]
 **.[Mm][Ss][Gg][Pp][Aa][Cc][Kk]
