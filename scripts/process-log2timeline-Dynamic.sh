@@ -6,10 +6,7 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 # Set the input directory containing E01 files
 INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
-
-# Set the host output directory
 HOST_OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/log2timeline"
-# LIBVMDK_DIR="$REPO_ROOT_DIR/data_store/dependencies/libvmdk"
 
 ################################################################################
 echo ""
@@ -29,19 +26,10 @@ echo ""
 echo "$REPO_ROOT_DIR"
 echo ""
 
-# Change ownership and permissions
-# Fix permissions so the current user can write to these directories
-echo "⚙️ Setting permissions of Splunk_DFIR/splunk/etc/* to $(whoami):docker and 777"
-sudo chown -R $(whoami):docker "$HOST_OUTPUT_DIR/*"
-sudo chmod -R 777 "$HOST_OUTPUT_DIR/*"
-sudo chown -R $(whoami):docker "$INPUT_DIR/*"
-sudo chmod -R 777 "$INPUT_DIR/*"
-
-# Ensure the host output directories exist
-sudo mkdir -p "$HOST_OUTPUT_DIR/csv"
-sudo mkdir -p "$HOST_OUTPUT_DIR/jsonl"
-sudo mkdir -p "$HOST_OUTPUT_DIR/logs"
-sudo chmod -R 777 "$HOST_OUTPUT_DIR"
+# Ensure the host output directories exist and set permissions
+sudo mkdir -p "$HOST_OUTPUT_DIR"/{csv,jsonl,logs}
+sudo chown -R "$(whoami):docker" "$HOST_OUTPUT_DIR" "$INPUT_DIR"
+sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR"
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
