@@ -2,7 +2,7 @@
 
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 
 # Set the input directory containing forensic disk image files
 INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
@@ -30,7 +30,7 @@ echo "Output Directory: $OUTPUT_DIR"
 echo ""
 
 # Ensure the output directories exist and set permissions
-sudo mkdir -p "$OUTPUT_DIR"/{jsonl,jsonl,logs}
+sudo mkdir -p "$OUTPUT_DIR"/{csv,jsonl,logs}
 sudo chown -R "$(whoami):docker" "$OUTPUT_DIR" "$INPUT_DIR"
 sudo chmod -R 777 "$OUTPUT_DIR" "$INPUT_DIR"
 
@@ -124,20 +124,21 @@ for INPUT_FILE in "${PROCESSED_FILES[@]}"; do
     docker run --rm -v "$INPUT_DIR":/data:ro \
     -v "$OUTPUT_DIR":/output log2timeline/plaso \
     psteal --source /data/"$(basename "$INPUT_FILE")" \
-    --output-format json_line \
+    --output-format dynamic \
+    --fields date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone \
     --timezone UTC \
     --vss-stores all \
     --partitions all \
     --quiet \
-    -w /output/jsonl/"$FILENAME".jsonl 2> "$OUTPUT_DIR/logs/$FILENAME".log
+    -w /output/csv/"$FILENAME".csv 2> "$OUTPUT_DIR/logs/$FILENAME".log
 
-    # Check if jsonl output was created
-    if [[ ! -f "$OUTPUT_DIR/jsonl/$FILENAME.jsonl" ]]; then
-        echo "Error: psteal failed to produce jsonl output for $FILENAME" | tee -a "$OUTPUT_DIR/logs/$FILENAME.log"
+    # Check if csv output was created
+    if [[ ! -f "$OUTPUT_DIR/csv/$FILENAME.csv" ]]; then
+        echo "Error: psteal failed to produce csv output for $FILENAME" | tee -a "$OUTPUT_DIR/logs/$FILENAME.log"
         continue
     fi
 
-    echo "✅ Saved jsonl output to: $OUTPUT_DIR/jsonl/$FILENAME.jsonl" | tee -a "$OUTPUT_DIR/logs/$FILENAME.log"
+    echo "✅ Saved csv output to: $OUTPUT_DIR/csv/$FILENAME.csv" | tee -a "$OUTPUT_DIR/logs/$FILENAME.log"
     echo "📋 Saved logs to: $OUTPUT_DIR/logs/$FILENAME.log" | tee -a "$OUTPUT_DIR/logs/$FILENAME.log"
     echo ""
 done
@@ -145,5 +146,5 @@ done
 echo "🎉 Processing complete. Processed ${#PROCESSED_FILES[@]} forensic image file(s)."
 echo ""
 echo "Output directories:"
-echo "  - JSON_LINE extractions: $OUTPUT_DIR/jsonl/"
+echo "  - CSV extractions: $OUTPUT_DIR/csv/"
 echo "  - Processing logs: $OUTPUT_DIR/logs/"
