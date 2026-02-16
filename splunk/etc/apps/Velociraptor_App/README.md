@@ -27,8 +27,15 @@ The app automatically extracts the artifact name from the filename and creates s
 ## Installation
 
 1. Place this app in `$SPLUNK_HOME/etc/apps/`
-2. Restart Splunk
-3. Place Velociraptor JSON files in the monitored directory: `data_store/processed/velociraptor/`
+2. Ensure the monitor stanza for Velociraptor files is configured in `splunk/etc/system/local/inputs.conf`:
+   ```conf
+   [monitor:///data/processed/velociraptor/*.json]
+   disabled = false
+   index = host
+   sourcetype = velociraptor:json
+   ```
+3. Restart Splunk
+4. Place Velociraptor JSON files in the monitored directory: `data_store/processed/velociraptor/`
 
 ## Usage
 

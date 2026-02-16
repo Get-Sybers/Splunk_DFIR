@@ -4,7 +4,7 @@ This directory contains processed Velociraptor JSON output files.
 
 ## Structure
 
-Place Velociraptor JSON output files here for ingestion into Splunk.
+Place Velociraptor JSON output files here. To have these files ingested into Splunk, ensure a corresponding `monitor` stanza for `/data/processed/velociraptor/...` (or your environment's equivalent) is configured in `splunk/etc/system/local/inputs.conf` or the appropriate Splunk app.
 
 ## Naming Convention
 
