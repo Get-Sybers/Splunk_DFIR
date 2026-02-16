@@ -2,27 +2,28 @@
 
 ## Overview
 
-This Splunk app provides configuration for ingesting Velociraptor JSON output files into Splunk for DFIR analysis.
+This Splunk app provides configuration for ingesting Velociraptor JSON output files into Splunk for DFIR analysis. It uses the Splunk-recommended VQL artifact configuration approach for optimal ingestion.
 
 ## Features
 
 - **JSON Parsing**: Automatically parses Velociraptor JSON output with proper field extraction
-- **Artifact Extraction**: Automatically extracts the artifact name from the source filename and sets it as the sourcetype
-- **Timestamp Handling**: Supports multiple timestamp formats commonly used in Velociraptor output
+- **Artifact-Based Sourcetype**: Automatically extracts the artifact name from the `src_artifact` field in the JSON data and sets it as the sourcetype
+- **Smart Timestamp Handling**: Artifact-specific timestamp extraction using `INGEST_EVAL` for accurate event timing
+- **Optimized Performance**: Configured with recommended settings from Splunk's VQL artifact flow
 
 ## Sourcetype Configuration
 
 ### Base Sourcetype: `velociraptor:json`
 
-All Velociraptor JSON files are initially assigned the `velociraptor:json` sourcetype, which is then dynamically updated based on the artifact name extracted from the filename.
+All Velociraptor JSON files are initially assigned the `velociraptor:json` sourcetype, which is then dynamically updated based on the `src_artifact` field in the JSON data.
 
 ### Dynamic Sourcetype Assignment
 
-The app automatically extracts the artifact name from the filename and creates specific sourcetypes:
+The app automatically extracts the artifact name from the `src_artifact` field and converts it to lowercase for the sourcetype:
 
-- `Windows.System.TaskScheduler.json` → `velociraptor:Windows.System.TaskScheduler`
-- `Generic.Client.Info.json` → `velociraptor:Generic.Client.Info`
-- `Linux.Sys.Pslist.json` → `velociraptor:Linux.Sys.Pslist`
+- `src_artifact: "artifact_Windows_EventLogs_Evtx"` → `sourcetype: artifact_windows_eventlogs_evtx`
+- `src_artifact: "artifact_Linux_Search_FileFinder"` → `sourcetype: artifact_linux_search_filefinder`
+- `src_artifact: "artifact_Windows_Registry_UserAssist"` → `sourcetype: artifact_windows_registry_userassist`
 
 ## Installation
 
@@ -44,41 +45,58 @@ The app automatically extracts the artifact name from the filename and creates s
 
 Find all Velociraptor events:
 ```spl
-sourcetype=velociraptor:*
+sourcetype=artifact_*
 ```
 
-Search for specific artifact:
+Search for specific artifact (Windows Event Logs):
 ```spl
-sourcetype=velociraptor:Windows.System.TaskScheduler
+sourcetype=artifact_windows_eventlogs_evtx
+```
+
+Search for User Assist artifacts:
+```spl
+sourcetype=artifact_windows_registry_userassist
 ```
 
 View all available Velociraptor artifacts:
 ```spl
 | metadata type=sourcetypes 
-| search sourcetype=velociraptor:*
+| search sourcetype=artifact_*
 | table sourcetype
 ```
 
 ## Configuration Files
 
-- `default/props.conf` - Defines the base sourcetype and parsing configuration
-- `default/transforms.conf` - Extracts artifact name from filename
+- `default/props.conf` - Defines the base sourcetype and parsing configuration based on Splunk VQL recommendations
+- `default/transforms.conf` - Uses `INGEST_EVAL` to extract artifact name from `src_artifact` field and set artifact-specific timestamps
 - `default/app.conf` - App metadata and settings
 - `metadata/default.meta` - App permissions
 
-## Supported Timestamp Fields
+## Supported Artifacts and Timestamp Fields
 
-The app automatically extracts timestamps from the following fields:
-- `_ts` - Velociraptor's internal timestamp
-- `timestamp` - Generic timestamp field
-- `Mtime`, `Atime`, `Ctime` - Filesystem timestamps
-- `StartTime`, `EventTime` - Process and event timestamps
+The app includes timestamp extraction for the following artifacts:
+
+| Artifact | Timestamp Field | Format |
+|----------|----------------|--------|
+| Linux_Search_FileFinder | CTime | ISO 8601 |
+| System_VFS_ListDirectory | ctime | ISO 8601 with nanoseconds |
+| Windows_Timeline_MFT | event_time | ISO 8601 with nanoseconds |
+| Windows_NTFS_MFT | Created0x10 | ISO 8601 with nanoseconds |
+| Windows_EventLogs_Evtx | TimeCreated | ISO 8601 |
+| Windows_EventLogs_RDPAuth | EventTime | ISO 8601 |
+| Windows_Registry_UserAssist | LastExecution | ISO 8601 |
+| Windows_Registry_RecentDocs | LastWriteTime | ISO 8601 |
+| Windows_Forensics_UserAccessLogs_* | Various | ISO 8601 |
+| MacOS_Applications_Chrome_History | last_visit_time | ISO 8601 |
+
+And many more - see `transforms.conf` for the complete list.
 
 ## Notes
 
-- JSON files should follow the naming convention: `<artifact.name>.json`
-- The artifact name will be extracted from everything before `.json` in the filename
-- All JSON events are indexed with full field extraction enabled
+- JSON files must contain a `src_artifact` field for proper sourcetype assignment
+- Timestamps are extracted based on artifact-specific field names
+- The configuration uses `DATETIME_CONFIG = CURRENT` and `TZ = GMT` for consistent timestamp handling
+- All JSON events are indexed with field extraction enabled via `INDEXED_EXTRACTIONS = json`
 
 ## Version
 
