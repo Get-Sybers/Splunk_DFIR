@@ -6,6 +6,8 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 # Set the input directory containing E01 files
 INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
+# Set the input directory containing VMware VM exports (one sub-folder per VM)
+VM_INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/VM_files"
 HOST_OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/log2timeline"
 
 ################################################################################
@@ -28,8 +30,9 @@ echo ""
 
 # Ensure the host output directories exist and set permissions
 sudo mkdir -p "$HOST_OUTPUT_DIR"/{csv,jsonl,logs}
-sudo chown -R "$(whoami):docker" "$HOST_OUTPUT_DIR" "$INPUT_DIR"
-sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR"
+sudo mkdir -p "$INPUT_DIR" "$VM_INPUT_DIR"
+sudo chown -R "$(whoami):docker" "$HOST_OUTPUT_DIR" "$INPUT_DIR" "$VM_INPUT_DIR"
+sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR" "$VM_INPUT_DIR"
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
@@ -74,6 +77,40 @@ is_first_volume() {
     fi
 }
 
+# Function to pick the correct .vmdk descriptor for a VMware VM folder.
+# A VM export typically contains:
+#   <NAME>.vmdk            -> base disk descriptor (text)
+#   <NAME>-flat.vmdk       -> base disk raw data (referenced by descriptor)
+#   <NAME>-NNNNNN.vmdk     -> snapshot descriptor (chains back to base)
+#   <NAME>-NNNNNN-delta.vmdk -> snapshot raw data (referenced by snapshot descriptor)
+# We must hand psteal the descriptor (NOT the -flat or -delta data files).
+# When snapshots exist, the highest-numbered snapshot descriptor represents the
+# current state of the VM and should be processed.
+get_vm_descriptor() {
+    local vm_dir="$1"
+    local snapshot_desc base_desc
+
+    # Latest snapshot descriptor: name ends in -NNNNNN.vmdk but NOT -delta.vmdk
+    snapshot_desc=$(find "$vm_dir" -maxdepth 1 -type f -iname '*.vmdk' \
+        ! -iname '*-flat.vmdk' ! -iname '*-delta.vmdk' 2>/dev/null \
+        | grep -E -- '-[0-9]{6}\.vmdk$' | sort | tail -n 1)
+    if [[ -n "$snapshot_desc" ]]; then
+        echo "$snapshot_desc"
+        return 0
+    fi
+
+    # Otherwise the base descriptor: .vmdk that is not flat / delta / snapshot
+    base_desc=$(find "$vm_dir" -maxdepth 1 -type f -iname '*.vmdk' \
+        ! -iname '*-flat.vmdk' ! -iname '*-delta.vmdk' 2>/dev/null \
+        | grep -Ev -- '-[0-9]{6}\.vmdk$' | sort | head -n 1)
+    if [[ -n "$base_desc" ]]; then
+        echo "$base_desc"
+        return 0
+    fi
+
+    return 1
+}
+
 # Collect all forensic image files with supported extensions (case-insensitive)
 FORENSIC_FILES=()
 for pattern in "*.[Ee]01" "*.[Rr][Aa][Ww]" "*.[Ii][Mm][Gg]" "*.[Dd][Dd]" "*.[Vv][Mm][Dd][Kk]" "*.[Ee][0-9][0-9]"; do
@@ -98,16 +135,16 @@ for file in "${FORENSIC_FILES[@]}"; do
     fi
 done
 
-# Ensure there are files to process
+# Warn (but don't exit) if there are no flat disk image files; we may still
+# have VMware VM exports to process below.
 if [[ ${#PROCESSED_FILES[@]} -eq 0 ]]; then
-    echo "Error: No supported forensic image files found in $INPUT_DIR"
+    echo "Notice: No supported forensic image files found in $INPUT_DIR"
     echo "Supported formats: E01, raw, img, dd, vmdk (case-insensitive)"
-    exit 1
+else
+    echo ""
+    echo "Found ${#PROCESSED_FILES[@]} file(s) to process"
+    echo ""
 fi
-
-echo ""
-echo "Found ${#PROCESSED_FILES[@]} file(s) to process"
-echo ""
 
 # Loop through each forensic image file
 for INPUT_FILE in "${PROCESSED_FILES[@]}"; do
@@ -140,4 +177,80 @@ for INPUT_FILE in "${PROCESSED_FILES[@]}"; do
     echo ""
 done
 
-echo "🎉 Processing complete. Processed ${#PROCESSED_FILES[@]} forensic image file(s)."
+################################################################################
+# VMware VM export processing
+#
+# Each VM lives in its own sub-folder of $VM_INPUT_DIR and contains many files
+# (.vmx, .vmsd, .nvram, *.vmdk descriptor, *-flat.vmdk, snapshot *-NNNNNN.vmdk,
+# *-NNNNNN-delta.vmdk, etc.). The whole folder must be mounted into the Plaso
+# container so the descriptor can resolve its referenced flat / delta files.
+################################################################################
+echo ""
+echo "Checking for VMware VM exports in: $VM_INPUT_DIR"
+
+VM_DIRS=()
+if [[ -d "$VM_INPUT_DIR" ]]; then
+    for vm_dir in "$VM_INPUT_DIR"/*/; do
+        [[ -d "$vm_dir" ]] && VM_DIRS+=("${vm_dir%/}")
+    done
+fi
+
+VM_PROCESSED_COUNT=0
+if [[ ${#VM_DIRS[@]} -eq 0 ]]; then
+    echo "Notice: No VMware VM export folders found in $VM_INPUT_DIR"
+else
+    echo "Found ${#VM_DIRS[@]} VM folder(s) to inspect"
+    echo ""
+
+    for VM_DIR in "${VM_DIRS[@]}"; do
+        VM_NAME=$(basename "$VM_DIR")
+        DESCRIPTOR=$(get_vm_descriptor "$VM_DIR")
+
+        if [[ -z "$DESCRIPTOR" ]]; then
+            echo "⚠️  Skipping VM '$VM_NAME': no .vmdk descriptor found (only -flat/-delta files?)"
+            continue
+        fi
+
+        DESCRIPTOR_NAME=$(basename "$DESCRIPTOR")
+        # Use the VM folder name as the output base name so multiple VMs don't
+        # collide on output files.
+        FILENAME="$VM_NAME"
+
+        echo "Processing VM: $VM_NAME"
+        echo "  Descriptor : $DESCRIPTOR_NAME"
+        echo "  Output name: $FILENAME"
+
+        # Mount the VM folder as /data so descriptor's relative references to
+        # -flat / -delta files resolve inside the container.
+        docker run --rm -v "$VM_DIR":/data:ro \
+        -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
+        psteal --source /data/"$DESCRIPTOR_NAME" \
+        --output-format dynamic \
+        --fields date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone \
+        --timezone UTC \
+        --vss-stores all \
+        --partitions all \
+        --quiet \
+        -w /output/csv/"$FILENAME".csv 2> "$HOST_OUTPUT_DIR/logs/$FILENAME".log
+
+        if [[ ! -f "$HOST_OUTPUT_DIR/csv/$FILENAME.csv" ]]; then
+            echo "Error: psteal failed to produce csv output for VM $FILENAME" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
+            continue
+        fi
+
+        echo "✅ Saved csv output to: $HOST_OUTPUT_DIR/csv/$FILENAME.csv" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
+        echo "📋 Saved logs to: $HOST_OUTPUT_DIR/logs/$FILENAME.log" | tee -a "$HOST_OUTPUT_DIR/logs/$FILENAME.log"
+        echo ""
+        VM_PROCESSED_COUNT=$((VM_PROCESSED_COUNT + 1))
+    done
+fi
+
+# If we found nothing at all in either input source, exit with an error.
+if [[ ${#PROCESSED_FILES[@]} -eq 0 && $VM_PROCESSED_COUNT -eq 0 ]]; then
+    echo "Error: No forensic disk images or VMware VM exports were processed."
+    echo "  - Place E01/raw/img/dd/vmdk files in: $INPUT_DIR"
+    echo "  - Place VMware VM folders in:        $VM_INPUT_DIR/<VM_NAME>/"
+    exit 1
+fi
+
+echo "🎉 Processing complete. Processed ${#PROCESSED_FILES[@]} forensic image file(s) and ${VM_PROCESSED_COUNT} VMware VM export(s)."
