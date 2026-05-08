@@ -35,8 +35,14 @@ echo ""
 # Ensure the output directories exist and set permissions
 sudo mkdir -p "$OUTPUT_DIR"/{csv,jsonl,logs}
 sudo mkdir -p "$INPUT_DIR" "$VM_INPUT_DIR"
-sudo chown -R "$(whoami):docker" "$OUTPUT_DIR" "$INPUT_DIR" "$VM_INPUT_DIR"
-sudo chmod -R 777 "$OUTPUT_DIR" "$INPUT_DIR" "$VM_INPUT_DIR"
+sudo chown -R "$(whoami):docker" "$OUTPUT_DIR" "$INPUT_DIR"
+sudo chmod -R 777 "$OUTPUT_DIR" "$INPUT_DIR"
+# NOTE: Do NOT recursively chown/chmod $VM_INPUT_DIR. VM exports can contain
+# multi-GB .vmdk/-flat.vmdk files; recursing would be very slow and would
+# mutate ownership/permission metadata of raw evidence. The VM folder is
+# bind-mounted into the Plaso container read-only, so it only needs to be
+# readable. Just make sure the top-level directory itself is traversable.
+sudo chmod a+rx "$VM_INPUT_DIR" 2>/dev/null || true
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
@@ -83,33 +89,66 @@ is_first_volume() {
 
 # Function to pick the correct .vmdk descriptor for a VMware VM folder.
 # A VM export typically contains:
-#   <NAME>.vmdk            -> base disk descriptor (text)
-#   <NAME>-flat.vmdk       -> base disk raw data (referenced by descriptor)
-#   <NAME>-NNNNNN.vmdk     -> snapshot descriptor (chains back to base)
-#   <NAME>-NNNNNN-delta.vmdk -> snapshot raw data (referenced by snapshot descriptor)
-# We must hand psteal the descriptor (NOT the -flat or -delta data files).
+#   <NAME>.vmdk              -> base disk descriptor (small text file)
+#   <NAME>-flat.vmdk         -> base disk raw data (referenced by descriptor)
+#   <NAME>-sNNN.vmdk         -> split-extent raw data shards (NOT a descriptor)
+#   <NAME>-NNNNNN.vmdk       -> snapshot descriptor (chains back to base)
+#   <NAME>-NNNNNN-delta.vmdk -> snapshot raw data (referenced by snap descriptor)
+# We must give psteal the descriptor file (a small text file, NOT raw data).
 # When snapshots exist, the highest-numbered snapshot descriptor represents the
 # current state of the VM and should be processed.
+#
+# Returns:
+#   stdout: absolute path of the chosen descriptor on success
+#   rc=0: success
+#   rc=1: no descriptor candidate found
+#   rc=2: ambiguous - multiple base descriptor candidates with no snapshot
+is_vmdk_descriptor() {
+    # A real VMDK descriptor is a small text file whose first line is
+    # "# Disk DescriptorFile". The -flat / -delta / -sNNN raw extents are
+    # binary and will not match.
+    # 64 bytes is comfortably more than the 21-byte header signature and
+    # avoids reading huge files (extents are often many GB) into the pipe.
+    local f="$1"
+    LC_ALL=C head -c 64 -- "$f" 2>/dev/null | grep -q '^# Disk DescriptorFile'
+}
+
 get_vm_descriptor() {
     local vm_dir="$1"
-    local snapshot_desc base_desc
+    local f name
+    local -a snapshot_candidates=()
+    local -a base_candidates=()
 
-    # Latest snapshot descriptor: name ends in -NNNNNN.vmdk but NOT -delta.vmdk
-    snapshot_desc=$(find "$vm_dir" -maxdepth 1 -type f -iname '*.vmdk' \
-        ! -iname '*-flat.vmdk' ! -iname '*-delta.vmdk' 2>/dev/null \
-        | grep -E -- '-[0-9]{6}\.vmdk$' | sort | tail -n 1)
-    if [[ -n "$snapshot_desc" ]]; then
-        echo "$snapshot_desc"
+    while IFS= read -r f; do
+        name=$(basename "$f")
+        # Skip well-known raw-data file naming patterns up front so we don't
+        # waste a head/grep on huge binaries.
+        [[ "$name" =~ -flat\.vmdk$ ]]      && continue
+        [[ "$name" =~ -delta\.vmdk$ ]]     && continue
+        [[ "$name" =~ -s[0-9]+\.vmdk$ ]]   && continue   # split-extent shards
+        # Validate by content: only real text descriptors qualify.
+        is_vmdk_descriptor "$f" || continue
+
+        if [[ "$name" =~ -[0-9]{6}\.vmdk$ ]]; then
+            snapshot_candidates+=("$f")
+        else
+            base_candidates+=("$f")
+        fi
+    done < <(find "$vm_dir" -maxdepth 1 -type f -iname '*.vmdk' 2>/dev/null | sort)
+
+    # Snapshot descriptor (latest) wins if present - it chains back to the base.
+    if (( ${#snapshot_candidates[@]} > 0 )); then
+        printf '%s\n' "${snapshot_candidates[@]}" | sort | tail -n 1
         return 0
     fi
 
-    # Otherwise the base descriptor: .vmdk that is not flat / delta / snapshot
-    base_desc=$(find "$vm_dir" -maxdepth 1 -type f -iname '*.vmdk' \
-        ! -iname '*-flat.vmdk' ! -iname '*-delta.vmdk' 2>/dev/null \
-        | grep -Ev -- '-[0-9]{6}\.vmdk$' | sort | head -n 1)
-    if [[ -n "$base_desc" ]]; then
-        echo "$base_desc"
+    if (( ${#base_candidates[@]} == 1 )); then
+        echo "${base_candidates[0]}"
         return 0
+    elif (( ${#base_candidates[@]} > 1 )); then
+        echo "ERROR: $vm_dir contains multiple base .vmdk descriptors; cannot pick one automatically:" >&2
+        printf '  %s\n' "${base_candidates[@]}" >&2
+        return 2
     fi
 
     return 1
@@ -209,9 +248,14 @@ else
     for VM_DIR in "${VM_DIRS[@]}"; do
         VM_NAME=$(basename "$VM_DIR")
         DESCRIPTOR=$(get_vm_descriptor "$VM_DIR")
+        DESC_RC=$?
 
-        if [[ -z "$DESCRIPTOR" ]]; then
-            echo "⚠️  Skipping VM '$VM_NAME': no .vmdk descriptor found (only -flat/-delta files?)"
+        if [[ $DESC_RC -eq 2 ]]; then
+            echo "⚠️  Skipping VM '$VM_NAME': ambiguous .vmdk descriptors (see ERROR above)"
+            continue
+        fi
+        if [[ $DESC_RC -ne 0 || -z "$DESCRIPTOR" ]]; then
+            echo "⚠️  Skipping VM '$VM_NAME': no usable .vmdk descriptor found (only -flat/-delta/-sNNN extents, or no '# Disk DescriptorFile' header)"
             continue
         fi
 
