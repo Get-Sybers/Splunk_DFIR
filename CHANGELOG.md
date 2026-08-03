@@ -122,6 +122,19 @@ release fixes that. **It does not change pipeline behaviour.**
   `scripts/`, one level short in `scripts/v2/` — and so resolve the repository
   root to `<repo>/scripts`. Use `scripts/`, which resolves correctly and
   carries the same feature set.
+- **Splunk keeps no persistent state.** `deploy-splunk.sh:140` mounts
+  `splunk/var` at `/data/var`; Splunk reads `$SPLUNK_DB`, which resolves to the
+  container-internal `/opt/splunk/var/lib/splunk` and is not bind-mounted.
+  Removing the container destroys every index and the fishbucket. The mount
+  looks like persistence and provides none.
+- **`host = extracted_host`** at `splunk/etc/system/local/inputs.conf:75,81` is
+  a literal string, not a computed value.
+- **`ansible/playbooks/Include-local-conf.yml` gates all four copy tasks on a
+  single `limits.conf` stat**, so editing `indexes.conf` or `inputs.conf` and
+  redeploying is a silent no-op.
+- **`deploy-splunk.sh` can report success having deployed nothing.** No
+  `set -e`, no `docker rm` before `docker run --name`, and the readiness loop
+  greps the previous container's logs.
 - **Splunk's management port 8089 is not published.** `deploy-splunk.sh` maps
   only 8000 and 8088, so the splunkd REST API is unreachable from the host. This
   does not affect the current pipeline, but it blocks any host-side Ansible that

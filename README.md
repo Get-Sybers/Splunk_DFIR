@@ -95,6 +95,11 @@ tests, and interfaces will change without notice.
   `SPLUNK_START_ARGS=--accept-license`.
 - **The `_time` normalisation story is inconsistent** across sources. Plaso and
   Zeek are good; KAPE is mostly right; everything else is unverified.
+- 🔴 **Splunk keeps no persistent state.** `splunk/var` is mounted at
+  `/data/var`, which Splunk never reads; its real data directory is not
+  bind-mounted. Removing the container destroys every index. See
+  [project-progress.md](/project-progress.md#-verified-defects-in-current-code)
+  for this and three other verified defects.
 - **The `ansible/` directory is mostly inert.** Ansible runs *inside* the Splunk
   container, not from a control node. Of its 101 files, 97 derive from
   splunk-ansible and 94 are never executed at all; exactly 2 playbooks are

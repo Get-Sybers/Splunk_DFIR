@@ -1,121 +1,155 @@
 # 🅰️ Roadmap: "Ansible it all"
 
-> **Status: planning.** This is the beta target, not alpha work. Nothing here is
-> built. Read [docs/Ansible.md](/docs/Ansible.md) first — it describes what
-> Ansible actually does today, which is the starting point this plan builds on.
+> **Status: planning, and deliberately narrowed.** This is the beta target.
+> Read [docs/Ansible.md](/docs/Ansible.md) first for what Ansible does today.
+>
+> This document was rewritten after a design-and-critique pass. The short
+> version: **"Ansible it all" is the wrong goal, and most of the value people
+> attribute to it is available without Ansible.** The plan below keeps the part
+> that genuinely earns its place and explicitly drops the rest.
 
-## The goal
+## The honest conclusion first
 
-Drive the whole pipeline through Ansible — environment setup, evidence
-processing, Splunk lifecycle — instead of a collection of bash and PowerShell
-scripts with three playbooks injected into a container at boot.
+Four independent designs were produced for Ansible-ising the whole pipeline —
+environment setup, evidence processing, Splunk lifecycle, and KAPE/Windows —
+and then reviewed by three adversarial critics on feasibility, value, and
+sequencing. Deduplicated, the designs proposed roughly 20-24 roles, two custom
+Python modules, a filter-plugin pair, and CI from zero.
 
-## The thing to understand first: there are two Ansible surfaces
+The reviews were not kind, and they were right:
 
-This is the single most important framing, and conflating the two will waste
-effort.
+1. **Ansible's core competence doesn't apply to most of this.** Ansible is for
+   idempotent convergence across many hosts. This is one analyst on one
+   workstation. Wrapping `for f in "$INPUT_DIR"/*.E01` in YAML is a job runner,
+   not configuration management.
+2. **Most of the claimed wins are bug fixes wearing a migration's clothes.**
+   The plan's strongest evidence was a list of genuine defects in the current
+   scripts. Every one of them is fixable in the existing bash, in days, without
+   Ansible.
+3. **The idempotency argument — the strongest one — isn't an Ansible feature.**
+   It's a marker file. About 15 lines of bash.
+4. **The scope cannot land in one milestone** alongside the two beta blockers
+   that already exist (CAR mapping, and a test suite from zero), with one
+   maintainer and no regression signal.
 
-| | **Surface A — exists today** | **Surface B — what "Ansible it all" needs** |
-|:---|:---|:---|
-| Runs where | Inside the Splunk container | On the host, as a control node |
-| Driven by | The `splunk/splunk` image's own embedded splunk-ansible | `ansible-playbook`, invoked by the operator |
-| Entry point | `SPLUNK_ANSIBLE_PRE_TASKS` env var | An inventory + playbooks |
-| Scope | Configuring Splunk at startup | Everything: Docker, evidence processing, Splunk, KAPE |
-| Status | Working, 3 playbooks wired | **Does not exist. Not a single line of it.** |
+So the target is no longer "Ansible it all". It is: **fix the defects, delete
+the dead weight, and use Ansible only where it demonstrably does something bash
+cannot.**
 
-Surface A is not a foundation for Surface B. They share a vocabulary and
-nothing else. "Ansible it all" means building Surface B from scratch, alongside
-Surface A rather than on top of it.
+## Blocking prerequisite: Splunk has no persistent state
 
-The 94 vendored splunk-ansible files under `ansible/tasks/` and
-`ansible/default_playbooks/` belong to neither surface — nothing executes them.
-They are not a head start.
+Nothing else on this page matters until this is fixed, and it is not an Ansible
+problem.
 
-## Verified prerequisites
-
-These are blocking, and each was confirmed against the code.
-
-### 1. Publish Splunk's management port
-
-`scripts/deploy-splunk.sh` publishes only `8000` (web) and `8088` (HEC):
+`scripts/deploy-splunk.sh:140` mounts the host's `splunk/var` at **`/data/var`**:
 
 ```
--p 8088:8088 \
--p 8000:8000 \
+-v "$REPO_ROOT_DIR/splunk/var":/data/var \
 ```
 
-Port **8089** — splunkd's management/REST interface — is not published. Every
-REST-driven Ansible task, including the `splunk_api` module that most of the
-vendored playbooks are built around, targets 8089. Until it is exposed, a
-host-side Ansible layer cannot talk to Splunk at all.
+Splunk does not read `/data/var`. Its actual data directory is `$SPLUNK_DB`,
+which resolves inside the container to `/opt/splunk/var/lib/splunk` — and that
+path is **not bind-mounted**. Nothing in `splunk/etc/` or `ansible/` sets
+`SPLUNK_DB` or otherwise redirects it; `splunk/etc/system/local/indexes.conf`
+uses `$SPLUNK_DB/host/db`, `$SPLUNK_DB/network/db` and so on, all of which land
+on the container's ephemeral layer.
 
-One-line fix, but it must come first.
+**Consequence: every index, and the fishbucket that tracks what has already been
+ingested, is destroyed when the container is removed.** The `splunk/var` bind
+mount is inert — it looks like persistence and provides none.
 
-### 2. There is no control node, and nothing installs one
+This matters more than it first appears:
 
-`ansible` is not a dependency of this project anywhere. `setup-environment.sh`
-installs Docker and pulls images; it does not install Ansible. Bootstrapping the
-control node is itself work that has to be designed — and it cannot be done
-*in* Ansible.
+- Re-deploying means re-ingesting everything, and because the fishbucket is gone
+  too, Splunk has no memory of what it already read.
+- Any "converge the container toward desired state" design — the entire
+  idempotency case for `community.docker.docker_container` — is built on sand
+  while a container recreate silently destroys all indexed evidence. Automating
+  recreation would make accidental total data loss *more* likely than the
+  current script does.
 
-### 3. The permission model has to be decided, not deferred
+Fix this first, verify it by recreating the container and confirming indexes
+survive, and only then consider automating container lifecycle.
 
-The scripts currently `chmod -R 777` across `data_store/`, `splunk/`, and
-`ansible/` to work around Docker UID mismatch. Ansible does not fix this by
-itself; it just moves where the `777` is written. Replacing the workaround means
-choosing a real model — matching UIDs into the container, or user namespace
-remapping, or accepting group-writable — and that decision gates any honest
-migration of the processing scripts.
+## Verified defects to fix in bash, now
 
-### 4. Docker group membership doesn't apply in the run that grants it
+These were each confirmed against the code. None needs Ansible.
 
-`setup-environment.sh` already acknowledges this: adding the user to the
-`docker` group requires a new login session. A single "run this playbook and
-you're set up" flow cannot work in one pass without handling that.
+| # | Defect | Location | Effect |
+|:--|:---|:---|:---|
+| 1 | `splunk/var` mounted at `/data/var`, `SPLUNK_DB` unset | `deploy-splunk.sh:140` | All indexed data is ephemeral (above) |
+| 2 | `host = extracted_host` is a literal string | `splunk/etc/system/local/inputs.conf:75,81` | Splunk sets `host` to the text `extracted_host`, not a value |
+| 3 | All four copy tasks gated on one `limits.conf` stat | `ansible/playbooks/Include-local-conf.yml` | If `limits.conf` exists, `indexes.conf` and `inputs.conf` are never copied — editing them is a silent no-op |
+| 4 | No `set -e`; no `docker rm`/`stop` before `docker run --name` | `deploy-splunk.sh:135`, readiness loop at `:162` | A second run collides on the container name, continues anyway, then greps the **old** container's logs, finds the completion string, and exits 0 having deployed nothing |
 
-## Scope realism
+Defect 4 is the one case where `community.docker.docker_container` genuinely
+does something bash struggles to: converge on a named container rather than
+colliding with it. That is the strongest single argument for Ansible in this
+repo — and it is still cheaper to fix in bash first.
 
-An early signal from the design analysis: replacing the `ansible/` layer alone
-was assessed as **very-large** effort (11 roles), and the Splunk lifecycle
-scripts as **large** (10 roles).
+## What Ansible should and should not own
 
-For context, beta is *already* gated on:
+### Worth doing
 
-- MITRE CAR field mapping — the headline feature, entirely unimplemented
-- An automated test suite — currently zero coverage
+- **Splunk container lifecycle** — `docker_container` replaces the
+  `--name` collision failure mode outright, and a `uri` poll of
+  `/services/server/info` with `retries`/`until` replaces
+  `docker logs | grep -q` on a hard 60-second timeout, which today cannot
+  distinguish a slow image pull from a real failure.
+- **Splunk config convergence** — `copy`/`template` with their own checksum
+  idempotency fixes defect 3 properly, instead of re-encoding the sentinel.
 
-Landing all three in one milestone is not realistic. The sequencing question
-this roadmap has to answer is not "how do we Ansible everything" but "what is
-the smallest Ansible scope that honestly justifies calling beta Ansible-driven,
-and what gets explicitly deferred."
+That is the honest scope of "Ansible-driven". It is Splunk lifecycle and
+config. It is not the pipeline.
 
-## Likely staging
+### Explicitly out of scope
 
-Provisional, pending the completed analysis:
+| Not doing | Why |
+|:---|:---|
+| Evidence discovery loops | `nocaseglob`, first-volume filtering, and extension matching are already correct in bash. Turning E01 files into Ansible hosts via `add_host` is a rewrite, not a migration |
+| Batch `docker run` for psteal/zeek/rekall | `docker_container` converges long-lived services; these are one-shot batch jobs. `detach: false` also aborts on the Docker API read timeout (60s default) — fatal for multi-hour Plaso runs, and `async` terminates the child at its time limit rather than waiting |
+| The Rekall path entirely | `convert_to_json` is ~250 lines of per-plugin text parsing. Rewriting it in YAML is a downgrade, and the profile-detection ladder is broken independently of any role structure |
+| KAPE / Windows | `kape.exe` and `aim_cli.exe` cannot be provisioned by Ansible at all — Kroll registration and a Solo Edition licence that forbids commercial use. WinRM's 30-minute default operation timeout is exceeded by real KAPE runs, and multi-GB output can't cross WinRM anyway, so transport stays robocopy/SMB |
+| `ansible-vault` for the Splunk password | Trades a TTY prompt for a TTY prompt, or writes a vault key to the same disk as the evidence. Today the password exists only in shell memory; the proposed `default.yml` would put it on disk in cleartext |
+| Custom Python modules / filter plugins | `vmdk_descriptor.py`, `dfir_names.py`, `rekall_to_json.py` — a rewrite of working logic, for beta, with no tests |
+
+## Higher value than any of this
+
+Both the value and sequencing critics independently identified the same work as
+the best return, and none of it is Ansible:
+
+1. **Fix the four defects above**, starting with Splunk persistence.
+2. **Delete `scripts/v2/`.** Four of its seven scripts resolve the repo root to
+   `<repo>/scripts`. Delete rather than port — `scripts/` already carries the
+   same features.
+3. **Delete the 94 inert vendored files** in `ansible/tasks/` and
+   `ansible/default_playbooks/`. Nothing executes them, and they carry the
+   project's largest third-party obligation. One deliberate commit.
+4. **Add a test suite.** Idempotency is the entire value proposition of the
+   Ansible work, and it is currently unfalsifiable — there is no way to
+   demonstrate that a migration preserved behaviour.
+
+## Staging
 
 | Stage | Goal | Gated on |
 |:---|:---|:---|
-| 0 | Publish 8089; add a control-node bootstrap path | — |
-| 1 | Splunk lifecycle as roles (deploy, configure, purge) — the part where Ansible's idempotency genuinely earns its place | Stage 0 |
-| 2 | Environment setup as a role, resolving the permission model rather than re-encoding `777` | Stage 0 |
-| 3 | Evidence processing wrapped, not rewritten — long Plaso runs need `async`/`poll` and `creates:` guards so reprocessing an E01 is never accidental | Stages 1-2 |
-| — | KAPE/Windows over WinRM | Probably deferred past beta |
+| 0 | Fix Splunk persistence (`SPLUNK_DB` / mount `/opt/splunk/var`); verify indexes survive a container recreate | — |
+| 1 | Fix defects 2-4 in place; delete `scripts/v2/` and the 94 inert files | — (parallel with 0) |
+| 2 | Minimal test/lint gate so stage 3 has a regression signal | Stage 1 |
+| 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
+| — | Everything else above | Not in beta |
 
-## Open questions
+Publishing port **8089** is required before any host-side Ansible touches the
+Splunk REST API. The reviews disagreed on whether to do it at all, because
+exposing splunkd's management port on a workstation holding evidence has its own
+risk. Decide it deliberately when stage 3 starts, not before — and bind it to
+localhost if it is opened.
 
-- **Is Ansible the right tool for the processing scripts at all?** Ansible's
-  strength is idempotent configuration across many hosts. This is a
-  single-analyst workstation tool. Wrapping a `for` loop over E01 files in YAML
-  may be ceremony rather than value. The parts where Ansible clearly *does* earn
-  its place are Splunk lifecycle, app deployment, and conf management.
-- **Does the Windows/KAPE path justify a WinRM control path?** It adds
-  credential handling, a second connection plugin, and an Ansible-on-Windows
-  story, for scripts that already work.
-- **Should `ansible/tasks/` and `ansible/default_playbooks/` be deleted first?**
-  Building Surface B next to 94 dead files that look like Surface B is a
-  recipe for confusion.
+## What "Ansible-driven beta" honestly means
 
----
+Splunk deployment and configuration converge idempotently through Ansible, on a
+container whose data actually persists. The evidence pipeline stays shell, and
+is documented as staying shell.
 
-*This document will be revised with the completed staged plan, effort estimates,
-and the adversarial feasibility/value/sequencing review.*
+That is a smaller claim than "Ansible it all", and it is one the project can
+actually make good on.
