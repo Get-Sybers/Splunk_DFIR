@@ -1,0 +1,111 @@
+---
+# Installs third-party Splunk apps from operator-supplied packages, then lays
+# the project's own overrides on top in each app's local/ directory.
+#
+# WHY THIS EXISTS
+#
+# Splunk_TA_zeek and sankey_diagram_app used to be vendored into this
+# repository. Neither declares a licence — both have
+# "license": {"name": null, "text": null, "uri": null} in their app.manifest —
+# so redistributing them here was not clearly permitted. They are now fetched
+# by the operator instead of shipped by us.
+#
+# WHY OFFLINE-FIRST
+#
+# Splunkbase requires an authenticated session to download, so there is no
+# anonymous URL to curl. Forensic workstations are also often air-gapped. So
+# this installs from local package files; it never reaches the network.
+#
+# WHY local/ AND NOT default/
+#
+# Splunk's conf layering puts vendor defaults in default/ and site changes in
+# local/, with local/ winning. Editing default/ means an app upgrade silently
+# reverts your changes. Overrides therefore go to local/, which survives
+# reinstalling or upgrading the app.
+#
+#   splunk/etc/apps_local/<AppName>/local/*.conf   ->   <installed app>/local/
+#
+# Idempotent: an app already present is left alone, so re-running the deploy
+# does not clobber an app the operator has since upgraded by hand.
+
+- name: Check whether the third-party package directory is mounted
+  ansible.builtin.stat:
+    path: /data/dependencies/splunk_apps
+  register: tp_pkg_dir
+
+- name: Find third-party Splunk app packages
+  ansible.builtin.find:
+    paths: /data/dependencies/splunk_apps
+    patterns:
+      - "*.tgz"
+      - "*.tar.gz"
+      - "*.spl"
+    file_type: file
+  register: tp_packages
+  when: tp_pkg_dir.stat.exists
+
+- name: Report what was found
+  ansible.builtin.debug:
+    msg: >-
+      {{ (tp_packages.files | default([]) | length) }} third-party app package(s)
+      found in /data/dependencies/splunk_apps
+  when: tp_pkg_dir.stat.exists
+
+# Splunk app packages are gzipped tars whose first path component is the app
+# name, so unpacking into etc/apps/ places each app in its own directory.
+# keep_newer + a stat guard means an app already installed is not overwritten.
+- name: Determine which packages are not yet installed
+  ansible.builtin.stat:
+    path: "/opt/splunk/etc/apps/{{ (item.path | basename | regex_replace('\\.(tgz|tar\\.gz|spl)$', '')) | regex_replace('[-_]?[0-9.]*$', '') }}"
+  register: tp_installed
+  loop: "{{ tp_packages.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+
+- name: Unpack third-party app packages
+  ansible.builtin.unarchive:
+    src: "{{ item.item.path }}"
+    dest: /opt/splunk/etc/apps/
+    remote_src: true
+    owner: splunk
+    group: splunk
+  loop: "{{ tp_installed.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path | basename }}"
+  when:
+    - item.stat is defined
+    - not item.stat.exists
+
+# ------------------------------------------------------------------------------
+# Project overrides -> <app>/local/
+# ------------------------------------------------------------------------------
+
+- name: Check whether an overrides overlay is mounted
+  ansible.builtin.stat:
+    path: /data/etc/apps_local
+  register: tp_overlay_dir
+
+- name: Find override conf files
+  ansible.builtin.find:
+    paths: /data/etc/apps_local
+    patterns: "*.conf"
+    recurse: true
+  register: tp_overrides
+  when: tp_overlay_dir.stat.exists
+
+# Overlay layout is /data/etc/apps_local/<AppName>/local/<file>.conf, so the
+# path relative to apps_local maps directly onto etc/apps/.
+- name: Apply overrides into each app's local/ directory
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "/opt/splunk/etc/apps/{{ item.path | regex_replace('^/data/etc/apps_local/', '') }}"
+    remote_src: true
+    owner: splunk
+    group: splunk
+    mode: "0644"
+  loop: "{{ tp_overrides.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | regex_replace('^/data/etc/apps_local/', '') }}"
+  when: >-
+    tp_overlay_dir.stat.exists
+    and (item.path | regex_search('/local/'))

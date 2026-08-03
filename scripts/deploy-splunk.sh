@@ -21,6 +21,12 @@ SPLUNK_VAR_VOLUME="${SPLUNK_VAR_VOLUME:-splunk-dfir-var}"
 # first run also pulls the image, so this needs to be generous.
 SPLUNK_READY_TIMEOUT="${SPLUNK_READY_TIMEOUT:-600}"
 
+# Third-party Splunk apps are no longer vendored in this repository — neither
+# Splunk_TA_zeek nor sankey_diagram_app declares a licence permitting
+# redistribution. Drop their Splunkbase packages (.tgz/.spl) here and they are
+# installed into the container at start by Install-ThirdParty-Apps.yml.
+THIRD_PARTY_APP_DIR="${THIRD_PARTY_APP_DIR:-$REPO_ROOT_DIR/data_store/dependencies/splunk_apps}"
+
 ################################################################################
 echo ""
 echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
@@ -64,6 +70,44 @@ if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
         exit 1
     }
     echo "✅ Removed."
+    echo ""
+fi
+
+# 🔎 Warn about missing third-party apps before spending time on a deploy.
+#
+# Splunk_TA_zeek is load-bearing: it does the Zeek TSV parsing and routes
+# sourcetype=zeek into zeek:conn / zeek:dns / etc. Without it, Zeek data lands
+# in Splunk unparsed. sankey_diagram_app backs three panels in the BASELINE
+# BSL-host_triage dashboard.
+mkdir -p "$THIRD_PARTY_APP_DIR"
+missing_apps=()
+for want in Splunk_TA_zeek sankey_diagram_app; do
+    if ! ls "$THIRD_PARTY_APP_DIR"/*.tgz "$THIRD_PARTY_APP_DIR"/*.tar.gz "$THIRD_PARTY_APP_DIR"/*.spl 2>/dev/null \
+        | grep -qi "${want//_/[-_]}"; then
+        missing_apps+=("$want")
+    fi
+done
+if [[ ${#missing_apps[@]} -gt 0 ]]; then
+    echo ""
+    echo "⚠️  Third-party Splunk app package(s) not found in:"
+    echo "      $THIRD_PARTY_APP_DIR"
+    for m in "${missing_apps[@]}"; do echo "      • $m"; done
+    echo ""
+    echo "   These are not shipped with this repository because neither declares a"
+    echo "   licence permitting redistribution. Download them from Splunkbase and"
+    echo "   place the .tgz/.spl files in the directory above."
+    echo ""
+    echo "   Impact if you continue:"
+    echo "      • Splunk_TA_zeek missing    -> Zeek logs ingest UNPARSED (no field"
+    echo "                                     extraction, no zeek:* sourcetypes)"
+    echo "      • sankey_diagram_app missing -> 3 panels in the BASELINE"
+    echo "                                     BSL-host_triage dashboard will error"
+    echo ""
+    read -p "Continue without them? [y/N]: " continue_missing
+    if [[ "${continue_missing,,}" != "y" && "${continue_missing,,}" != "yes" ]]; then
+        echo "🚫 Aborting."
+        exit 1
+    fi
     echo ""
 fi
 
@@ -119,13 +163,14 @@ sudo chmod -R 777 "$REPO_ROOT_DIR"/ansible/*
 echo "🚀 Building Splunk Enterprise Docker container..."
 
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/etc --> /data/etc:ro"
-echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/var --> /data/var"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/ansible/playbooks --> /data/ansible/playbooks:ro"
+echo "⚙️ Mounting:      $THIRD_PARTY_APP_DIR --> /data/dependencies/splunk_apps:ro"
+echo "📦 Volume:        $SPLUNK_VAR_VOLUME --> /opt/splunk/var  (indexes persist here)"
 echo ""
 
 # Define Ansible pre-tasks
-ANSIBLE_PRE_TASKS="file:///data/ansible/playbooks/Include-Custom-Apps.yml,file:///data/ansible/playbooks/Include-local-conf.yml,file:///data/ansible/playbooks/remove_first_login.yml"
+ANSIBLE_PRE_TASKS="file:///data/ansible/playbooks/Install-ThirdParty-Apps.yml,file:///data/ansible/playbooks/Include-Custom-Apps.yml,file:///data/ansible/playbooks/Include-local-conf.yml,file:///data/ansible/playbooks/remove_first_login.yml"
 
 echo "📖 Queued Ansible Playbooks:"
 IFS=',' read -ra TASKS <<< "$ANSIBLE_PRE_TASKS"
@@ -197,6 +242,7 @@ SPLUNK_CID=$(docker run -d --name "$SPLUNK_CONTAINER" \
     -v "$SPLUNK_VAR_VOLUME":/opt/splunk/var \
     -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
     -v "$REPO_ROOT_DIR/ansible/playbooks":/data/ansible/playbooks:ro \
+    -v "$THIRD_PARTY_APP_DIR":/data/dependencies/splunk_apps:ro \
     -e SPLUNK_HTTP_ENABLESSL=true \
     -e SPLUNK_PASSWORD="$SPLUNK_PASSWORD" \
     -e SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com \

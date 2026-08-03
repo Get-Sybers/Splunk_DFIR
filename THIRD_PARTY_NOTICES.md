@@ -23,9 +23,6 @@ Code that ships inside this repository.
 | splunk-ansible | `ansible/playbooks/remove_first_login.yml` | [splunk/splunk-ansible](https://github.com/splunk/splunk-ansible) | Apache-2.0 |
 | Splunk Security Content (ESCU) lookups | `splunk/etc/apps/DETECT/lookups/`, `splunk/etc/apps/BASELINE/lookups/` | [splunk/security_content](https://github.com/splunk/security_content) | Apache-2.0 |
 | MITRE CAR data model | `car_data_model.json` | [mitre-attack/car](https://github.com/mitre-attack/car) | Apache-2.0 |
-| Corelight Add-on for Zeek v1.0.8 | `splunk/etc/apps/Splunk_TA_zeek/` | Aplura, LLC (via Splunkbase) | Not declared |
-| Sankey Diagram v1.6.0 | `splunk/etc/apps/sankey_diagram_app/` | Splunk Inc. (via Splunkbase, EOL) | Not declared |
-| d3 sankey plugin | `splunk/etc/apps/sankey_diagram_app/appserver/static/visualizations/sankey_diagram/contrib/sankey.js` | [soxofaan/d3-plugin-captain-sankey](https://github.com/soxofaan/d3-plugin-captain-sankey) | d3-derived (BSD-3-Clause) |
 
 ### splunk-ansible
 
@@ -85,16 +82,43 @@ packaged them, and their own upstream terms sit behind Splunk's redistribution.
 `car_data_model.json` is the MITRE CAR object/field/action model. Apache-2.0,
 attribution required.
 
-### Bundled Splunk apps
+### Third-party Splunk apps — no longer vendored
 
-`Splunk_TA_zeek` and `sankey_diagram_app` were both obtained from Splunkbase.
-Both declare `"license": {"name": null, "text": null, "uri": null}` in their
-`app.manifest` — that is, **neither carries a licence grant permitting
-redistribution**. They are vendored here on the assumption that redistributing
-freely-downloadable Splunkbase content is acceptable; that assumption has not
-been confirmed with either publisher.
+`Splunk_TA_zeek` (Corelight Add-on for Zeek, by Aplura, LLC) and
+`sankey_diagram_app` (Splunk Inc., EOL) were vendored in this repository until
+`v0.1.0-alpha`.
 
-See [Outstanding items](#outstanding-items).
+Both declared `"license": {"name": null, "text": null, "uri": null}` in their
+`app.manifest` — that is, **neither carried a licence grant permitting
+redistribution**. They were being shipped on the assumption that redistributing
+freely-downloadable Splunkbase content is acceptable, and that assumption was
+never confirmed with either publisher.
+
+They are now supplied by the operator instead. Splunkbase packages are placed in
+`data_store/dependencies/splunk_apps/` and installed into the container at
+deploy time by `ansible/playbooks/Install-ThirdParty-Apps.yml`. Installation is
+offline-first — it reads local package files and never reaches the network,
+which also preserves air-gapped operation.
+
+Both are load-bearing, so removing them has a real cost the operator must know
+about:
+
+- **`Splunk_TA_zeek`** does the Zeek TSV parsing (`INDEXED_EXTRACTIONS`,
+  `TIMESTAMP_FIELDS = ts`) and routes `sourcetype=zeek` into `zeek:conn`,
+  `zeek:dns` and 67 others. Without it, Zeek logs ingest unparsed.
+- **`sankey_diagram_app`** backs three panels in the `BASELINE`
+  *BSL-host_triage* dashboard. Splunk has marked it EOL, so it may be difficult
+  to obtain.
+
+`scripts/deploy-splunk.sh` checks for both before deploying and warns, naming
+the specific consequence of continuing without each.
+
+The `contrib/sankey.js` d3 plugin and the missing `visualization.js.LICENSE.txt`
+went with `sankey_diagram_app`; both concerns now sit with the operator's own
+copy rather than with this repository.
+
+These apps remain in git history, so the position above applies to anyone
+working from a commit before `v0.1.0-alpha`.
 
 ---
 
@@ -171,19 +195,8 @@ preference:
 Known gaps. Listed because an alpha that hides them is worse than one that
 does not.
 
-- **Splunkbase redistribution is unconfirmed.** `Splunk_TA_zeek` and
-  `sankey_diagram_app` declare no licence. Redistribution rights should be
-  confirmed with Aplura/Corelight and Splunk respectively. If confirmation is
-  not obtained, the cleaner fix is to remove both from the repository and have
-  the deployment fetch them from Splunkbase at install time.
-- **A referenced licence file is missing.**
-  `sankey_diagram_app/.../visualization.js` opens with
-  `/*! For license information please see visualization.js.LICENSE.txt */`, but
-  `visualization.js.LICENSE.txt` was not included when the app was vendored. The
-  bundle's own attribution for its minified dependencies is therefore
-  unavailable. It should be restored from the upstream package.
-- **`contrib/sankey.js` carries no licence header** — only a source URL comment.
-  The upstream d3 licence text should accompany it.
+- ✅ **Splunkbase redistribution** — resolved by removing both apps and having
+  the operator supply them at install time (see above).
 - **Upstream modifications are not individually marked.** Apache-2.0 §4(b)
   requires modified files to carry prominent notices. The modified
   `remove_first_login.yml` and the renamed ESCU lookups are recorded in

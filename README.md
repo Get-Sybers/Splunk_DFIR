@@ -71,7 +71,7 @@ tests, and interfaces will change without notice.
 |:---|:---|:---|
 | E01 → Plaso → Splunk | ✅ Works | Timeline search fully integrated; `_time` comes from Plaso's `datetime` field |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
-| PCAP → Zeek → Splunk | ✅ Works | ISO8601 timestamps preserved |
+| PCAP → Zeek → Splunk | ✅ Works | ISO8601 timestamps preserved. Requires operator-supplied `Splunk_TA_zeek` — see [Before You Run Anything](#before-you-run-anything) |
 | KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly. `Splunk_TA_kape` is a stub — `transforms.conf` only, no `app.conf` or `props.conf` |
 | Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md) |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
@@ -114,7 +114,7 @@ tests, and interfaces will change without notice.
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
 
-Three things that will bite you otherwise:
+Four things that will bite you otherwise:
 
 1. **KAPE is not free for commercial use.** KAPE Solo Edition is free for
    personal, educational, and law-enforcement use only. Using the KAPE
@@ -124,7 +124,12 @@ Three things that will bite you otherwise:
 2. **Splunk Enterprise is proprietary.** The deploy script auto-accepts the
    Splunk licence and runs the free tier, which is volume-capped and has no
    authentication features.
-3. **This handles real evidence.** `data_store/` is now gitignored
+3. **You must supply two Splunk apps.** `Splunk_TA_zeek` and
+   `sankey_diagram_app` are not shipped here — neither declares a licence
+   permitting redistribution. Download them from Splunkbase into
+   `data_store/dependencies/splunk_apps/` and they install automatically at
+   deploy. **Without `Splunk_TA_zeek`, Zeek logs ingest unparsed.**
+4. **This handles real evidence.** `data_store/` is now gitignored
    deny-by-default, so unknown and extensionless formats are covered. It is
    still a safety net, not a guarantee — check `git status` before you commit,
    every time. (Until `v0.1.0-alpha` this was an extension blocklist, and

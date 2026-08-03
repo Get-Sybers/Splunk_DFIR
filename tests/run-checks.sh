@@ -80,14 +80,13 @@ if command -v ansible-lint >/dev/null 2>&1; then
     # These are task files, not plays. ansible-lint must see them as tasks/ or
     # it reports a spurious "not a valid attribute for a Play".
     tmp=$(mktemp -d); mkdir -p "$tmp/tasks"
-    for f in ansible/playbooks/Include-Custom-Apps.yml \
-             ansible/playbooks/Include-local-conf.yml \
-             ansible/playbooks/remove_first_login.yml; do
-        [[ -f "$f" ]] || continue
+    # Every playbook, discovered rather than listed, so a new one is covered
+    # automatically instead of silently escaping the gate.
+    while IFS= read -r f; do
         cp "$f" "$tmp/tasks/main.yml"
         if (cd "$tmp" && ansible-lint tasks/main.yml >/dev/null 2>&1); then pass "$f (lint)"
         else fail "ansible-lint failures in $f"; fi
-    done
+    done < <(find ansible/playbooks -name "*.yml" -type f | sort)
     rm -rf "$tmp"
 else
     skip "ansible-lint not installed"
@@ -118,6 +117,50 @@ if grep -q ':/opt/splunk/var' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "nothing mounted at /opt/splunk/var — indexes will not survive the container"
 fi
+
+# ------------------------------------------------------------------------------
+group "Third-party app installation"
+# ------------------------------------------------------------------------------
+# Splunk_TA_zeek and sankey_diagram_app must not come back into the repo — they
+# carry no licence permitting redistribution.
+for app in Splunk_TA_zeek sankey_diagram_app; do
+    if [[ -d "splunk/etc/apps/$app" ]]; then
+        fail "$app is vendored again — it has no redistribution licence"
+    else
+        pass "$app not vendored"
+    fi
+done
+
+# Every playbook referenced by ANSIBLE_PRE_TASKS must actually exist, or the
+# container's Ansible run fails at start.
+pre_tasks=$(grep -m1 'ANSIBLE_PRE_TASKS=' scripts/deploy-splunk.sh | sed 's/.*="//;s/"$//')
+IFS=',' read -ra _pt <<< "$pre_tasks"
+for task in "${_pt[@]}"; do
+    f="ansible/playbooks/$(basename "$task")"
+    if [[ -f "$f" ]]; then pass "pre-task exists: $(basename "$f")"
+    else fail "ANSIBLE_PRE_TASKS references missing playbook: $f"; fi
+done
+
+# Conversely, every playbook present should be wired — dead playbooks are how
+# copy_installed_apps.yml and disable_popups.yml lingered unnoticed.
+while IFS= read -r f; do
+    if grep -q "$(basename "$f")" scripts/deploy-splunk.sh; then pass "wired: $(basename "$f")"
+    else fail "$f is not referenced by deploy-splunk.sh"; fi
+done < <(find ansible/playbooks -name "*.yml" -type f | sort)
+
+# The package directory must be mounted, or the install playbook finds nothing.
+if grep -q '/data/dependencies/splunk_apps' scripts/deploy-splunk.sh; then
+    pass "third-party package dir is mounted"
+else
+    fail "deploy-splunk.sh does not mount the third-party package directory"
+fi
+
+# Announced mounts must match actual -v flags. They drifted before: the script
+# announced splunk/ansible and splunk/var, neither of which was real.
+announced=$(grep -cE '^echo "⚙️ Mounting' scripts/deploy-splunk.sh)
+actual=$(grep -cE '^[[:space:]]+-v .*:/data/' scripts/deploy-splunk.sh)
+if [[ "$announced" -eq "$actual" ]]; then pass "mount announcements match ($actual)"
+else fail "deploy-splunk.sh announces $announced mounts but performs $actual"; fi
 
 # ------------------------------------------------------------------------------
 group "Splunk app metadata"
