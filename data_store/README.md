@@ -12,7 +12,7 @@ data_store/
    │   └── disk_images/  # Forensic disk images (E01, AFF, etc.)
    │   │   └── your-disk-image.E01
    │   │   └── yanother-disk-image.E01
-   │   └── pcap/  # Packet captures (PCAP files)
+   │   └── pcaps/  # Packet captures (PCAP files)
    │   │   └── yyour-network-capture.pcap
    │   │   └── yanother-net-capture.pcapng
    │   └── other_raw_data/  # Additional raw data sources
@@ -181,7 +181,7 @@ data_store/
 
 - **Network Captures**: Place `.pcap` and `.pcapng` files into:
   ```bash
-  data_store/raw/pcap/
+  data_store/raw/pcaps/
   ```
 
 - **Other Data Sources**: Store any additional raw files in:
@@ -193,9 +193,9 @@ data_store/
 
 - **Forensic Images**: Execute the following script to process disk images:
   ```bash
-  ./scripts/process-log2timeline-ALL.sh
+  ./scripts/process-log2timeline-Dynamic.sh
   ```
-  Processed outputs are stored in `processed/log2timeline/json/`.
+  Processed outputs are stored in `processed/log2timeline/csv/`, with job logs in `processed/log2timeline/logs/`.
 
 - **Network Captures**: Execute the following script for packet analysis:
   ```bash

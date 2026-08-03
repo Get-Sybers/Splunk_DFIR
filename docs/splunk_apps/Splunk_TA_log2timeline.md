@@ -2,8 +2,8 @@
 
 **Source:** [indigenous] 
 **Owner:** [get-sybers]  
-**Documentation:** [Log2timeline_App Documentation](https://github.com/Get-Sybers/Splunk_DFIR/blob/main/docs/splunk_apps/Log2timeline_App.md)  
-**Purpose:** This app extracts fields prom log2timeline outputs when ingesting into splunk.
+**Documentation:** this file  
+**Purpose:** This app extracts fields from log2timeline output when ingesting into Splunk.
 
 ---
 

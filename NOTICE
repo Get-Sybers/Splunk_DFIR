@@ -1,0 +1,27 @@
+Splunk DFIR Pipeline
+Copyright 2025-2026 Get-Sybers
+
+This product includes software developed by third parties, redistributed
+under the terms of their respective licenses. Full details, including the
+provenance of every vendored component, are in THIRD_PARTY_NOTICES.md.
+
+--------------------------------------------------------------------------------
+splunk-ansible
+--------------------------------------------------------------------------------
+Copyright 2018-2024 Splunk Inc.
+Licensed under the Apache License, Version 2.0.
+Source: https://github.com/splunk/splunk-ansible
+
+The contents of ansible/tasks/ and ansible/default_playbooks/ are derived from
+splunk-ansible. Of the 72 files in ansible/tasks/, 55 are unmodified copies and
+17 have been modified by Get-Sybers relative to the upstream `develop` branch.
+All 15 files in ansible/default_playbooks/ are derived from the same source.
+
+--------------------------------------------------------------------------------
+MITRE Cyber Analytics Repository (CAR)
+--------------------------------------------------------------------------------
+Copyright The MITRE Corporation.
+Licensed under the Apache License, Version 2.0.
+Source: https://github.com/mitre-attack/car
+
+car_data_model.json is derived from the MITRE CAR data model.
