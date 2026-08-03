@@ -133,6 +133,7 @@ repository.**
 | [Zeek](https://zeek.org/) | `zeek/zeek:latest` container | BSD-3-Clause | None |
 | [Splunk Enterprise](https://www.splunk.com/) | `splunk/splunk:latest` container | **Proprietary** — Splunk General Terms | See below |
 | [KAPE](https://www.kroll.com/en/services/cyber-risk/incident-response-litigation-support/kroll-artifact-parser-extractor-kape) | `scripts/Process-Kape-ALL.ps1` invokes operator-supplied `kape.exe` | **Proprietary** — Kroll EULA | See below |
+| [EvtxECmd](https://github.com/EricZimmerman/evtx) | `scripts/process-evtx-EvtxECmd.sh` runs operator-supplied `EvtxECmd.dll` in a .NET container | **MIT** | None — no commercial-use restriction |
 | [Velociraptor](https://github.com/Velocidex/velociraptor) | JSON output ingested by `Velociraptor_App` | AGPL-3.0 | None — output ingestion does not trigger AGPL |
 | [Rekall](https://github.com/google/rekall) | JSON output ingested by `Rekall_App` | Apache-2.0 | None. Upstream is archived/unmaintained |
 
@@ -164,6 +165,12 @@ Kroll.
 This is the sharpest licensing constraint in the project, and it is a constraint
 on you rather than on this code. Everything else here can be used commercially
 under Apache-2.0. The KAPE path cannot, without a Kroll licence.
+
+Note the contrast with **EvtxECmd**, also by Eric Zimmerman but MIT licensed
+with no commercial-use restriction. If Windows Event Logs are what you need, the
+EvtxECmd path (`scripts/process-evtx-EvtxECmd.sh`) is usable in paid work where
+the KAPE path is not. The two tools' licences are genuinely different — don't
+assume the Zimmerman name implies one or the other.
 
 ---
 

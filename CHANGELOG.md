@@ -51,6 +51,31 @@ release fixes that. **It does not change pipeline behaviour.**
   of those are wired in, and exactly 2 are original work. The 94 files in
   `tasks/` and `default_playbooks/` are never executed.
 - `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" beta target.
+- **Windows Event Log ingestion** — `scripts/process-evtx-EvtxECmd.sh` and the
+  `EvtxECmd_App` Splunk app. Splunk cannot read binary `.evtx`, and part of the
+  long-standing "EVTX won't ingest" problem turned out to be simpler than
+  suspected: **there was no monitor stanza for the EVTX directory at all.**
+
+  The script runs EvtxECmd (MIT, operator-supplied) in a .NET container over
+  `data_store/raw/other_raw_data/WinEvt/`, preserving per-host sub-directories,
+  and is idempotent so re-running neither re-parses nor duplicates events in
+  Splunk. `EvtxECmd_App` maps EvtxECmd's field names onto the ones the Splunk
+  Add-on for Microsoft Windows uses — `EventCode`, `RecordNumber`, `LogName`,
+  `SourceName`, `ComputerName` — plus CIM aliases, so searches written against
+  that add-on work here. The add-on is not required and does not conflict.
+
+  `host` is set at index time from each event's own `Computer` field, so records
+  are attributed to the machine the log came from rather than to the Splunk
+  container.
+
+  The XML lane is deliberately **not** labelled `XmlWinEventLog` and is disabled
+  by default. EvtxECmd's `Payload` is the `EventData` fragment only, and its
+  `--xml` output is beautified with the namespace declaration stripped — so it
+  is not the wire format the add-on's `XmlWinEventLog` sourcetype expects.
+  Mislabelling it would look like it worked and silently under-extract.
+
+  **None of this has been run against a real event log.** No Windows, no `.evtx`
+  sample, no .NET, no Splunk in the environment it was written in.
 - `ansible/playbooks/Install-ThirdParty-Apps.yml` — installs operator-supplied
   Splunk app packages at container start, then applies project overrides into
   each app's `local/` directory rather than editing `default/`, so they survive

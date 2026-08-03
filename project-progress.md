@@ -30,7 +30,7 @@ word, not a test result.
 | [Rekall](https://github.com/google/rekall)                    | ⚠️            | json            | ⚠️     |    ❌   |     ❌     |
 | CSVs                                                          |               | csv             | ✅     |         |     ❌     |
 | JSON                                                          |               | json            | ✅     |         |     ❌     |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     |               | evt, evtx       | ❌     |         |     ❌     |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     | ⚠️            | evtx            | ⚠️     |    ⚠️   |     ❌     |
 | Linux Logs                                                    |               |                 |        |         |            |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |        |         |            |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |        |         |            |
@@ -90,9 +90,12 @@ is never run on the host — see [docs/Ansible.md](/docs/Ansible.md) and the
   host.
 - **`Splunk_TA_kape` is a stub** — contains only `transforms.conf`. No
   `app.conf`, no `props.conf`. It is not a functioning app.
-- **Raw EVTX won't ingest.** Splunk sees the files but won't index them.
-  Suspected to relate to how Windows update logs register changes to evtx files.
-  Unresolved.
+- **Raw EVTX ingest is built but unverified.** `process-evtx-EvtxECmd.sh` and
+  `EvtxECmd_App` now exist and map EvtxECmd output onto the Splunk Add-on for
+  Microsoft Windows field names. Part of the original problem was simpler than
+  suspected: there was **no monitor stanza for the EVTX directory at all**, and
+  Splunk cannot read binary `.evtx` in any case. Neither the script nor the
+  conf has been run against a real event log.
 - **Two third-party Splunk apps must now be supplied by you.**
   `Splunk_TA_zeek` and `sankey_diagram_app` are no longer shipped (neither
   declares a licence permitting redistribution). Put their Splunkbase packages

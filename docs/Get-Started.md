@@ -53,7 +53,18 @@ Splunk_DFIR/scripts/process-zeek-ALL.sh
 - Automates processing of all network capture files (`.pcap` and `.pcapng`) using Zeek.
 - Output lands in `data_store/processed/zeek/<pcap-name>/`.
 
-### 📊 **Step 5: Deploy Splunk**
+### 🪟 **Step 5: Parse Windows Event Logs (optional)**
+```bash
+Splunk_DFIR/scripts/process-evtx-EvtxECmd.sh
+```
+- Converts `.evtx` in `data_store/raw/other_raw_data/WinEvt/<host>/` using EvtxECmd.
+- Requires operator-supplied EvtxECmd — see
+  [the README](/data_store/dependencies/evtxecmd/README.md). MIT licensed, no
+  commercial-use restriction.
+- ⚠️ Not runtime-tested — see
+  [the script docs](/docs/scripts/processing_data/process-evtx-EvtxECmd.md).
+
+### 📊 **Step 6: Deploy Splunk**
 ```bash
 Splunk_DFIR/scripts/deploy-splunk.sh
 ```

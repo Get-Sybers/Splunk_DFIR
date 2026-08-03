@@ -76,7 +76,7 @@ tests, and interfaces will change without notice.
 | Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md) |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
 | **MITRE CAR field mapping** | ❌ **Not delivered** | `car_data_model.json` and a data model conf exist. **No actual mapping is wired up.** This is the project's headline feature and it is not done |
-| Raw EVTX ingest | ❌ Broken | Splunk sees the files but won't ingest them. Unresolved |
+| Raw EVTX ingest | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh` + `EvtxECmd_App` map EvtxECmd output onto the Splunk Add-on for Windows field names. There was previously no monitor stanza at all, and Splunk cannot read binary `.evtx` regardless. **Never run against a real event log** |
 | Linux logs, Sysmon, Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
 
 ### Known limitations
