@@ -1,3 +1,0 @@
-# we can just use the yum set of tasks for rpms
-- name: Install Splunk (rpm)
-  include_tasks: install_splunk_yum.yml

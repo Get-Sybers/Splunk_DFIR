@@ -48,77 +48,43 @@ the main reason this is alpha rather than beta.
 
 Things that are broken or unsafe right now. These block a beta.
 
-### 🔻 `scripts/v2/` is broken — use `scripts/`
+### 🔻 `scripts/v2/` is a divergent duplicate — use `scripts/`
 
-`scripts/v2/` is inconsistent with itself. The three genuinely refactored
-scripts resolve the repo root as `$SCRIPT_DIR/../..`, which is correct from
-`scripts/v2/`. The other four still use `$SCRIPT_DIR/..` — the depth that is
-correct in `scripts/`, but one level short in `scripts/v2/` — so they resolve
-the repo root to `<repo>/scripts`:
+Its path resolution was **fixed** in the alpha (all seven scripts now resolve
+the repo root correctly, and `tests/run-checks.sh` asserts it). But it does not
+carry the Splunk fixes: running `scripts/v2/deploy-splunk.sh` still gets you
+indexes that die with the container and a deploy that can report success having
+done nothing.
 
-| Script | Repo root resolves to | Correct? |
-|:---|:---|:---:|
-| `process-log2timeline-Dynamic.sh` | `<repo>` | ✅ |
-| `process-rekall-json.sh` | `<repo>` | ✅ |
-| `process-zeek-ALL.sh` | `<repo>` | ✅ |
-| `deploy-splunk.sh` | `<repo>/scripts` | ❌ |
-| `setup-environment.sh` | `<repo>/scripts` | ❌ |
-| `purge-splunk-container.sh` | `<repo>/scripts` | ❌ |
-| `config-splunk-inputs.sh` | `<repo>/scripts` | ❌ |
+Keeping it means porting every fix twice. The
+[roadmap](/docs/Ansible-Roadmap.md) recommends deleting it; that call has not
+been made.
 
-`scripts/` (v1) resolves correctly for all seven and carries the same VMware
-support, so nothing is lost by using it.
+### ✅ The inert Ansible layer has been removed
 
-**`scripts/v2/` is not part of this release.** It stays in-tree as a
-development sketch. Fix: change `$SCRIPT_DIR/..` to `$SCRIPT_DIR/../..` in the
-four broken scripts, then re-test before promoting.
+`ansible/` held 101 files; **94 of them were never executed by anything**.
+Ansible runs *inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS`, only
+`ansible/playbooks/` is mounted, and the container image ships its own copy of
+splunk-ansible.
 
-### 🔻 The Ansible layer is mostly inert
+Removed in v0.1.0-alpha: `ansible/tasks/` (79), `ansible/default_playbooks/`
+(15), two zero-byte `ansible/scripts/` placeholders, and the two unwired
+playbooks (`copy_installed_apps.yml`, `disable_popups.yml` — the latter
+superseded by the `SPLUNK_DISABLE_POPUPS` env var).
 
-`ansible/` looks like a substantial Ansible codebase. It isn't. Ansible runs
-*inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS`; there is no
-inventory, no `ansible.cfg`, no roles, and `ansible-playbook` is never invoked
-on the host.
+**What remains is 3 files, all wired, all passing `ansible-lint` at its
+`production` profile.** Two are original work. This also removed the project's
+largest third-party obligation at zero functional cost.
 
-| Path | Files | Reality |
-|:---|:---:|:---|
-| `ansible/playbooks/` | 5 | Only dir mounted into the container — and only 3 of 5 are wired in |
-| `ansible/tasks/` | 79 | Vendored splunk-ansible, **never executed**, nothing references it |
-| `ansible/default_playbooks/` | 15 | Vendored splunk-ansible, **never executed** |
-| `ansible/scripts/` | 2 | Both **0 bytes** — placeholders |
-
-Original Ansible work in this project is **two playbooks**:
-`Include-Custom-Apps.yml` and `Include-local-conf.yml`. `copy_installed_apps.yml`
-and `disable_popups.yml` are present but unwired — the latter is superseded by
-the `SPLUNK_DISABLE_POPUPS=True` env var.
-
-Full detail in [docs/Ansible.md](/docs/Ansible.md). This matters for scoping
-"Ansible it all" — see [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
-
-### ✅ Defects found and fixed in the alpha
-
-Each was verified against the code, then fixed. **None of the fixes could be
-runtime-tested here** — there is no Docker, Splunk, or evidence in the
-development environment. They are statically verified only, and need a real
-deploy to confirm.
-
-| Defect | Fix | Verified how |
-|:---|:---|:---|
-| `splunk/var` mounted at `/data/var`; `SPLUNK_DB` unset, so every index died with the container | Index data now lives in a named Docker volume mounted at `/opt/splunk/var`. A named volume, not a bind mount, so Docker seeds it from the image and container-side ownership survives | Check asserts something is mounted at `/opt/splunk/var` |
-| `purge-splunk-container.sh` deleted the inert host dir, so a purge would have left the new volume intact | Purge removes the volume explicitly, and still clears the legacy directory | Check asserts deploy and purge agree on the volume name |
-| `host = extracted_host` — a literal, so every event was labelled `extracted_host` | Removed. `[l2t:csv]` already sets host via `TRANSFORMS-set_host` from the CSV's own `hostname` field | Check greps for literal `extracted_*` hosts |
-| `Include-local-conf.yml` gated all four copies on one `limits.conf` stat, so editing `indexes.conf` was a silent no-op | Each file stat'd individually via a loop; conf mode corrected `0755` → `0644` | `ansible-lint` passes at `production` profile |
-| `deploy-splunk.sh` collided on `--name`, then greped the **old** container's logs and exited 0 having deployed nothing | Refuses to collide (prompts to remove); captures the container ID and polls by ID; detects container death; timeout 60s → configurable 600s | Static review + syntax |
-| `sudo chown -R`/`chmod -R` on unquoted paths — a repo path with a space would send a privileged recursive operation at unintended targets | All quoted, glob left outside the quotes | `shellcheck -S warning` clean on `deploy-splunk.sh` |
-| 7 scripts resolved the repo root one level wrong (`scripts/v2/` ×4, `scripts/deprecated/` ×3) | All corrected to `$SCRIPT_DIR/../..` | Check resolves `REPO_ROOT_DIR` for every script and compares to the real root |
-
-`chmod -R 777` remains. It is a workaround for the container/host UID mismatch,
-and replacing it needs a real permission model decided against a running
-container — see [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
+There is still no inventory, no `ansible.cfg`, no roles, and `ansible-playbook`
+is never run on the host — see [docs/Ansible.md](/docs/Ansible.md) and the
+[roadmap](/docs/Ansible-Roadmap.md).
 
 ### 🔻 Other blockers
 
-- **No automated tests anywhere.** Highest-value next step.
+- **No pipeline tests.** `tests/run-checks.sh` runs 86 static checks, but
+  nothing exercises the actual pipeline. Until something does, every ✅ on this
+  board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
   on `data_store/` to work around Docker UID mismatches. Don't run on a shared
   host.
@@ -161,10 +127,13 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
   - Looking at the potential to use CTI STIX data for this as well as data within https://github.com/ForensicArtifacts/artifacts
 - Develop a **Splunk dashboard** to visualize **MITRE CAR-mapped events**.
 
-### 🔹 **Testing** — *new, and overdue*
-- Add syntax/lint gating (`bash -n`, `shellcheck`, `Invoke-ScriptAnalyzer`).
-- Add a smoke test that runs the pipeline against a small public sample image.
-- Wire the above into CI so "✅" on this board means something checkable.
+### 🔹 **Testing** — *partly done*
+- ✅ Syntax/lint gating — `tests/run-checks.sh` (86 checks: `bash -n`,
+  shellcheck, path resolution, `ansible-lint`, conf sanity, gitignore, secrets,
+  doc links).
+- ⬜ A smoke test that runs the pipeline against a small public sample image.
+- ⬜ `Invoke-ScriptAnalyzer` for the PowerShell scripts.
+- ⬜ Wire the above into CI so "✅" on this board means something checkable.
 
 ### 🔹 **KAPE & Raw EVTX Processing**
 - Develop ingestion pipeline for **KAPE output** (targeting forensic triage artifacts).
@@ -184,12 +153,7 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 - Confirm redistribution rights for `Splunk_TA_zeek` and `sankey_diagram_app`,
   or remove them and fetch from Splunkbase at install time.
 - Restore the missing `visualization.js.LICENSE.txt` in `sankey_diagram_app`.
-- Mark the 17 modified `ansible/tasks/` files in-file per Apache-2.0 §4(b).
-- **Decide whether to delete `ansible/tasks/` and `ansible/default_playbooks/`.**
-  They are never executed, and removing them would drop the project's largest
-  third-party obligation at zero functional cost. Deliberately deferred out of
-  the alpha — deleting 94 files while also changing the release's story is two
-  changes at once.
+- Mark `remove_first_login.yml` in-file as modified, per Apache-2.0 §4(b).
 - Review the `!dependencies/SuperMem/**` rule in `data_store/.gitignore`. It
   would vendor a third-party tool into the repo if SuperMem is placed there.
 

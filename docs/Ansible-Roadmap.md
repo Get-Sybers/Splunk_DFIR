@@ -138,9 +138,8 @@ the best return, and none of it is Ansible:
    remains a divergent duplicate that does *not* carry the Splunk persistence,
    collision or readiness fixes — so running it still gets you the old
    behaviour. Delete rather than maintain two copies.
-3. **Delete the 94 inert vendored files** in `ansible/tasks/` and
-   `ansible/default_playbooks/`. Nothing executes them, and they carry the
-   project's largest third-party obligation. One deliberate commit.
+3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
+   playbooks, and the project's largest third-party obligation went with them.
 4. **Add a pipeline test suite.** `tests/run-checks.sh` now provides 90 static
    checks, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
