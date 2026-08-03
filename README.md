@@ -85,11 +85,12 @@ tests, and interfaces will change without notice.
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
-- **`scripts/v2/` is broken and unsupported.** Four of its seven scripts
-  (`deploy-splunk.sh`, `setup-environment.sh`, `purge-splunk-container.sh`,
-  `config-splunk-inputs.sh`) still compute `REPO_ROOT_DIR` as `$SCRIPT_DIR/..`,
-  the depth that is correct in `scripts/` but one level short in `scripts/v2/`,
-  so they resolve the repo root to `<repo>/scripts` instead of `<repo>`. **Use `scripts/`, not `scripts/v2/`.** See
+- **`scripts/v2/` is a divergent duplicate — don't use it.** Its path
+  resolution was fixed in the alpha, but it does **not** carry the Splunk
+  persistence, container-collision or readiness fixes, so running it gets you
+  the old broken behaviour: indexes that die with the container, and a deploy
+  that can report success having done nothing. **Use `scripts/`.** The roadmap
+  recommends deleting `v2` rather than maintaining two copies — see
   [project-progress.md](/project-progress.md).
 - **Scripts `chmod -R 777` their working directories.** Convenient, not safe.
   Don't run this on a shared host.
