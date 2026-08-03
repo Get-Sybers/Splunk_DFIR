@@ -95,6 +95,29 @@ the `SPLUNK_DISABLE_POPUPS=True` env var.
 Full detail in [docs/Ansible.md](/docs/Ansible.md). This matters for scoping
 "Ansible it all" — see [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
 
+### 🔻 Verified defects in current code
+
+Each confirmed against the code during the alpha review. Details and fixes in
+[Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
+
+- 🔴 **Splunk keeps no persistent state.** `deploy-splunk.sh:140` mounts
+  `splunk/var` at `/data/var`, but Splunk reads `$SPLUNK_DB`, which resolves to
+  the container-internal `/opt/splunk/var/lib/splunk` — not bind-mounted, and
+  nothing sets `SPLUNK_DB`. **Every index and the fishbucket are destroyed when
+  the container is removed.** The `splunk/var` mount looks like persistence and
+  provides none. This is the most serious defect in the project.
+- 🔴 **`host = extracted_host` is a literal string** at
+  `splunk/etc/system/local/inputs.conf:75` and `:81`. Splunk assigns the host
+  field the literal text `extracted_host`, not a computed value.
+- 🔴 **`Include-local-conf.yml` gates all four tasks on one `limits.conf`
+  stat.** If `limits.conf` exists, `indexes.conf` and `inputs.conf` are never
+  copied — so editing them and redeploying is a silent no-op.
+- 🔴 **`deploy-splunk.sh` reports success after deploying nothing.** No
+  `set -e`, and no `docker rm`/`stop` before `docker run --name
+  splunk-enterprise`. A second run collides on the name, continues anyway, then
+  the readiness loop greps the *old* container's logs, finds the completion
+  string, and exits 0.
+
 ### 🔻 Other blockers
 
 - **No automated tests anywhere.** Highest-value next step.
