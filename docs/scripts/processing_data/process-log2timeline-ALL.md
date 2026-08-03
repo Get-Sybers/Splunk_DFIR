@@ -1,3 +1,8 @@
+> ⚠️ **Documents a deprecated script.** `process-log2timeline-ALL.sh` now lives in
+> `scripts/deprecated/` and is unmaintained. The supported replacement is
+> `scripts/process-log2timeline-Dynamic.sh`, which also handles VMware VM exports.
+> See [Scripts Overview](/docs/scripts/Scripts-Overview.md).
+
 # Log2Timeline Processing Script Documentation
 
 ## Overview

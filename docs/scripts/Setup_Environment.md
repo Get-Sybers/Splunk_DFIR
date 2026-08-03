@@ -1,7 +1,7 @@
 # Setup Environment Script
 
 ## Overview
-The `setup_environment.sh` script automates the setup process for the Splunk DFIR (Digital Forensics and Incident Response) environment. It handles Docker installation, permissions, and pulls necessary Docker images required for forensic analysis.
+The `setup-environment.sh` script automates the setup process for the Splunk DFIR (Digital Forensics and Incident Response) environment. It handles Docker installation, permissions, and pulls necessary Docker images required for forensic analysis.
 
 ## Prerequisites
 - A Debian-based Linux distribution
@@ -31,7 +31,7 @@ The `setup_environment.sh` script automates the setup process for the Splunk DFI
 Execute the script from the terminal:
 
 ```bash
-Splunk_DFIR/scripts/setup_environment.sh
+Splunk_DFIR/scripts/setup-environment.sh
 ```
 
 ### Script Execution Flow
@@ -47,8 +47,9 @@ After running the script:
 1. **Log out and log back in** to apply the Docker group membership changes
 2. If you downloaded Docker image tarballs, you can load them using:
    ```bash
-   Splunk_DFIR/scripts/setup_load_docker_tar.sh
+   Splunk_DFIR/scripts/deprecated/setup_load_docker_tar.sh
    ```
+   ⚠️ This script now lives under `scripts/deprecated/` and is unmaintained.
 
 ## Troubleshooting
 

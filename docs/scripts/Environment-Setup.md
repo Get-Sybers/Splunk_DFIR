@@ -1,3 +1,8 @@
+> ⚠️ **Superseded.** This file and [`Setup_Environment.md`](/docs/scripts/Setup_Environment.md) both document the
+> same script. `Setup_Environment.md` is the maintained one — prefer it.
+> Note the script is now named `setup-environment.sh` (hyphens), and
+> `setup_load_docker_tar.sh` has moved to `scripts/deprecated/`.
+
 # setup_environment.sh
 ## 🚀 Script Overview
 

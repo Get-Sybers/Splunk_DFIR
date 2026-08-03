@@ -3,7 +3,7 @@
   $Splunk_DFIR                                 
     └── scripts/                                      # Processing scripts for forensic data
     │
-    └── ansible-playbooks/
+    └── ansible/                                      # Ansible playbooks/tasks (derived from splunk-ansible, Apache-2.0)
     │
     └── docs/                                         # Documentation for project usage and setup
     │
@@ -11,7 +11,9 @@
     │   │
     │   └── raw/                                      # Unprocessed forensic data
     │   │   └── disk_images/                          # Forensic disk images (E01, AFF, etc.)
-    │   │   └── pcap/                                 # Packet captures (PCAP files)
+    │   │   └── pcaps/                                # Packet captures (PCAP files)
+    │   │   └── VM_files/                             # VMware VM exports (one folder per VM)
+    │   │   └── memory/                               # Raw memory captures
     │   │   └── other_raw_data/                       # Additional raw data sources
     │   │
     │   └── processed/                                # all data to be ingested by splunk)
