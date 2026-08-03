@@ -13,9 +13,26 @@ Licensed under the Apache License, Version 2.0.
 Source: https://github.com/splunk/splunk-ansible
 
 The contents of ansible/tasks/ and ansible/default_playbooks/ are derived from
-splunk-ansible. Of the 72 files in ansible/tasks/, 55 are unmodified copies and
-17 have been modified by Get-Sybers relative to the upstream `develop` branch.
-All 15 files in ansible/default_playbooks/ are derived from the same source.
+splunk-ansible. Of the 79 files in ansible/tasks/, 61 are unmodified copies and
+18 have been modified by Get-Sybers relative to the upstream `develop` branch.
+All 15 files in ansible/default_playbooks/ are derived from the same source, as
+are 3 of the 5 playbooks in ansible/playbooks/ (copy_installed_apps.yml
+unmodified; disable_popups.yml and remove_first_login.yml modified).
+
+In total, 97 of the 101 files under ansible/ derive from splunk-ansible.
+
+--------------------------------------------------------------------------------
+Splunk Security Content (ESCU)
+--------------------------------------------------------------------------------
+Copyright 2022-2024 Splunk Inc.
+Licensed under the Apache License, Version 2.0.
+Source: https://github.com/splunk/security_content
+
+The lookup files in splunk/etc/apps/DETECT/lookups/ and
+splunk/etc/apps/BASELINE/lookups/ (77 files) are derived from Splunk Security
+Content, authored by the Splunk Threat Research Team and contributors. Filenames
+have been given a local taxonomy prefix (bad_, com_, sus_); file contents and
+their upstream identifiers are unmodified.
 
 --------------------------------------------------------------------------------
 MITRE Cyber Analytics Repository (CAR)

@@ -1,111 +1,37 @@
-# ============================
-# 🛑 Ignore all files inside processed/raw DFIR directories
-# ============================
+# ==============================================================================
+# 🛑 Evidence safety — deny by default
+# ==============================================================================
+#
+# data_store/ holds real forensic evidence. This file denies everything and
+# re-includes only the directory skeleton and documentation.
+#
+# It used to be an extension blocklist. A blocklist fails silently on any format
+# nobody thought to add, and that had already happened: VMware exports
+# (.vmdk, -flat.vmdk, .vmx, .ovf, .ova, .vmsd, .vmxf) were fully committable,
+# because VM support was added to the pipeline without updating the list —
+# and data_store/raw/VM_files/ is the documented place to put them.
+#
+# Deny-by-default means the next format nobody thought of is covered too.
+#
+# This is a safety net, not a guarantee. Check `git status` before committing.
 
-# JSON / JSN (log2timeline, Plaso, memory forensic outputs)
-**.[Jj][Ss][Oo][Nn][Ll]
-**.[Jj][Ss][Oo][Nn]
-**.[Jj][Ss][Nn]
+# Ignore everything under data_store/ ...
+*
 
-# XML 
-**.[Tt][Ss][Vv]
+# ... but descend into subdirectories, so the skeleton is preserved ...
+!*/
 
-# XML 
-**.[Xx][Mm][Ll]
+# ... and keep only these.
+!.gitignore
+!.gitkeep
+!README.md
 
-# Log files (Zeek, Sysmon, Event Logs, Forensic Logs)
-**.[Ll][Oo][Gg]
-
-# Text files (Event logs, timestamps, forensic reports)
-**.[Tt][Xx][Tt]
-
-# CSV files (timeline outputs, forensic exports)
-**.[Cc][Ss][Vv]
-
-# SQLite databases (Plaso, KAPE, forensic tools)
-**.[Ss][Qq][Ll][Ii][Tt][Ee]
-**.[Dd][Bb]
-**.[Ss][Qq][Ll][Ii][Tt][Ee]3
-**.[Ss][Qq][Ll]
-
-# Memory dumps (Volatility, DumpIt, raw memory captures)
-**.[Vv][Mm][Ee][Mm]
-**.[Mm][Ee][Mm]
-**.[Nn][Vv][Rr][Aa][Mm]
-**.[Vv][Mm][Ss][Nn]
-**.[Rr][Aa][Ww]
-**.[Dd][Mm][Pp]
-**.[Mm][Dd][Mm][Pp]
-**.[Ll][Ii][Mm][Ee]
-**.[Aa][Dd]1
-
-# PCAP files (Network traffic captures, Zeek, Suricata)
-**.[Pp][Cc][Aa][Pp]
-**.[Pp][Cc][Aa][Pp][Nn][Gg]
-**.[Cc][Aa][Pp]
-
-# Disk images (Forensic disk captures - EnCase, raw, AFF)
-**.[Ee]0[1-9]
-**.[Ee][Xx]01
-**.[Ll]01
-**.[Ll][Xx]01
-**.[Aa][Ff][Ff]
-**.[Ss]01
-**.[Vv][Hh][Dd]
-**.[Vv][Hh][Dd][Xx]
-**.[Dd][Dd]
-
-# Prefetch files (Windows forensics)
-**.[Pp][Ff]
-
-# Windows Registry hives (NTUSER.dat, SYSTEM, SOFTWARE, etc.)
-**.[Dd][Aa][Tt]
-**.[Rr][Ee][Gg]
-
-# Windows Event Logs (EVTX)
-**.[Ee][Vv][Tt][Xx]
-**.[Ee][Vv][Tt]
-
-# Shadow copies & system restore points
-**.[Vv][Ss][Ss]
-
-# Hibernation & page files (Windows)
-**.[Hh][Ii][Bb][Ee][Rr][Ff][Ii][Ll].[Ss][Yy][Ss]
-**.[Pp][Aa][Gg][Ee][Ff][Ii][Ll][Ee].[Ss][Yy][Ss]
-**.[Ss][Ww][Aa][Pp]
-
-# Email archives (OST, PST, MBOX)
-**.[Pp][Ss][Tt]
-**.[Oo][Ss][Tt]
-**.[Mm][Bb][Oo][Xx]
-
-# Executable & malicious binary dumps (malware, analysis)
-**.[Ee][Xx][Ee]
-**.[Dd][Ll][Ll]
-**.[Bb][Ii][Nn]
-**.[Ss][Yy][Ss]
-**.[Ii][Mm][Gg]
-
-# Compressed archives (zipped forensic packages)
-**.[Zz][Ii][Pp]
-**.[7][Zz]
-**.[Tt][Aa][Rr]
-**.[Gg][Zz]
-**.[Xx][Zz]
-**.[Rr][Aa][Rr]
-
-# Yara rules
-**.[Yy][Aa][Rr][Aa]
-**.[Yy][Aa][Rr]
-
-# Misc forensic artifacts (Rekall, Volatility, memory analysis)
-**.[Nn][Dd][Jj][Ss][Oo][Nn]
-**.[Mm][Ss][Gg][Pp][Aa][Cc][Kk]
-**.[Tt][Ii][Mm][Ee][Ll][Ii][Nn][Ee]
-
-# ignore docker tar balls
-**.[Tt][Aa][Rr]
-
-# Kape Dependencies
-!dependencies/SuperMem/**
+# ------------------------------------------------------------------------------
+# Pre-existing exception, retained from the previous .gitignore.
+#
+# ⚠️ Note: this tracks SuperMem, a third-party tool, if it is placed here.
+#    Doing so vendors third-party code into the repository and would need to be
+#    accounted for in THIRD_PARTY_NOTICES.md. Flagged for review in beta.
+# ------------------------------------------------------------------------------
 !dependencies/.gitkeep
+!dependencies/SuperMem/**

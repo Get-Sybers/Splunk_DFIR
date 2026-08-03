@@ -66,7 +66,7 @@ echo "🚀 Building Splunk Enterprise Docker container..."
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/etc --> /data/etc:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/var --> /data/var"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
-echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/ansible --> /data/ansible:ro"
+echo "⚙️ Mounting:      $REPO_ROOT_DIR/ansible/playbooks --> /data/ansible/playbooks:ro"
 echo ""
 
 # Define Ansible pre-tasks

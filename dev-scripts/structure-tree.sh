@@ -4,7 +4,7 @@
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
-REPO_ROOT="$(realpath "$REPO_ROOT_DIR/data_store/processed"
+REPO_ROOT="$(realpath "$REPO_ROOT_DIR/data_store/processed")"
 
 # Function to generate a structured directory tree
 generate_tree() {

@@ -20,7 +20,9 @@ working toward field mappings aligned to the
 - [2. Get-Started](/docs/Get-Started.md)
 - [3. Dir-Structure](/docs/Dir-Structure.md)
 - [4. Project-Progress](/project-progress.md)
-- [5. Docs](/docs/)
+- [5. Ansible](/docs/Ansible.md) — how it actually works here
+- [6. Docs](/docs/)
+- [7. Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
 
 ### 📚 This Page
 
@@ -71,7 +73,7 @@ tests, and interfaces will change without notice.
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek → Splunk | ✅ Works | ISO8601 timestamps preserved |
 | KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly. `Splunk_TA_kape` is a stub — `transforms.conf` only, no `app.conf` or `props.conf` |
-| Splunk container deploy | ✅ Works | Ansible-driven, dynamic path resolution |
+| Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md) |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
 | **MITRE CAR field mapping** | ❌ **Not delivered** | `car_data_model.json` and a data model conf exist. **No actual mapping is wired up.** This is the project's headline feature and it is not done |
 | Raw EVTX ingest | ❌ Broken | Splunk sees the files but won't ingest them. Unresolved |
@@ -83,9 +85,9 @@ tests, and interfaces will change without notice.
   above means "worked when the author last ran it by hand."
 - **`scripts/v2/` is broken and unsupported.** Four of its seven scripts
   (`deploy-splunk.sh`, `setup-environment.sh`, `purge-splunk-container.sh`,
-  `config-splunk-inputs.sh`) were copied from `scripts/` without adjusting their
-  path depth, so they resolve the repo root to `<repo>/scripts` instead of
-  `<repo>`. **Use `scripts/`, not `scripts/v2/`.** See
+  `config-splunk-inputs.sh`) still compute `REPO_ROOT_DIR` as `$SCRIPT_DIR/..`,
+  the depth that is correct in `scripts/` but one level short in `scripts/v2/`,
+  so they resolve the repo root to `<repo>/scripts` instead of `<repo>`. **Use `scripts/`, not `scripts/v2/`.** See
   [project-progress.md](/project-progress.md).
 - **Scripts `chmod -R 777` their working directories.** Convenient, not safe.
   Don't run this on a shared host.
@@ -93,6 +95,12 @@ tests, and interfaces will change without notice.
   `SPLUNK_START_ARGS=--accept-license`.
 - **The `_time` normalisation story is inconsistent** across sources. Plaso and
   Zeek are good; KAPE is mostly right; everything else is unverified.
+- **The `ansible/` directory is mostly inert.** Ansible runs *inside* the Splunk
+  container, not from a control node. Of its 101 files, 97 derive from
+  splunk-ansible and 94 are never executed at all; exactly 2 playbooks are
+  original work. See [docs/Ansible.md](/docs/Ansible.md). Driving the whole pipeline
+  through Ansible — "Ansible it all" — is the
+  [beta target](/docs/Ansible-Roadmap.md).
 
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
@@ -107,9 +115,11 @@ Three things that will bite you otherwise:
 2. **Splunk Enterprise is proprietary.** The deploy script auto-accepts the
    Splunk licence and runs the free tier, which is volume-capped and has no
    authentication features.
-3. **This handles real evidence.** `data_store/` is gitignored aggressively by
-   file extension, but that is a safety net, not a guarantee. Check
-   `git status` before you commit, every time.
+3. **This handles real evidence.** `data_store/` is now gitignored
+   deny-by-default, so unknown and extensionless formats are covered. It is
+   still a safety net, not a guarantee — check `git status` before you commit,
+   every time. (Until `v0.1.0-alpha` this was an extension blocklist, and
+   VMware exports were committable through it.)
 
 ## 🏴‍☠️ Why This Exists
 <a name="why-this-exists"></a>
@@ -168,10 +178,12 @@ process=* action=create
 Apache-2.0 — see [LICENSE](/LICENSE).
 
 Apache-2.0 was chosen by following the vendored code rather than by preference.
-The entire `ansible/` tree (87 files) is derived from
-[splunk-ansible](https://github.com/splunk/splunk-ansible), and
-`car_data_model.json` from [MITRE CAR](https://github.com/mitre-attack/car) —
-both Apache-2.0. Matching that licence keeps the project compatible with what it
+97 of the 101 files in `ansible/` derive from
+[splunk-ansible](https://github.com/splunk/splunk-ansible); the `DETECT` and
+`BASELINE` apps ship 77 lookup files from
+[Splunk Security Content](https://github.com/splunk/security_content); and
+`car_data_model.json` comes from
+[MITRE CAR](https://github.com/mitre-attack/car) — all Apache-2.0. Matching that licence keeps the project compatible with what it
 already redistributes.
 
 Third-party components, the tools this pipeline drives, and the licensing
