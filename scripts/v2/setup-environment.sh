@@ -3,7 +3,7 @@
 ################################################################################
 # Establish Splunk_DFIR repo filepath
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
 
 ################################################################################
@@ -215,7 +215,7 @@ fi
 ################################################################################
 # Download and optionally save Docker images (only if not skipping)
 echo "🔧 Preparing Splunk_DFIR directory permissions and setting ownership to $(whoami):docker"
-sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
+sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"
 sudo chmod -R 744 "$REPO_ROOT_DIR"
 
 if [ "$SKIP_DOWNLOAD" != true ] && [ "$PULL_IMAGES" = true ]; then
@@ -257,7 +257,7 @@ fi
 echo "🔧 Setting final permissions for Splunk_DFIR repository..."
 if [ -d "$REPO_ROOT_DIR" ]; then
     # Use find to avoid issues with missing files
-    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR" 2>/dev/null || echo "⚠️  Some permission changes may have been skipped"
+    sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR" 2>/dev/null || echo "⚠️  Some permission changes may have been skipped"
     sudo chmod -R 744 "$REPO_ROOT_DIR" 2>/dev/null || echo "⚠️  Some permission changes may have been skipped"
 fi
 

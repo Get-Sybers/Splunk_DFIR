@@ -13,7 +13,7 @@
 #------------------------------------------------------------------------------
 # Establish Splunk_DFIR repository filepath
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
 
 ################################################################################

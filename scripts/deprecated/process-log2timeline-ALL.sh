@@ -2,7 +2,7 @@
 
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 
 # Set the input directory containing E01 files
 INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"

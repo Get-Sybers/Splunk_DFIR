@@ -2,7 +2,7 @@
 
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 
 # Set the inputs.conf path
 INPUTS_CONF_PATH="$REPO_ROOT_DIR/splunk/etc/system/local/inputs.conf"

@@ -51,6 +51,11 @@ release fixes that. **It does not change pipeline behaviour.**
   of those are wired in, and exactly 2 are original work. The 94 files in
   `tasks/` and `default_playbooks/` are never executed.
 - `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" beta target.
+- `tests/run-checks.sh` — the repository had no automated verification of any
+  kind. 90 static checks covering shell syntax, shellcheck, repo-root path
+  resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
+  evidence-gitignore coverage, secret patterns, and documentation links. Exits
+  non-zero, so it can gate CI.
 - `CONTRIBUTING.md` — the README invited PRs with no guidance behind it. Covers
   the evidence-safety rule, the attribution rule for vendored code, and what the
   task board's ✅/⚠️/❌ marks are supposed to mean.
@@ -92,6 +97,31 @@ release fixes that. **It does not change pipeline behaviour.**
 
 ### Fixed
 
+- **Splunk kept no persistent state.** `deploy-splunk.sh` mounted `splunk/var`
+  at `/data/var`, which Splunk never reads, while its real data directory
+  (`$SPLUNK_DB` → `/opt/splunk/var`) was not mounted at all — so every index and
+  the fishbucket were destroyed with the container. Index data now lives in a
+  named Docker volume (`SPLUNK_VAR_VOLUME`, default `splunk-dfir-var`) mounted
+  at `/opt/splunk/var`. A named volume rather than a bind mount, so Docker seeds
+  it from the image and the container's splunk-user ownership survives.
+- **`purge-splunk-container.sh` would have left every index behind**, since
+  `docker rm` does not remove a named volume. It now removes the volume
+  explicitly and still clears the legacy directory.
+- **`host = extracted_host`** in `inputs.conf` was a literal string, so Splunk
+  labelled every event with the text `extracted_host`. Removed — `[l2t:csv]`
+  already sets host via `TRANSFORMS-set_host` from the CSV's `hostname` field.
+- **`Include-local-conf.yml` gated all four copy tasks on one `limits.conf`
+  stat**, making edits to `indexes.conf` and `inputs.conf` permanent no-ops.
+  Each file is now stat'd individually; conf mode corrected `0755` → `0644`.
+- **`deploy-splunk.sh` could report success having deployed nothing.** It now
+  refuses to collide with an existing container, captures the container ID and
+  polls readiness by ID rather than by name, detects a container that dies
+  mid-startup, and uses a configurable 600s timeout instead of a hard 60s.
+- **Privileged recursive `chown`/`chmod` ran on unquoted paths**, so a repo path
+  containing a space would have word-split and targeted unintended directories.
+  All quoted across `scripts/`, `scripts/v2/` and `scripts/deprecated/`.
+- **Seven scripts resolved the repository root one level wrong** — four in
+  `scripts/v2/` and three in `scripts/deprecated/`. All corrected.
 - `dev-scripts/structure-tree.sh` had an unclosed `$(` on line 7 and would not
   parse at all. Every shell script in the repository now passes `bash -n`. (The
   script's tree formatting is still rough; it is an unsupported dev helper.)
@@ -122,19 +152,12 @@ release fixes that. **It does not change pipeline behaviour.**
   `scripts/`, one level short in `scripts/v2/` — and so resolve the repository
   root to `<repo>/scripts`. Use `scripts/`, which resolves correctly and
   carries the same feature set.
-- **Splunk keeps no persistent state.** `deploy-splunk.sh:140` mounts
-  `splunk/var` at `/data/var`; Splunk reads `$SPLUNK_DB`, which resolves to the
-  container-internal `/opt/splunk/var/lib/splunk` and is not bind-mounted.
-  Removing the container destroys every index and the fishbucket. The mount
-  looks like persistence and provides none.
-- **`host = extracted_host`** at `splunk/etc/system/local/inputs.conf:75,81` is
-  a literal string, not a computed value.
-- **`ansible/playbooks/Include-local-conf.yml` gates all four copy tasks on a
-  single `limits.conf` stat**, so editing `indexes.conf` or `inputs.conf` and
-  redeploying is a silent no-op.
-- **`deploy-splunk.sh` can report success having deployed nothing.** No
-  `set -e`, no `docker rm` before `docker run --name`, and the readiness loop
-  greps the previous container's logs.
+- **`chmod -R 777` remains** on `data_store/`, `splunk/` and `ansible/`. It is
+  a workaround for the container/host UID mismatch; replacing it needs a
+  permission model decided against a running container.
+- **None of this release's fixes are runtime-tested.** There is no Docker,
+  Splunk, or evidence in the environment they were made in. They are statically
+  verified only.
 - **Splunk's management port 8089 is not published.** `deploy-splunk.sh` maps
   only 8000 and 8088, so the splunkd REST API is unreachable from the host. This
   does not affect the current pipeline, but it blocks any host-side Ansible that
