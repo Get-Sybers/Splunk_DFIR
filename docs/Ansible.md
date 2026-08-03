@@ -79,6 +79,27 @@ container-internal Ansible described above. The two should not be conflated.
 The staged plan, scope boundaries, and risks are in
 [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
 
+## Why the pre-tasks matter more than they look
+
+This project **redeploys the container every time**, so `/opt/splunk/etc` is
+rebuilt on every deploy — it lives on the container's ephemeral layer, not in
+the index volume.
+
+That makes these three playbooks the entire mechanism by which configuration
+reaches Splunk. They are not a convenience; without them a redeployed container
+comes up with no apps and none of this project's confs.
+
+It also means:
+
+- Editing anything under `splunk/etc/` takes effect on the next deploy. That is
+  the intended workflow.
+- **Changes made in the Splunk UI are lost on redeploy**, because they are
+  written into `/opt/splunk/etc` inside the container.
+- The `Include-local-conf.yml` "only if absent" logic is effectively always
+  "absent" on a fresh container, so it copies every time. The per-file stat
+  fixed in v0.1.0-alpha still matters for the case where a container is *not*
+  recreated.
+
 ## Known issues
 
 - **Splunk's management port 8089 is not published.** `deploy-splunk.sh` maps

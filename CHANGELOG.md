@@ -134,6 +134,33 @@ release fixes that. **It does not change pipeline behaviour.**
 
 ### Changed
 
+- **Redeploying the Splunk container is now the default path, not an
+  exception.** `deploy-splunk.sh` removes and rebuilds an existing container
+  without prompting. The previous prompt defaulted to *No*, so a workflow that
+  redeploys every time would have aborted on every run.
+
+  This is only safe because index data now lives in a named volume — before that
+  fix, an unattended `docker rm` meant silent total data loss. `SPLUNK_REPLACE`
+  accepts `always` (default), `ask`, or `never`.
+- **The admin password can be supplied non-interactively**, via
+  `SPLUNK_PASSWORD_FILE` (preferred) or `SPLUNK_PASSWORD`. It still prompts when
+  a terminal is available, and fails with a clear message when there is neither
+  a password nor a TTY, instead of hanging. A file is preferred over the
+  environment because a process's environment is more widely readable — though
+  the password reaches the container as `-e SPLUNK_PASSWORD` either way, so it
+  is visible in `docker inspect` regardless.
+- `deploy-splunk.sh` now prints what survives a redeploy and what does not:
+  indexes and the fishbucket persist in the volume; `/opt/splunk/etc` is rebuilt
+  from `splunk/etc/` every deploy, so repo edits apply on the next one and
+  UI-made changes are lost.
+- `SPLUNK_SKIP_CHMOD=1` skips the permission fixup. It is O(files) over
+  `data_store/processed` and, with redeploy-every-time, runs on every deploy —
+  minutes of stat+chmod for no change on a large case. Left on by default
+  because wrong permissions stop the container starting, and a slow deploy is a
+  better failure than a broken one.
+- Replaced an `ls | grep` third-party package check with a glob loop, so a
+  filename containing a space cannot confuse the match.
+
 - **Project status is now stated as alpha/experimental.** It was previously
   "In-Development", which understated how much of the headline feature is
   missing.

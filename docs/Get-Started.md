@@ -69,8 +69,34 @@ Splunk_DFIR/scripts/process-evtx-EvtxECmd.sh
 Splunk_DFIR/scripts/deploy-splunk.sh
 ```
 - Deploys Splunk Enterprise using Docker, configured for automatic data ingestion.
+- **Redeploying is the normal path.** An existing container is removed and
+  rebuilt without prompting, because indexes live in a Docker volume and survive.
 - ⚠️ This accepts the Splunk software licence on your behalf via
   `SPLUNK_START_ARGS=--accept-license`, and runs the volume-capped free tier.
+
+**What survives a redeploy**
+
+| | |
+|:---|:---|
+| **Persists** — `/opt/splunk/var` (volume `splunk-dfir-var`) | Indexed events, and the fishbucket — so already-ingested files are not re-read and events are not duplicated |
+| **Rebuilt** — `/opt/splunk/etc` | Apps and confs re-seeded from `splunk/etc/` every deploy, so edits there take effect on the next one. **Changes made in the Splunk UI are lost.** |
+
+Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
+
+**Unattended deploys**
+
+| Variable | Default | Purpose |
+|:---|:---|:---|
+| `SPLUNK_PASSWORD_FILE` | — | Read the admin password from a file (preferred) |
+| `SPLUNK_PASSWORD` | — | Admin password from the environment |
+| `SPLUNK_REPLACE` | `always` | `always` \| `ask` \| `never` |
+| `SPLUNK_READY_TIMEOUT` | `600` | Seconds to wait for the container's Ansible run |
+| `SPLUNK_VAR_VOLUME` | `splunk-dfir-var` | Index volume name |
+| `SPLUNK_SKIP_CHMOD` | `0` | Skip the permission fixup. It is O(files) over `data_store/processed` and runs every deploy; safe to skip once permissions are already right |
+
+```bash
+SPLUNK_PASSWORD_FILE=~/.splunk-admin ./scripts/deploy-splunk.sh
+```
 
 ---
 

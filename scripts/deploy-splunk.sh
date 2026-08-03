@@ -45,26 +45,50 @@ echo ""
 echo "$REPO_ROOT_DIR"
 echo ""
 
-# 🚨 Refuse to collide with an existing container.
+# 🔁 Replace any existing container. Redeploying is the normal path here, not
+# an exception, so this does NOT prompt by default.
 #
-# Previously this script ran `docker run --name splunk-enterprise` with no
-# check. On a second run docker failed with a name conflict, and because there
-# is no `set -e` the script carried on and waited for readiness by grepping
-# `docker logs splunk-enterprise` — the OLD container — found the completion
-# string immediately, and exited 0 having deployed nothing at all.
+# That is only safe because index data lives in a named volume: removing the
+# container no longer destroys anything. Before that fix, `docker rm` meant
+# silent total data loss, and an unattended replace would have been reckless.
+#
+# It still must not simply collide. The original bug was `docker run --name`
+# with no check at all: the second run failed on the name conflict, carried on
+# (no `set -e`), then polled readiness by grepping the OLD container's logs,
+# matched the completion string instantly, and exited 0 having deployed nothing.
+#
+#   SPLUNK_REPLACE=always  (default) remove and redeploy, no prompt
+#   SPLUNK_REPLACE=ask               prompt before removing
+#   SPLUNK_REPLACE=never             abort if a container already exists
+SPLUNK_REPLACE="${SPLUNK_REPLACE:-always}"
+
 if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
-    echo "⚠️  A container named '$SPLUNK_CONTAINER' already exists."
+    echo "🔁 Existing container found:"
     docker ps -a --filter "name=^${SPLUNK_CONTAINER}$" --format '   {{.Names}}  {{.Status}}  ({{.Image}})'
     echo ""
-    echo "   Index data lives in the '$SPLUNK_VAR_VOLUME' volume and is NOT removed by this."
-    echo "   To delete indexes as well, use scripts/purge-splunk-container.sh."
-    echo ""
-    read -p "Remove the existing container and redeploy? [y/N]: " replace_existing
-    if [[ "${replace_existing,,}" != "y" && "${replace_existing,,}" != "yes" ]]; then
-        echo "🚫 Aborting. Existing container left untouched."
-        exit 1
-    fi
-    echo "🛑 Removing existing container..."
+
+    case "$SPLUNK_REPLACE" in
+        never)
+            echo "🚫 SPLUNK_REPLACE=never — aborting, container left untouched."
+            exit 1
+            ;;
+        ask)
+            read -r -p "Remove it and redeploy? [y/N]: " replace_existing
+            if [[ "${replace_existing,,}" != "y" && "${replace_existing,,}" != "yes" ]]; then
+                echo "🚫 Aborting. Existing container left untouched."
+                exit 1
+            fi
+            ;;
+        always) ;;
+        *)
+            echo "❌ SPLUNK_REPLACE must be always|ask|never (got '$SPLUNK_REPLACE')."
+            exit 1
+            ;;
+    esac
+
+    echo "   Indexes and the fishbucket live in volume '$SPLUNK_VAR_VOLUME' and survive this."
+    echo "   (To delete indexes too, use scripts/purge-splunk-container.sh.)"
+    echo "🛑 Removing container..."
     docker rm -f "$SPLUNK_CONTAINER" >/dev/null || {
         echo "❌ Could not remove '$SPLUNK_CONTAINER'. Aborting."
         exit 1
@@ -80,12 +104,23 @@ fi
 # in Splunk unparsed. sankey_diagram_app backs three panels in the BASELINE
 # BSL-host_triage dashboard.
 mkdir -p "$THIRD_PARTY_APP_DIR"
+
+# Glob rather than `ls | grep`, so a package name containing a space or a
+# newline cannot confuse the match.
+shopt -s nullglob
+tp_pkgs=("$THIRD_PARTY_APP_DIR"/*.tgz "$THIRD_PARTY_APP_DIR"/*.tar.gz "$THIRD_PARTY_APP_DIR"/*.spl)
+shopt -u nullglob
+
 missing_apps=()
 for want in Splunk_TA_zeek sankey_diagram_app; do
-    if ! ls "$THIRD_PARTY_APP_DIR"/*.tgz "$THIRD_PARTY_APP_DIR"/*.tar.gz "$THIRD_PARTY_APP_DIR"/*.spl 2>/dev/null \
-        | grep -qi "${want//_/[-_]}"; then
-        missing_apps+=("$want")
-    fi
+    found=0
+    # Splunkbase filenames vary — hyphens or underscores, any version suffix.
+    needle="$(echo "${want//_/-}" | tr '[:upper:]' '[:lower:]')"
+    for pkg in "${tp_pkgs[@]}"; do
+        hay="$(basename "$pkg" | tr '[:upper:]_' '[:lower:]-')"
+        if [[ "$hay" == *"$needle"* ]]; then found=1; break; fi
+    done
+    [[ $found -eq 0 ]] && missing_apps+=("$want")
 done
 if [[ ${#missing_apps[@]} -gt 0 ]]; then
     echo ""
@@ -111,33 +146,50 @@ if [[ ${#missing_apps[@]} -gt 0 ]]; then
     echo ""
 fi
 
-# Function to securely prompt for password and confirm it
-while true; do
-    read -s -p "Enter Splunk admin password (or press Ctrl+C to exit): " SPLUNK_PASSWORD
-    echo  # Move to a new line
-
-    # Check if input is empty
-    if [[ -z "$SPLUNK_PASSWORD" ]]; then
-        echo "❌ No password entered. Exiting..."
+# Splunk admin password.
+#
+# Redeploying every time means typing this every time, so it can be supplied
+# non-interactively. Falls back to prompting when a terminal is available.
+#
+#   SPLUNK_PASSWORD_FILE=/path/to/file   read the first line (preferred)
+#   SPLUNK_PASSWORD=...                  environment
+#   otherwise                            prompt, with confirmation
+#
+# A file is preferred over the environment because the environment of a running
+# process is more widely readable. Neither is a strong secret store: the
+# password is passed to the container as -e SPLUNK_PASSWORD regardless, so it is
+# visible in `docker inspect` either way. Tracked in SECURITY.md.
+if [[ -n "${SPLUNK_PASSWORD_FILE:-}" ]]; then
+    if [[ ! -r "$SPLUNK_PASSWORD_FILE" ]]; then
+        echo "❌ SPLUNK_PASSWORD_FILE is not readable: $SPLUNK_PASSWORD_FILE"
         exit 1
     fi
-
-    read -s -p "Confirm Splunk admin password: " SPLUNK_PASSWORD_CONFIRM
-    echo  # Move to a new line
-
-    # Check if input is empty
-    if [[ -z "$SPLUNK_PASSWORD_CONFIRM" ]]; then
-        echo "❌ No password entered. Exiting..."
-        exit 1
-    fi
-
-    if [[ "$SPLUNK_PASSWORD" == "$SPLUNK_PASSWORD_CONFIRM" ]]; then
-        echo "✅ Password confirmed."
-        break
-    else
+    SPLUNK_PASSWORD="$(head -n1 "$SPLUNK_PASSWORD_FILE")"
+    [[ -z "$SPLUNK_PASSWORD" ]] && { echo "❌ SPLUNK_PASSWORD_FILE is empty."; exit 1; }
+    echo "🔑 Password read from $SPLUNK_PASSWORD_FILE"
+elif [[ -n "${SPLUNK_PASSWORD:-}" ]]; then
+    echo "🔑 Password taken from the environment."
+elif [[ -t 0 ]]; then
+    while true; do
+        read -r -s -p "Enter Splunk admin password (or press Ctrl+C to exit): " SPLUNK_PASSWORD
+        echo
+        if [[ -z "$SPLUNK_PASSWORD" ]]; then
+            echo "❌ No password entered. Exiting..."
+            exit 1
+        fi
+        read -r -s -p "Confirm Splunk admin password: " SPLUNK_PASSWORD_CONFIRM
+        echo
+        if [[ "$SPLUNK_PASSWORD" == "$SPLUNK_PASSWORD_CONFIRM" ]]; then
+            echo "✅ Password confirmed."
+            break
+        fi
         echo "❌ Passwords do not match. Please try again."
-    fi
-done
+    done
+else
+    echo "❌ No password available and no terminal to prompt on."
+    echo "   Set SPLUNK_PASSWORD_FILE=/path/to/file or SPLUNK_PASSWORD=..."
+    exit 1
+fi
 
 # Make sure all items in SPLUNK_DFIR/splunk are accessible by splunk.
 #
@@ -150,6 +202,18 @@ done
 # Don't run this on a shared host. Tracked in project-progress.md.
 SPLUNK_OWNER="$(whoami):docker"
 
+# Because this project redeploys every time, this runs on every deploy — and it
+# is O(files) over data_store/processed, which can hold millions of parsed
+# records. On a large case that is minutes of stat+chmod for no change at all.
+#
+# SPLUNK_SKIP_CHMOD=1 skips it. Only safe once permissions are already correct,
+# which after the first successful deploy they usually are. Left ON by default
+# because getting it wrong stops the container starting, and a slow deploy is a
+# better failure than a broken one.
+if [[ "${SPLUNK_SKIP_CHMOD:-0}" == "1" ]]; then
+    echo "⏭️  Skipping permission fixup (SPLUNK_SKIP_CHMOD=1)"
+else
+
 echo "⚙️ Setting permissions of Splunk_DFIR/splunk/* to $SPLUNK_OWNER and 777"
 sudo chown -R "$SPLUNK_OWNER" "$REPO_ROOT_DIR"/splunk/*
 sudo chmod -R 777 "$REPO_ROOT_DIR"/splunk/*
@@ -159,6 +223,8 @@ sudo chmod -R 777 "$REPO_ROOT_DIR"/data_store/*
 echo "⚙️ Setting permissions of $REPO_ROOT_DIR/ansible/* to $SPLUNK_OWNER and 777"
 sudo chown -R "$SPLUNK_OWNER" "$REPO_ROOT_DIR"/ansible/*
 sudo chmod -R 777 "$REPO_ROOT_DIR"/ansible/*
+
+fi
 
 echo "🚀 Building Splunk Enterprise Docker container..."
 
@@ -303,4 +369,21 @@ if [[ "$(docker inspect -f '{{.State.Running}}' "$SPLUNK_CID" 2>/dev/null)" != "
 fi
 
 echo "✅ Splunk container setup completed successfully!"
-echo "📦 Index data persists in Docker volume: $SPLUNK_VAR_VOLUME"
+echo ""
+echo "─────────────────────────────────────────────────────────────"
+echo " This project assumes the container is redeployed every time."
+echo " What that means:"
+echo ""
+echo "  PERSISTS   /opt/splunk/var  ->  volume '$SPLUNK_VAR_VOLUME'"
+echo "             • indexed events survive the redeploy"
+echo "             • the fishbucket survives too, so already-ingested"
+echo "               files are NOT re-read and events are not duplicated"
+echo ""
+echo "  REBUILT    /opt/splunk/etc  (container-local, every deploy)"
+echo "             • apps and confs are re-seeded from splunk/etc by the"
+echo "               pre-task playbooks — so edits there take effect on the"
+echo "               next deploy, which is the point"
+echo "             • changes made in the Splunk UI are LOST"
+echo ""
+echo " To wipe indexes as well: scripts/purge-splunk-container.sh"
+echo "─────────────────────────────────────────────────────────────"
