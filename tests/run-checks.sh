@@ -118,6 +118,20 @@ else
     fail "nothing mounted at /opt/splunk/var — indexes will not survive the container"
 fi
 
+# This project redeploys the container every time, so the deploy must not
+# block on a prompt and must accept a password non-interactively. Both have
+# regressed before by being written as unconditional `read`.
+if grep -q 'SPLUNK_REPLACE:-always' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "redeploy is the default (SPLUNK_REPLACE=always)"
+else
+    fail "deploy-splunk.sh does not default to replacing the container"
+fi
+if grep -q 'SPLUNK_PASSWORD_FILE' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "password can be supplied non-interactively"
+else
+    fail "deploy-splunk.sh has no non-interactive password path"
+fi
+
 # ------------------------------------------------------------------------------
 group "Third-party app installation"
 # ------------------------------------------------------------------------------

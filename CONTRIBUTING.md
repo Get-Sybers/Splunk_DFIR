@@ -54,7 +54,7 @@ than maintain two copies of every script; that call hasn't been made yet.
 Run this before submitting anything:
 
 ```bash
-./tests/run-checks.sh          # 90 static checks; -v to see each one
+./tests/run-checks.sh          # static checks; -v to see each one
 ```
 
 It covers shell syntax, shellcheck, repo-root path resolution, Ansible
@@ -63,7 +63,8 @@ coverage, secret patterns, and documentation links. It exits non-zero on
 failure.
 
 It does **not** test the pipeline — nothing does yet. That is the single most
-valuable contribution available (see above).
+valuable contribution available (see above), and it runs in CI on every push via
+`.github/workflows/checks.yml`.
 
 For PowerShell, `Invoke-ScriptAnalyzer`.
 
