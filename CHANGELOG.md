@@ -134,6 +134,29 @@ release fixes that. **It does not change pipeline behaviour.**
 
 ### Changed
 
+- **`deploy-splunk.sh` takes `--purge` and `--persist` flags.** It previously
+  parsed no arguments at all — everything was environment variables. With the
+  container redeployed every time, whether that deploy keeps or wipes indexed
+  data is the decision you make most often, so it belongs on the command line.
+
+  ```bash
+  ./scripts/deploy-splunk.sh                # --persist (default): keep indexes
+  ./scripts/deploy-splunk.sh --purge        # wipe indexes, start clean
+  ./scripts/deploy-splunk.sh --purge --yes  # unattended
+  ./scripts/deploy-splunk.sh --help
+  ```
+
+  Also `--ask`, `--no-replace`, `--skip-chmod`, `-y/--yes`, `-h/--help`. Flags
+  win over the equivalent environment variables.
+
+  `--purge` deletes the index volume **after** the container is removed, since
+  Docker refuses to remove a volume still attached to one. It confirms unless
+  `--yes`, and refuses outright when there is no terminal to confirm on rather
+  than destroying evidence indexes unprompted. Raw and processed evidence on
+  disk is untouched — only the Splunk indexes and fishbucket go.
+
+  `scripts/purge-splunk-container.sh` remains, for purging without redeploying,
+  and now points at the flag.
 - **Redeploying the Splunk container is now the default path, not an
   exception.** `deploy-splunk.sh` removes and rebuilds an existing container
   without prompting. The previous prompt defaulted to *No*, so a workflow that

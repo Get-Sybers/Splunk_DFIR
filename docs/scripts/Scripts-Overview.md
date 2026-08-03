@@ -15,7 +15,7 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 | `process-zeek-ALL.sh`              | Linux    | Processes **all PCAPs** in the dataset using Zeek, preserving ISO8601 timestamps.                    |
 | `process-evtx-EvtxECmd.sh`         | Linux    | Parses raw **Windows Event Logs** (`.evtx`) with EvtxECmd into JSON/XML for Splunk. ⚠️ Requires operator-supplied EvtxECmd; not runtime-tested. |
 | `process-rekall-json.sh`           | Linux    | Normalises Rekall JSON memory-analysis output for ingestion. ⚠️ Field extraction incomplete.         |
-| `deploy-splunk.sh`                 | Linux    | Starts a **Splunk Enterprise Docker container** with predefined settings. ⚠️ Auto-accepts Splunk's licence. |
+| `deploy-splunk.sh`                 | Linux    | Starts a **Splunk Enterprise Docker container**. Redeploys by default; `--persist` (default) keeps indexes, `--purge` wipes them. `--help` for all flags. ⚠️ Auto-accepts Splunk's licence. |
 | `config-splunk-inputs.sh`          | Linux    | Generates and applies Splunk `inputs.conf` monitoring stanzas for the data store.                    |
 | `purge-splunk-container.sh`        | Linux    | Stops and removes the Splunk container, permanently deleting all indexes (**irreversible**).        |
 | `Setup-Environment-Kape.ps1`       | Windows  | Prepares the KAPE dependency layout. ⚠️ Requires operator-supplied `kape.exe`.                       |

@@ -83,6 +83,25 @@ Splunk_DFIR/scripts/deploy-splunk.sh
 
 Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
 
+**Purge vs persist**
+
+The deploy script decides whether a redeploy keeps or wipes indexed data:
+
+```bash
+./scripts/deploy-splunk.sh                # --persist (default): keep indexes
+./scripts/deploy-splunk.sh --purge        # wipe indexes, start clean
+./scripts/deploy-splunk.sh --purge --yes  # ...without the confirmation prompt
+./scripts/deploy-splunk.sh --help         # all options
+```
+
+`--purge` deletes the index volume, so **every indexed event and the fishbucket
+go**. Raw and processed evidence on disk is untouched — you can re-ingest. It
+prompts for confirmation unless `--yes`, and refuses outright if there is no
+terminal to confirm on.
+
+`scripts/purge-splunk-container.sh` still exists for purging *without*
+redeploying.
+
 **Unattended deploys**
 
 | Variable | Default | Purpose |
