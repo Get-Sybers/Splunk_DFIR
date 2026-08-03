@@ -31,6 +31,8 @@ echo ""
 
 echo "$REPO_ROOT_DIR"
 
+echo -e "ℹ️  To purge as part of a redeploy instead, use: ./scripts/deploy-splunk.sh --purge"
+echo ""
 echo -e "⚠️ WARNING: This will stop and remove the Splunk container, and DELETE all Splunk indexes."
 echo -e "❌ This action CANNOT be undone."
 

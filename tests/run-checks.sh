@@ -132,6 +132,29 @@ else
     fail "deploy-splunk.sh has no non-interactive password path"
 fi
 
+# The deploy script's purge/persist flags are the documented interface for
+# choosing whether a redeploy keeps or wipes indexed data.
+for flag in --purge --persist --yes --help; do
+    if grep -qF -- "$flag" scripts/deploy-splunk.sh 2>/dev/null; then
+        pass "deploy-splunk.sh accepts $flag"
+    else
+        fail "deploy-splunk.sh does not accept $flag"
+    fi
+done
+# --purge must actually remove the volume, and must do so after the container is
+# gone — Docker will not remove a volume that is still attached.
+if grep -q 'docker volume rm "$SPLUNK_VAR_VOLUME"' scripts/deploy-splunk.sh 2>/dev/null; then
+    _rm=$(grep -n 'docker rm -f' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
+    _vol=$(grep -n 'docker volume rm' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
+    if [[ -n "$_rm" && -n "$_vol" && "$_rm" -lt "$_vol" ]]; then
+        pass "--purge removes the volume after the container"
+    else
+        fail "--purge removes the volume before the container is gone (docker will refuse)"
+    fi
+else
+    fail "--purge does not remove the index volume"
+fi
+
 # ------------------------------------------------------------------------------
 group "Third-party app installation"
 # ------------------------------------------------------------------------------

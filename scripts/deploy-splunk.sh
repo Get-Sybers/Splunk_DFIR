@@ -27,6 +27,81 @@ SPLUNK_READY_TIMEOUT="${SPLUNK_READY_TIMEOUT:-600}"
 # installed into the container at start by Install-ThirdParty-Apps.yml.
 THIRD_PARTY_APP_DIR="${THIRD_PARTY_APP_DIR:-$REPO_ROOT_DIR/data_store/dependencies/splunk_apps}"
 
+# Whether this deploy keeps the index volume or wipes it.
+#   persist (default) — redeploy, keep every indexed event and the fishbucket
+#   purge             — redeploy from a clean slate, deleting the volume
+SPLUNK_DATA_MODE="${SPLUNK_DATA_MODE:-persist}"
+SPLUNK_REPLACE="${SPLUNK_REPLACE:-always}"
+
+# Skip confirmation prompts. Required for an unattended --purge, since that
+# destroys indexed evidence.
+ASSUME_YES="${ASSUME_YES:-0}"
+
+usage() {
+    cat <<'USAGE'
+Usage: deploy-splunk.sh [OPTIONS]
+
+Deploys the Splunk container. This project redeploys every time, so an existing
+container is replaced without prompting by default.
+
+Data:
+  --persist          Keep the index volume across the redeploy.  (default)
+                     Indexed events and the fishbucket survive, so
+                     already-ingested files are not re-read.
+  --purge            Delete the index volume as part of this deploy.
+                     ⚠️  DESTROYS ALL INDEXED EVIDENCE. Prompts unless --yes.
+
+Container:
+  --ask              Prompt before replacing an existing container.
+  --no-replace       Abort if a container already exists.
+
+Other:
+  --skip-chmod       Skip the permission fixup. It is O(files) over
+                     data_store/processed and runs on every deploy.
+  -y, --yes          Assume yes to prompts. Needed for unattended --purge.
+  -h, --help         Show this and exit.
+
+Environment (flags win):
+  SPLUNK_PASSWORD_FILE   read the admin password from a file (preferred)
+  SPLUNK_PASSWORD        admin password from the environment
+  SPLUNK_DATA_MODE       persist | purge
+  SPLUNK_REPLACE         always | ask | never
+  SPLUNK_VAR_VOLUME      index volume name        (default splunk-dfir-var)
+  SPLUNK_READY_TIMEOUT   seconds to wait          (default 600)
+  SPLUNK_SKIP_CHMOD      1 to skip permission fixup
+  THIRD_PARTY_APP_DIR    Splunkbase package directory
+
+Examples:
+  ./scripts/deploy-splunk.sh                          # redeploy, keep data
+  ./scripts/deploy-splunk.sh --purge                  # redeploy, wipe indexes
+  SPLUNK_PASSWORD_FILE=~/.splunk ./scripts/deploy-splunk.sh --purge --yes
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --persist)     SPLUNK_DATA_MODE="persist" ;;
+        --purge)       SPLUNK_DATA_MODE="purge" ;;
+        --ask)         SPLUNK_REPLACE="ask" ;;
+        --no-replace)  SPLUNK_REPLACE="never" ;;
+        --skip-chmod)  SPLUNK_SKIP_CHMOD=1 ;;
+        -y|--yes)      ASSUME_YES=1 ;;
+        -h|--help)     usage; exit 0 ;;
+        *)
+            echo "❌ Unknown option: $1"
+            echo ""
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+case "$SPLUNK_DATA_MODE" in
+    persist|purge) ;;
+    *) echo "❌ SPLUNK_DATA_MODE must be persist|purge (got '$SPLUNK_DATA_MODE')."; exit 1 ;;
+esac
+
 ################################################################################
 echo ""
 echo " ██████╗ ███████╗████████╗   ███████╗██╗   ██╗██████╗ ███████╗██████╗ ███████╗"
@@ -57,10 +132,9 @@ echo ""
 # (no `set -e`), then polled readiness by grepping the OLD container's logs,
 # matched the completion string instantly, and exited 0 having deployed nothing.
 #
-#   SPLUNK_REPLACE=always  (default) remove and redeploy, no prompt
-#   SPLUNK_REPLACE=ask               prompt before removing
-#   SPLUNK_REPLACE=never             abort if a container already exists
-SPLUNK_REPLACE="${SPLUNK_REPLACE:-always}"
+#   --ask / SPLUNK_REPLACE=ask         prompt before removing
+#   --no-replace / SPLUNK_REPLACE=never  abort if a container already exists
+#   default                            remove and redeploy, no prompt
 
 if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
     echo "🔁 Existing container found:"
@@ -94,6 +168,42 @@ if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
         exit 1
     }
     echo "✅ Removed."
+    echo ""
+fi
+
+# ------------------------------------------------------------------------------
+# --purge: delete the index volume.
+#
+# Must happen AFTER the container is removed — Docker refuses to remove a volume
+# that is still attached to one. This is the destructive path, so it confirms
+# unless --yes, and refuses outright if there is no way to confirm.
+# ------------------------------------------------------------------------------
+if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
+    if docker volume ls -q | grep -qx "$SPLUNK_VAR_VOLUME"; then
+        echo "🔥 --purge: about to DELETE volume '$SPLUNK_VAR_VOLUME'."
+        echo "   This destroys every indexed event and the fishbucket."
+        echo "   Raw and processed evidence on disk is NOT touched."
+        echo ""
+        if [[ "$ASSUME_YES" != "1" ]]; then
+            if [[ ! -t 0 ]]; then
+                echo "❌ --purge needs confirmation and there is no terminal."
+                echo "   Pass --yes to confirm non-interactively."
+                exit 1
+            fi
+            read -r -p "Type 'yes' to delete all indexes: " purge_confirm
+            if [[ "$purge_confirm" != "yes" ]]; then
+                echo "🚫 Aborting. Indexes left intact."
+                exit 1
+            fi
+        fi
+        docker volume rm "$SPLUNK_VAR_VOLUME" >/dev/null || {
+            echo "❌ Could not remove volume '$SPLUNK_VAR_VOLUME'. Aborting."
+            exit 1
+        }
+        echo "✅ Volume removed — Splunk will start with empty indexes."
+    else
+        echo "ℹ️  --purge: volume '$SPLUNK_VAR_VOLUME' does not exist; nothing to delete."
+    fi
     echo ""
 fi
 
@@ -374,10 +484,16 @@ echo "────────────────────────�
 echo " This project assumes the container is redeployed every time."
 echo " What that means:"
 echo ""
+if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
+echo "  PURGED     volume '$SPLUNK_VAR_VOLUME' was deleted this run —"
+echo "             Splunk started with empty indexes and an empty fishbucket,"
+echo "             so monitored files will be re-read from scratch."
+else
 echo "  PERSISTS   /opt/splunk/var  ->  volume '$SPLUNK_VAR_VOLUME'"
 echo "             • indexed events survive the redeploy"
 echo "             • the fishbucket survives too, so already-ingested"
 echo "               files are NOT re-read and events are not duplicated"
+fi
 echo ""
 echo "  REBUILT    /opt/splunk/etc  (container-local, every deploy)"
 echo "             • apps and confs are re-seeded from splunk/etc by the"
