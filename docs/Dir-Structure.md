@@ -3,7 +3,17 @@
   $Splunk_DFIR                                 
     └── scripts/                                      # Processing scripts for forensic data
     │
-    └── ansible/                                      # Ansible playbooks/tasks (derived from splunk-ansible, Apache-2.0)
+    └── ansible/                                      # See docs/Ansible.md — only playbooks/ is used at runtime
+    │   │
+    │   └── playbooks/                                # Bind-mounted into the Splunk container as pre-tasks
+    │   │
+    │   └── tasks/                                    # Vendored splunk-ansible reference copy — NOT executed
+    │   │
+    │   └── default_playbooks/                        # Vendored splunk-ansible reference copy — NOT executed
+    │   │
+    │   └── scripts/                                  # Empty stubs, planned work
+    │
+    └── dev-scripts/                                  # Experimental/one-off helpers, unsupported
     │
     └── docs/                                         # Documentation for project usage and setup
     │
@@ -69,11 +79,6 @@
     │       └── json/                                 # Any JSON
     │
     └── splunk/                                       # Splunk deployment and configurations
-        │
-        └── ansible/                                  # Production Splunk configurations
-        │       └── custom_playbooks/                 # Ansible playbooks in the deployment of Splunk
-        │       │
-        │       └── default_playbooks/
         │
         └── etc/                                      # Production Splunk configurations
         │   └── system/

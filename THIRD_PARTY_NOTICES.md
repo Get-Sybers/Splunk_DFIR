@@ -21,6 +21,7 @@ Code that ships inside this repository.
 | Component | Path | Upstream | Licence |
 |---|---|---|---|
 | splunk-ansible | `ansible/tasks/`, `ansible/default_playbooks/` | [splunk/splunk-ansible](https://github.com/splunk/splunk-ansible) | Apache-2.0 |
+| Splunk Security Content (ESCU) lookups | `splunk/etc/apps/DETECT/lookups/`, `splunk/etc/apps/BASELINE/lookups/` | [splunk/security_content](https://github.com/splunk/security_content) | Apache-2.0 |
 | MITRE CAR data model | `car_data_model.json` | [mitre-attack/car](https://github.com/mitre-attack/car) | Apache-2.0 |
 | Corelight Add-on for Zeek v1.0.8 | `splunk/etc/apps/Splunk_TA_zeek/` | Aplura, LLC (via Splunkbase) | Not declared |
 | Sankey Diagram v1.6.0 | `splunk/etc/apps/sankey_diagram_app/` | Splunk Inc. (via Splunkbase, EOL) | Not declared |
@@ -28,16 +29,67 @@ Code that ships inside this repository.
 
 ### splunk-ansible
 
-The Ansible layer is not original work. Every one of the 72 files in
-`ansible/tasks/` traces to splunk-ansible: 55 are byte-identical to upstream
-`develop`, and 17 differ. All 15 files in `ansible/default_playbooks/` come from
-the same source. There are no original files in either directory.
+The Ansible layer is almost entirely not original work. Every one of the 79
+files in `ansible/tasks/` traces to splunk-ansible: 61 are byte-identical to
+upstream `develop`, and 18 differ. All 15 files in `ansible/default_playbooks/`
+come from the same source, as do 3 of the 5 playbooks in `ansible/playbooks/`.
+There are no original files in `tasks/` or `default_playbooks/` at all.
+
+**97 of the 101 files under `ansible/` derive from splunk-ansible.** The
+remainder is 2 original playbooks and 2 empty placeholder scripts.
 
 This was verified by fetching each upstream file and diffing it.
 
 Because splunk-ansible is Apache-2.0, redistributing it obliges this project to
 retain the licence, carry a `NOTICE`, and state that modifications were made.
 That is why this project is Apache-2.0 — see [Why Apache-2.0](#why-apache-20).
+
+**The 94 files in `tasks/` and `default_playbooks/` are never executed.**
+Nothing in the repository references
+`ansible/tasks/` or `ansible/default_playbooks/`. Only `ansible/playbooks/` is
+bind-mounted into the Splunk container, and the `splunk/splunk` image already
+ships its own copy of splunk-ansible internally — see
+[docs/Ansible.md](/docs/Ansible.md).
+
+They are therefore a reference copy carrying the project's largest third-party
+obligation for no runtime benefit. Deleting them would remove that obligation
+entirely without affecting the pipeline. The alpha keeps them and complies;
+whether to keep them is revisited in beta.
+
+The three playbooks in `ansible/playbooks/` that *are* derived from
+splunk-ansible (`copy_installed_apps.yml` verbatim, `disable_popups.yml` and
+`remove_first_login.yml` modified) are covered by the same attribution.
+
+### Splunk Security Content (ESCU) lookups
+
+The `DETECT` and `BASELINE` apps ship **77 lookup files, roughly 3 MB**, that are
+not original work. They come from Splunk Security Content (the Enterprise
+Security Content Update project).
+
+The YAML sidecars retain their upstream provenance:
+
+```yaml
+name: loldrivers
+id: a4c71880-bb4a-4e2c-9b44-be70cf181fb3
+author: Splunk Threat Research Team
+description: A list of known vulnerable drivers
+```
+
+All 38 YAML sidecars carry an author field: 35 credit the Splunk Threat Research
+Team and 3 credit Steven Dick, an ESCU contributor.
+
+The filenames were given a local taxonomy prefix — `bad_`, `com_`, `sus_` — but
+the `name:` field inside each file still holds the upstream name
+(`sus_loldrivers.yml` → `name: loldrivers`, `bad_hijacklibs.yml` →
+`name: hijacklibs`). The content is upstream; only the filenames changed.
+
+splunk/security_content is Apache-2.0, so this is compatible and requires
+attribution.
+
+Note that some of these lookups aggregate other projects' data upstream —
+`hijacklibs`, `loldrivers`, and `lolbas_file_path` derive from the HijackLibs,
+LOLDrivers, and LOLBAS projects respectively. They are vendored here as Splunk
+packaged them, and their own upstream terms sit behind Splunk's redistribution.
 
 ### MITRE CAR
 
@@ -107,9 +159,10 @@ under Apache-2.0. The KAPE path cannot, without a Kroll licence.
 The project licence was chosen to follow the vendored code rather than
 preference:
 
-1. The single largest vendored component — the entire `ansible/` tree, 87 files
-   — is Apache-2.0 from splunk-ansible. `car_data_model.json` is Apache-2.0 from
-   MITRE. Matching that licence removes any compatibility question.
+1. The three largest vendored components are all Apache-2.0: the `ansible/`
+   tree (97 of 101 files from splunk-ansible), the ESCU lookups (77 files
+   across `DETECT` and `BASELINE`), and `car_data_model.json` from MITRE.
+   Matching that licence removes any compatibility question.
 2. Apache-2.0's §4 obligations (retain licence, retain `NOTICE`, state
    modifications) are met naturally by shipping `LICENSE`, `NOTICE`, and this
    file, rather than bolted on.
@@ -141,6 +194,15 @@ does not.
 - **`contrib/sankey.js` carries no licence header** — only a source URL comment.
   The upstream d3 licence text should accompany it.
 - **Upstream modifications are not individually marked.** Apache-2.0 §4(b)
-  requires modified files to carry prominent notices. The 17 modified
-  `ansible/tasks/` files are recorded in aggregate in `NOTICE`, but not marked
-  in-file.
+  requires modified files to carry prominent notices. The 18 modified
+  `ansible/tasks/` files, the 2 modified playbooks, and the renamed ESCU lookups
+  are recorded in aggregate in `NOTICE`, but not marked in-file.
+- **The 94 never-executed Ansible files should probably just go.** Deleting
+  `ansible/tasks/` and `ansible/default_playbooks/` would remove the single
+  largest third-party obligation in this repository without affecting the
+  pipeline, because nothing runs them. Deferred out of the alpha deliberately;
+  see [docs/Ansible.md](/docs/Ansible.md).
+- **`data_store/.gitignore` re-includes `dependencies/SuperMem/**`.** If SuperMem
+  is placed there it would be committed, vendoring another third-party tool with
+  unrecorded provenance. The rule is retained from the previous `.gitignore` and
+  flagged for review.

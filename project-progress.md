@@ -52,8 +52,9 @@ Things that are broken or unsafe right now. These block a beta.
 
 `scripts/v2/` is inconsistent with itself. The three genuinely refactored
 scripts resolve the repo root as `$SCRIPT_DIR/../..`, which is correct from
-`scripts/v2/`. The other four were copied from `scripts/` verbatim and still use
-`$SCRIPT_DIR/..`, so they resolve the repo root to `<repo>/scripts`:
+`scripts/v2/`. The other four still use `$SCRIPT_DIR/..` — the depth that is
+correct in `scripts/`, but one level short in `scripts/v2/` — so they resolve
+the repo root to `<repo>/scripts`:
 
 | Script | Repo root resolves to | Correct? |
 |:---|:---|:---:|
@@ -72,6 +73,28 @@ support, so nothing is lost by using it.
 development sketch. Fix: change `$SCRIPT_DIR/..` to `$SCRIPT_DIR/../..` in the
 four broken scripts, then re-test before promoting.
 
+### 🔻 The Ansible layer is mostly inert
+
+`ansible/` looks like a substantial Ansible codebase. It isn't. Ansible runs
+*inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS`; there is no
+inventory, no `ansible.cfg`, no roles, and `ansible-playbook` is never invoked
+on the host.
+
+| Path | Files | Reality |
+|:---|:---:|:---|
+| `ansible/playbooks/` | 5 | Only dir mounted into the container — and only 3 of 5 are wired in |
+| `ansible/tasks/` | 79 | Vendored splunk-ansible, **never executed**, nothing references it |
+| `ansible/default_playbooks/` | 15 | Vendored splunk-ansible, **never executed** |
+| `ansible/scripts/` | 2 | Both **0 bytes** — placeholders |
+
+Original Ansible work in this project is **two playbooks**:
+`Include-Custom-Apps.yml` and `Include-local-conf.yml`. `copy_installed_apps.yml`
+and `disable_popups.yml` are present but unwired — the latter is superseded by
+the `SPLUNK_DISABLE_POPUPS=True` env var.
+
+Full detail in [docs/Ansible.md](/docs/Ansible.md). This matters for scoping
+"Ansible it all" — see [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
+
 ### 🔻 Other blockers
 
 - **No automated tests anywhere.** Highest-value next step.
@@ -86,6 +109,11 @@ four broken scripts, then re-test before promoting.
 - **Two bundled Splunk apps have no licence grant.** `Splunk_TA_zeek` and
   `sankey_diagram_app` declare no licence in their manifests. Redistribution
   rights unconfirmed — see [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+- **`DETECT` and `BASELINE` are mostly not original either.** 77 of their lookup
+  files (~3 MB) come from Splunk Security Content, authored by the Splunk Threat
+  Research Team, renamed with a local `bad_`/`com_`/`sus_` prefix. Apache-2.0
+  and now attributed, but worth knowing when judging how much of these apps is
+  this project's own work.
 - **Duplicate/stale docs.** `docs/scripts/Environment-Setup.md` and
   `docs/scripts/Setup_Environment.md` document the same script.
 
@@ -94,6 +122,15 @@ four broken scripts, then re-test before promoting.
 # Update log
 
 ## 🔜 To Do
+
+### 🔹 **"Ansible it all"** — *beta target*
+The plan is for Ansible to drive the whole pipeline — environment setup,
+evidence processing, Splunk lifecycle — rather than injecting three playbooks
+into a container at boot. Note this means standing up a **second** Ansible
+surface (a host-side control node), separate from the container-internal one
+that exists today.
+
+Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Roadmap.md).
 
 ### 🔹 **Data Models & MITRE CAR Mapping** — *the blocker for beta*
 - Implement **log normalization** to align fields with **MITRE CAR**.
@@ -127,6 +164,13 @@ four broken scripts, then re-test before promoting.
   or remove them and fetch from Splunkbase at install time.
 - Restore the missing `visualization.js.LICENSE.txt` in `sankey_diagram_app`.
 - Mark the 17 modified `ansible/tasks/` files in-file per Apache-2.0 §4(b).
+- **Decide whether to delete `ansible/tasks/` and `ansible/default_playbooks/`.**
+  They are never executed, and removing them would drop the project's largest
+  third-party obligation at zero functional cost. Deliberately deferred out of
+  the alpha — deleting 94 files while also changing the release's story is two
+  changes at once.
+- Review the `!dependencies/SuperMem/**` rule in `data_store/.gitignore`. It
+  would vendor a third-party tool into the repo if SuperMem is placed there.
 
 ---
 
@@ -201,5 +245,14 @@ four broken scripts, then re-test before promoting.
 - Added `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `CHANGELOG.md`.
 - Corrected Splunk app versions from `1.0.0` to `0.1.0` — they were claiming
   stable while the project was pre-alpha.
+- Documented how Ansible actually works here — [docs/Ansible.md](/docs/Ansible.md).
+
+✅ **Closed an evidence-leak hole in `data_store/.gitignore`.**
+  The old file was an extension blocklist, and it had already failed: VMware
+  exports (`.vmdk`, `-flat.vmdk`, `.vmx`, `.ovf`, `.ova`, `.vmsd`, `.vmxf`) were
+  fully committable, because VM support was added to the pipeline without
+  updating the list — and `data_store/raw/VM_files/` is where the docs tell you
+  to put them. Replaced with deny-by-default, which also covers extensionless
+  files and any future format. Verified all 23 tracked skeleton files survive.
 
 ---
