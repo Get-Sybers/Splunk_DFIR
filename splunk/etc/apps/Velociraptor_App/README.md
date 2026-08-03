@@ -22,7 +22,7 @@ All Velociraptor JSON files are initially assigned the `velociraptor:json` sourc
 The app automatically extracts the artifact name from the `src_artifact` field and processes it for the sourcetype:
 
 1. Removes "All " prefix (if present at the beginning)
-2. Replaces URL-encoded characters (e.g., `%2F` → `_`)
+2. Replaces URL-encoded forward slash (%2F) with underscore (_)
 3. Converts to lowercase
 
 Examples:
