@@ -12,14 +12,13 @@ Copyright 2018-2024 Splunk Inc.
 Licensed under the Apache License, Version 2.0.
 Source: https://github.com/splunk/splunk-ansible
 
-The contents of ansible/tasks/ and ansible/default_playbooks/ are derived from
-splunk-ansible. Of the 79 files in ansible/tasks/, 61 are unmodified copies and
-18 have been modified by Get-Sybers relative to the upstream `develop` branch.
-All 15 files in ansible/default_playbooks/ are derived from the same source, as
-are 3 of the 5 playbooks in ansible/playbooks/ (copy_installed_apps.yml
-unmodified; disable_popups.yml and remove_first_login.yml modified).
+ansible/playbooks/remove_first_login.yml is derived from splunk-ansible and has
+been modified by Get-Sybers.
 
-In total, 97 of the 101 files under ansible/ derive from splunk-ansible.
+Earlier releases vendored 97 further files from splunk-ansible under
+ansible/tasks/ and ansible/default_playbooks/. None were ever executed — the
+splunk/splunk container image ships its own copy of splunk-ansible — and they
+were removed in v0.1.0-alpha. They remain in this repository's git history.
 
 --------------------------------------------------------------------------------
 Splunk Security Content (ESCU)

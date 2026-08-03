@@ -3,15 +3,9 @@
   $Splunk_DFIR                                 
     └── scripts/                                      # Processing scripts for forensic data
     │
-    └── ansible/                                      # See docs/Ansible.md — only playbooks/ is used at runtime
+    └── ansible/                                      # 3 playbooks, injected into the Splunk container at start
     │   │
-    │   └── playbooks/                                # Bind-mounted into the Splunk container as pre-tasks
-    │   │
-    │   └── tasks/                                    # Vendored splunk-ansible reference copy — NOT executed
-    │   │
-    │   └── default_playbooks/                        # Vendored splunk-ansible reference copy — NOT executed
-    │   │
-    │   └── scripts/                                  # Empty stubs, planned work
+    │   └── playbooks/                                # See docs/Ansible.md
     │
     └── dev-scripts/                                  # Experimental/one-off helpers, unsupported
     │
@@ -85,6 +79,6 @@
         │   │   └── local/                            # Local configuration overrides
         │   └── apps/                                 # Installed Splunk apps
         │
-        └── var/                                      # Development environment for Splunk (testing before production)
-            └── Splunk Indexes/
+        └── var/                                      # Legacy. Indexes now live in the Docker volume
+                                                      # 'splunk-dfir-var' — see docs/Ansible.md
 ```

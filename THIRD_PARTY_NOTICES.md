@@ -20,7 +20,7 @@ Code that ships inside this repository.
 
 | Component | Path | Upstream | Licence |
 |---|---|---|---|
-| splunk-ansible | `ansible/tasks/`, `ansible/default_playbooks/` | [splunk/splunk-ansible](https://github.com/splunk/splunk-ansible) | Apache-2.0 |
+| splunk-ansible | `ansible/playbooks/remove_first_login.yml` | [splunk/splunk-ansible](https://github.com/splunk/splunk-ansible) | Apache-2.0 |
 | Splunk Security Content (ESCU) lookups | `splunk/etc/apps/DETECT/lookups/`, `splunk/etc/apps/BASELINE/lookups/` | [splunk/security_content](https://github.com/splunk/security_content) | Apache-2.0 |
 | MITRE CAR data model | `car_data_model.json` | [mitre-attack/car](https://github.com/mitre-attack/car) | Apache-2.0 |
 | Corelight Add-on for Zeek v1.0.8 | `splunk/etc/apps/Splunk_TA_zeek/` | Aplura, LLC (via Splunkbase) | Not declared |
@@ -29,36 +29,25 @@ Code that ships inside this repository.
 
 ### splunk-ansible
 
-The Ansible layer is almost entirely not original work. Every one of the 79
-files in `ansible/tasks/` traces to splunk-ansible: 61 are byte-identical to
-upstream `develop`, and 18 differ. All 15 files in `ansible/default_playbooks/`
-come from the same source, as do 3 of the 5 playbooks in `ansible/playbooks/`.
-There are no original files in `tasks/` or `default_playbooks/` at all.
+One file derives from splunk-ansible: `ansible/playbooks/remove_first_login.yml`,
+modified from upstream. Apache-2.0, attribution required — hence `NOTICE`.
 
-**97 of the 101 files under `ansible/` derive from splunk-ansible.** The
-remainder is 2 original playbooks and 2 empty placeholder scripts.
+**This used to be the project's largest third-party obligation and no longer
+is.** Earlier releases vendored 97 files under `ansible/tasks/` and
+`ansible/default_playbooks/`. An audit established that *nothing in the
+repository ever executed them* — only `ansible/playbooks/` is bind-mounted into
+the container, and the `splunk/splunk` image already ships its own copy of
+splunk-ansible internally. They were carrying full Apache-2.0 attribution,
+NOTICE and modification-marking obligations for zero runtime benefit, and were
+removed in v0.1.0-alpha.
 
-This was verified by fetching each upstream file and diffing it.
+The provenance was established by fetching each upstream file and diffing it:
+of the 79 files in `ansible/tasks/`, 61 were byte-identical to upstream
+`develop` and 18 differed; all 15 in `ansible/default_playbooks/` came from the
+same source. There were no original files in either directory.
 
-Because splunk-ansible is Apache-2.0, redistributing it obliges this project to
-retain the licence, carry a `NOTICE`, and state that modifications were made.
-That is why this project is Apache-2.0 — see [Why Apache-2.0](#why-apache-20).
-
-**The 94 files in `tasks/` and `default_playbooks/` are never executed.**
-Nothing in the repository references
-`ansible/tasks/` or `ansible/default_playbooks/`. Only `ansible/playbooks/` is
-bind-mounted into the Splunk container, and the `splunk/splunk` image already
-ships its own copy of splunk-ansible internally — see
-[docs/Ansible.md](/docs/Ansible.md).
-
-They are therefore a reference copy carrying the project's largest third-party
-obligation for no runtime benefit. Deleting them would remove that obligation
-entirely without affecting the pipeline. The alpha keeps them and complies;
-whether to keep them is revisited in beta.
-
-The three playbooks in `ansible/playbooks/` that *are* derived from
-splunk-ansible (`copy_installed_apps.yml` verbatim, `disable_popups.yml` and
-`remove_first_login.yml` modified) are covered by the same attribution.
+They remain in git history, so the attribution above still applies to anyone
+working from an older commit.
 
 ### Splunk Security Content (ESCU) lookups
 
@@ -159,9 +148,11 @@ under Apache-2.0. The KAPE path cannot, without a Kroll licence.
 The project licence was chosen to follow the vendored code rather than
 preference:
 
-1. The three largest vendored components are all Apache-2.0: the `ansible/`
-   tree (97 of 101 files from splunk-ansible), the ESCU lookups (77 files
-   across `DETECT` and `BASELINE`), and `car_data_model.json` from MITRE.
+1. The vendored code that remains is Apache-2.0: the ESCU lookups (77 files
+   across `DETECT` and `BASELINE`), `car_data_model.json` from MITRE, and one
+   splunk-ansible playbook. When the licence was chosen the `ansible/` tree
+   alone accounted for 97 Apache-2.0 files; those have since been removed as
+   dead weight, but the ESCU lookups still make Apache-2.0 the right fit.
    Matching that licence removes any compatibility question.
 2. Apache-2.0's §4 obligations (retain licence, retain `NOTICE`, state
    modifications) are met naturally by shipping `LICENSE`, `NOTICE`, and this
@@ -194,14 +185,9 @@ does not.
 - **`contrib/sankey.js` carries no licence header** — only a source URL comment.
   The upstream d3 licence text should accompany it.
 - **Upstream modifications are not individually marked.** Apache-2.0 §4(b)
-  requires modified files to carry prominent notices. The 18 modified
-  `ansible/tasks/` files, the 2 modified playbooks, and the renamed ESCU lookups
-  are recorded in aggregate in `NOTICE`, but not marked in-file.
-- **The 94 never-executed Ansible files should probably just go.** Deleting
-  `ansible/tasks/` and `ansible/default_playbooks/` would remove the single
-  largest third-party obligation in this repository without affecting the
-  pipeline, because nothing runs them. Deferred out of the alpha deliberately;
-  see [docs/Ansible.md](/docs/Ansible.md).
+  requires modified files to carry prominent notices. The modified
+  `remove_first_login.yml` and the renamed ESCU lookups are recorded in
+  `NOTICE`, but not marked in-file.
 - **`data_store/.gitignore` re-includes `dependencies/SuperMem/**`.** If SuperMem
   is placed there it would be committed, vendoring another third-party tool with
   unrecorded provenance. The rule is retained from the previous `.gitignore` and

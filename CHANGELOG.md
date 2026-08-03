@@ -66,6 +66,26 @@ release fixes that. **It does not change pipeline behaviour.**
 - Explicit warnings in `README.md` covering KAPE's non-commercial restriction,
   Splunk's proprietary licence and auto-acceptance, and evidence-handling risk.
 
+### Removed
+
+- **`ansible/` went from 101 files to 3.** An audit established that nothing in
+  the repository executed 94 of them: only `ansible/playbooks/` is bind-mounted
+  into the container, and the `splunk/splunk` image already ships its own copy
+  of splunk-ansible internally. Removed `ansible/tasks/` (79 files),
+  `ansible/default_playbooks/` (15), two zero-byte `ansible/scripts/`
+  placeholders, and the two unwired playbooks — `copy_installed_apps.yml` (never
+  referenced) and `disable_popups.yml` (superseded by the
+  `SPLUNK_DISABLE_POPUPS` environment variable).
+
+  What remains is three playbooks, all wired as pre-tasks, all passing
+  `ansible-lint` at its `production` profile. The pipeline is unaffected, since
+  nothing ran any of the removed files.
+
+  This also removed **the project's largest third-party obligation** at zero
+  functional cost. splunk-ansible attribution now covers a single modified file
+  rather than 97. The deleted files remain in git history, so `NOTICE` still
+  carries the attribution for anyone working from an older commit.
+
 ### Changed
 
 - **Project status is now stated as alpha/experimental.** It was previously

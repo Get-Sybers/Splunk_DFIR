@@ -104,12 +104,12 @@ tests, and interfaces will change without notice.
   container). **None of the fixes are runtime-tested** — there is no Docker or
   Splunk in the development environment. See
   [project-progress.md](/project-progress.md#-defects-found-and-fixed-in-the-alpha).
-- **The `ansible/` directory is mostly inert.** Ansible runs *inside* the Splunk
-  container, not from a control node. Of its 101 files, 97 derive from
-  splunk-ansible and 94 are never executed at all; exactly 2 playbooks are
-  original work. See [docs/Ansible.md](/docs/Ansible.md). Driving the whole pipeline
-  through Ansible — "Ansible it all" — is the
-  [beta target](/docs/Ansible-Roadmap.md).
+- **Ansible runs *inside* the Splunk container, not from a control node.**
+  There is no inventory, no roles, and `ansible-playbook` is never run on the
+  host — it is 3 playbooks injected at container start. (It was 101 files until
+  the alpha removed 94 that nothing executed.) See
+  [docs/Ansible.md](/docs/Ansible.md). Driving the whole pipeline through
+  Ansible — "Ansible it all" — is the [beta target](/docs/Ansible-Roadmap.md).
 
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
@@ -187,9 +187,7 @@ process=* action=create
 Apache-2.0 — see [LICENSE](/LICENSE).
 
 Apache-2.0 was chosen by following the vendored code rather than by preference.
-97 of the 101 files in `ansible/` derive from
-[splunk-ansible](https://github.com/splunk/splunk-ansible); the `DETECT` and
-`BASELINE` apps ship 77 lookup files from
+The `DETECT` and `BASELINE` apps ship 77 lookup files from
 [Splunk Security Content](https://github.com/splunk/security_content); and
 `car_data_model.json` comes from
 [MITRE CAR](https://github.com/mitre-attack/car) — all Apache-2.0. Matching that licence keeps the project compatible with what it
