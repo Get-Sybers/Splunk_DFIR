@@ -162,6 +162,27 @@ actual=$(grep -cE '^[[:space:]]+-v .*:/data/' scripts/deploy-splunk.sh)
 if [[ "$announced" -eq "$actual" ]]; then pass "mount announcements match ($actual)"
 else fail "deploy-splunk.sh announces $announced mounts but performs $actual"; fi
 
+# Every sourcetype an input assigns should have a props.conf stanza somewhere,
+# or the data lands in Splunk with no parsing at all — which is how the EVTX
+# path sat broken: no input, and no props to receive it.
+#
+# Sourcetypes deliberately provided by an operator-supplied app rather than by
+# this repository. Listed explicitly so the external dependency is visible and
+# checkable, instead of the check either failing forever or being deleted.
+declare -A EXTERNAL_SOURCETYPE=(
+    [zeek]="Splunk_TA_zeek (Corelight Add-on for Zeek) — see data_store/dependencies/splunk_apps/"
+)
+while IFS= read -r st; do
+    if grep -rqF "[$st]" splunk/etc/apps/*/default/props.conf splunk/etc/system/local/props.conf 2>/dev/null; then
+        pass "sourcetype has props: $st"
+    elif [[ -n "${EXTERNAL_SOURCETYPE[$st]:-}" ]]; then
+        pass "sourcetype '$st' provided externally by ${EXTERNAL_SOURCETYPE[$st]}"
+    else
+        fail "inputs.conf assigns sourcetype '$st' with no props.conf stanza"
+    fi
+done < <(grep -hE '^sourcetype[[:space:]]*=' splunk/etc/system/local/inputs.conf 2>/dev/null \
+         | sed 's/.*=[[:space:]]*//' | grep -v '\$' | sort -u)
+
 # ------------------------------------------------------------------------------
 group "Splunk app metadata"
 # ------------------------------------------------------------------------------

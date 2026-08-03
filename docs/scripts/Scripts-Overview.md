@@ -13,6 +13,7 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 | `setup-environment.sh`             | Linux    | Installs Docker, manages group permissions, and optionally saves images for offline use.             |
 | `process-log2timeline-Dynamic.sh`  | Linux    | Processes **E01 disk images and VMware VM exports** through Plaso, emitting dynamic CSV.             |
 | `process-zeek-ALL.sh`              | Linux    | Processes **all PCAPs** in the dataset using Zeek, preserving ISO8601 timestamps.                    |
+| `process-evtx-EvtxECmd.sh`         | Linux    | Parses raw **Windows Event Logs** (`.evtx`) with EvtxECmd into JSON/XML for Splunk. ⚠️ Requires operator-supplied EvtxECmd; not runtime-tested. |
 | `process-rekall-json.sh`           | Linux    | Normalises Rekall JSON memory-analysis output for ingestion. ⚠️ Field extraction incomplete.         |
 | `deploy-splunk.sh`                 | Linux    | Starts a **Splunk Enterprise Docker container** with predefined settings. ⚠️ Auto-accepts Splunk's licence. |
 | `config-splunk-inputs.sh`          | Linux    | Generates and applies Splunk `inputs.conf` monitoring stanzas for the data store.                    |
