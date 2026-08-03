@@ -51,6 +51,10 @@ release fixes that. **It does not change pipeline behaviour.**
   of those are wired in, and exactly 2 are original work. The 94 files in
   `tasks/` and `default_playbooks/` are never executed.
 - `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" beta target.
+- `ansible/playbooks/Install-ThirdParty-Apps.yml` — installs operator-supplied
+  Splunk app packages at container start, then applies project overrides into
+  each app's `local/` directory rather than editing `default/`, so they survive
+  an app upgrade. Overlay lives in `splunk/etc/apps_local/<App>/local/`.
 - `tests/run-checks.sh` — the repository had no automated verification of any
   kind. 90 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
@@ -67,6 +71,23 @@ release fixes that. **It does not change pipeline behaviour.**
   Splunk's proprietary licence and auto-acceptance, and evidence-handling risk.
 
 ### Removed
+
+- **`Splunk_TA_zeek` and `sankey_diagram_app` are no longer vendored.** Neither
+  declared a licence permitting redistribution — both carried
+  `"license": {"name": null, "text": null, "uri": null}` in their
+  `app.manifest`. They are now supplied by the operator: Splunkbase packages go
+  in `data_store/dependencies/splunk_apps/` and are installed into the container
+  at deploy time by the new `Install-ThirdParty-Apps.yml` playbook.
+
+  Installation is offline-first — it reads local package files and never
+  reaches the network, because Splunkbase requires an authenticated session and
+  forensic workstations are often air-gapped.
+
+  Both are load-bearing, so this has a real cost: without `Splunk_TA_zeek`, Zeek
+  logs ingest unparsed (it supplies the TSV parsing and the `zeek:*` sourcetype
+  routing), and without `sankey_diagram_app` three panels in the BASELINE
+  *BSL-host_triage* dashboard error. `deploy-splunk.sh` now checks for both
+  before deploying and names the specific consequence of continuing without each.
 
 - **`ansible/` went from 101 files to 3.** An audit established that nothing in
   the repository executed 94 of them: only `ansible/playbooks/` is bind-mounted

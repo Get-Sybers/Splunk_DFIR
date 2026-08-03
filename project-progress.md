@@ -93,9 +93,13 @@ is never run on the host — see [docs/Ansible.md](/docs/Ansible.md) and the
 - **Raw EVTX won't ingest.** Splunk sees the files but won't index them.
   Suspected to relate to how Windows update logs register changes to evtx files.
   Unresolved.
-- **Two bundled Splunk apps have no licence grant.** `Splunk_TA_zeek` and
-  `sankey_diagram_app` declare no licence in their manifests. Redistribution
-  rights unconfirmed — see [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+- **Two third-party Splunk apps must now be supplied by you.**
+  `Splunk_TA_zeek` and `sankey_diagram_app` are no longer shipped (neither
+  declares a licence permitting redistribution). Put their Splunkbase packages
+  in `data_store/dependencies/splunk_apps/` and they install at deploy time.
+  **Without `Splunk_TA_zeek`, Zeek logs ingest unparsed.** `deploy-splunk.sh`
+  warns before deploying. See
+  [the README there](/data_store/dependencies/splunk_apps/README.md).
 - **`DETECT` and `BASELINE` are mostly not original either.** 77 of their lookup
   files (~3 MB) come from Splunk Security Content, authored by the Splunk Threat
   Research Team, renamed with a local `bad_`/`com_`/`sus_` prefix. Apache-2.0
@@ -150,9 +154,8 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 - Create a guide for **setting up the development environment**.
 
 ### 🔹 **Licensing follow-ups**
-- Confirm redistribution rights for `Splunk_TA_zeek` and `sankey_diagram_app`,
-  or remove them and fetch from Splunkbase at install time.
-- Restore the missing `visualization.js.LICENSE.txt` in `sankey_diagram_app`.
+- ✅ Redistribution of `Splunk_TA_zeek` / `sankey_diagram_app` — resolved by
+  removing both and installing them from operator-supplied packages.
 - Mark `remove_first_login.yml` in-file as modified, per Apache-2.0 §4(b).
 - Review the `!dependencies/SuperMem/**` rule in `data_store/.gitignore`. It
   would vendor a third-party tool into the repo if SuperMem is placed there.
