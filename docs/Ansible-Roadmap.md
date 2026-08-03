@@ -36,12 +36,13 @@ So the target is no longer "Ansible it all". It is: **fix the defects, delete
 the dead weight, and use Ansible only where it demonstrably does something bash
 cannot.**
 
-## Blocking prerequisite: Splunk has no persistent state
+## Former blocking prerequisite: Splunk had no persistent state
 
-Nothing else on this page matters until this is fixed, and it is not an Ansible
-problem.
+**Fixed in v0.1.0-alpha, but not yet runtime-verified.** Kept here because it
+is the reason the migration case collapsed.
 
-`scripts/deploy-splunk.sh:140` mounts the host's `splunk/var` at **`/data/var`**:
+`scripts/deploy-splunk.sh` used to mount the host's `splunk/var` at
+**`/data/var`**:
 
 ```
 -v "$REPO_ROOT_DIR/splunk/var":/data/var \
@@ -68,24 +69,37 @@ This matters more than it first appears:
   recreation would make accidental total data loss *more* likely than the
   current script does.
 
-Fix this first, verify it by recreating the container and confirming indexes
-survive, and only then consider automating container lifecycle.
+**Now:** index data lives in a named Docker volume mounted at
+`/opt/splunk/var`, and `purge-splunk-container.sh` removes that volume
+explicitly. A named volume rather than a bind mount, so Docker seeds it from
+the image and the container's splunk-user ownership survives.
 
-## Verified defects to fix in bash, now
+**Still to do:** verify at runtime that indexes actually survive a container
+recreate. That cannot be tested without Docker and Splunk.
 
-These were each confirmed against the code. None needs Ansible.
+## Verified defects — fixed in v0.1.0-alpha
 
-| # | Defect | Location | Effect |
+These were each confirmed against the code and then fixed directly in bash
+and YAML. **None needed Ansible**, which is itself the clearest argument
+against the migration case: the plan's strongest evidence was this defect
+list, and it was cleared in an afternoon without a control node.
+
+Note none of the fixes are runtime-tested — see `project-progress.md`.
+
+| # | Defect | Effect | Fix |
 |:--|:---|:---|:---|
-| 1 | `splunk/var` mounted at `/data/var`, `SPLUNK_DB` unset | `deploy-splunk.sh:140` | All indexed data is ephemeral (above) |
-| 2 | `host = extracted_host` is a literal string | `splunk/etc/system/local/inputs.conf:75,81` | Splunk sets `host` to the text `extracted_host`, not a value |
-| 3 | All four copy tasks gated on one `limits.conf` stat | `ansible/playbooks/Include-local-conf.yml` | If `limits.conf` exists, `indexes.conf` and `inputs.conf` are never copied — editing them is a silent no-op |
-| 4 | No `set -e`; no `docker rm`/`stop` before `docker run --name` | `deploy-splunk.sh:135`, readiness loop at `:162` | A second run collides on the container name, continues anyway, then greps the **old** container's logs, finds the completion string, and exits 0 having deployed nothing |
+| 1 | `splunk/var` mounted at `/data/var`, `SPLUNK_DB` unset | All indexed data ephemeral | Named volume at `/opt/splunk/var`; purge removes it |
+| 2 | `host = extracted_host` is a literal string | Every event labelled `extracted_host` | Removed; `[l2t:csv]` already sets host via `TRANSFORMS-set_host` |
+| 3 | Four copy tasks gated on one `limits.conf` stat | Editing `indexes.conf`/`inputs.conf` was a silent no-op | Per-file stat; mode `0755`→`0644` |
+| 4 | No `set -e`; no `docker rm` before `docker run --name` | Second run collided, greped the **old** container's logs, exited 0 having deployed nothing | Refuses to collide; polls by container ID; detects container death; 600s configurable timeout |
+| 5 | Unquoted paths in `sudo chown -R`/`chmod -R` | A repo path with a space would target unintended directories | All quoted |
+| 6 | 7 scripts resolved the repo root one level wrong | `scripts/v2/` ×4, `scripts/deprecated/` ×3 | Corrected; a check now asserts this for every script |
 
-Defect 4 is the one case where `community.docker.docker_container` genuinely
-does something bash struggles to: converge on a named container rather than
-colliding with it. That is the strongest single argument for Ansible in this
-repo — and it is still cheaper to fix in bash first.
+Defect 4 was the one case where `community.docker.docker_container` genuinely
+does something bash struggles with: converging on a named container rather than
+colliding with it. It has now been handled in bash — the script refuses to
+collide, polls by container ID, and detects a container that dies mid-startup.
+That removes the strongest single argument for Ansible in this repo.
 
 ## What Ansible should and should not own
 
@@ -118,24 +132,26 @@ config. It is not the pipeline.
 Both the value and sequencing critics independently identified the same work as
 the best return, and none of it is Ansible:
 
-1. **Fix the four defects above**, starting with Splunk persistence.
-2. **Delete `scripts/v2/`.** Four of its seven scripts resolve the repo root to
-   `<repo>/scripts`. Delete rather than port — `scripts/` already carries the
-   same features.
+1. ✅ **Fix the defects above.** Done in v0.1.0-alpha, runtime verification
+   still outstanding.
+2. **Delete `scripts/v2/`.** Its path resolution is now corrected, but it
+   remains a divergent duplicate that does *not* carry the Splunk persistence,
+   collision or readiness fixes — so running it still gets you the old
+   behaviour. Delete rather than maintain two copies.
 3. **Delete the 94 inert vendored files** in `ansible/tasks/` and
    `ansible/default_playbooks/`. Nothing executes them, and they carry the
    project's largest third-party obligation. One deliberate commit.
-4. **Add a test suite.** Idempotency is the entire value proposition of the
-   Ansible work, and it is currently unfalsifiable — there is no way to
-   demonstrate that a migration preserved behaviour.
+4. **Add a pipeline test suite.** `tests/run-checks.sh` now provides 90 static
+   checks, but nothing exercises the pipeline. Idempotency is the entire value
+   proposition of the Ansible work and remains unfalsifiable without one.
 
 ## Staging
 
 | Stage | Goal | Gated on |
 |:---|:---|:---|
-| 0 | Fix Splunk persistence (`SPLUNK_DB` / mount `/opt/splunk/var`); verify indexes survive a container recreate | — |
-| 1 | Fix defects 2-4 in place; delete `scripts/v2/` and the 94 inert files | — (parallel with 0) |
-| 2 | Minimal test/lint gate so stage 3 has a regression signal | Stage 1 |
+| 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
+| 1 | ✅ Defects 2-4 fixed in place. Still open: delete `scripts/v2/` and the 94 inert files | — |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 90 checks). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

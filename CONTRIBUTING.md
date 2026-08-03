@@ -49,12 +49,21 @@ be promoted, which is why it wasn't done in the alpha.
 
 `scripts/deprecated/` is kept for reference. Don't build on it.
 
-Before submitting shell changes:
+## Checks
+
+Run this before submitting anything:
 
 ```bash
-bash -n scripts/*.sh          # syntax
-shellcheck scripts/*.sh       # if you have it
+./tests/run-checks.sh          # 90 static checks; -v to see each one
 ```
+
+It covers shell syntax, shellcheck, repo-root path resolution, Ansible
+task-file linting, Splunk conf sanity, app versioning, evidence-gitignore
+coverage, secret patterns, and documentation links. It exits non-zero on
+failure.
+
+It does **not** test the pipeline — nothing does yet. That is the single most
+valuable contribution available (see above).
 
 For PowerShell, `Invoke-ScriptAnalyzer`.
 

@@ -81,8 +81,10 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No tests.** Nothing in this repo is automatically verified. Every "✅"
-  above means "worked when the author last ran it by hand."
+- **No pipeline tests.** `./tests/run-checks.sh` now runs 90 static checks
+  (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
+  gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
+  Every "✅" above still means "worked when the author last ran it by hand."
 - **`scripts/v2/` is broken and unsupported.** Four of its seven scripts
   (`deploy-splunk.sh`, `setup-environment.sh`, `purge-splunk-container.sh`,
   `config-splunk-inputs.sh`) still compute `REPO_ROOT_DIR` as `$SCRIPT_DIR/..`,
@@ -95,11 +97,12 @@ tests, and interfaces will change without notice.
   `SPLUNK_START_ARGS=--accept-license`.
 - **The `_time` normalisation story is inconsistent** across sources. Plaso and
   Zeek are good; KAPE is mostly right; everything else is unverified.
-- 🔴 **Splunk keeps no persistent state.** `splunk/var` is mounted at
-  `/data/var`, which Splunk never reads; its real data directory is not
-  bind-mounted. Removing the container destroys every index. See
-  [project-progress.md](/project-progress.md#-verified-defects-in-current-code)
-  for this and three other verified defects.
+- **Seven defects were found and fixed during the alpha** — including one
+  where Splunk kept no persistent state at all (`splunk/var` was mounted at
+  `/data/var`, a path Splunk never reads, so every index died with the
+  container). **None of the fixes are runtime-tested** — there is no Docker or
+  Splunk in the development environment. See
+  [project-progress.md](/project-progress.md#-defects-found-and-fixed-in-the-alpha).
 - **The `ansible/` directory is mostly inert.** Ansible runs *inside* the Splunk
   container, not from a control node. Of its 101 files, 97 derive from
   splunk-ansible and 94 are never executed at all; exactly 2 playbooks are

@@ -2,7 +2,7 @@
 
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 
 ################################################################################
 echo ""
@@ -52,14 +52,14 @@ done
 
 # Make sure all items in SPLUNK_DFIR/splunk and accessible by splunk
 echo "⚙️ Setting permissions of Splunk_DFIR/splunk/etc/* to $(whoami):docker and 777"
-sudo chown -R $(whoami):docker $REPO_ROOT_DIR/splunk/*
-sudo chmod -R 777 $REPO_ROOT_DIR/splunk/*
+sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"/splunk/*
+sudo chmod -R 777 "$REPO_ROOT_DIR"/splunk/*
 echo "⚙️ Setting permissions of $REPO_ROOT_DIR/data_store/* to $(whoami):docker and 777"
-sudo chown -R $(whoami):docker $REPO_ROOT_DIR/data_store/*
-sudo chmod -R 777 $REPO_ROOT_DIR/data_store/*
+sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"/data_store/*
+sudo chmod -R 777 "$REPO_ROOT_DIR"/data_store/*
 echo "⚙️ Setting permissions of $REPO_ROOT_DIR/ansible/* to $(whoami):docker and 777"
-sudo chown -R $(whoami):docker $REPO_ROOT_DIR/ansible/*
-sudo chmod -R 777 $REPO_ROOT_DIR/ansible/*
+sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"/ansible/*
+sudo chmod -R 777 "$REPO_ROOT_DIR"/ansible/*
 
 echo "🚀 Building Splunk Enterprise Docker container..."
 

@@ -3,7 +3,7 @@
 ################################################################################
 # Establish Splunk_DFIR repo filepath
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 
 ################################################################################
 echo ""
@@ -115,7 +115,7 @@ sudo usermod -aG docker "$USER"
 ################################################################################
 # Download and optionally save Docker images
 echo "Preparing Splunk_DFIR directory permissions and setting ownership to $(whoami):docker"
-sudo chown -R $(whoami):docker "$REPO_ROOT_DIR"
+sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"
 sudo chmod -R 744 "$REPO_ROOT_DIR"
 for image in "${IMAGES[@]}"; do
     echo "Pulling $image..."
@@ -133,7 +133,7 @@ done
 
 if [ -d "$REPO_ROOT_DIR" ]; then
     echo "Setting permissions for Splunk_DFIR repo $(whoami):docker"
-    sudo chown -R $(whoami):docker "$REPO_ROOT_DIR/*"
+    sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR/*"
     sudo chmod -R 744 "$REPO_ROOT_DIR/*"
 fi
 echo

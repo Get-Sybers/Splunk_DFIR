@@ -1,43 +1,44 @@
-- name: Check if /opt/splunk/etc/system/local/limits.conf exists
-  ansible.builtin.stat:
-    path: /opt/splunk/etc/system/local/limits.conf
-  register: limits_conf_stat
+---
+# Seeds $SPLUNK_HOME/etc/system/local from the read-only /data/etc bind mount,
+# for any file not already present in the container.
+#
+# This previously stat'd limits.conf ONCE and gated all three copies on that
+# single result:
+#
+#     when: not limits_conf_stat.stat.exists
+#
+# So if limits.conf existed, indexes.conf and inputs.conf were silently skipped
+# — editing either on the host and redeploying was a permanent no-op. Each file
+# is now checked on its own.
 
-- name: Ensure /opt/splunk/etc/system/local directory exists (if limits.conf is missing)
+- name: Ensure /opt/splunk/etc/system/local exists
   ansible.builtin.file:
     path: /opt/splunk/etc/system/local
     state: directory
     owner: splunk
     group: splunk
     mode: "0755"
-  when: not limits_conf_stat.stat.exists
 
-- name: Copy limits.conf if it does not exist
+- name: Check which local conf files are already present
+  ansible.builtin.stat:
+    path: "/opt/splunk/etc/system/local/{{ item }}"
+  register: local_conf_stat
+  loop:
+    - limits.conf
+    - indexes.conf
+    - inputs.conf
+
+- name: Seed any local conf file that is missing
   ansible.builtin.copy:
-    src: /data/etc/system/local/limits.conf
-    dest: /opt/splunk/etc/system/local/limits.conf
-    remote_src: yes
+    src: "/data/etc/system/local/{{ item.item }}"
+    dest: "/opt/splunk/etc/system/local/{{ item.item }}"
+    remote_src: true
     owner: splunk
     group: splunk
-    mode: "0755"
-  when: not limits_conf_stat.stat.exists
-
-- name: Copy indexes.conf if it does not exist
-  ansible.builtin.copy:
-    src: /data/etc/system/local/indexes.conf
-    dest: /opt/splunk/etc/system/local/indexes.conf
-    remote_src: yes
-    owner: splunk
-    group: splunk
-    mode: "0755"
-  when: not limits_conf_stat.stat.exists
-
-- name: Copy inputs.conf if it does not exist
-  ansible.builtin.copy:
-    src: /data/etc/system/local/inputs.conf
-    dest: /opt/splunk/etc/system/local/inputs.conf
-    remote_src: yes
-    owner: splunk
-    group: splunk
-    mode: "0755"
-  when: not limits_conf_stat.stat.exists
+    # 0644, not 0755 — these are configuration files and were needlessly
+    # marked executable.
+    mode: "0644"
+  loop: "{{ local_conf_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not item.stat.exists
