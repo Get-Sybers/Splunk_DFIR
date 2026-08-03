@@ -24,7 +24,7 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 
 | Path                  | Status                                                                                                   |
 |-----------------------|----------------------------------------------------------------------------------------------------------|
-| `scripts/v2/`         | 🔻 **Broken, unsupported.** Four of seven scripts resolve the repo root to `<repo>/scripts`. Not part of the alpha release. |
+| `scripts/v2/`         | 🔻 **Unsupported divergent duplicate.** Paths were fixed in the alpha, but it lacks the Splunk persistence, collision and readiness fixes — running it gets the old behaviour. Not part of the release. |
 | `scripts/deprecated/` | Superseded. Kept for reference only. `process-log2timeline-ALL.sh` here is replaced by `process-log2timeline-Dynamic.sh`. |
 
 ---

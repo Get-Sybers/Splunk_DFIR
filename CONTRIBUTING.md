@@ -39,13 +39,13 @@ state that prompted the alpha rewrite. If you haven't run it, it isn't ✅.
 
 Use `scripts/`. It resolves paths correctly for all seven scripts.
 
-`scripts/v2/` is **broken and unsupported**: four of its seven scripts still
-compute `REPO_ROOT_DIR` as `$SCRIPT_DIR/..`, the depth that is correct one
-directory up, so they resolve the repo root to `<repo>/scripts`. If you want to fix it, the change is
-`$SCRIPT_DIR/..` → `$SCRIPT_DIR/../..` in `deploy-splunk.sh`,
-`setup-environment.sh`, `purge-splunk-container.sh`, and
-`config-splunk-inputs.sh` — but it needs real testing with Docker before it can
-be promoted, which is why it wasn't done in the alpha.
+`scripts/v2/` is **unsupported**. Its path resolution was corrected in the
+alpha and `tests/run-checks.sh` now asserts it, but it is a divergent duplicate
+that does not carry the Splunk persistence, container-collision or readiness
+fixes — running it gets you the old behaviour.
+
+Don't port fixes into it. The roadmap's recommendation is to delete it rather
+than maintain two copies of every script; that call hasn't been made yet.
 
 `scripts/deprecated/` is kept for reference. Don't build on it.
 
