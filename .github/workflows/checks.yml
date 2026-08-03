@@ -1,0 +1,84 @@
+name: checks
+
+# Runs everything that can be verified without Docker, Splunk, or evidence.
+#
+# What this DOES cover: shell syntax, shellcheck, repo-root path resolution,
+# Ansible task-file linting, Splunk conf sanity, app versioning, evidence
+# gitignore coverage, secret patterns, and documentation links.
+#
+# What it does NOT cover: the pipeline. Nothing here processes a disk image,
+# a PCAP, or an event log, and nothing starts Splunk. Those need a real host
+# with Docker and real evidence — see the open issues tagged `needs-runtime`.
+# A green tick here means the repository is internally consistent, not that
+# the pipeline works.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The evidence-gitignore checks call `git check-ignore`, which needs
+          # real git metadata rather than a tarball export.
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install check dependencies
+        run: |
+          set -euo pipefail
+          # shellcheck ships on ubuntu-latest runners; install only if absent
+          # so this still works on a self-hosted runner.
+          #
+          # Written as an if-block deliberately: `command -v x || a && b` parses
+          # as `(command -v x || a) && b`, so the install runs even when the
+          # tool is already present.
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq shellcheck
+          fi
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet pyyaml ansible-lint
+
+      - name: Report tool versions
+        run: |
+          echo "bash        $(bash --version | head -1)"
+          echo "shellcheck  $(shellcheck --version | grep version: | head -1)"
+          echo "ansible-lint $(ansible-lint --version | head -1)"
+          echo "python      $(python --version)"
+
+      - name: Run repository checks
+        run: ./tests/run-checks.sh -v
+
+  # PowerShell is not covered by tests/run-checks.sh, because the scripts only
+  # run on Windows and the harness is bash. Analysing them here is the one thing
+  # CI can do that a Linux dev box does not do by default.
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -ErrorAction Stop
+          $results = Get-ChildItem -Path scripts -Filter *.ps1 -Recurse |
+              ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error }
+          if ($results) {
+              $results | Format-Table -AutoSize | Out-String | Write-Host
+              Write-Error "PSScriptAnalyzer reported $($results.Count) error(s)"
+              exit 1
+          }
+          Write-Host "No PSScriptAnalyzer errors."
