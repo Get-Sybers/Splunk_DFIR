@@ -69,10 +69,16 @@ This matters more than it first appears:
   recreation would make accidental total data loss *more* likely than the
   current script does.
 
-**Now:** index data lives in a named Docker volume mounted at
-`/opt/splunk/var`, and `purge-splunk-container.sh` removes that volume
-explicitly. A named volume rather than a bind mount, so Docker seeds it from
-the image and the container's splunk-user ownership survives.
+**Now:** index data is mounted at `/opt/splunk/var` — a named Docker volume by
+default, so Docker seeds it from the image and the container's splunk-user
+ownership survives. `purge-splunk-container.sh` removes it explicitly.
+
+Note the mount *point* was the whole bug. The read-write `splunk/var` mount —
+the only rw mount the script had — showed the intent clearly: indexes were
+meant to live in the repo as a directory. `--var-dir PATH` keeps that available
+(`--var-dir ./splunk/var` for the original layout), which matters on a
+workstation where a large case can index to hundreds of GB and Docker's storage
+may not be on the disk with room.
 
 **Still to do:** verify at runtime that indexes actually survive a container
 recreate. That cannot be tested without Docker and Splunk.
@@ -140,7 +146,7 @@ the best return, and none of it is Ansible:
    behaviour. Delete rather than maintain two copies.
 3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
    playbooks, and the project's largest third-party obligation went with them.
-4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 140 static
+4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 142 static
    checks in CI, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
 
@@ -150,7 +156,7 @@ the best return, and none of it is Ansible:
 |:---|:---|:---|
 | 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
 | 1 | ✅ Defects 2-4 fixed in place. Still open: delete `scripts/v2/` and the 94 inert files | — |
-| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 140 checks). Still needs a pipeline smoke test | Stage 1 |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 142 checks). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

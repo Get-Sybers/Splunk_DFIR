@@ -8,14 +8,40 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 SPLUNK_CONTAINER="splunk-enterprise"
 
-# Splunk's index data lives in /opt/splunk/var inside the container. It is kept
-# in a named Docker volume so it survives `docker rm`. This used to bind-mount
-# $REPO_ROOT_DIR/splunk/var at /data/var — a path Splunk never reads — which
-# meant every index was destroyed with the container. A named volume is used
-# rather than a bind mount because Docker seeds it from the image on first use,
-# preserving the container's splunk-user ownership; a host bind mount over
-# /opt/splunk/var starts empty and breaks startup on a UID mismatch.
+# ------------------------------------------------------------------------------
+# Where Splunk's index data lives.
+#
+# Everything else this script mounts is staged under /data/ and copied into
+# place by the pre-task playbooks — that is the project's design, and it is why
+# splunk/etc, data_store/processed and ansible/playbooks are all :ro.
+#
+# The exception was `-v splunk/var:/data/var`, the ONLY read-write mount. That
+# rw flag says what was intended: index data was meant to land in the repo at
+# splunk/var. splunk/.gitignore has a `var/**` + `!var/.gitkeep` block built for
+# exactly that, and the old purge script told you "you can find your indexes in
+# Splunk_DFIR/splunk/var".
+#
+# It never worked, because Splunk reads $SPLUNK_DB -> /opt/splunk/var and
+# nothing redirected it. The whole bug was the mount POINT, not the approach.
+#
+# Both approaches are supported now, because this is an operator's decision and
+# not one this script should make silently:
+#
+#   SPLUNK_VAR_VOLUME  (default)  named Docker volume. Docker seeds it from the
+#                                 image on first use, so /opt/splunk/var keeps
+#                                 the container's splunk-user ownership.
+#   SPLUNK_VAR_DIR / --var-dir    bind-mount a host directory instead. Restores
+#                                 the original design — indexes are a directory
+#                                 you can see, size with `du`, back up, and put
+#                                 on whichever disk has room. Use
+#                                 --var-dir "$REPO_ROOT_DIR/splunk/var" for
+#                                 exactly what was originally intended.
+#
+# The bind mount needs the host directory owned by the image's splunk UID or
+# Splunk will not start; this script handles that below rather than leaving you
+# to discover it.
 SPLUNK_VAR_VOLUME="${SPLUNK_VAR_VOLUME:-splunk-dfir-var}"
+SPLUNK_VAR_DIR="${SPLUNK_VAR_DIR:-}"
 
 # How long to wait for the container's internal Ansible run to finish. The
 # first run also pulls the image, so this needs to be generous.
@@ -23,8 +49,8 @@ SPLUNK_READY_TIMEOUT="${SPLUNK_READY_TIMEOUT:-600}"
 
 # Third-party Splunk apps are no longer vendored in this repository — neither
 # Splunk_TA_zeek nor sankey_diagram_app declares a licence permitting
-# redistribution. Drop their Splunkbase packages (.tgz/.spl) here and they are
-# installed into the container at start by Install-ThirdParty-Apps.yml.
+# redistribution. Drop their Splunkbase packages (.tgz/.spl) here; this script
+# lists them in SPLUNK_APPS_URL and the image installs them itself.
 THIRD_PARTY_APP_DIR="${THIRD_PARTY_APP_DIR:-$REPO_ROOT_DIR/data_store/dependencies/splunk_apps}"
 
 # Whether this deploy keeps the index volume or wipes it.
@@ -76,14 +102,19 @@ Data:
                      ⚠️  DESTROYS ALL INDEXED EVIDENCE. Prompts unless --yes.
   --purge-only       Delete the container and index volume, then STOP.
                      No redeploy. Same as scripts/purge-splunk-container.sh.
+  --var-dir PATH     Keep indexes in a host DIRECTORY at PATH instead of a
+                     named Docker volume. You can see them, size them with
+                     du, back them up, and choose which disk they land on.
+                     Use --var-dir ./splunk/var for the layout this project
+                     was originally built around.
 
 Container:
   --ask              Prompt before replacing an existing container.
   --no-replace       Abort if a container already exists.
 
 Network:
-  --isolated         Attach to an --internal Docker network so the container
-                     has no route off the host.                     (default)
+  --isolated         Attach to a Docker bridge with IP masquerade disabled,
+                     so the container gets no useful egress.         (default)
   --no-isolated      Allow outbound network access. Only if you need it.
   --bind ADDR        Host address to publish ports on.  (default 127.0.0.1)
                      Use --bind 0.0.0.0 to expose on the LAN — think first;
@@ -101,6 +132,7 @@ Environment (flags win):
   SPLUNK_DATA_MODE       persist | purge
   SPLUNK_REPLACE         always | ask | never
   SPLUNK_VAR_VOLUME      index volume name        (default splunk-dfir-var)
+  SPLUNK_VAR_DIR         host directory for indexes; overrides the volume
   SPLUNK_READY_TIMEOUT   seconds to wait          (default 600)
   SPLUNK_SKIP_CHMOD      1 to skip permission fixup
   SPLUNK_ISOLATED        1 = no egress (default), 0 = allow outbound
@@ -120,6 +152,9 @@ while [[ $# -gt 0 ]]; do
         --persist)     SPLUNK_DATA_MODE="persist" ;;
         --purge)       SPLUNK_DATA_MODE="purge" ;;
         --purge-only)  SPLUNK_DATA_MODE="purge"; PURGE_ONLY=1 ;;
+        --var-dir)
+            [[ -n "${2:-}" ]] || { echo "❌ --var-dir needs a PATH."; exit 1; }
+            SPLUNK_VAR_DIR="$2"; shift ;;
         --ask)         SPLUNK_REPLACE="ask" ;;
         --no-replace)  SPLUNK_REPLACE="never" ;;
         --skip-chmod)  SPLUNK_SKIP_CHMOD=1 ;;
@@ -146,6 +181,25 @@ case "$SPLUNK_DATA_MODE" in
     persist|purge) ;;
     *) echo "❌ SPLUNK_DATA_MODE must be persist|purge (got '$SPLUNK_DATA_MODE')."; exit 1 ;;
 esac
+
+# ------------------------------------------------------------------------------
+# Resolve where indexes live: named volume (default) or host directory.
+#
+# One place decides this, so the mount, the purge and the summary can never
+# disagree about it.
+# ------------------------------------------------------------------------------
+if [[ -n "$SPLUNK_VAR_DIR" ]]; then
+    VAR_MODE="dir"
+    mkdir -p "$SPLUNK_VAR_DIR" 2>/dev/null || {
+        echo "❌ Could not create --var-dir '$SPLUNK_VAR_DIR'."; exit 1; }
+    SPLUNK_VAR_DIR="$(realpath "$SPLUNK_VAR_DIR")"
+    VAR_MOUNT="$SPLUNK_VAR_DIR:/opt/splunk/var"
+    VAR_DESC="host directory $SPLUNK_VAR_DIR"
+else
+    VAR_MODE="volume"
+    VAR_MOUNT="$SPLUNK_VAR_VOLUME:/opt/splunk/var"
+    VAR_DESC="Docker volume $SPLUNK_VAR_VOLUME"
+fi
 
 ################################################################################
 echo ""
@@ -205,7 +259,7 @@ if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
             ;;
     esac
 
-    echo "   Indexes and the fishbucket live in volume '$SPLUNK_VAR_VOLUME' and survive this."
+    echo "   Indexes and the fishbucket live in $VAR_DESC and survive this."
     echo "   (To delete indexes too, use scripts/purge-splunk-container.sh.)"
     echo "🛑 Removing container..."
     docker rm -f "$SPLUNK_CONTAINER" >/dev/null || {
@@ -224,8 +278,17 @@ fi
 # unless --yes, and refuses outright if there is no way to confirm.
 # ------------------------------------------------------------------------------
 if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
-    if docker volume ls -q | grep -qx "$SPLUNK_VAR_VOLUME"; then
-        echo "🔥 --purge: about to DELETE volume '$SPLUNK_VAR_VOLUME'."
+    # Is there actually anything to destroy? Ask before prompting, so a purge
+    # with no data doesn't demand a scary confirmation for a no-op.
+    purge_target=""
+    if [[ "$VAR_MODE" == "dir" ]]; then
+        [[ -n "$(ls -A "$SPLUNK_VAR_DIR" 2>/dev/null)" ]] && purge_target="$VAR_DESC"
+    else
+        docker volume ls -q | grep -qx "$SPLUNK_VAR_VOLUME" && purge_target="$VAR_DESC"
+    fi
+
+    if [[ -n "$purge_target" ]]; then
+        echo "🔥 --purge: about to DELETE indexes in $purge_target."
         echo "   This destroys every indexed event and the fishbucket."
         echo "   Raw and processed evidence on disk is NOT touched."
         echo ""
@@ -241,13 +304,23 @@ if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
                 exit 1
             fi
         fi
-        docker volume rm "$SPLUNK_VAR_VOLUME" >/dev/null || {
-            echo "❌ Could not remove volume '$SPLUNK_VAR_VOLUME'. Aborting."
-            exit 1
-        }
-        echo "✅ Volume removed."
+        if [[ "$VAR_MODE" == "dir" ]]; then
+            # Delete the CONTENTS, not the directory — it may be a mount point,
+            # and removing it would silently change where indexes land next time.
+            # .gitkeep is spared: it is what keeps splunk/var in the repo
+            # skeleton, and deleting it would show up as a spurious git change.
+            sudo find "${SPLUNK_VAR_DIR:?}" -mindepth 1 -maxdepth 1 \
+                -not -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+            echo "✅ Index directory emptied."
+        else
+            docker volume rm "$SPLUNK_VAR_VOLUME" >/dev/null || {
+                echo "❌ Could not remove volume '$SPLUNK_VAR_VOLUME'. Aborting."
+                exit 1
+            }
+            echo "✅ Volume removed."
+        fi
     else
-        echo "ℹ️  Volume '$SPLUNK_VAR_VOLUME' does not exist; nothing to delete."
+        echo "ℹ️  No index data in $VAR_DESC; nothing to delete."
     fi
     echo ""
 
@@ -474,7 +547,35 @@ if [[ -n "$APPS_URL_LIST" ]]; then
 else
     echo "📦 SPLUNK_APPS_URL: (none — no packages found)"
 fi
-echo "📦 Volume:        $SPLUNK_VAR_VOLUME --> /opt/splunk/var  (indexes persist here)"
+echo "📦 Indexes:       $VAR_DESC --> /opt/splunk/var"
+
+# ------------------------------------------------------------------------------
+# Bind-mount mode: the host directory must be owned by the image's splunk user
+# or splunkd cannot write its own data directory and the container dies during
+# startup, with the reason buried in the container log.
+#
+# A named volume does not need this — Docker seeds it from the image, ownership
+# included. That is the only reason the volume is the default.
+#
+# The UID is read from the image rather than hardcoded, so this survives an
+# upstream change; 41812 is the fallback.
+# ------------------------------------------------------------------------------
+if [[ "$VAR_MODE" == "dir" ]]; then
+    SPLUNK_UID=$(docker run --rm --entrypoint id splunk/splunk:latest -u splunk 2>/dev/null | tr -dc '0-9')
+    SPLUNK_UID="${SPLUNK_UID:-41812}"
+    current_owner=$(stat -c '%u' "$SPLUNK_VAR_DIR" 2>/dev/null || echo "")
+    if [[ "$current_owner" != "$SPLUNK_UID" ]]; then
+        echo "🔑 Giving $SPLUNK_VAR_DIR to the container's splunk user (uid $SPLUNK_UID)..."
+        if sudo chown -R "$SPLUNK_UID:$SPLUNK_UID" "$SPLUNK_VAR_DIR"; then
+            echo "   ✅ Done."
+        else
+            echo "   ⚠️  chown failed. Splunk will probably fail to start, because"
+            echo "      splunkd cannot write $SPLUNK_VAR_DIR. Fix with:"
+            echo "        sudo chown -R $SPLUNK_UID:$SPLUNK_UID '$SPLUNK_VAR_DIR'"
+            echo "      or drop --var-dir to use a Docker volume instead."
+        fi
+    fi
+fi
 echo ""
 
 # Define Ansible pre-tasks
@@ -554,7 +655,7 @@ SPLUNK_CID=$(docker run -d --name "$SPLUNK_CONTAINER" \
     -p "$SPLUNK_BIND_ADDR":8088:8088 \
     -p "$SPLUNK_BIND_ADDR":8000:8000 \
     -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
-    -v "$SPLUNK_VAR_VOLUME":/opt/splunk/var \
+    -v "$VAR_MOUNT" \
     -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
     -v "$REPO_ROOT_DIR/ansible/playbooks":/data/ansible/playbooks:ro \
     -v "$THIRD_PARTY_APP_DIR":/data/dependencies/splunk_apps:ro \
@@ -771,11 +872,11 @@ echo " This project assumes the container is redeployed every time."
 echo " What that means:"
 echo ""
 if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
-echo "  PURGED     volume '$SPLUNK_VAR_VOLUME' was deleted this run —"
+echo "  PURGED     $VAR_DESC was emptied this run —"
 echo "             Splunk started with empty indexes and an empty fishbucket,"
 echo "             so monitored files will be re-read from scratch."
 else
-echo "  PERSISTS   /opt/splunk/var  ->  volume '$SPLUNK_VAR_VOLUME'"
+echo "  PERSISTS   /opt/splunk/var  ->  $VAR_DESC"
 echo "             • indexed events survive the redeploy"
 echo "             • the fishbucket survives too, so already-ingested"
 echo "               files are NOT re-read and events are not duplicated"

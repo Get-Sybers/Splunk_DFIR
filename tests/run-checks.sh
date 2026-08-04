@@ -191,6 +191,23 @@ if grep -qF -- '--purge-only' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "no --purge-only: wiping data should not force a redeploy"
 fi
+# Indexes must be storable in a host directory, not only a Docker volume. The
+# original deploy bind-mounted splunk/var read-write — the only rw mount it had
+# — so a visible, backup-able index directory was the intended design. The
+# persistence fix swapped in a named volume; keeping --var-dir means that fix
+# did not quietly discard the choice.
+if grep -qF -- '--var-dir' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "deploy-splunk.sh supports --var-dir (host directory for indexes)"
+else
+    fail "no --var-dir: indexes can only live in a Docker volume"
+fi
+# A purge that deletes .gitkeep leaves a spurious git change behind.
+if grep -q "not -name '.gitkeep'" scripts/deploy-splunk.sh 2>/dev/null \
+   && grep -q "not -name '.gitkeep'" scripts/purge-splunk-container.sh 2>/dev/null; then
+    pass "purging a host index directory spares .gitkeep"
+else
+    fail "purge would delete the tracked .gitkeep from an index directory"
+fi
 # `docker logs -f` never exits. Backgrounding it without stopping it buries
 # every diagnostic printed afterwards — including the reachability failure —
 # and orphans the process past script exit.

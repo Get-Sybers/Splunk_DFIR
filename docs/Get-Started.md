@@ -83,6 +83,30 @@ Splunk_DFIR/scripts/deploy-splunk.sh
 
 Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
 
+**Where indexes are stored**
+
+Everything this project mounts is staged under `/data/` inside the container and
+copied into place by the pre-task playbooks — which is why `splunk/etc`,
+`data_store/processed` and `ansible/playbooks` are all mounted read-only.
+
+Indexes are the exception, and you get to choose:
+
+```bash
+./scripts/deploy-splunk.sh                              # Docker volume (default)
+./scripts/deploy-splunk.sh --var-dir ./splunk/var       # a directory you can see
+./scripts/deploy-splunk.sh --var-dir /mnt/case01/idx    # ...on whichever disk has room
+```
+
+| | Why |
+|:---|:---|
+| **Docker volume** (default) | Docker seeds it from the image, so `/opt/splunk/var` keeps the container's splunk-user ownership. Nothing to set up. Lives wherever Docker's storage is — usually `/var/lib/docker`, which may not be the disk with your free space |
+| **`--var-dir PATH`** | Indexes are a directory: visible, sizeable with `du`, backup-able, and on the disk you pick. Needs the directory owned by the container's splunk UID, which the deploy does for you |
+
+`--var-dir ./splunk/var` is the layout this project was originally built
+around — `splunk/.gitignore` already has a `var/**` rule for it. Indexing a
+large case can run to hundreds of GB, so on a forensics workstation the disk it
+lands on is worth deciding deliberately.
+
 **Network isolation**
 
 The container holds evidence, so by default it is **only reachable from this
@@ -146,6 +170,7 @@ redeploying.
 | `SPLUNK_REPLACE` | `always` | `always` \| `ask` \| `never` |
 | `SPLUNK_READY_TIMEOUT` | `600` | Seconds to wait for the container's Ansible run |
 | `SPLUNK_VAR_VOLUME` | `splunk-dfir-var` | Index volume name |
+| `SPLUNK_VAR_DIR` | — | Host directory for indexes; overrides the volume. Same as `--var-dir`. Set the same value for `purge-splunk-container.sh` |
 | `SPLUNK_ISOLATED` | `1` | `1` = masquerade-disabled bridge, no usable egress; `0` = allow outbound |
 | `SPLUNK_BIND_ADDR` | `127.0.0.1` | Host address published ports bind to |
 | `SPLUNK_NETWORK` | `splunk-dfir-isolated` | Isolated network name |
