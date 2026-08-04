@@ -1,0 +1,57 @@
+---
+# Lays this project's overrides on top of installed apps, in each app's local/
+# directory.
+#
+# RUNS AS A POST-TASK, DELIBERATELY
+#
+# splunk-ansible's site.yml runs: pre_tasks -> provisioning role -> post_tasks.
+# Third-party apps are installed by the role, from SPLUNK_APPS_URL. So this has
+# to be a post-task: as a pre-task it would write into app directories that do
+# not exist yet and silently succeed, applying nothing.
+#
+# WHY local/ AND NOT default/
+#
+# Splunk layers configuration — default/ holds the vendor's shipped values,
+# local/ holds site changes, and local/ wins. Editing a third-party app's
+# default/ means the next upgrade of that app silently reverts the change, and
+# makes it impossible to tell what you altered from what shipped.
+#
+#   splunk/etc/apps_local/<AppName>/local/*.conf   ->   <installed app>/local/
+#
+# The overlay needs no extra mount: splunk/etc is already bind-mounted at
+# /data/etc, so splunk/etc/apps_local lands at /data/etc/apps_local.
+#
+# App INSTALLATION is not done here. The splunk/splunk image installs packages
+# itself from SPLUNK_APPS_URL, which deploy-splunk.sh builds from the mounted
+# package directory. A bare local path is used as-is by splunk-ansible rather
+# than downloaded, so it works with no network access.
+
+- name: Check whether an overrides overlay is mounted
+  ansible.builtin.stat:
+    path: /data/etc/apps_local
+  register: overlay_dir
+
+- name: Find override conf files
+  ansible.builtin.find:
+    paths: /data/etc/apps_local
+    patterns: "*.conf"
+    recurse: true
+  register: overrides
+  when: overlay_dir.stat.exists
+
+# The overlay path relative to apps_local maps directly onto etc/apps/, so
+# <App>/local/<file>.conf lands where Splunk expects it.
+- name: Apply overrides into each app's local/ directory
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "/opt/splunk/etc/apps/{{ item.path | regex_replace('^/data/etc/apps_local/', '') }}"
+    remote_src: true
+    owner: splunk
+    group: splunk
+    mode: "0644"
+  loop: "{{ overrides.files | default([]) }}"
+  loop_control:
+    label: "{{ item.path | regex_replace('^/data/etc/apps_local/', '') }}"
+  when: >-
+    overlay_dir.stat.exists
+    and (item.path | regex_search('/local/'))

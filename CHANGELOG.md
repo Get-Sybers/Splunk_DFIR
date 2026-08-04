@@ -98,6 +98,22 @@ release fixes that. **It does not change pipeline behaviour.**
 
 ### Removed
 
+- **Third-party apps install via the image's own `SPLUNK_APPS_URL`.** An earlier
+  iteration of this release used a custom `Install-ThirdParty-Apps.yml` playbook
+  for it. That was unnecessary — the `splunk/splunk` image already reads
+  `SPLUNK_APPS_URL` (comma-separated) and installs each entry during its
+  provisioning role. `deploy-splunk.sh` now builds that value from the mounted
+  package directory.
+
+  This still works offline: splunk-ansible's `install_apps.yml` only downloads
+  entries matching `http(s)://` or `file://`; a bare local path is stat'd and
+  used directly. Which matters, because the container has no network access.
+
+  The custom playbook is reduced to `Apply-App-Overrides.yml` — just the
+  `local/` overlay — and moved to `SPLUNK_ANSIBLE_POST_TASKS`. `site.yml` runs
+  `pre_tasks → role → post_tasks`, and the role is what installs the apps, so as
+  a pre-task the overrides would have targeted directories that did not exist
+  yet and silently applied nothing.
 - **`Splunk_TA_zeek` and `sankey_diagram_app` are no longer vendored.** Neither
   declared a licence permitting redistribution — both carried
   `"license": {"name": null, "text": null, "uri": null}` in their

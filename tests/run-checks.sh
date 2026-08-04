@@ -201,13 +201,35 @@ done
 
 # Every playbook referenced by ANSIBLE_PRE_TASKS must actually exist, or the
 # container's Ansible run fails at start.
-pre_tasks=$(grep -m1 'ANSIBLE_PRE_TASKS=' scripts/deploy-splunk.sh | sed 's/.*="//;s/"$//')
-IFS=',' read -ra _pt <<< "$pre_tasks"
-for task in "${_pt[@]}"; do
-    f="ansible/playbooks/$(basename "$task")"
-    if [[ -f "$f" ]]; then pass "pre-task exists: $(basename "$f")"
-    else fail "ANSIBLE_PRE_TASKS references missing playbook: $f"; fi
+for var in ANSIBLE_PRE_TASKS ANSIBLE_POST_TASKS; do
+    line=$(grep -m1 "^${var}=" scripts/deploy-splunk.sh | sed 's/.*="//;s/"$//')
+    [[ -z "$line" ]] && { fail "$var is not set in deploy-splunk.sh"; continue; }
+    IFS=',' read -ra _pt <<< "$line"
+    for task in "${_pt[@]}"; do
+        # splunk-ansible only executes entries matching ^(http|https|file)://
+        if [[ ! "$task" =~ ^(http|https|file):// ]]; then
+            fail "$var entry is not a URL, so splunk-ansible will skip it: $task"
+            continue
+        fi
+        f="ansible/playbooks/$(basename "$task")"
+        if [[ -f "$f" ]]; then pass "$var exists: $(basename "$f")"
+        else fail "$var references missing playbook: $f"; fi
+    done
 done
+
+# App installation is the image's job via SPLUNK_APPS_URL, not a custom
+# playbook. And the overrides must be a POST task: site.yml runs
+# pre_tasks -> role -> post_tasks, and the role is what installs the apps.
+if grep -q 'SPLUNK_APPS_URL=' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "apps installed via the image's SPLUNK_APPS_URL"
+else
+    fail "deploy-splunk.sh does not pass SPLUNK_APPS_URL"
+fi
+if grep -q 'ANSIBLE_POST_TASKS=.*Apply-App-Overrides' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "app overrides run as a post-task (after apps install)"
+else
+    fail "Apply-App-Overrides must be a POST task — as a pre-task the apps do not exist yet"
+fi
 
 # Conversely, every playbook present should be wired — dead playbooks are how
 # copy_installed_apps.yml and disable_popups.yml lingered unnoticed.
