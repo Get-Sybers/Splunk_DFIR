@@ -91,7 +91,14 @@ mapfile -t DATABASES < <(grep -oE '^\.create database [A-Za-z_][A-Za-z0-9_]*' "$
 echo "📚 Databases: ${DATABASES[*]}"
 
 if [[ $DRY_RUN -eq 0 ]]; then
-    existing=$(kusto_mgmt "" ".show databases | project DatabaseName" 2>/dev/null)
+    existing=$(kusto_mgmt "NetDefaultDB" ".show databases | project DatabaseName" 2>/dev/null)
+    if kusto_failed "$existing"; then
+        # "Safe to re-run" depends entirely on this probe. If it failed and we
+        # carried on, every database would read as absent and the first
+        # .create database against an existing one would abort the whole apply.
+        echo "❌ Could not list databases: $(kusto_error_message "$existing")"
+        exit 1
+    fi
 fi
 
 for db in "${DATABASES[@]}"; do
@@ -108,7 +115,7 @@ for db in "${DATABASES[@]}"; do
     else
         cmd=".create database $db volatile"
     fi
-    resp=$(kusto_mgmt "" "$cmd")
+    resp=$(kusto_mgmt "NetDefaultDB" "$cmd")
     if kusto_failed "$resp"; then
         echo "   ❌ $db: $(kusto_error_message "$resp")"
         if [[ "$KUSTO_PERSIST" == "1" ]]; then
@@ -171,18 +178,37 @@ fi
 # ------------------------------------------------------------------------------
 echo "🔎 Verifying..."
 fail=0
+
+# Assert, do not merely print. This block previously computed these counts and
+# discarded them, so a database whose script half-applied showed tables=0 and
+# the script still reported success.
 for db in "${DATABASES[@]}"; do
     n=$(kusto_scalar "$db" ".show tables | count")
     f=$(kusto_scalar "$db" ".show functions | count")
     printf '   %-8s tables=%-4s functions=%s\n' "$db" "${n:-?}" "${f:-?}"
+    # `misc` is declared to mirror the Splunk index but has no schema file yet.
+    [[ "$db" == "misc" ]] && continue
+    if ! [[ "${n:-x}" =~ ^[0-9]+$ ]]; then
+        echo "      ❌ could not read a table count for '$db'"; fail=1; continue
+    fi
+    if [[ "$n" -eq 0 && "$db" != "mitre" ]]; then
+        echo "      ❌ '$db' has no tables — its schema did not apply"; fail=1
+    fi
 done
 
-# The CAR layer is the point of the whole port; if it did not land, say so.
+# The CAR layer is the point of the whole port. The expected count is DERIVED
+# from the schema, not hardcoded: a literal threshold silently stops matching
+# the moment an object is added, and the original `-ge 6` passed with only 6 of
+# the 7 Car* functions present.
+expected_car=$(grep -cE '^Car[A-Za-z]+\(\)' "$SCHEMA_DIR/40-mitre.kql" 2>/dev/null || echo 0)
 car=$(kusto_scalar "mitre" ".show functions | where Name startswith 'Car' | count")
-if [[ "${car:-0}" -ge 6 ]]; then
-    echo "   ✅ CAR functions present ($car)"
+if ! [[ "${car:-x}" =~ ^[0-9]+$ ]]; then
+    echo "   ❌ Could not read the CAR function count from 'mitre'."
+    fail=1
+elif [[ "$car" -eq "$expected_car" ]]; then
+    echo "   ✅ CAR functions present ($car/$expected_car)"
 else
-    echo "   ❌ Expected at least 6 Car* functions in 'mitre', found ${car:-0}"
+    echo "   ❌ Expected $expected_car Car* functions in 'mitre', found $car"
     fail=1
 fi
 

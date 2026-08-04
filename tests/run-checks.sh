@@ -171,7 +171,7 @@ else
 fi
 # NOT --internal. An internal network blocks published ports too, which makes
 # Splunk unreachable — that shipped once and had to be reverted.
-if grep -q 'docker network create --internal' scripts/deploy-splunk.sh 2>/dev/null; then
+if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' scripts/deploy-splunk.sh 2>/dev/null; then
     fail "network created with --internal — that blocks published ports and makes Splunk unreachable"
 else
     pass "network is not --internal"
@@ -235,11 +235,15 @@ fi
 # mistakes cost more here than on the Splunk path. These assert the lessons
 # already paid for did in fact carry across.
 # ------------------------------------------------------------------------------
-if [[ -f scripts/deploy-kusto.sh ]]; then
-    if grep -q 'docker network create --internal' scripts/deploy-kusto.sh 2>/dev/null; then
+if [[ ! -f scripts/deploy-kusto.sh ]]; then fail "scripts/deploy-kusto.sh is missing"; else
+    # Must survive line continuations: the script writes `docker network create \`
+    # then the flags on following lines, so a single-line grep for
+    # "docker network create --internal" can NEVER match — the original version
+    # of this check was incapable of failing.
+    if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' scripts/deploy-kusto.sh 2>/dev/null; then
         fail "deploy-kusto.sh uses --internal, which blocks published ports"
     else
-        pass "deploy-kusto.sh does not use --internal"
+        pass "deploy-kusto.sh does not use --internal (continuations checked)"
     fi
     if grep -q 'enable_ip_masquerade=false' scripts/deploy-kusto.sh 2>/dev/null; then
         pass "deploy-kusto.sh disables IP masquerade for isolation"
@@ -280,7 +284,7 @@ fi
 # ------------------------------------------------------------------------------
 # Kusto schema and ingestion (stages 2-4).
 # ------------------------------------------------------------------------------
-if [[ -d kusto/schema ]]; then
+if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     # Every schema file must name its target database, or apply-kusto-schema.sh
     # silently skips it and the tables never exist.
     for f in kusto/schema/[1-9]*.kql; do
@@ -313,19 +317,42 @@ if [[ -d kusto/schema ]]; then
         fi
     fi
 fi
-if [[ -f scripts/ingest-kusto.sh ]]; then
+if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is missing"; else
     # Zeek is mapped by ordinal. Without the header guard, a reordered conn.log
     # silently loads destination addresses into the source columns.
-    # Assert the guard is INVOKED and skips on mismatch, not merely that the
-    # variable name appears somewhere. The first version of this check grepped
-    # for the constant and passed after the guard had been broken.
-    if grep -q 'ZEEK_CONN_EXPECTED=' scripts/ingest-kusto.sh 2>/dev/null \
-       && grep -q '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null \
-       && grep -qA6 '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null \
-       && grep -A8 '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null | grep -q 'continue'; then
-        pass "ingest verifies Zeek conn.log column order and skips on mismatch"
+    # BEHAVIOURAL. Run the real script against fixtures and assert it refuses a
+    # conn.log whose columns are not in the order ZeekConnMapping assumes.
+    #
+    # Two earlier versions of this check were string-matching and both were
+    # wrong: the first grepped for a constant's name and passed after the guard
+    # was broken; the second used a fixed grep -A8 window and failed on a
+    # legitimate refactor. Mapping Zeek by ordinal against a reordered file puts
+    # destination addresses in the source column, so this is worth testing for
+    # real rather than spelling-checking.
+    _zt=$(mktemp -d)
+    mkdir -p "$_zt/zeek/case"
+    _hdr_ok=$'#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto'
+    _hdr_bad=$'#fields\tts\tuid\tid.resp_h\tid.resp_p\tid.orig_h\tid.orig_p\tproto'
+    _row=$'2025-01-01T00:00:00+0000\tC1\t10.0.0.1\t1\t10.0.0.2\t2\ttcp'
+    _guard_ok=1
+    # Output is captured, not piped: `grep -q` exits on first match, which
+    # SIGPIPEs the script upstream, and `set -o pipefail` then reports the whole
+    # pipeline as failed. That made this check fail against a working guard.
+    _zrun() { PROCESSED_DIR="$_zt" ./scripts/ingest-kusto.sh --only zeek --dry-run 2>&1; }
+    printf '%s\n%s\n' "$_hdr_ok" "$_row" > "$_zt/zeek/case/conn.log"
+    _out=$(_zrun)
+    [[ "$_out" == *"would ingest"* ]] || _guard_ok=0        # correct order must ingest
+    printf '%s\n%s\n' "$_hdr_bad" "$_row" > "$_zt/zeek/case/conn.log"
+    _out=$(_zrun)
+    [[ "$_out" == *"Refusing to ingest"* ]] || _guard_ok=0  # swapped order must refuse
+    printf '%s\n' "$_row" > "$_zt/zeek/case/conn.log"
+    _out=$(_zrun)
+    [[ "$_out" == *"Refusing to ingest"* ]] || _guard_ok=0  # no header must FAIL CLOSED
+    rm -rf "$_zt"
+    if [[ $_guard_ok -eq 1 ]]; then
+        pass "Zeek column-order guard ingests correct order, refuses swapped and headerless"
     else
-        fail "ingest maps Zeek by ordinal without a working column-order guard"
+        fail "Zeek column-order guard does not behave correctly — see tests for the three cases"
     fi
     # Zeek '#' header lines would otherwise be ingested as data rows.
     if grep -q "grep -v '\^#'" scripts/ingest-kusto.sh 2>/dev/null; then
@@ -333,15 +360,52 @@ if [[ -f scripts/ingest-kusto.sh ]]; then
     else
         fail "ingest does not strip Zeek header lines — they would become rows"
     fi
+    # psteal writes a header row; without this it is ingested as data.
+    if grep -q 'ignoreFirstRecord=true' scripts/ingest-kusto.sh 2>/dev/null; then
+        pass "ingest drops the Plaso CSV header row"
+    else
+        fail "ingest does not set ignoreFirstRecord — header rows become data"
+    fi
+    # Staging by bare basename silently drops evidence: per-host EvtxECmd output
+    # collides on the channel name, so only the last host survives.
+    if grep -qE '\$\(basename "\$f"\)' scripts/ingest-kusto.sh 2>/dev/null; then
+        fail "ingest stages by bare basename — per-host files collide and are lost"
+    else
+        pass "ingest stages by full relative path, so per-host files cannot collide"
+    fi
+    # Both staging areas hold copies of the evidence; Ctrl-C must not leak them.
+    if grep -q 'trap cleanup_staging' scripts/ingest-kusto.sh 2>/dev/null; then
+        pass "ingest cleans up staging on interrupt"
+    else
+        fail "ingest leaves full evidence copies behind if interrupted"
+    fi
 fi
-if [[ -f scripts/lib/kusto-api.sh ]]; then
+if [[ ! -f scripts/lib/kusto-api.sh ]]; then fail "scripts/lib/kusto-api.sh is missing"; else
     # The REST API returns HTTP 200 with an error document, so curl's exit code
     # proves nothing. This is the only thing standing between a failed schema
     # apply and a success message.
-    if grep -q 'kusto_failed' scripts/lib/kusto-api.sh 2>/dev/null; then
-        pass "kusto-api detects errors returned with HTTP 200"
+    # Behavioural, not a name grep. The original asserted that the string
+    # "kusto_failed" appeared in the file that DEFINES kusto_failed, so it could
+    # not fail. This actually calls it against the response shapes that matter.
+    if ( set +e
+         # shellcheck source=../scripts/lib/kusto-api.sh
+         source scripts/lib/kusto-api.sh 2>/dev/null
+         kusto_failed "" || exit 1                                    # no response
+         kusto_failed '<html>502</html>' || exit 1                    # not Kusto
+         kusto_failed '{"error":{"message":"x"}}' || exit 1           # error envelope
+         kusto_failed '{"Tables":[{"Columns":[{"ColumnName":"Result"}],"Rows":[["Failed"]]}]}' || exit 1
+         kusto_failed '{"Tables":[{"Columns":[{"ColumnName":"n"}],"Rows":[[7]]}]}' && exit 1
+         exit 0 ) >/dev/null 2>&1; then
+        pass "kusto_failed detects empty, non-Kusto, envelope and in-table failures"
     else
-        fail "kusto-api trusts the HTTP status — Kusto returns errors as 200"
+        fail "kusto_failed misses a failure shape — see tests for which"
+    fi
+    # kusto_scalar must route '.' commands to /mgmt. Sending them to /query is
+    # rejected by Kusto and made every schema verification report zero.
+    if grep -A4 'kusto_scalar()' scripts/lib/kusto-api.sh 2>/dev/null | grep -q 'kusto_mgmt'; then
+        pass "kusto_scalar routes control commands to the management endpoint"
+    else
+        fail "kusto_scalar sends '.' commands to the query endpoint — always fails"
     fi
 fi
 

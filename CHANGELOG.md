@@ -49,11 +49,24 @@ script names, sourcetypes, field names, and app layouts included.
   log types. Their tables and CAR functions exist; the loader does not populate
   them. Stated in the port doc rather than left to be discovered.
 
-  Nothing has run against a real emulator. The scripts were exercised against a
-  fake HTTP endpoint that validates request JSON and returns realistic success
-  and error documents — which proves the request shapes, the KQL surviving JSON
-  escaping, and that errors returned with HTTP 200 are detected. It does not
-  prove Kusto accepts the KQL.
+  Nothing has run against a real emulator, and a code review of the first cut
+  found a dozen defects that the fake-endpoint testing could not have caught —
+  it returned success for everything, so it validated request shapes and
+  nothing else. Fixed before release: `kusto_scalar` sent control commands to
+  the query endpoint (making a perfect schema apply always report failure);
+  container staging by bare basename silently dropped per-host EvtxECmd
+  evidence and duplicated the survivor; `kusto_failed` read an empty response
+  as success; `ignoreFirstRecord` was promised in a comment and never emitted;
+  the Zeek column-order guard failed open on a missing header; `ppid` read the
+  log-writing process rather than the parent; `coalesce(iff(isempty(x),"",x),y)`
+  could never reach its fallback; Zeek's `T`/`F` and `-` sentinels coerced
+  every numeric and boolean column to null; and the deploy's own closing banner
+  still told operators the schema and ingest stages did not exist.
+
+  The checks that would have caught them are now behavioural rather than
+  string-matching — including the `--internal` regression check, which was
+  grepping for a flag that the script writes on a line continuation and could
+  therefore never fire.
 
 ### To be resolved before `1.0.0`
 
@@ -62,7 +75,7 @@ script names, sourcetypes, field names, and app layouts included.
   Six of nine CAR objects have a source; `driver`, `module` and `thread` need
   Sysmon or a live agent and are out of reach for dead-box data. Tracked as
   issue #13.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 165 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 169 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -171,7 +184,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 165 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 169 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.

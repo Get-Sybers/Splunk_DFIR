@@ -137,13 +137,22 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 PURGE="${PURGE:-0}"
+[[ "$PURGE_ONLY" == "1" ]] && PURGE=1
 
 case "$KUSTO_REPLACE" in
     always|ask|never) ;;
     *) echo "❌ KUSTO_REPLACE must be always|ask|never (got '$KUSTO_REPLACE')."; exit 1 ;;
 esac
 
-MGMT_URL="http://$KUSTO_BIND_ADDR:$KUSTO_PORT/v1/rest/mgmt"
+# The library owns the endpoint and the readiness probe. Reimplementing them
+# here meant deploy and the other two scripts could disagree about where Kusto
+# is: deploy used KUSTO_BIND_ADDR, the library uses KUSTO_HOST, so
+# `--bind X --port N` produced a working deploy that apply/ingest could not find.
+KUSTO_HOST="$KUSTO_BIND_ADDR"
+export KUSTO_HOST KUSTO_PORT KUSTO_CONTAINER KUSTO_PERSIST
+# shellcheck source=lib/kusto-api.sh
+source "$SCRIPT_DIR/lib/kusto-api.sh"
+MGMT_URL="${KUSTO_BASE}/v1/rest/mgmt"
 
 echo ""
 echo "🧊 Kusto emulator — offline DFIR analysis"
@@ -173,6 +182,27 @@ docker info >/dev/null 2>&1 || { echo "❌ Cannot talk to the Docker daemon."; e
 # ------------------------------------------------------------------------------
 # Replace an existing container.
 # ------------------------------------------------------------------------------
+# Confirmation comes FIRST — before anything is destroyed. Originally the
+# container was removed by the replace block above the purge prompt, so typing
+# "no" at the prompt still lost the container. In the default ephemeral mode
+# that container IS the database, so declining a purge destroyed the data the
+# prompt was asking about.
+if [[ "$PURGE" == "1" ]]; then
+    has_data=0
+    [[ -d "$KUSTO_DATA_DIR" && -n "$(ls -A "$KUSTO_DATA_DIR" 2>/dev/null)" ]] && has_data=1
+    docker ps -a --format '{{.Names}}' | grep -qx "$KUSTO_CONTAINER" && has_data=1
+    if [[ $has_data -eq 1 ]]; then
+        echo "🔥 --purge will DELETE the container and any persisted databases."
+        [[ "$KUSTO_PERSIST" == "1" ]] && echo "   Directory: $KUSTO_DATA_DIR"
+        echo "   Processed evidence on disk is NOT touched — you can re-ingest."
+        if [[ "$ASSUME_YES" != "1" ]]; then
+            [[ -t 0 ]] || { echo "❌ --purge needs confirmation and there is no terminal."; exit 1; }
+            read -r -p "Type 'yes' to delete: " c
+            [[ "$c" == "yes" ]] || { echo "🚫 Aborted. Nothing was removed."; exit 1; }
+        fi
+    fi
+fi
+
 if docker ps -a --format '{{.Names}}' | grep -qx "$KUSTO_CONTAINER"; then
     case "$KUSTO_REPLACE" in
         never) echo "🚫 KUSTO_REPLACE=never — container left untouched."; exit 1 ;;
@@ -192,15 +222,21 @@ fi
 # ------------------------------------------------------------------------------
 if [[ "$PURGE" == "1" ]]; then
     if [[ -d "$KUSTO_DATA_DIR" && -n "$(ls -A "$KUSTO_DATA_DIR" 2>/dev/null)" ]]; then
-        echo "🔥 --purge: about to DELETE persisted databases in $KUSTO_DATA_DIR"
-        echo "   Processed evidence on disk is NOT touched — you can re-ingest."
-        if [[ "$ASSUME_YES" != "1" ]]; then
-            [[ -t 0 ]] || { echo "❌ --purge needs confirmation and there is no terminal."; exit 1; }
-            read -r -p "Type 'yes' to delete: " c
-            [[ "$c" == "yes" ]] || { echo "🚫 Aborted."; exit 1; }
+        echo "🔥 Deleting persisted databases in $KUSTO_DATA_DIR ..."
+        # Only escalate if the files are not already ours. And REPORT failure:
+        # this used to discard stderr and the exit status, then print success
+        # regardless — so a sudo that could not run reported the data deleted
+        # when it was still there, and the next .create database failed far
+        # from the cause.
+        purge_cmd=(find "${KUSTO_DATA_DIR:?}" -mindepth 1 -maxdepth 1 -not -name '.gitkeep' -delete)
+        if ! "${purge_cmd[@]}" 2>/dev/null; then
+            if ! sudo "${purge_cmd[@]}"; then
+                echo "   ❌ Could not empty $KUSTO_DATA_DIR."
+                echo "      The databases are still there. .create database refuses a"
+                echo "      non-empty target, so a --persist apply would fail later."
+                exit 1
+            fi
         fi
-        sudo find "${KUSTO_DATA_DIR:?}" -mindepth 1 -maxdepth 1 \
-            -not -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
         echo "   ✅ Emptied."
     else
         echo "ℹ️  No persisted data to delete."
@@ -260,7 +296,7 @@ if [[ "$KUSTO_PERSIST" == "1" ]]; then
     echo "      a database, purge and re-ingest — that is the supported path."
 else
     echo "💾 Ephemeral — databases live and die with the container."
-    echo "   Re-ingest after each deploy (stage 3 of the port — not built yet)."
+    echo "   Re-ingest after each deploy:  ./scripts/ingest-kusto.sh"
 fi
 
 echo "🖥️  Endpoint:  http://$KUSTO_BIND_ADDR:$KUSTO_PORT"
@@ -309,21 +345,20 @@ trap stop_log_stream EXIT
 echo "⏳ Waiting for the engine to answer (timeout ${KUSTO_READY_TIMEOUT}s)..."
 echo "   The first run pulls a multi-GB image."
 
-elapsed=0; interval=5; ready=0
-while [[ $elapsed -lt $KUSTO_READY_TIMEOUT ]]; do
+# Track REAL elapsed time. Counting only the sleeps ignored up to 5s of curl
+# timeout per pass, so a 900s timeout could run for ~30 minutes.
+ready=0; interval=5; _start=$SECONDS
+while (( SECONDS - _start < KUSTO_READY_TIMEOUT )); do
     if [[ "$(docker inspect -f '{{.State.Running}}' "$KUSTO_CID" 2>/dev/null)" != "true" ]]; then
         stop_log_stream
         echo "❌ Container exited before becoming ready (exit code $(docker inspect -f '{{.State.ExitCode}}' "$KUSTO_CID" 2>/dev/null))."
         echo "   Logs:  docker logs ${KUSTO_CID:0:12}"
         exit 1
     fi
-    if curl -s --max-time 5 -X POST "$MGMT_URL" \
-         -H 'Content-Type: application/json' \
-         -d '{"csl":".show version"}' 2>/dev/null | grep -q .; then
+    if kusto_reachable; then
         ready=1; break
     fi
     sleep $interval
-    elapsed=$((elapsed + interval))
 done
 
 stop_log_stream
@@ -407,10 +442,10 @@ echo ""
 echo "  NETWORK    $([[ "$KUSTO_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT)" || echo "NOT isolated")"
 echo "             NO authentication, NO encryption — localhost only by default"
 echo ""
-echo "  ⚠️  STAGE 1 ONLY. There is no schema and no ingestion yet, so this"
-echo "      engine is running and empty. Creating databases/tables (stage 2)"
-echo "      and loading data_store/processed (stage 3) are not built."
-echo "      Plan: docs/Kusto-Port.md"
+echo "  The engine is running and EMPTY. Two steps left:"
+echo "    1.  ./scripts/apply-kusto-schema.sh    databases, tables, CAR functions"
+echo "    2.  ./scripts/ingest-kusto.sh          load data_store/processed"
 echo ""
-echo "  Meanwhile the Splunk path is complete:  scripts/deploy-splunk.sh"
+echo "  Then, in the 'mitre' database:  CarCoverage()"
+echo "  Plan and known gaps: docs/Kusto-Port.md"
 echo "─────────────────────────────────────────────────────────────"

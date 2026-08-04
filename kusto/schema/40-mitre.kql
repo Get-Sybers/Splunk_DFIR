@@ -61,7 +61,7 @@ EvtxPayload(payload:string, key:string) {
 .create-or-alter function
 with (docstring = "MITRE CAR 'flow' object", folder = "CAR")
 CarFlow() {
-    database("network").ZeekConn
+    database("network").ZeekTyped()
     | extend
         action        = case(ConnState == "SF",   "end",
                              ConnState == "S0",   "start",
@@ -75,8 +75,8 @@ CarFlow() {
         dest_port     = DestPort,
         protocol      = Proto,
         start_time    = Ts,
-        end_time      = iff(isnotnull(Duration), datetime_add('second', toint(Duration), Ts), datetime(null)),
-        packet_count  = coalesce(OrigPkts, 0) + coalesce(RespPkts, 0),
+        end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
+        packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
         hostname      = ""
     | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
               protocol, start_time, end_time, packet_count, hostname,
@@ -113,8 +113,8 @@ CarUserSession() {
                       EventId == 4624 and LogonType == 3,  "remote",
                       EventId in (4624, 4625), "login",
                       ""),
-        user         = coalesce(iff(isempty(TargetUserName), "", TargetUserName), UserName),
-        sid          = coalesce(iff(isempty(UserId), "", UserId), SubjectUserSid),
+        user         = iff(isempty(TargetUserName), UserName, TargetUserName),
+        sid          = iff(isempty(UserId), SubjectUserSid, UserId),
         logon_id     = TargetLogonId,
         hostname     = Computer,
         fqdn         = Computer,
@@ -140,7 +140,22 @@ CarUserSession() {
 // honest shape of dead-box process data, and it is why the project's example
 // search returns a command line only for 4688 rows.
 //
-// Windows writes NewProcessId as hex ("0x1a4"); CAR's pid is a number.
+// PIDs: Windows writes NewProcessId and EventData's ProcessId as hex strings
+// ("0x1a4"). KQL has no base-16 string parser, and toint()/tolong() parse
+// decimal — so toint("1a4") is null and toint("1234") is 1234 when the true
+// value is 4660. Both the raw hex and a best-effort numeric form are exposed:
+// pid_hex is always correct, pid is what CAR asks for.
+//
+// ⚠️ Whether tolong() accepts a "0x"-prefixed string is UNVERIFIED — KQL
+//    accepts 0x integer *literals*, but that is not the same as run-time
+//    string conversion. If pid comes back null against a real emulator, the
+//    fix is a conversion expression here, not a change to the model.
+//    Tracked as part of the port's runtime verification.
+//
+// ppid comes from EventData's ProcessId (the creating process), NOT from the
+// table's top-level ProcessId column — that is the Execution ProcessID of
+// whatever WROTE the record, which for Security-channel events is the same
+// value on every row and would give every process the same bogus parent.
 //=============================================================================
 .create-or-alter function
 with (docstring = "MITRE CAR 'process' object", folder = "CAR")
@@ -151,6 +166,7 @@ CarProcess() {
         | extend
             NewProcessName    = EvtxPayload(Payload, "NewProcessName"),
             NewProcessId      = EvtxPayload(Payload, "NewProcessId"),
+            CreatorProcessId  = EvtxPayload(Payload, "ProcessId"),
             ParentProcessName = EvtxPayload(Payload, "ParentProcessName"),
             CommandLine       = EvtxPayload(Payload, "CommandLine"),
             SubjectUserName   = EvtxPayload(Payload, "SubjectUserName")
@@ -162,14 +178,16 @@ CarProcess() {
             parent_exe        = ParentProcessName,
             parent_image_path = ParentProcessName,
             command_line      = CommandLine,
-            pid               = tolong(toint(replace_string(NewProcessId, "0x", ""))),
-            ppid              = tolong(ProcessId),
-            user              = coalesce(iff(isempty(SubjectUserName), "", SubjectUserName), UserName),
+            pid_hex           = NewProcessId,
+            ppid_hex          = CreatorProcessId,
+            pid               = tolong(NewProcessId),
+            ppid              = tolong(CreatorProcessId),
+            user              = iff(isempty(SubjectUserName), UserName, SubjectUserName),
             hostname          = Computer,
             Origin            = "evtx:4688"
         | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, user, hostname,
-                  Origin, SourceFile;
+                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
+                  user, hostname, Origin, SourceFile;
     let FromPlaso =
         database("host").L2tCsv
         | where SourceLong matches regex @"(?i)prefetch|amcache|appcompat"
@@ -183,12 +201,14 @@ CarProcess() {
             command_line      = "",
             pid               = long(null),
             ppid              = long(null),
+            pid_hex           = "",
+            ppid_hex          = "",
             user              = UserName,
             hostname          = Hostname,
             Origin            = strcat("plaso:", SourceLong)
         | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, user, hostname,
-                  Origin, SourceFile = DisplayName;
+                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
+                  user, hostname, Origin, SourceFile = DisplayName;
     let FromKape =
         database("host").KapeJson
         | where Artefact has "ProgramExecution"
@@ -202,12 +222,14 @@ CarProcess() {
             command_line      = "",
             pid               = long(null),
             ppid              = long(null),
+            pid_hex           = "",
+            ppid_hex          = "",
             user              = tostring(coalesce(Record.UserName, Record.User)),
             hostname          = "",
             Origin            = strcat("kape:", Artefact)
         | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, user, hostname,
-                  Origin, SourceFile;
+                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
+                  user, hostname, Origin, SourceFile;
     union FromEvtx, FromPlaso, FromKape
 }
 
