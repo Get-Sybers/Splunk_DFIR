@@ -81,7 +81,7 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 124 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 129 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
@@ -98,10 +98,12 @@ tests, and interfaces will change without notice.
   `SPLUNK_START_ARGS=--accept-license`.
 - **The `_time` normalisation story is inconsistent** across sources. Plaso and
   Zeek are good; KAPE is mostly right; everything else is unverified.
-- **Seven defects were found and fixed during the alpha** — including one
-  where Splunk kept no persistent state at all (`splunk/var` was mounted at
-  `/data/var`, a path Splunk never reads, so every index died with the
-  container). **None of the fixes are runtime-tested** — there is no Docker or
+- **Seven pre-existing defects were found and fixed during the alpha** —
+  including one where Splunk kept no persistent state at all (`splunk/var` was
+  mounted at `/data/var`, a path Splunk never reads, so every index died with
+  the container). Three more were *introduced* by the alpha's own changes and
+  then fixed, including an isolation mechanism that made the Splunk UI
+  unreachable. **None of the fixes are runtime-tested** — there is no Docker or
   Splunk in the development environment. See
   [project-progress.md](/project-progress.md#-defects-found-and-fixed-in-the-alpha).
 - **Ansible runs *inside* the Splunk container, not from a control node.**

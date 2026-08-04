@@ -85,24 +85,33 @@ Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
 
 **Network isolation**
 
-The container holds evidence, so by default it **cannot reach the network** and
-is **only reachable from this machine**:
+The container holds evidence, so by default it is **only reachable from this
+machine** and **cannot usefully reach the network**:
 
-- attached to an `--internal` Docker network — no route off the host
-- ports published on `127.0.0.1` only, not `0.0.0.0`
+- ports published on `127.0.0.1` only, not `0.0.0.0` — this is the solid half
+- attached to a bridge with IP masquerade disabled, so outbound traffic gets no
+  reply
 
-The deploy **tests this after starting** — it opens a TCP connection from inside
-the container and fails the deploy if it succeeds. A security control that
-silently doesn't hold is worse than none.
+> **An earlier version used `--internal` for this. That was wrong** — an internal
+> network blocks published ports too, so Splunk became unreachable on localhost.
+> If you hit that, redeploying picks up the fix; the script detects and
+> recreates the bad network.
+
+The deploy now tests **both directions** after starting: that the container
+can't reach out, and that Splunk actually answers. Checking only egress is what
+let the unreachable-UI bug through.
 
 ```bash
 ./scripts/deploy-splunk.sh                 # isolated, localhost-only (default)
-./scripts/deploy-splunk.sh --no-isolated   # allow outbound — only if needed
+./scripts/deploy-splunk.sh --no-isolated   # allow outbound — and to recover if
+                                           # you still can't reach the UI
 ./scripts/deploy-splunk.sh --bind 0.0.0.0  # expose on the LAN — think first
 ```
 
-Not an airgap: containers on that network can still reach each other and host
-services on the bridge address. See [SECURITY.md](/SECURITY.md).
+Not an airgap. Disabling masquerade breaks return traffic rather than dropping
+packets, so a host with its own forwarding rules can still let traffic out. For
+a hard guarantee use a `DOCKER-USER` firewall rule on the network's subnet. See
+[SECURITY.md](/SECURITY.md).
 
 **Purge vs persist**
 
@@ -110,10 +119,15 @@ The deploy script decides whether a redeploy keeps or wipes indexed data:
 
 ```bash
 ./scripts/deploy-splunk.sh                # --persist (default): keep indexes
-./scripts/deploy-splunk.sh --purge        # wipe indexes, start clean
+./scripts/deploy-splunk.sh --purge        # wipe indexes, THEN REDEPLOY
+./scripts/deploy-splunk.sh --purge-only   # wipe indexes and STOP — no redeploy
 ./scripts/deploy-splunk.sh --purge --yes  # ...without the confirmation prompt
 ./scripts/deploy-splunk.sh --help         # all options
 ```
+
+`--purge` is a flag on the *deploy* script, so it deploys afterwards. Use
+`--purge-only` (or `scripts/purge-splunk-container.sh`) when you just want the
+data gone.
 
 `--purge` deletes the index volume, so **every indexed event and the fishbucket
 go**. Raw and processed evidence on disk is untouched — you can re-ingest. It
@@ -132,7 +146,7 @@ redeploying.
 | `SPLUNK_REPLACE` | `always` | `always` \| `ask` \| `never` |
 | `SPLUNK_READY_TIMEOUT` | `600` | Seconds to wait for the container's Ansible run |
 | `SPLUNK_VAR_VOLUME` | `splunk-dfir-var` | Index volume name |
-| `SPLUNK_ISOLATED` | `1` | `1` = internal network, no egress; `0` = allow outbound |
+| `SPLUNK_ISOLATED` | `1` | `1` = masquerade-disabled bridge, no usable egress; `0` = allow outbound |
 | `SPLUNK_BIND_ADDR` | `127.0.0.1` | Host address published ports bind to |
 | `SPLUNK_NETWORK` | `splunk-dfir-isolated` | Isolated network name |
 | `SPLUNK_SKIP_CHMOD` | `0` | Skip the permission fixup. It is O(files) over `data_store/processed` and runs every deploy; safe to skip once permissions are already right |

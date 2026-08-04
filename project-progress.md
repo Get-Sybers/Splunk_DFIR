@@ -83,16 +83,20 @@ is never run on the host — see [docs/Ansible.md](/docs/Ansible.md) and the
 ### ✅ Network isolation
 
 The container ran on the default bridge with ports bound to `0.0.0.0` and full
-outbound access. It now attaches to an `--internal` network and publishes on
-`127.0.0.1` only, and the deploy **tests egress from inside the container** and
-fails if isolation doesn't hold. Not an airgap — see [SECURITY.md](/SECURITY.md).
+outbound access. It now attaches to a dedicated bridge with **IP masquerade
+disabled** and publishes on `127.0.0.1` only, and the deploy tests **both
+directions** after starting: that the container can't usefully reach out, and
+that Splunk actually answers on the published port. Not an airgap — see
+[SECURITY.md](/SECURITY.md).
 
-⚠️ Unverified at runtime like the rest of the deploy changes; that is precisely
-why the check is built into the deploy rather than asserted here.
+⚠️ The first attempt used `--internal`, which broke the UI — see
+[the defect list](#-defects-found-and-fixed-in-the-alpha). Everything else here
+remains unverified at runtime, which is precisely why the checks are built into
+the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 124 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 129 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
@@ -255,5 +259,38 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
   updating the list — and `data_store/raw/VM_files/` is where the docs tell you
   to put them. Replaced with deny-by-default, which also covers extensionless
   files and any future format. Verified all 23 tracked skeleton files survive.
+
+---
+
+## 🐛 Defects found and fixed in the alpha
+
+**None of these fixes are runtime-tested.** There is no Docker and no Splunk in
+the environment they were written in, which is why the deploy script now
+verifies itself at run time rather than relying on assertions here.
+
+### Pre-existing — found by audit
+
+| # | Defect | Effect | Fix |
+|:--|:---|:---|:---|
+| 1 | `splunk/var` mounted at `/data/var`; `SPLUNK_DB` never redirected | Splunk reads `/opt/splunk/var`, which wasn't mounted — **every index and the fishbucket died with the container** | Named Docker volume at `/opt/splunk/var`; purge removes it explicitly |
+| 2 | `host = extracted_host` written as a literal | Every event labelled `extracted_host` | Removed; `[l2t:csv]` already sets host via `TRANSFORMS-set_host` |
+| 3 | Four copy tasks gated on a single `limits.conf` stat | Editing `indexes.conf` or `inputs.conf` was a silent no-op | Per-file stat; mode `0755`→`0644` |
+| 4 | No `set -e`, no `docker rm` before `docker run --name` | A second run collided, then greped the **old** container's logs and exited 0 having deployed nothing | Refuses to collide; polls by container ID; detects a container that dies mid-startup; 600s configurable timeout |
+| 5 | Unquoted paths in `sudo chown -R` / `chmod -R` | A repo path containing a space would target unintended directories | All quoted |
+| 6 | 7 scripts resolved the repo root one level wrong | `scripts/v2/` ×4, `scripts/deprecated/` ×3 — the deprecated three were caught by the new check harness, not by reading | Corrected; a check now asserts this for every script |
+| 7 | `data_store/.gitignore` was an extension blocklist | VMware exports were committable — see above | Deny-by-default |
+
+### Introduced during the alpha, then fixed
+
+Recorded because how they got in matters more than the diffs.
+
+| # | Defect | Effect | Why it shipped |
+|:--|:---|:---|:---|
+| 8 | Isolation implemented with `docker network create --internal` | **Splunk unreachable on `localhost:8000`.** An internal network blocks published ports in *both* directions, not just egress | The deploy's isolation check tested egress only. It passed while the UI was dead — one-sided verification. Replaced with a bridge running `enable_ip_masquerade=false`, and the deploy now checks ingress too |
+| 9 | `--purge` lived only on the deploy script | No way to wipe indexes without also redeploying | The flag was added to the script that needed it without asking what "purge" alone should mean. `--purge-only` now wipes and exits |
+| 10 | CI step written as `command -v x \|\| a && b` | Shell precedence makes that `(command -v x \|\| a) && b`, so `b` ran unconditionally | Assumed C-style precedence. Rewritten as an explicit `if` block |
+
+Defects 8 and 9 were reported by the user against a running deployment. Both
+were real, and both were mine.
 
 ---

@@ -32,15 +32,20 @@ These are already known. You do not need to report them.
   `docker inspect`.
 - **Evidence lives in the working tree.** `data_store/` is gitignored
   deny-by-default, but a determined `git add -f` defeats it.
-- **Network isolation is not an airgap.** Since `v0.1.0-alpha` the container
-  attaches to an `--internal` Docker network and publishes only on
-  `127.0.0.1`. (Before that it bound `0.0.0.0` — reachable from the whole LAN —
-  with unrestricted outbound access.)
+- **Egress restriction is best-effort; the localhost binding is not.** The
+  container publishes only on `127.0.0.1`, which is a real control — before
+  `v0.1.0-alpha` it bound `0.0.0.0` and was reachable from the whole LAN.
 
-  What that does *not* cover: `--internal` blocks egress off the host, but
-  containers on the network can still reach each other and services on the
-  host's bridge address. And Docker's published-port rules are inserted ahead
-  of the host firewall, so `ufw` will not save you from a wrong bind address.
+  Outbound is restricted by disabling IP masquerade on the container's network.
+  That breaks return traffic rather than dropping packets, so a host with its
+  own forwarding rules can still let traffic out. For a hard guarantee, add a
+  `DOCKER-USER` rule for the network's subnet.
+
+  An `--internal` network was tried first and reverted: it blocks published
+  ports as well, making Splunk unreachable. Note also that Docker's
+  published-port rules are inserted ahead of the host firewall, so `ufw` will
+  not save you from a wrong bind address — which is why the deploy reads the
+  real bindings back.
 
   The deploy tests egress from inside the container and **fails** if isolation
   does not hold, rather than reporting a control it has not confirmed.
