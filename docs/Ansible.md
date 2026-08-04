@@ -37,11 +37,30 @@ run on the host.
 
 Three files. All three are mounted into the container and wired as pre-tasks.
 
-| Playbook | Origin | Purpose |
-|:---|:---|:---|
-| `Include-Custom-Apps.yml` | **Original work** | Copies `/data/etc/apps/` into the container's app directory |
-| `Include-local-conf.yml` | **Original work** | Seeds `limits.conf`, `indexes.conf`, `inputs.conf` into `etc/system/local` if absent |
-| `remove_first_login.yml` | Modified splunk-ansible | Touches `.ui_login` to skip the first-login wizard |
+| Playbook | Hook | Origin | Purpose |
+|:---|:---|:---|:---|
+| `Include-Custom-Apps.yml` | pre | **Original work** | Copies `/data/etc/apps/` into the container's app directory |
+| `Include-local-conf.yml` | pre | **Original work** | Seeds `limits.conf`, `indexes.conf`, `inputs.conf` into `etc/system/local` if absent |
+| `remove_first_login.yml` | pre | Modified splunk-ansible | Touches `.ui_login` to skip the first-login wizard |
+| `Apply-App-Overrides.yml` | **post** | **Original work** | Copies `splunk/etc/apps_local/<App>/local/*.conf` onto installed apps |
+
+### Why one of them is a post-task
+
+`site.yml` runs **`pre_tasks` → provisioning role → `post_tasks`**, and the role
+is what installs third-party apps from `SPLUNK_APPS_URL`. So overrides that
+target those apps have to run after it. As a pre-task they would write into
+directories that don't exist yet and silently apply nothing.
+
+### App installation is the image's job
+
+Third-party apps are **not** installed by a playbook here. `deploy-splunk.sh`
+lists the mounted packages in `SPLUNK_APPS_URL`, and the image installs them
+itself. splunk-ansible's `install_apps.yml` only downloads entries matching
+`http(s)://` or `file://` — a bare local path is stat'd and used directly — so
+this works with the container's network isolation in place.
+
+An earlier version of this project used a custom `Install-ThirdParty-Apps.yml`
+for the same job. It was removed: the image already did it, better.
 
 All three pass `ansible-lint` at its `production` profile. `tests/run-checks.sh`
 enforces that.

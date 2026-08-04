@@ -1,8 +1,13 @@
 # Third-party Splunk app packages
 
-Drop Splunkbase packages (`.tgz`, `.tar.gz`, `.spl`) here. They are installed
-into the Splunk container at deploy time by
-[`Install-ThirdParty-Apps.yml`](/ansible/playbooks/Install-ThirdParty-Apps.yml).
+Drop Splunkbase packages (`.tgz`, `.tar.gz`, `.spl`) here. `deploy-splunk.sh`
+mounts this directory into the container and lists each package in
+**`SPLUNK_APPS_URL`**, which is the `splunk/splunk` image's own installation
+mechanism — nothing custom.
+
+splunk-ansible only downloads entries matching `http(s)://` or `file://`; a bare
+local path is stat'd and used directly. So these install with **no network
+access**, which matters because the container has none.
 
 ## Required
 

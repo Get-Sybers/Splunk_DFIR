@@ -2,7 +2,12 @@
 
 Project-specific settings for **third-party** apps go here, and are copied into
 the installed app's `local/` directory at deploy time by
-[`Install-ThirdParty-Apps.yml`](/ansible/playbooks/Install-ThirdParty-Apps.yml).
+[`Apply-App-Overrides.yml`](/ansible/playbooks/Apply-App-Overrides.yml).
+
+That playbook runs as a **post-task**, not a pre-task. splunk-ansible's
+`site.yml` runs `pre_tasks → provisioning role → post_tasks`, and the role is
+what installs apps from `SPLUNK_APPS_URL`. As a pre-task these copies would
+target app directories that don't exist yet and silently do nothing.
 
 ```
 splunk/etc/apps_local/<AppName>/local/<file>.conf

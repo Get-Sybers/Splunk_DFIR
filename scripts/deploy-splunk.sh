@@ -259,6 +259,20 @@ shopt -s nullglob
 tp_pkgs=("$THIRD_PARTY_APP_DIR"/*.tgz "$THIRD_PARTY_APP_DIR"/*.tar.gz "$THIRD_PARTY_APP_DIR"/*.spl)
 shopt -u nullglob
 
+# Hand the packages to the image's own installer.
+#
+# The splunk/splunk image reads SPLUNK_APPS_URL (comma-separated) and installs
+# each entry during its provisioning role. splunk-ansible's install_apps.yml
+# stats a bare local path and uses it directly — only http(s):// and file://
+# entries are downloaded — so mounted packages install with no network access,
+# which matters because this container has none.
+#
+# Paths are the CONTAINER-side mount point, not the host path.
+APPS_URL_LIST=""
+for pkg in "${tp_pkgs[@]}"; do
+    APPS_URL_LIST+="${APPS_URL_LIST:+,}/data/dependencies/splunk_apps/$(basename "$pkg")"
+done
+
 missing_apps=()
 for want in Splunk_TA_zeek sankey_diagram_app; do
     found=0
@@ -412,11 +426,22 @@ echo "⚙️ Mounting:      $REPO_ROOT_DIR/ansible/playbooks --> /data/ansible/p
 echo "⚙️ Mounting:      $THIRD_PARTY_APP_DIR --> /data/dependencies/splunk_apps:ro"
 echo "🔒 Network:       $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "$SPLUNK_NETWORK (internal — no egress)" || echo "default bridge (egress ALLOWED)")"
 echo "🔒 Published on:  $SPLUNK_BIND_ADDR:8000 (web), $SPLUNK_BIND_ADDR:8088 (HEC)"
+if [[ -n "$APPS_URL_LIST" ]]; then
+    echo "📦 SPLUNK_APPS_URL: ${#tp_pkgs[@]} package(s) for the image to install"
+else
+    echo "📦 SPLUNK_APPS_URL: (none — no packages found)"
+fi
 echo "📦 Volume:        $SPLUNK_VAR_VOLUME --> /opt/splunk/var  (indexes persist here)"
 echo ""
 
 # Define Ansible pre-tasks
-ANSIBLE_PRE_TASKS="file:///data/ansible/playbooks/Install-ThirdParty-Apps.yml,file:///data/ansible/playbooks/Include-Custom-Apps.yml,file:///data/ansible/playbooks/Include-local-conf.yml,file:///data/ansible/playbooks/remove_first_login.yml"
+ANSIBLE_PRE_TASKS="file:///data/ansible/playbooks/Include-Custom-Apps.yml,file:///data/ansible/playbooks/Include-local-conf.yml,file:///data/ansible/playbooks/remove_first_login.yml"
+
+# Overrides must run AFTER the provisioning role, because that is when
+# SPLUNK_APPS_URL installs the third-party apps. site.yml runs
+# pre_tasks -> role -> post_tasks, so as a pre-task this would write into app
+# directories that do not exist yet and silently do nothing.
+ANSIBLE_POST_TASKS="file:///data/ansible/playbooks/Apply-App-Overrides.yml"
 
 echo "📖 Queued Ansible Playbooks:"
 IFS=',' read -ra TASKS <<< "$ANSIBLE_PRE_TASKS"
@@ -497,6 +522,8 @@ SPLUNK_CID=$(docker run -d --name "$SPLUNK_CONTAINER" \
     -e SPLUNK_DISABLE_POPUPS='True' \
     -e SPLUNK_ROLE=splunk_standalone \
     -e SPLUNK_ANSIBLE_PRE_TASKS="$ANSIBLE_PRE_TASKS" \
+    -e SPLUNK_ANSIBLE_POST_TASKS="$ANSIBLE_POST_TASKS" \
+    -e SPLUNK_APPS_URL="$APPS_URL_LIST" \
     splunk/splunk:latest)
 
 if [[ -z "$SPLUNK_CID" ]]; then
