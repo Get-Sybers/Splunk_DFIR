@@ -1,5 +1,37 @@
 # Contributing
 
+## Releasing
+
+Maturity lives in **the git tag and the GitHub Release**, nowhere else. The
+README badge reads the latest Release directly, so promoting alpha → beta is a
+tag, not a documentation edit. It used to be a twelve-file edit, which is how
+stale labels got in.
+
+```bash
+./dev-scripts/set-version.sh 0.3.0-beta.1   # CHANGELOG heading + app.conf only
+./tests/run-checks.sh
+git commit -am "Release v0.3.0-beta.1"
+git tag -a v0.3.0-beta.1 -m "v0.3.0-beta.1"
+git push origin main --follow-tags
+```
+
+Then create the GitHub Release from the tag, ticking **"set as a pre-release"**
+for anything with an `-alpha` / `-beta` / `-rc` suffix. That flag is what keeps
+it out of "Latest release".
+
+**Prereleases all target one version.** `0.3.0-alpha.1` → `0.3.0-beta.1` →
+`0.3.0-rc.1` → `0.3.0` are steps toward the *same* release, and SemVer sorts
+them in that order. Going `0.1.0-alpha` → `0.2.0-beta` is not a promotion: those
+are prereleases of two different versions, and it means 0.1.0 was abandoned
+unreleased. This project did exactly that once — hence the note.
+
+Only two things carry a literal version: `CHANGELOG.md`, whose job that is, and
+each Splunk app's `app.conf`, because a Splunk app must declare its own. The
+checks enforce that they agree and that no status line creeps back into the
+README.
+
+## Contributing
+
 Contributions are welcome. This is a beta-stage personal project, so expect
 loose process and slow responses.
 

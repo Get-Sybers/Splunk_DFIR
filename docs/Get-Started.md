@@ -1,6 +1,6 @@
 ## 🚀 Get Started
 
-> **🧪 Beta.** These steps reflect the paths that actually work today. See
+> These steps reflect the paths that actually work today. See
 > [What Actually Works](/README.md#what-actually-works) before you start, and
 > note that KAPE and Splunk carry licensing restrictions —
 > [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).

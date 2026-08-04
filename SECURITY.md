@@ -4,8 +4,9 @@
 
 | Version | Supported |
 |:---|:---|
-| `0.2.x-beta` | ⚠️ Beta — best effort only |
-| Anything on the `deprecated` branch | ❌ No. It is the frozen pre-beta line and carries known unfixed defects — see [DEPRECATED.md](https://github.com/Get-Sybers/Splunk_DFIR/blob/deprecated/DEPRECATED.md) |
+| The [latest release](https://github.com/Get-Sybers/Splunk_DFIR/releases), and `main` | ⚠️ Best effort only |
+| Any earlier release | ❌ No. Fixes land on `main` and ship in the next release; there is no backporting |
+| The `deprecated` branch | ❌ No. It is the frozen pre-release line and carries known unfixed defects — see [DEPRECATED.md](https://github.com/Get-Sybers/Splunk_DFIR/blob/deprecated/DEPRECATED.md) |
 
 This project is experimental. Nothing here is hardened, nothing exercises the
 pipeline automatically, and none of the current release's fixes have been

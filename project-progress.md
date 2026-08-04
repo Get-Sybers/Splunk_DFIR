@@ -3,9 +3,10 @@
 Tracks tasks for the DFIR automation project—from forensic data processing to
 Splunk deployment.
 
-**Release status: 🧪 `v0.2.0-beta`.** Beta means every known defect is fixed or
-written down — not that it is feature-complete or verified. The pre-beta code is
-frozen on the
+Current release and its maturity: see the badge in
+[README.md](/README.md) — it reads the latest
+[Release](https://github.com/Get-Sybers/Splunk_DFIR/releases) directly. The
+pre-release code is frozen on the
 [`deprecated`](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated)
 branch.
 
@@ -51,7 +52,7 @@ documented*, not *feature-complete*.
 
 # 🚨 Known Limitations
 
-Things that are broken or unsafe right now. These block a beta.
+Things that are broken or unsafe right now.
 
 ### 🔻 `scripts/v2/` is a divergent duplicate — use `scripts/`
 
@@ -101,7 +102,7 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 152 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 155 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
