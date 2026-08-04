@@ -202,6 +202,29 @@ release fixes that. **It does not change pipeline behaviour.**
 
 ### Security
 
+- **The Splunk container no longer reaches the network, and is no longer
+  reachable from it.** It previously ran on the default bridge with
+  `-p 8000:8000` / `-p 8088:8088`, which binds `0.0.0.0` — every interface, so
+  anyone on the LAN could reach the UI — with unrestricted outbound access. On
+  a workstation holding evidence, both are wrong by default.
+
+  Now: attached to an `--internal` Docker network (no route off the host), with
+  ports published on `127.0.0.1` only. `--no-isolated` and `--bind ADDR` opt out
+  deliberately.
+
+  **The deploy proves it rather than claiming it.** After the container is up it
+  opens a TCP connection from inside to a public address; if that succeeds while
+  isolation was requested, the deploy fails loudly instead of reporting a
+  control that isn't holding. It also reads back the real port bindings, because
+  Docker's rules sit ahead of the host firewall and `ufw` won't catch a wrong
+  bind address.
+
+  If the network already exists but isn't `Internal`, the deploy refuses rather
+  than silently attaching to it.
+
+  Not an airgap, and documented as such: containers on that network can still
+  reach each other and host services on the bridge address.
+
 - **Closed an evidence-leak hole in `data_store/.gitignore`.** It was an
   extension blocklist and had already failed in practice: VMware exports
   (`.vmdk`, `-flat.vmdk`, `.vmx`, `.ovf`, `.ova`, `.vmsd`, `.vmxf`) were fully

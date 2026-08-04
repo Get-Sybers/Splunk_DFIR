@@ -30,6 +30,26 @@ THIRD_PARTY_APP_DIR="${THIRD_PARTY_APP_DIR:-$REPO_ROOT_DIR/data_store/dependenci
 # Whether this deploy keeps the index volume or wipes it.
 #   persist (default) — redeploy, keep every indexed event and the fishbucket
 #   purge             — redeploy from a clean slate, deleting the volume
+# Network isolation.
+#
+# This container holds evidence. It has no business making outbound connections,
+# and no business being reachable from the LAN.
+#
+#   SPLUNK_ISOLATED=1  attach to an --internal Docker network, which has no
+#                      route off the host. Splunk cannot phone home, check for
+#                      updates, or reach Splunkbase.
+#   SPLUNK_BIND_ADDR   host address the published ports bind to. 127.0.0.1 means
+#                      only this machine can reach the UI. The previous
+#                      behaviour, `-p 8000:8000`, bound 0.0.0.0 — every
+#                      interface, so anyone on the network could reach it.
+#
+# NOTE: --internal blocks egress off the host. Containers on the network can
+# still reach each other and services on the host's bridge address. This is
+# isolation from the network, not an airgap.
+SPLUNK_ISOLATED="${SPLUNK_ISOLATED:-1}"
+SPLUNK_NETWORK="${SPLUNK_NETWORK:-splunk-dfir-isolated}"
+SPLUNK_BIND_ADDR="${SPLUNK_BIND_ADDR:-127.0.0.1}"
+
 SPLUNK_DATA_MODE="${SPLUNK_DATA_MODE:-persist}"
 SPLUNK_REPLACE="${SPLUNK_REPLACE:-always}"
 
@@ -55,6 +75,14 @@ Container:
   --ask              Prompt before replacing an existing container.
   --no-replace       Abort if a container already exists.
 
+Network:
+  --isolated         Attach to an --internal Docker network so the container
+                     has no route off the host.                     (default)
+  --no-isolated      Allow outbound network access. Only if you need it.
+  --bind ADDR        Host address to publish ports on.  (default 127.0.0.1)
+                     Use --bind 0.0.0.0 to expose on the LAN — think first;
+                     this container holds evidence.
+
 Other:
   --skip-chmod       Skip the permission fixup. It is O(files) over
                      data_store/processed and runs on every deploy.
@@ -69,6 +97,9 @@ Environment (flags win):
   SPLUNK_VAR_VOLUME      index volume name        (default splunk-dfir-var)
   SPLUNK_READY_TIMEOUT   seconds to wait          (default 600)
   SPLUNK_SKIP_CHMOD      1 to skip permission fixup
+  SPLUNK_ISOLATED        1 = no egress (default), 0 = allow outbound
+  SPLUNK_NETWORK         network name          (default splunk-dfir-isolated)
+  SPLUNK_BIND_ADDR       publish address       (default 127.0.0.1)
   THIRD_PARTY_APP_DIR    Splunkbase package directory
 
 Examples:
@@ -85,6 +116,13 @@ while [[ $# -gt 0 ]]; do
         --ask)         SPLUNK_REPLACE="ask" ;;
         --no-replace)  SPLUNK_REPLACE="never" ;;
         --skip-chmod)  SPLUNK_SKIP_CHMOD=1 ;;
+        --isolated)    SPLUNK_ISOLATED=1 ;;
+        --no-isolated) SPLUNK_ISOLATED=0 ;;
+        --bind)
+            shift
+            [[ -z "${1:-}" ]] && { echo "❌ --bind needs an address (e.g. --bind 127.0.0.1)"; exit 1; }
+            SPLUNK_BIND_ADDR="$1"
+            ;;
         -y|--yes)      ASSUME_YES=1 ;;
         -h|--help)     usage; exit 0 ;;
         *)
@@ -336,12 +374,44 @@ sudo chmod -R 777 "$REPO_ROOT_DIR"/ansible/*
 
 fi
 
+# ------------------------------------------------------------------------------
+# Isolated network
+# ------------------------------------------------------------------------------
+NETWORK_ARGS=()
+if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
+    if docker network inspect "$SPLUNK_NETWORK" >/dev/null 2>&1; then
+        # An existing network might not be internal — e.g. created by hand, or
+        # by an older version of this script. Attaching to it would silently
+        # give the container full egress while reporting it as isolated.
+        if [[ "$(docker network inspect -f '{{.Internal}}' "$SPLUNK_NETWORK" 2>/dev/null)" != "true" ]]; then
+            echo "❌ Network '$SPLUNK_NETWORK' exists but is NOT internal."
+            echo "   Attaching would give the container outbound access while"
+            echo "   claiming isolation. Remove it and let this script recreate it:"
+            echo "     docker network rm $SPLUNK_NETWORK"
+            echo "   Or run with --no-isolated if outbound access is intended."
+            exit 1
+        fi
+        echo "🔒 Using existing internal network: $SPLUNK_NETWORK"
+    else
+        echo "🔒 Creating internal network: $SPLUNK_NETWORK"
+        docker network create --internal "$SPLUNK_NETWORK" >/dev/null || {
+            echo "❌ Could not create network '$SPLUNK_NETWORK'."
+            exit 1
+        }
+    fi
+    NETWORK_ARGS=(--network "$SPLUNK_NETWORK")
+else
+    echo "⚠️  SPLUNK_ISOLATED=0 — container will have outbound network access."
+fi
+
 echo "🚀 Building Splunk Enterprise Docker container..."
 
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/etc --> /data/etc:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/ansible/playbooks --> /data/ansible/playbooks:ro"
 echo "⚙️ Mounting:      $THIRD_PARTY_APP_DIR --> /data/dependencies/splunk_apps:ro"
+echo "🔒 Network:       $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "$SPLUNK_NETWORK (internal — no egress)" || echo "default bridge (egress ALLOWED)")"
+echo "🔒 Published on:  $SPLUNK_BIND_ADDR:8000 (web), $SPLUNK_BIND_ADDR:8088 (HEC)"
 echo "📦 Volume:        $SPLUNK_VAR_VOLUME --> /opt/splunk/var  (indexes persist here)"
 echo ""
 
@@ -412,8 +482,9 @@ echo
 # never against a leftover one with the same name.
 SPLUNK_CID=$(docker run -d --name "$SPLUNK_CONTAINER" \
     --hostname splunk-enterprise \
-    -p 8088:8088 \
-    -p 8000:8000 \
+    "${NETWORK_ARGS[@]}" \
+    -p "$SPLUNK_BIND_ADDR":8088:8088 \
+    -p "$SPLUNK_BIND_ADDR":8000:8000 \
     -v "$REPO_ROOT_DIR/splunk/etc":/data/etc:ro \
     -v "$SPLUNK_VAR_VOLUME":/opt/splunk/var \
     -v "$REPO_ROOT_DIR/data_store/processed":/data/processed:ro \
@@ -478,6 +549,74 @@ if [[ "$(docker inspect -f '{{.State.Running}}' "$SPLUNK_CID" 2>/dev/null)" != "
     exit 1
 fi
 
+# ------------------------------------------------------------------------------
+# Prove the isolation rather than assume it.
+#
+# --internal is documented to block egress, but that is a claim about Docker's
+# behaviour on THIS host and Docker version, not something this script can take
+# on faith. A security control that silently does not hold is worse than no
+# control, because it is believed. So: test it, from inside the container.
+#
+# Uses bash's /dev/tcp against an IP rather than curl against a hostname, so the
+# result does not depend on curl being installed or on DNS.
+# ------------------------------------------------------------------------------
+ISOLATION_VERDICT="not checked"
+if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
+    echo "🔎 Verifying the container cannot reach the network..."
+    if docker exec "$SPLUNK_CID" bash -c 'true' >/dev/null 2>&1; then
+        if docker exec "$SPLUNK_CID" bash -c \
+             'timeout 4 bash -c "echo > /dev/tcp/1.1.1.1/443" 2>/dev/null' >/dev/null 2>&1; then
+            ISOLATION_VERDICT="FAILED"
+        else
+            ISOLATION_VERDICT="confirmed"
+        fi
+    else
+        ISOLATION_VERDICT="could not test"
+    fi
+
+    case "$ISOLATION_VERDICT" in
+        confirmed)
+            echo "   ✅ Outbound TCP blocked — isolation holds."
+            ;;
+        "could not test")
+            echo "   ⚠️  Could not run the test inside the container (no shell?)."
+            echo "      Isolation is UNVERIFIED. Check manually:"
+            echo "        docker exec $SPLUNK_CONTAINER bash -c 'echo > /dev/tcp/1.1.1.1/443'"
+            ;;
+        FAILED)
+            echo ""
+            echo "   ╔══════════════════════════════════════════════════════════╗"
+            echo "   ║  ❌ ISOLATION FAILED — the container reached the network ║"
+            echo "   ╚══════════════════════════════════════════════════════════╝"
+            echo ""
+            echo "   The container is RUNNING, but it is NOT isolated. It can make"
+            echo "   outbound connections despite being on an internal network."
+            echo ""
+            echo "   This matters: the container holds evidence."
+            echo ""
+            echo "   Check:  docker network inspect $SPLUNK_NETWORK   (Internal should be true)"
+            echo "   If outbound access is intended, re-run with --no-isolated."
+            echo ""
+            exit 1
+            ;;
+    esac
+fi
+
+# Confirm the published ports really did bind where we asked. Docker inserts its
+# own iptables rules ahead of the host firewall, so a wrong bind address is not
+# something ufw will save you from.
+echo "🔎 Published port bindings:"
+docker port "$SPLUNK_CID" 2>/dev/null | sed 's/^/   /' || echo "   (could not read)"
+if [[ "$SPLUNK_BIND_ADDR" != "0.0.0.0" ]]; then
+    if docker port "$SPLUNK_CID" 2>/dev/null | grep -q "0\.0\.0\.0"; then
+        echo "   ⚠️  A port is bound to 0.0.0.0 despite SPLUNK_BIND_ADDR=$SPLUNK_BIND_ADDR"
+        echo "      That port is reachable from the network."
+    else
+        echo "   ✅ Bound to $SPLUNK_BIND_ADDR only — not reachable from the LAN."
+    fi
+fi
+echo ""
+
 echo "✅ Splunk container setup completed successfully!"
 echo ""
 echo "─────────────────────────────────────────────────────────────"
@@ -500,6 +639,10 @@ echo "             • apps and confs are re-seeded from splunk/etc by the"
 echo "               pre-task playbooks — so edits there take effect on the"
 echo "               next deploy, which is the point"
 echo "             • changes made in the Splunk UI are LOST"
+echo ""
+echo ""
+echo "  NETWORK    $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT) — no route off this host" || echo "NOT isolated — outbound allowed")"
+echo "             reachable on $SPLUNK_BIND_ADDR only"
 echo ""
 echo " To wipe indexes as well: scripts/purge-splunk-container.sh"
 echo "─────────────────────────────────────────────────────────────"

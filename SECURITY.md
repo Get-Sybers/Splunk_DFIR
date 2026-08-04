@@ -32,10 +32,25 @@ These are already known. You do not need to report them.
   `docker inspect`.
 - **Evidence lives in the working tree.** `data_store/` is gitignored
   deny-by-default, but a determined `git add -f` defeats it.
+- **Network isolation is not an airgap.** Since `v0.1.0-alpha` the container
+  attaches to an `--internal` Docker network and publishes only on
+  `127.0.0.1`. (Before that it bound `0.0.0.0` — reachable from the whole LAN —
+  with unrestricted outbound access.)
+
+  What that does *not* cover: `--internal` blocks egress off the host, but
+  containers on the network can still reach each other and services on the
+  host's bridge address. And Docker's published-port rules are inserted ahead
+  of the host firewall, so `ufw` will not save you from a wrong bind address.
+
+  The deploy tests egress from inside the container and **fails** if isolation
+  does not hold, rather than reporting a control it has not confirmed.
 - **Third-party containers are pulled as `:latest`.** No digest pinning, no
   signature verification. You are trusting Docker Hub at pull time.
-- **Bundled Splunk apps are not verified.** `Splunk_TA_zeek` and
-  `sankey_diagram_app` were vendored from Splunkbase without checksums.
+- **Operator-supplied Splunk apps are not verified.** `Splunk_TA_zeek` and
+  `sankey_diagram_app` are installed from packages you place in
+  `data_store/dependencies/splunk_apps/`. Nothing checks their integrity — no
+  checksums, no signatures. (They are no longer vendored in this repository;
+  see `THIRD_PARTY_NOTICES.md`.)
 
 ## Handling evidence
 

@@ -83,6 +83,27 @@ Splunk_DFIR/scripts/deploy-splunk.sh
 
 Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
 
+**Network isolation**
+
+The container holds evidence, so by default it **cannot reach the network** and
+is **only reachable from this machine**:
+
+- attached to an `--internal` Docker network — no route off the host
+- ports published on `127.0.0.1` only, not `0.0.0.0`
+
+The deploy **tests this after starting** — it opens a TCP connection from inside
+the container and fails the deploy if it succeeds. A security control that
+silently doesn't hold is worse than none.
+
+```bash
+./scripts/deploy-splunk.sh                 # isolated, localhost-only (default)
+./scripts/deploy-splunk.sh --no-isolated   # allow outbound — only if needed
+./scripts/deploy-splunk.sh --bind 0.0.0.0  # expose on the LAN — think first
+```
+
+Not an airgap: containers on that network can still reach each other and host
+services on the bridge address. See [SECURITY.md](/SECURITY.md).
+
 **Purge vs persist**
 
 The deploy script decides whether a redeploy keeps or wipes indexed data:
@@ -111,6 +132,9 @@ redeploying.
 | `SPLUNK_REPLACE` | `always` | `always` \| `ask` \| `never` |
 | `SPLUNK_READY_TIMEOUT` | `600` | Seconds to wait for the container's Ansible run |
 | `SPLUNK_VAR_VOLUME` | `splunk-dfir-var` | Index volume name |
+| `SPLUNK_ISOLATED` | `1` | `1` = internal network, no egress; `0` = allow outbound |
+| `SPLUNK_BIND_ADDR` | `127.0.0.1` | Host address published ports bind to |
+| `SPLUNK_NETWORK` | `splunk-dfir-isolated` | Isolated network name |
 | `SPLUNK_SKIP_CHMOD` | `0` | Skip the permission fixup. It is O(files) over `data_store/processed` and runs every deploy; safe to skip once permissions are already right |
 
 ```bash
