@@ -20,7 +20,7 @@ access**, which matters because the container has none.
 
 Both declare `"license": {"name": null, "text": null, "uri": null}` in their
 `app.manifest` — no licence grant permitting redistribution. They were vendored
-here until `v0.1.0-alpha`; shipping them was not clearly permitted, so the
+here until `v0.2.0-beta`; shipping them was not clearly permitted, so the
 operator now supplies them instead. See
 [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 

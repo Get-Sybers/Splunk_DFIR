@@ -347,6 +347,35 @@ else
     pass "no author typo"
 fi
 
+# One project version, stated in one form. Relabelling alpha -> beta touched a
+# dozen files by hand; this is what stops the next one leaving a stray behind.
+PROJECT_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' CHANGELOG.md 2>/dev/null | tr -d '#[] ')
+if [[ -n "$PROJECT_VERSION" ]]; then
+    pass "project version from CHANGELOG: $PROJECT_VERSION"
+    if grep -q "v${PROJECT_VERSION}" README.md 2>/dev/null; then
+        pass "README states v$PROJECT_VERSION"
+    else
+        fail "README does not state v$PROJECT_VERSION — version drift"
+    fi
+    # App versions track the project's major.minor.
+    want_app="${PROJECT_VERSION%%-*}"
+    for conf in splunk/etc/apps/*/default/app.conf; do
+        [[ -f "$conf" ]] || continue
+        app=$(basename "$(dirname "$(dirname "$conf")")")
+        v=$(grep -m1 '^version' "$conf" | sed 's/.*=[[:space:]]*//')
+        if [[ "$v" == "$want_app" ]]; then pass "$app version $v"
+        else fail "$app version '$v' does not match project '$want_app'"; fi
+    done
+else
+    fail "could not read a version heading from CHANGELOG.md"
+fi
+# The project is past alpha; a stray "Alpha" label contradicts the release.
+if grep -rIl -E '(Status:.*Alpha|🧪 Alpha)' --include='*.md' . 2>/dev/null | grep -qv '^./.git/'; then
+    fail "a document still labels this project Alpha"
+else
+    pass "no stale Alpha status labels"
+fi
+
 # Every app directory must have an app.conf. Splunk_TA_kape did not — it was a
 # directory holding one zero-byte transforms.conf, left behind when its real
 # config was migrated into Kape_App in 2025-07. It survived a year of docs

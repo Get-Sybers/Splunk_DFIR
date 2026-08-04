@@ -1,6 +1,6 @@
 # 🅰️ Ansible in this project
 
-> **🧪 Alpha.** This documents what Ansible actually does here today, which is
+> **🧪 Beta.** This documents what Ansible actually does here today, which is
 > considerably less than the name suggests. The plan is to drive the whole
 > pipeline through Ansible — see [The plan](#the-plan-ansible-it-all).
 
@@ -72,7 +72,7 @@ All four pass `ansible-lint` at its `production` profile, and
 
 ### What used to be here
 
-Until v0.1.0-alpha, `ansible/` held **101 files**: 79 in `tasks/`, 15 in
+Until v0.2.0-beta, `ansible/` held **101 files**: 79 in `tasks/`, 15 in
 `default_playbooks/`, 5 playbooks, and 2 zero-byte scripts.
 
 An audit established that **nothing in the repository executed 94 of them**.
@@ -96,7 +96,7 @@ The intent is for Ansible to drive the whole pipeline — environment setup,
 evidence processing, Splunk lifecycle — rather than just injecting three
 playbooks into a container at boot.
 
-This is a **beta** target, not an alpha one. Note that it means standing up a
+This is a **post-beta** target — it is not in `v0.2.0-beta`. Note that it means standing up a
 *second* Ansible surface: a host-side control node, entirely separate from the
 container-internal Ansible described above. The two should not be conflated.
 
@@ -121,7 +121,7 @@ It also means:
   written into `/opt/splunk/etc` inside the container.
 - The `Include-local-conf.yml` "only if absent" logic is effectively always
   "absent" on a fresh container, so it copies every time. The per-file stat
-  fixed in v0.1.0-alpha still matters for the case where a container is *not*
+  fixed in v0.2.0-beta still matters for the case where a container is *not*
   recreated.
 
 ## What the image's own docs say

@@ -3,7 +3,11 @@
 Tracks tasks for the DFIR automation project—from forensic data processing to
 Splunk deployment.
 
-**Release status: 🧪 `v0.1.0-alpha` — experimental.**
+**Release status: 🧪 `v0.2.0-beta`.** Beta means every known defect is fixed or
+written down — not that it is feature-complete or verified. The pre-beta code is
+frozen on the
+[`deprecated`](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated)
+branch.
 
 A note on what the ticks mean, because the previous version of this board was
 generous with them:
@@ -40,7 +44,8 @@ word, not a test result.
 
 **The Data Model column is empty across the board.** MITRE CAR mapping is the
 project's headline feature and none of it is wired up yet. That single gap is
-the main reason this is alpha rather than beta.
+what keeps this short of `1.0.0`, and it is why "beta" here means *known and
+documented*, not *feature-complete*.
 
 ---
 
@@ -50,7 +55,7 @@ Things that are broken or unsafe right now. These block a beta.
 
 ### 🔻 `scripts/v2/` is a divergent duplicate — use `scripts/`
 
-Its path resolution was **fixed** in the alpha (all seven scripts now resolve
+Its path resolution was **fixed** in this release (all seven scripts now resolve
 the repo root correctly, and `tests/run-checks.sh` asserts it). But it does not
 carry the Splunk fixes: running `scripts/v2/deploy-splunk.sh` still gets you
 indexes that die with the container and a deploy that can report success having
@@ -67,7 +72,7 @@ Ansible runs *inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS`, only
 `ansible/playbooks/` is mounted, and the container image ships its own copy of
 splunk-ansible.
 
-Removed in v0.1.0-alpha: `ansible/tasks/` (79), `ansible/default_playbooks/`
+Removed in v0.2.0-beta: `ansible/tasks/` (79), `ansible/default_playbooks/`
 (15), two zero-byte `ansible/scripts/` placeholders, and the two unwired
 playbooks (`copy_installed_apps.yml`, `disable_popups.yml` — the latter
 superseded by the `SPLUNK_DISABLE_POPUPS` env var).
@@ -90,13 +95,13 @@ that Splunk actually answers on the published port. Not an airgap — see
 [SECURITY.md](/SECURITY.md).
 
 ⚠️ The first attempt used `--internal`, which broke the UI — see
-[the defect list](#-defects-found-and-fixed-in-the-alpha). Everything else here
+[the defect list](#-defects-found-and-fixed-in-this-release). Everything else here
 remains unverified at runtime, which is precisely why the checks are built into
 the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 142 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 152 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
@@ -141,7 +146,7 @@ the deploy rather than asserted here.
 
 ## 🔜 To Do
 
-### 🔹 **"Ansible it all"** — *beta target*
+### 🔹 **"Ansible it all"** — *post-beta target*
 The plan is for Ansible to drive the whole pipeline — environment setup,
 evidence processing, Splunk lifecycle — rather than injecting three playbooks
 into a container at boot. Note this means standing up a **second** Ansible
@@ -263,11 +268,11 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 - Created base directory structure (`data_store`, `scripts`, `splunk`).
 - Wrote **README files** for root, `data_store`, and `scripts` directories.
 
-### ✅ **Release hygiene** *(v0.1.0-alpha)*
+### ✅ **Release hygiene** *(v0.2.0-beta)*
 - Audited every vendored dependency and settled the project licence — Apache-2.0.
 - Added `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `CHANGELOG.md`.
 - Corrected Splunk app versions from `1.0.0` to `0.1.0` — they were claiming
-  stable while the project was pre-alpha.
+  stable while the project had no release at all.
 - Documented how Ansible actually works here — [docs/Ansible.md](/docs/Ansible.md).
 
 ✅ **Closed an evidence-leak hole in `data_store/.gitignore`.**
@@ -280,7 +285,7 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 
 ---
 
-## 🐛 Defects found and fixed in the alpha
+## 🐛 Defects found and fixed in this release
 
 **None of these fixes are runtime-tested.** There is no Docker and no Splunk in
 the environment they were written in, which is why the deploy script now
@@ -298,7 +303,7 @@ verifies itself at run time rather than relying on assertions here.
 | 6 | 7 scripts resolved the repo root one level wrong | `scripts/v2/` ×4, `scripts/deprecated/` ×3 — the deprecated three were caught by the new check harness, not by reading | Corrected; a check now asserts this for every script |
 | 7 | `data_store/.gitignore` was an extension blocklist | VMware exports were committable — see above | Deny-by-default |
 
-### Introduced during the alpha, then fixed
+### Introduced during this release, then fixed
 
 Recorded because how they got in matters more than the diffs.
 
