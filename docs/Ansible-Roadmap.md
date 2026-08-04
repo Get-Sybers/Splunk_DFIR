@@ -1,6 +1,6 @@
 # 🅰️ Roadmap: "Ansible it all"
 
-> **Status: planning, and deliberately narrowed.** Deferred past `v0.2.0-beta`.
+> **Status: planning, and deliberately narrowed.** Not in any current release.
 > Read [docs/Ansible.md](/docs/Ansible.md) first for what Ansible does today.
 >
 > This document was rewritten after a design-and-critique pass. The short
@@ -146,7 +146,7 @@ the best return, and none of it is Ansible:
    behaviour. Delete rather than maintain two copies.
 3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
    playbooks, and the project's largest third-party obligation went with them.
-4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 152 static
+4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 155 static
    checks in CI, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
 
@@ -156,7 +156,7 @@ the best return, and none of it is Ansible:
 |:---|:---|:---|
 | 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
 | 1 | ✅ Defects 2-4 fixed in place. Still open: delete `scripts/v2/` and the 94 inert files | — |
-| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 152 checks). Still needs a pipeline smoke test | Stage 1 |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 155 checks). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

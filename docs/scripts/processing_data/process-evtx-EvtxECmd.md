@@ -1,6 +1,6 @@
 # EvtxECmd Processing Script
 
-> **🧪 Beta, and not runtime-tested.** Written without access to Windows, a
+> **⚠️ Not runtime-tested.** Written without access to Windows, a
 > `.evtx` sample, .NET, or a running Splunk. Everything below is statically
 > verified only — the shell parses and lints clean, the conf files follow
 > Splunk's documented syntax — but nothing here has processed a real event log.

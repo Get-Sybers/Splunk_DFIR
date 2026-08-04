@@ -1,6 +1,6 @@
 # 🅰️ Ansible in this project
 
-> **🧪 Beta.** This documents what Ansible actually does here today, which is
+> This documents what Ansible actually does here today, which is
 > considerably less than the name suggests. The plan is to drive the whole
 > pipeline through Ansible — see [The plan](#the-plan-ansible-it-all).
 
@@ -96,7 +96,7 @@ The intent is for Ansible to drive the whole pipeline — environment setup,
 evidence processing, Splunk lifecycle — rather than just injecting three
 playbooks into a container at boot.
 
-This is a **post-beta** target — it is not in `v0.2.0-beta`. Note that it means standing up a
+This is a **future** target — not in any current release. Note that it means standing up a
 *second* Ansible surface: a host-side control node, entirely separate from the
 container-internal Ansible described above. The two should not be conflated.
 

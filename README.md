@@ -1,13 +1,18 @@
 # 🚀 Splunk DFIR Pipeline
 
-> **Status: 🧪 Beta.** `v0.2.0-beta`
+[![release](https://img.shields.io/github/v/release/Get-Sybers/Splunk_DFIR?include_prereleases&label=release)](https://github.com/Get-Sybers/Splunk_DFIR/releases)
+[![checks](https://github.com/Get-Sybers/Splunk_DFIR/actions/workflows/checks.yml/badge.svg)](https://github.com/Get-Sybers/Splunk_DFIR/actions/workflows/checks.yml)
+[![licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](/LICENSE)
+
+> **Pre-release software.** The version and its maturity are whatever the badge
+> above says — that reads the latest [Release](https://github.com/Get-Sybers/Splunk_DFIR/releases)
+> directly, so it is never out of date. Release notes are in
+> [CHANGELOG.md](/CHANGELOG.md).
 >
-> Beta here means the pipeline is stable enough to use and every known defect is
-> either fixed or written down — **not** that it is feature-complete. The core
-> promise, normalised MITRE CAR fields across every source, is **still not
-> delivered**, and none of this release's fixes have been verified against a
-> running Splunk. Read [What Actually Works](#what-actually-works) before you
-> spend time here.
+> Whatever the label, the core promise — normalised MITRE CAR fields across
+> every source — is **not delivered yet**, and nothing here has been verified
+> against a running Splunk. Read [What Actually Works](#what-actually-works)
+> before you spend time here.
 
 Automates the processing and ingestion of forensic data into
 **[Splunk](https://www.splunk.com/)** using **[Plaso (log2timeline)](https://github.com/log2timeline/plaso)**,
@@ -72,11 +77,12 @@ That's the idea. Here's where it honestly stands.
 ## 🧪 What Actually Works
 <a name="what-actually-works"></a>
 
-**Beta means the honest version of beta.** This runs on the author's machine and
-has not been validated anywhere else. Nothing here is production-ready, nothing
-exercises the pipeline automatically, and interfaces may still change. What beta
-buys you over the previous line is that the defects below are known and stated
-rather than waiting to be discovered.
+This runs on the author's machine and has not been validated anywhere else.
+Nothing here is production-ready, nothing exercises the pipeline automatically,
+and interfaces may still change. What the current release buys you over the
+[pre-release line](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated) is
+that the defects below are known and written down rather than waiting to be
+discovered.
 
 | Capability | State | Notes |
 |:---|:---|:---|
@@ -92,7 +98,7 @@ rather than waiting to be discovered.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 152 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 155 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."

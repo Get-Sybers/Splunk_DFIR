@@ -13,7 +13,7 @@ script names, sourcetypes, field names, and app layouts included.
 ### To be resolved before `1.0.0`
 
 - MITRE CAR field mapping — the headline feature, currently unimplemented.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 152 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 155 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -99,7 +99,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 152 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 155 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.

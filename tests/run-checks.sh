@@ -352,10 +352,18 @@ fi
 PROJECT_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' CHANGELOG.md 2>/dev/null | tr -d '#[] ')
 if [[ -n "$PROJECT_VERSION" ]]; then
     pass "project version from CHANGELOG: $PROJECT_VERSION"
-    if grep -q "v${PROJECT_VERSION}" README.md 2>/dev/null; then
-        pass "README states v$PROJECT_VERSION"
+    # The README must NOT declare the current version in prose — it carries a
+    # badge that reads the latest Release, so a promotion is a tag and nothing
+    # else. Hardcoding it is what made alpha -> beta a twelve-file edit.
+    if grep -qE 'img\.shields\.io/github/v/release' README.md 2>/dev/null; then
+        pass "README version comes from a live release badge"
     else
-        fail "README does not state v$PROJECT_VERSION — version drift"
+        fail "README has no release badge — the version would have to be hand-maintained"
+    fi
+    if grep -qE '^> \*\*(Status|Release status):' README.md project-progress.md 2>/dev/null; then
+        fail "a hardcoded status/version line is back — let the badge state it"
+    else
+        pass "no hardcoded status line in README or task board"
     fi
     # App versions track the project's major.minor.
     want_app="${PROJECT_VERSION%%-*}"
