@@ -260,7 +260,7 @@ if [[ "$KUSTO_PERSIST" == "1" ]]; then
     echo "      a database, purge and re-ingest — that is the supported path."
 else
     echo "💾 Ephemeral — databases live and die with the container."
-    echo "   Re-ingest with scripts/ingest-kusto.sh after each deploy."
+    echo "   Re-ingest after each deploy (stage 3 of the port — not built yet)."
 fi
 
 echo "🖥️  Endpoint:  http://$KUSTO_BIND_ADDR:$KUSTO_PORT"
@@ -407,6 +407,10 @@ echo ""
 echo "  NETWORK    $([[ "$KUSTO_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT)" || echo "NOT isolated")"
 echo "             NO authentication, NO encryption — localhost only by default"
 echo ""
-echo "  Next:  scripts/apply-kusto-schema.sh    (stage 2)"
-echo "         scripts/ingest-kusto.sh          (stage 3)"
+echo "  ⚠️  STAGE 1 ONLY. There is no schema and no ingestion yet, so this"
+echo "      engine is running and empty. Creating databases/tables (stage 2)"
+echo "      and loading data_store/processed (stage 3) are not built."
+echo "      Plan: docs/Kusto-Port.md"
+echo ""
+echo "  Meanwhile the Splunk path is complete:  scripts/deploy-splunk.sh"
 echo "─────────────────────────────────────────────────────────────"
