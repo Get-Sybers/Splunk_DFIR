@@ -1,0 +1,196 @@
+// Database: host
+//
+// Applied with `.execute database script`, which is sequential but NOT
+// transactional and performs no rollback on error. Every command below is
+// therefore an idempotent form (.create-merge, .create-or-alter) so a
+// re-applied schema converges instead of failing halfway.
+//
+// Ingestion mappings map by ORDINAL for CSV and by PATH for JSON, so Kusto
+// column names do not have to match the source's. That matters: Plaso emits a
+// column literally called "datetime", which collides with a Kusto type keyword.
+
+//=============================================================================
+// L2tCsv — Plaso psteal --output-format dynamic
+//
+// The 23 columns and their order are fixed by the --fields argument in
+// scripts/process-log2timeline-Dynamic.sh. If that list changes, this schema
+// and the mapping below must change with it, in the same order.
+//=============================================================================
+.create-merge table L2tCsv (
+    Date:            string,
+    Timestamp:       datetime,
+    Description:     string,
+    DescriptionShort:string,
+    DisplayName:     string,
+    FileName:        string,
+    Host:            string,
+    Hostname:        string,
+    Inode:           string,
+    Macb:            string,
+    Message:         string,
+    MessageShort:    string,
+    Source:          string,
+    SourceType:      string,
+    SourceLong:      string,
+    Tag:             string,
+    Time:            string,
+    TimestampDesc:   string,
+    Timezone:        string,
+    Type:            string,
+    User:            string,
+    UserName:        string,
+    Zone:            string
+)
+
+.create-or-alter table L2tCsv ingestion csv mapping "L2tCsvMapping"
+```[
+  {"Column":"Date",            "Properties":{"Ordinal":"0"}},
+  {"Column":"Timestamp",       "Properties":{"Ordinal":"1"}},
+  {"Column":"Description",     "Properties":{"Ordinal":"2"}},
+  {"Column":"DescriptionShort","Properties":{"Ordinal":"3"}},
+  {"Column":"DisplayName",     "Properties":{"Ordinal":"4"}},
+  {"Column":"FileName",        "Properties":{"Ordinal":"5"}},
+  {"Column":"Host",            "Properties":{"Ordinal":"6"}},
+  {"Column":"Hostname",        "Properties":{"Ordinal":"7"}},
+  {"Column":"Inode",           "Properties":{"Ordinal":"8"}},
+  {"Column":"Macb",            "Properties":{"Ordinal":"9"}},
+  {"Column":"Message",         "Properties":{"Ordinal":"10"}},
+  {"Column":"MessageShort",    "Properties":{"Ordinal":"11"}},
+  {"Column":"Source",          "Properties":{"Ordinal":"12"}},
+  {"Column":"SourceType",      "Properties":{"Ordinal":"13"}},
+  {"Column":"SourceLong",      "Properties":{"Ordinal":"14"}},
+  {"Column":"Tag",             "Properties":{"Ordinal":"15"}},
+  {"Column":"Time",            "Properties":{"Ordinal":"16"}},
+  {"Column":"TimestampDesc",   "Properties":{"Ordinal":"17"}},
+  {"Column":"Timezone",        "Properties":{"Ordinal":"18"}},
+  {"Column":"Type",            "Properties":{"Ordinal":"19"}},
+  {"Column":"User",            "Properties":{"Ordinal":"20"}},
+  {"Column":"UserName",        "Properties":{"Ordinal":"21"}},
+  {"Column":"Zone",            "Properties":{"Ordinal":"22"}}
+]```
+
+//=============================================================================
+// EvtxEcmdJson — EvtxECmd --json, one object per line
+//
+// Payload is the EventData XML fragment as a string. The CAR functions parse
+// the fields they need out of it by Name attribute, exactly as the Splunk
+// props.conf EXTRACT rules do.
+//=============================================================================
+.create-merge table EvtxEcmdJson (
+    RecordNumber:  long,
+    EventRecordId: long,
+    TimeCreated:   datetime,
+    EventId:       int,
+    Level:         string,
+    Provider:      string,
+    Channel:       string,
+    ProcessId:     int,
+    ThreadId:      int,
+    Computer:      string,
+    ChunkNumber:   int,
+    UserId:        string,
+    MapDescription:string,
+    UserName:      string,
+    RemoteHost:    string,
+    PayloadData1:  string,
+    PayloadData2:  string,
+    PayloadData3:  string,
+    PayloadData4:  string,
+    PayloadData5:  string,
+    PayloadData6:  string,
+    ExecutableInfo:string,
+    HiddenRecord:  bool,
+    SourceFile:    string,
+    Payload:       string
+)
+
+.create-or-alter table EvtxEcmdJson ingestion json mapping "EvtxEcmdJsonMapping"
+```[
+  {"Column":"RecordNumber",  "Properties":{"Path":"$.RecordNumber"}},
+  {"Column":"EventRecordId", "Properties":{"Path":"$.EventRecordId"}},
+  {"Column":"TimeCreated",   "Properties":{"Path":"$.TimeCreated"}},
+  {"Column":"EventId",       "Properties":{"Path":"$.EventId"}},
+  {"Column":"Level",         "Properties":{"Path":"$.Level"}},
+  {"Column":"Provider",      "Properties":{"Path":"$.Provider"}},
+  {"Column":"Channel",       "Properties":{"Path":"$.Channel"}},
+  {"Column":"ProcessId",     "Properties":{"Path":"$.ProcessId"}},
+  {"Column":"ThreadId",      "Properties":{"Path":"$.ThreadId"}},
+  {"Column":"Computer",      "Properties":{"Path":"$.Computer"}},
+  {"Column":"ChunkNumber",   "Properties":{"Path":"$.ChunkNumber"}},
+  {"Column":"UserId",        "Properties":{"Path":"$.UserId"}},
+  {"Column":"MapDescription","Properties":{"Path":"$.MapDescription"}},
+  {"Column":"UserName",      "Properties":{"Path":"$.UserName"}},
+  {"Column":"RemoteHost",    "Properties":{"Path":"$.RemoteHost"}},
+  {"Column":"PayloadData1",  "Properties":{"Path":"$.PayloadData1"}},
+  {"Column":"PayloadData2",  "Properties":{"Path":"$.PayloadData2"}},
+  {"Column":"PayloadData3",  "Properties":{"Path":"$.PayloadData3"}},
+  {"Column":"PayloadData4",  "Properties":{"Path":"$.PayloadData4"}},
+  {"Column":"PayloadData5",  "Properties":{"Path":"$.PayloadData5"}},
+  {"Column":"PayloadData6",  "Properties":{"Path":"$.PayloadData6"}},
+  {"Column":"ExecutableInfo","Properties":{"Path":"$.ExecutableInfo"}},
+  {"Column":"HiddenRecord",  "Properties":{"Path":"$.HiddenRecord"}},
+  {"Column":"SourceFile",    "Properties":{"Path":"$.SourceFile"}},
+  {"Column":"Payload",       "Properties":{"Path":"$.Payload"}}
+]```
+
+//=============================================================================
+// KAPE and Velociraptor — semi-structured.
+//
+// These are deliberately NOT given typed columns. KAPE output is Eric
+// Zimmerman's per-artefact tool output: every artefact has a different shape,
+// and there are dozens. Velociraptor's JSON varies per VQL artefact.
+//
+// Kusto handles this natively with a dynamic column — which is the honest
+// representation, and better than inventing a lowest-common-denominator schema
+// that silently drops columns. Access is Record.FieldName in KQL.
+//
+// Artefact is derived from the source path at ingest time, replacing what
+// Splunk's extract_kape_sourcetype transform does with MetaData:Source.
+//=============================================================================
+.create-merge table KapeJson (
+    Artefact:   string,
+    SourceFile: string,
+    Record:     dynamic
+)
+
+.create-or-alter table KapeJson ingestion json mapping "KapeJsonMapping"
+```[
+  {"Column":"Record", "Properties":{"Path":"$"}}
+]```
+
+.create-merge table KapeCsv (
+    Artefact:   string,
+    SourceFile: string,
+    Record:     dynamic
+)
+
+.create-merge table VelociraptorJson (
+    Artefact:   string,
+    SourceFile: string,
+    Record:     dynamic
+)
+
+.create-or-alter table VelociraptorJson ingestion json mapping "VelociraptorJsonMapping"
+```[
+  {"Column":"Record", "Properties":{"Path":"$"}}
+]```
+
+//=============================================================================
+// Convenience views.
+//
+// L2t rows carry a timestamp_desc saying WHICH timestamp the row represents.
+// Filtering to creation events is the common case and easy to get wrong.
+//=============================================================================
+.create-or-alter function
+with (docstring = "Plaso rows whose timestamp is a creation time", folder = "Views")
+L2tCreations() {
+    L2tCsv
+    | where TimestampDesc matches regex @"(?i)creation|crtime|birth"
+}
+
+.create-or-alter function
+with (docstring = "Windows Security logon events (4624/4625/4634/4647/4648/4778/4779)", folder = "Views")
+WinLogonEvents() {
+    EvtxEcmdJson
+    | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+}

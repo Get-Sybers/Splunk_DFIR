@@ -96,10 +96,11 @@ discovered.
 | **MITRE CAR field mapping** | ◑ **Built, unverified** | `MITRE_CAR_App` — a data model generated from MITRE's own `car_data_model.json`, plus the eventtype/tag and field mappings that populate it. **6 of 9 CAR objects have a source**; `driver`, `module` and `thread` have none and return nothing. Never run against Splunk — see [the app README](/splunk/etc/apps/MITRE_CAR_App/README.md) |
 | Raw EVTX ingest | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh` + `EvtxECmd_App` map EvtxECmd output onto the Splunk Add-on for Windows field names. There was previously no monitor stanza at all, and Splunk cannot read binary `.evtx` regardless. **Never run against a real event log** |
 | Linux logs, Sysmon, Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
+| **Kusto / Azure Data Explorer (offline)** | ◑ Built, unverified | Second analysis backend alongside Splunk — the ADX emulator in a container, no cloud. 5 databases, CAR as KQL functions. Plaso, EvtxECmd and Zeek `conn` ingest; KAPE/Velociraptor/Rekall do not. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 148 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 165 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."

@@ -1,8 +1,9 @@
 # 🧊 Porting the pipeline to the Kusto emulator
 
-> **Status: design, staged.** No code yet. This document exists first because
-> the port is several efforts and the Microsoft docs contradict two decisions
-> we would otherwise have copied from the Splunk path.
+> **Status: built, unverified.** Stages 1-5 are implemented; three sources are
+> not wired up — see [What is not done](#what-is-not-done). Nothing has run
+> against a real emulator, because there is no Docker in the environment this
+> was written in.
 >
 > Everything below is sourced from Microsoft's documentation rather than from
 > assumption — see [Sources](#sources). The one time this project designed a
@@ -60,8 +61,8 @@ Kusto re-ingest is `.ingest into` from local files: fast, deterministic, and
 idempotent by construction if the table is recreated.
 
 So the default is **ephemeral: destroy the container, redeploy, re-ingest.**
-A `--persist` flag will exist because the install doc documents the mount, but
-it is opt-in and carries the caveat above.
+`--persist` exists because the install doc documents the mount, but it is
+opt-in and carries the caveat above.
 
 > ⚠️ **Trap.** `.create database <name> persist(...)` **fails if the target
 > folders already exist.** A persistent redeploy therefore cannot blindly
@@ -146,11 +147,30 @@ later stage is needed to get value from an earlier one.
 
 | Stage | Deliverable | Gated on |
 |:--|:---|:---|
-| **1** | `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check. Carries every lesson from `deploy-splunk.sh` | — |
-| **2** | `kusto/schema/` — databases, tables, ingestion mappings, applied via `.execute database script` with idempotent forms | 1 |
-| **3** | `scripts/ingest-kusto.sh` — walk `data_store/processed/`, build `.ingest into` per table, report row counts | 2 |
-| **4** | `kusto/car/` — the nine CAR objects as KQL functions, the analogue of `MITRE_CAR_App` | 3 |
-| **5** | Docs, `tests/run-checks.sh` coverage, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
+| **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
+| **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
+| **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; KAPE, Velociraptor and Rekall are not | 2 |
+| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions, matching `MITRE_CAR_App` | 3 |
+| **5** | ✅ Docs, 17 checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
+
+## What is not done
+
+Stated plainly so it is not mistaken for working:
+
+- **KAPE, Velociraptor and Rekall are not ingested.** Their tables, mappings
+  and CAR functions exist, but the loader does not populate them. Each needs an
+  `Artefact`/`Plugin` column derived from the source path, and `.ingest into`
+  cannot inject a constant column — that needs either an ingest-time property
+  or a post-ingest update, and picking one without a running emulator to test
+  against is exactly how the `--internal` bug happened.
+  Consequence: `CarRegistry()` and the KAPE half of `CarProcess()` and
+  `CarFile()` return nothing until this is finished.
+- **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
+  `car_flow` needs. The generic `Zeek` table exists for the rest.
+- **Nothing has been run against a real emulator.** No Docker here. The scripts
+  were exercised against a fake HTTP endpoint that validates the request JSON
+  and returns realistic success and error documents, which proves the request
+  shapes and error handling — not that Kusto accepts the KQL.
 
 ### Stage 1 detail
 

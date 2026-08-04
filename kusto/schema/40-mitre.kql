@@ -1,0 +1,323 @@
+// Database: mitre — the MITRE CAR data model in KQL
+//
+// The Kusto equivalent of splunk/etc/apps/MITRE_CAR_App. Same object model,
+// same coverage, same deliberate gaps — expressed as functions rather than as
+// a data model with eventtypes and tags.
+//
+// WHY FUNCTIONS AND NOT UPDATE POLICIES
+//
+// An update policy writes a transformed copy into a second table on ingestion,
+// and requires that "the update policy function schema and the target table
+// schema must match in their column types, and order". For CAR that is the
+// wrong shape: the nine objects are views over the same rows — a 4688 event is
+// simultaneously an EvtxEcmdJson row and a car_process row. Materialising each
+// object would double storage, force exact schema lockstep across every field,
+// and make each mapping fix an ingestion-time change rather than a query-time
+// one. Functions cost nothing to iterate on and match how the Splunk side
+// already works: the data model is a view, not a copy.
+//
+// CROSS-DATABASE ACCESS
+//
+// Source tables live in the host / network / memory databases, so these use
+// database("<name>").<Table>. That is why the databases are separate at all —
+// they mirror the Splunk indexes, as intended.
+//
+// COVERAGE — 6 of 9 objects, identical to the Splunk app
+//
+//   CarFlow         Zeek conn
+//   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
+//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts, KAPE
+//   CarService      EvtxECmd 7045/4697
+//   CarRegistry     KAPE Registry
+//   CarFile         Plaso filesystem rows, KAPE file access/deletion
+//
+//   driver, module, thread — NO SOURCE. Nothing dead-box produces driver
+//   loads, image loads or thread creation; those need Sysmon (events 6/7/8) or
+//   a live agent. Deliberately absent rather than approximated.
+//
+// NULLS ARE PRESERVED. Where a source cannot supply a CAR field it stays null
+// rather than being defaulted. A visible gap is worth more than an object that
+// looks fully populated.
+
+//=============================================================================
+// Helper — pull a value out of an EvtxECmd Payload XML fragment by Name.
+//
+// EvtxECmd puts EventData in Payload as <Data Name="X">value</Data>, and its
+// PayloadData1..6 summary fields vary by map, so they are not dependable for a
+// specific value. Same approach as the Splunk EXTRACT rules.
+//=============================================================================
+.create-or-alter function
+with (docstring = "Extract <Data Name='key'> from an EvtxECmd Payload fragment", folder = "Helpers")
+EvtxPayload(payload:string, key:string) {
+    extract(strcat(@'<Data Name="', key, @'">([^<]*)</Data>'), 1, payload)
+}
+
+//=============================================================================
+// CarFlow — network connections
+//
+// Zeek conn.log is already CAR-shaped, so this is mostly a projection.
+// EndTime is derived: conn.log has ts and duration, not an end timestamp.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'flow' object", folder = "CAR")
+CarFlow() {
+    database("network").ZeekConn
+    | extend
+        action        = case(ConnState == "SF",   "end",
+                             ConnState == "S0",   "start",
+                             ConnState == "REJ",  "end",
+                             ConnState in ("RSTO", "RSTR"), "end",
+                             isnotempty(ConnState), "message",
+                             ""),
+        src_ip        = SrcIp,
+        src_port      = SrcPort,
+        dest_ip       = DestIp,
+        dest_port     = DestPort,
+        protocol      = Proto,
+        start_time    = Ts,
+        end_time      = iff(isnotnull(Duration), datetime_add('second', toint(Duration), Ts), datetime(null)),
+        packet_count  = coalesce(OrigPkts, 0) + coalesce(RespPkts, 0),
+        hostname      = ""
+    | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
+              protocol, start_time, end_time, packet_count, hostname,
+              SourceFile
+}
+
+//=============================================================================
+// CarUserSession — logon / logoff
+//
+// LogonType is the Windows logon type: 2 interactive, 3 network, 7 unlock,
+// 10 RemoteInteractive (RDP). 4624's IpAddress is "-" for a local logon rather
+// than absent, so those are nulled out instead of being stored as "-".
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'user_session' object", folder = "CAR")
+CarUserSession() {
+    database("host").EvtxEcmdJson
+    | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+    | extend
+        TargetUserName = EvtxPayload(Payload, "TargetUserName"),
+        TargetLogonId  = EvtxPayload(Payload, "TargetLogonId"),
+        SubjectUserSid = EvtxPayload(Payload, "SubjectUserSid"),
+        LogonType      = toint(EvtxPayload(Payload, "LogonType")),
+        IpAddress      = EvtxPayload(Payload, "IpAddress"),
+        IpPort         = EvtxPayload(Payload, "IpPort"),
+        Workstation    = EvtxPayload(Payload, "WorkstationName")
+    | extend
+        action = case(EventId in (4634, 4647), "logout",
+                      EventId == 4778, "reconnect",
+                      EventId == 4779, "remote",
+                      EventId == 4624 and LogonType == 10, "rdp",
+                      EventId == 4624 and LogonType == 7,  "unlock",
+                      EventId == 4624 and LogonType == 2,  "interactive",
+                      EventId == 4624 and LogonType == 3,  "remote",
+                      EventId in (4624, 4625), "login",
+                      ""),
+        user         = coalesce(iff(isempty(TargetUserName), "", TargetUserName), UserName),
+        sid          = coalesce(iff(isempty(UserId), "", UserId), SubjectUserSid),
+        logon_id     = TargetLogonId,
+        hostname     = Computer,
+        fqdn         = Computer,
+        src_ip       = iff(IpAddress in ("-", "::1", "127.0.0.1", ""), "", IpAddress),
+        src_port     = iff(IpPort in ("-", "0", ""), int(null), toint(IpPort)),
+        src_hostname = iff(Workstation == "-", "", Workstation)
+    | project Timestamp = TimeCreated, action, user, sid, logon_id, hostname,
+              fqdn, src_ip, src_port, src_hostname, EventId, LogonType,
+              SourceFile
+}
+
+//=============================================================================
+// CarProcess — process creation / termination
+//
+// Three sources with genuinely different fidelity, unioned:
+//
+//   EvtxECmd 4688/4689  full: pid, ppid, parent, command line
+//   Plaso execution     Prefetch/Amcache/AppCompatCache — exe only
+//   KAPE ProgramExecution — exe only
+//
+// The artefact sources record THAT a binary ran, not the process tree that ran
+// it, so pid/ppid/parent_exe/command_line are null for them. That is the
+// honest shape of dead-box process data, and it is why the project's example
+// search returns a command line only for 4688 rows.
+//
+// Windows writes NewProcessId as hex ("0x1a4"); CAR's pid is a number.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'process' object", folder = "CAR")
+CarProcess() {
+    let FromEvtx =
+        database("host").EvtxEcmdJson
+        | where EventId in (4688, 4689)
+        | extend
+            NewProcessName    = EvtxPayload(Payload, "NewProcessName"),
+            NewProcessId      = EvtxPayload(Payload, "NewProcessId"),
+            ParentProcessName = EvtxPayload(Payload, "ParentProcessName"),
+            CommandLine       = EvtxPayload(Payload, "CommandLine"),
+            SubjectUserName   = EvtxPayload(Payload, "SubjectUserName")
+        | extend
+            Timestamp         = TimeCreated,
+            action            = iff(EventId == 4688, "create", "terminate"),
+            exe               = NewProcessName,
+            image_path        = NewProcessName,
+            parent_exe        = ParentProcessName,
+            parent_image_path = ParentProcessName,
+            command_line      = CommandLine,
+            pid               = tolong(toint(replace_string(NewProcessId, "0x", ""))),
+            ppid              = tolong(ProcessId),
+            user              = coalesce(iff(isempty(SubjectUserName), "", SubjectUserName), UserName),
+            hostname          = Computer,
+            Origin            = "evtx:4688"
+        | project Timestamp, action, exe, image_path, parent_exe,
+                  parent_image_path, command_line, pid, ppid, user, hostname,
+                  Origin, SourceFile;
+    let FromPlaso =
+        database("host").L2tCsv
+        | where SourceLong matches regex @"(?i)prefetch|amcache|appcompat"
+        | extend
+            Timestamp         = Timestamp,
+            action            = "create",
+            exe               = FileName,
+            image_path        = DisplayName,
+            parent_exe        = "",
+            parent_image_path = "",
+            command_line      = "",
+            pid               = long(null),
+            ppid              = long(null),
+            user              = UserName,
+            hostname          = Hostname,
+            Origin            = strcat("plaso:", SourceLong)
+        | project Timestamp, action, exe, image_path, parent_exe,
+                  parent_image_path, command_line, pid, ppid, user, hostname,
+                  Origin, SourceFile = DisplayName;
+    let FromKape =
+        database("host").KapeJson
+        | where Artefact has "ProgramExecution"
+        | extend
+            Timestamp         = todatetime(coalesce(Record.LastRun, Record.TimeCreated, Record.RunTime)),
+            action            = "create",
+            exe               = tostring(coalesce(Record.ExecutableName, Record.ApplicationName, Record.FileName)),
+            image_path        = tostring(coalesce(Record.FullPath, Record.Path, Record.ExecutablePath)),
+            parent_exe        = "",
+            parent_image_path = "",
+            command_line      = "",
+            pid               = long(null),
+            ppid              = long(null),
+            user              = tostring(coalesce(Record.UserName, Record.User)),
+            hostname          = "",
+            Origin            = strcat("kape:", Artefact)
+        | project Timestamp, action, exe, image_path, parent_exe,
+                  parent_image_path, command_line, pid, ppid, user, hostname,
+                  Origin, SourceFile;
+    union FromEvtx, FromPlaso, FromKape
+}
+
+//=============================================================================
+// CarService — service installation
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'service' object", folder = "CAR")
+CarService() {
+    database("host").EvtxEcmdJson
+    | where EventId in (7045, 4697)
+    | extend
+        name        = EvtxPayload(Payload, "ServiceName"),
+        module_path = EvtxPayload(Payload, "ImagePath"),
+        user        = UserName,
+        hostname    = Computer,
+        action      = "create"
+    | project Timestamp = TimeCreated, action, name, module_path, user,
+              hostname, EventId, SourceFile
+}
+
+//=============================================================================
+// CarRegistry — registry keys and values
+//
+// Mapped on the field names Zimmerman's registry tools share. KAPE output is
+// per-artefact, so a coalesce over the plausible names is the pragmatic
+// approach; anything artefact-specific belongs in a dedicated function.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'registry' object", folder = "CAR")
+CarRegistry() {
+    database("host").KapeJson
+    | where Artefact has "Registry"
+    | extend
+        key      = tostring(coalesce(Record.KeyPath, Record.Key)),
+        value    = tostring(coalesce(Record.ValueName, Record.Value)),
+        data     = tostring(Record.ValueData),
+        hive     = tostring(coalesce(Record.HiveName, Record.HivePath)),
+        user     = tostring(coalesce(Record.UserName, Record.User)),
+        hostname = "",
+        action   = ""
+    | project Timestamp = todatetime(coalesce(Record.LastWriteTimestamp, Record.TimeCreated)),
+              action, key, value, data, hive, user, hostname, SourceFile
+}
+
+//=============================================================================
+// CarFile — filesystem activity
+//
+// Plaso's timestamp_desc says WHICH timestamp a row represents, which is what
+// makes the CAR action derivable at all. KAPE's file sets carry the action in
+// the artefact name instead.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'file' object", folder = "CAR")
+CarFile() {
+    let FromPlaso =
+        database("host").L2tCsv
+        | where SourceLong matches regex @"(?i)\bfs\b|ntfs|file"
+        | extend
+            action = case(TimestampDesc matches regex @"(?i)creation|crtime|birth", "create",
+                          TimestampDesc matches regex @"(?i)content modification|mtime", "modify",
+                          TimestampDesc matches regex @"(?i)last access|atime", "read",
+                          TimestampDesc matches regex @"(?i)deletion|deleted", "delete",
+                          ""),
+            file_path     = replace_regex(DisplayName, @"^[A-Z0-9]+:", ""),
+            file_name     = replace_regex(replace_regex(DisplayName, @"^[A-Z0-9]+:", ""), @"^.*[\\/]", ""),
+            hostname      = Hostname,
+            user          = UserName
+        | extend creation_time = iff(action == "create", Timestamp, datetime(null))
+        | project Timestamp, action, file_name, file_path, hostname, user,
+                  creation_time, Origin = "plaso", SourceFile = DisplayName;
+    let FromKape =
+        database("host").KapeJson
+        | where Artefact has "FileFolderAccess" or Artefact has "FileDeletion"
+        | extend
+            action        = iff(Artefact has "FileDeletion", "delete", "read"),
+            file_name     = tostring(coalesce(Record.FileName, Record.Name)),
+            file_path     = tostring(coalesce(Record.FullPath, Record.Path)),
+            hostname      = "",
+            user          = tostring(coalesce(Record.UserName, Record.User)),
+            creation_time = todatetime(Record.CreatedOn)
+        | project Timestamp = todatetime(coalesce(Record.TimeCreated, Record.LastModified, Record.CreatedOn)),
+                  action, file_name, file_path, hostname, user, creation_time,
+                  Origin = strcat("kape:", Artefact), SourceFile;
+    union FromPlaso, FromKape
+}
+
+//=============================================================================
+// CarCoverage — which objects actually have data.
+//
+// The equivalent of `| tstats count FROM datamodel=MITRE_CAR BY nodename` on
+// the Splunk side. Run this first after ingesting: an object that should be
+// populated and is not means the mapping is wrong, not that the model is.
+//
+// driver, module and thread are listed with 0 deliberately — they have no
+// source, and showing them absent is the point.
+//=============================================================================
+.create-or-alter function
+with (docstring = "Row counts per CAR object; the three unsourced objects show 0", folder = "CAR")
+CarCoverage() {
+    union
+        (CarFlow()        | summarize Rows = count() | extend Object = "flow"),
+        (CarUserSession() | summarize Rows = count() | extend Object = "user_session"),
+        (CarProcess()     | summarize Rows = count() | extend Object = "process"),
+        (CarService()     | summarize Rows = count() | extend Object = "service"),
+        (CarRegistry()    | summarize Rows = count() | extend Object = "registry"),
+        (CarFile()        | summarize Rows = count() | extend Object = "file"),
+        (print Object = "driver", Rows = 0L),
+        (print Object = "module", Rows = 0L),
+        (print Object = "thread", Rows = 0L)
+    | project Object, Rows
+    | order by Rows desc
+}
