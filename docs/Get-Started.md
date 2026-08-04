@@ -4,10 +4,6 @@
 > [What Actually Works](/README.md#what-actually-works) before you start, and
 > note that KAPE and Splunk carry licensing restrictions —
 > [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
->
-> Use the scripts in `scripts/`. **Do not use `scripts/v2/`** — four of its
-> seven scripts resolve the repo root incorrectly. See
-> [Known Limitations](/project-progress.md#-known-limitations).
 
 ### ⚙️ **Step 1: Setup Environment**
 - **Run setup-environment.sh:**

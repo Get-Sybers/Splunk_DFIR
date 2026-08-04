@@ -9,10 +9,10 @@
 > directly, so it is never out of date. Release notes are in
 > [CHANGELOG.md](/CHANGELOG.md).
 >
-> Whatever the label, the core promise — normalised MITRE CAR fields across
-> every source — is **not delivered yet**, and nothing here has been verified
-> against a running Splunk. Read [What Actually Works](#what-actually-works)
-> before you spend time here.
+> Whatever the label, **nothing here has been verified against a running
+> Splunk.** The core promise — normalised MITRE CAR fields — is now built
+> rather than absent, but built is not the same as working. Read
+> [What Actually Works](#what-actually-works) before you spend time here.
 
 Automates the processing and ingestion of forensic data into
 **[Splunk](https://www.splunk.com/)** using **[Plaso (log2timeline)](https://github.com/log2timeline/plaso)**,
@@ -92,23 +92,16 @@ discovered.
 | KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly, via `Kape_App` (20 sourcetype stanzas). Field extraction beyond sourcetype routing is incomplete |
 | Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md). Runs isolated: no egress, localhost-only |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
-| **MITRE CAR field mapping** | ❌ **Not delivered** | `car_data_model.json` and a data model conf exist. **No actual mapping is wired up.** This is the project's headline feature and it is not done |
+| **MITRE CAR field mapping** | ◑ **Built, unverified** | `MITRE_CAR_App` — a data model generated from MITRE's own `car_data_model.json`, plus the eventtype/tag and field mappings that populate it. **6 of 9 CAR objects have a source**; `driver`, `module` and `thread` have none and return nothing. Never run against Splunk — see [the app README](/splunk/etc/apps/MITRE_CAR_App/README.md) |
 | Raw EVTX ingest | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh` + `EvtxECmd_App` map EvtxECmd output onto the Splunk Add-on for Windows field names. There was previously no monitor stanza at all, and Splunk cannot read binary `.evtx` regardless. **Never run against a real event log** |
 | Linux logs, Sysmon, Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 155 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 138 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
-- **`scripts/v2/` is a divergent duplicate — don't use it.** Its path
-  resolution was fixed in the rewrite, but it does **not** carry the Splunk
-  persistence, container-collision or readiness fixes, so running it gets you
-  the old broken behaviour: indexes that die with the container, and a deploy
-  that can report success having done nothing. **Use `scripts/`.** The roadmap
-  recommends deleting `v2` rather than maintaining two copies — see
-  [project-progress.md](/project-progress.md).
 - **Scripts `chmod -R 777` their working directories.** Convenient, not safe.
   Don't run this on a shared host.
 - **Deploying accepts Splunk's licence for you** via

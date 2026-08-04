@@ -12,8 +12,12 @@ script names, sourcetypes, field names, and app layouts included.
 
 ### To be resolved before `1.0.0`
 
-- MITRE CAR field mapping — the headline feature, currently unimplemented.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 155 static checks, but
+- **Verify the MITRE CAR mapping against real evidence.** It is built and
+  internally consistent as of this release, but has never run against Splunk.
+  Six of nine CAR objects have a source; `driver`, `module` and `thread` need
+  Sysmon or a live agent and are out of reach for dead-box data. Tracked as
+  issue #13.
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 138 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -24,10 +28,6 @@ script names, sourcetypes, field names, and app layouts included.
   [docs/Ansible-Roadmap.md](docs/Ansible-Roadmap.md), which narrows the scope to
   Splunk lifecycle and config. Note this requires publishing port 8089 first
   (see Known issues below).
-- **Delete `scripts/v2/`.** Its path resolution was corrected in
-  `0.2.0-beta`, but it remains a divergent duplicate carrying none of the
-  persistence, collision or readiness fixes — so running it still gets the old
-  broken behaviour.
 - Whether to pin the Splunk image tag (see Known issues below).
 
 ## [0.2.0-beta] - 2026-08-04
@@ -59,6 +59,33 @@ branch. It is frozen, unsupported, and carries all ten defects.
   (77 files, ~3 MB, across the `DETECT` and `BASELINE` apps), and the MITRE CAR
   data model. All three are Apache-2.0, and none carried attribution before this
   release.
+- **MITRE CAR data model and field mapping** — `MITRE_CAR_App`. The project's
+  headline feature, and the thing every previous version's README promised
+  without shipping.
+
+  `default/data/models/MITRE_CAR.json` is generated from the vendored
+  `car_data_model.json` by `dev-scripts/generate-car-datamodel.py`, so the model
+  provably matches MITRE's own rather than being a hand-typed copy that drifts.
+  Nine objects, 123 field definitions.
+
+  Population is two layers, and both are needed: `eventtypes.conf` + `tags.conf`
+  decide which sourcetypes may enter each object, and `props.conf` maps their
+  native field names onto CAR's. An earlier attempt at this survived
+  commented-out in `Log2timeline_App` (dated 20 April 2025) and would not have
+  worked — it aliased to dotted names like `process.hostname`, which creates a
+  field with a dot in it rather than placing anything into a data model.
+
+  Six of nine objects have a source: `flow` (Zeek conn), `user_session` and
+  `process` and `service` (EvtxECmd), `registry` and `file` (KAPE, Plaso).
+  `driver`, `module` and `thread` return nothing, deliberately — nothing
+  dead-box produces driver loads, image loads or thread creation.
+
+  Nulls are preserved where a source cannot supply a field, rather than
+  defaulted, because a visible gap is worth more than a full-looking object.
+  Windows hex pids are converted to decimal; Zeek's `end_time` is derived from
+  `ts + duration` and is null when duration is.
+
+  **Never run against a Splunk instance.** See the app README.
 - `CHANGELOG.md` — this file.
 - `docs/Ansible.md` — documents how Ansible actually works in this project.
   It runs *inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS` and
@@ -99,7 +126,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 155 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 138 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
@@ -155,6 +182,13 @@ branch. It is frozen, unsupported, and carries all ten defects.
   was a leftover directory, but the docs described it as an unfinished stub, and
   "complete `Splunk_TA_kape`" sat on the roadmap for a year as work that had
   already been done elsewhere.
+- **`scripts/v2/` deleted (9 files).** A divergent duplicate that carried none
+  of this release's Splunk fixes, so running it got the old behaviour: indexes
+  that die with the container, and a deploy that reports success having done
+  nothing. Every file had a counterpart in `scripts/`; the two PowerShell KAPE
+  scripts were byte-identical, and the shell differences were cosmetic —
+  variable renames, banner text, and the `../..` depth. Nothing unique was lost,
+  which was verified file by file before deleting.
 - **`ansible/` went from 101 files to 4.** An audit established that nothing in
   the repository executed 94 of them: only `ansible/playbooks/` is bind-mounted
   into the container, and the `splunk/splunk` image already ships its own copy

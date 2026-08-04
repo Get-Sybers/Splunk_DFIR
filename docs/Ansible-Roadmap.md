@@ -140,13 +140,12 @@ the best return, and none of it is Ansible:
 
 1. ✅ **Fix the defects above.** Done in v0.2.0-beta, runtime verification
    still outstanding.
-2. **Delete `scripts/v2/`.** Its path resolution is now corrected, but it
-   remains a divergent duplicate that does *not* carry the Splunk persistence,
-   collision or readiness fixes — so running it still gets you the old
-   behaviour. Delete rather than maintain two copies.
+2. ✅ **Delete `scripts/v2/`.** Done in `v0.2.0-beta`. It was a divergent
+   duplicate carrying none of the Splunk fixes; every file had a counterpart in
+   `scripts/` and nothing unique was lost.
 3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
    playbooks, and the project's largest third-party obligation went with them.
-4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 155 static
+4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 138 static
    checks in CI, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
 
@@ -155,8 +154,8 @@ the best return, and none of it is Ansible:
 | Stage | Goal | Gated on |
 |:---|:---|:---|
 | 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
-| 1 | ✅ Defects 2-4 fixed in place. Still open: delete `scripts/v2/` and the 94 inert files | — |
-| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 155 checks). Still needs a pipeline smoke test | Stage 1 |
+| 1 | ✅ Defects 2-4 fixed in place; `scripts/v2/` and the 94 inert files deleted | — |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 138 checks). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

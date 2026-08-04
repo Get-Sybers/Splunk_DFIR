@@ -45,10 +45,10 @@ The most useful contributions right now, roughly in order:
 
 1. **Tests.** There are none. Anything that makes a "✅" on the task board
    checkable rather than a claim is the highest-value change available.
-2. **MITRE CAR field mapping.** The headline feature, unimplemented. This is
-   what gates beta.
-3. **Fixing `scripts/v2/`** — see below.
-4. **EVTX ingest.** Splunk sees the files and won't index them. Unsolved.
+2. **Verify the MITRE CAR mapping.** It is built as of `v0.2.0-beta` but has
+   never run against Splunk. Confirming which fields actually populate — and
+   which are silently null — is worth more than adding more mappings.
+3. **EVTX ingest.** Built via EvtxECmd, never run against a real event log.
 
 ## Ground rules
 
@@ -69,15 +69,11 @@ state that prompted the beta rewrite. If you haven't run it, it isn't ✅.
 
 ## Scripts
 
-Use `scripts/`. It resolves paths correctly for all seven scripts.
+Use `scripts/`. A check asserts every script resolves the repo root correctly,
+whatever depth it lives at.
 
-`scripts/v2/` is **unsupported**. Its path resolution was corrected in the
-the rewrite and `tests/run-checks.sh` now asserts it, but it is a divergent duplicate
-that does not carry the Splunk persistence, container-collision or readiness
-fixes — running it gets you the old behaviour.
-
-Don't port fixes into it. The roadmap's recommendation is to delete it rather
-than maintain two copies of every script; that call hasn't been made yet.
+`scripts/v2/` was deleted in `v0.2.0-beta` — a divergent duplicate carrying none
+of the Splunk fixes, so running it got the old broken behaviour.
 
 `scripts/deprecated/` is kept for reference. Don't build on it.
 
