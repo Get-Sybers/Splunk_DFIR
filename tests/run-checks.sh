@@ -228,6 +228,55 @@ if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null
 else
     pass "all published ports are address-qualified"
 fi
+# ------------------------------------------------------------------------------
+# Kusto emulator deploy (stage 1 of the port).
+#
+# The emulator has NO authentication and speaks plaintext HTTP, so the same
+# mistakes cost more here than on the Splunk path. These assert the lessons
+# already paid for did in fact carry across.
+# ------------------------------------------------------------------------------
+if [[ -f scripts/deploy-kusto.sh ]]; then
+    if grep -q 'docker network create --internal' scripts/deploy-kusto.sh 2>/dev/null; then
+        fail "deploy-kusto.sh uses --internal, which blocks published ports"
+    else
+        pass "deploy-kusto.sh does not use --internal"
+    fi
+    if grep -q 'enable_ip_masquerade=false' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh disables IP masquerade for isolation"
+    else
+        fail "deploy-kusto.sh has no egress control"
+    fi
+    if grep -q 'trap stop_log_stream' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh stops its background log stream"
+    else
+        fail "deploy-kusto.sh leaves 'docker logs -f' running over its diagnostics"
+    fi
+    # Readiness must be a real health check. Grepping logs is what let a dead
+    # Splunk report success.
+    if grep -q '\.show version' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh polls the engine rather than grepping logs"
+    else
+        fail "deploy-kusto.sh does not verify the engine actually answers"
+    fi
+    # Binding an unauthenticated engine off-localhost must take deliberate effort.
+    if grep -q "Type 'expose' to continue" scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh gates non-local binding behind a confirmation"
+    else
+        fail "deploy-kusto.sh binds non-locally without friction — it has no auth"
+    fi
+    # Ephemeral must stay the default: Microsoft advises against persisting.
+    if grep -qE '^KUSTO_PERSIST="\$\{KUSTO_PERSIST:-0\}"' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh defaults to ephemeral storage, per Microsoft's guidance"
+    else
+        fail "deploy-kusto.sh defaults to persisting, which Microsoft advises against"
+    fi
+    if grep -qF -- '--purge-only' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh accepts --purge-only"
+    else
+        fail "deploy-kusto.sh has no --purge-only"
+    fi
+fi
+
 # Isolation is asserted at runtime, not assumed.
 if grep -q 'ISOLATION_VERDICT' scripts/deploy-splunk.sh 2>/dev/null; then
     pass "deploy verifies isolation at runtime"

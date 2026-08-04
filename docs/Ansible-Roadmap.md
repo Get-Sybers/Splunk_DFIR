@@ -145,7 +145,7 @@ the best return, and none of it is Ansible:
    `scripts/` and nothing unique was lost.
 3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
    playbooks, and the project's largest third-party obligation went with them.
-4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 138 static
+4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 148 static
    checks in CI, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
 
@@ -155,7 +155,7 @@ the best return, and none of it is Ansible:
 |:---|:---|:---|
 | 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
 | 1 | ✅ Defects 2-4 fixed in place; `scripts/v2/` and the 94 inert files deleted | — |
-| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 138 checks). Still needs a pipeline smoke test | Stage 1 |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 148 checks). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

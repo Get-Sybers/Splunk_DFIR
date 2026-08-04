@@ -29,8 +29,9 @@ working toward field mappings aligned to the
 - [3. Dir-Structure](/docs/Dir-Structure.md)
 - [4. Project-Progress](/project-progress.md)
 - [5. Ansible](/docs/Ansible.md) — how it actually works here
-- [6. Docs](/docs/)
-- [7. Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
+- [6. Kusto port](/docs/Kusto-Port.md) — offline Azure Data Explorer, staged
+- [7. Docs](/docs/)
+- [8. Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
 
 > The pre-beta code lives on the frozen
 > [`deprecated`](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated)
@@ -98,7 +99,7 @@ discovered.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 138 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 148 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
