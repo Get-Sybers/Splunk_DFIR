@@ -36,7 +36,7 @@ repository ever executed them* — only `ansible/playbooks/` is bind-mounted int
 the container, and the `splunk/splunk` image already ships its own copy of
 splunk-ansible internally. They were carrying full Apache-2.0 attribution,
 NOTICE and modification-marking obligations for zero runtime benefit, and were
-removed in v0.1.0-alpha.
+removed in v0.2.0-beta.
 
 The provenance was established by fetching each upstream file and diffing it:
 of the 79 files in `ansible/tasks/`, 61 were byte-identical to upstream
@@ -86,7 +86,7 @@ attribution required.
 
 `Splunk_TA_zeek` (Corelight Add-on for Zeek, by Aplura, LLC) and
 `sankey_diagram_app` (Splunk Inc., EOL) were vendored in this repository until
-`v0.1.0-alpha`.
+`v0.2.0-beta`.
 
 Both declared `"license": {"name": null, "text": null, "uri": null}` in their
 `app.manifest` — that is, **neither carried a licence grant permitting
@@ -118,7 +118,7 @@ went with `sankey_diagram_app`; both concerns now sit with the operator's own
 copy rather than with this repository.
 
 These apps remain in git history, so the position above applies to anyone
-working from a commit before `v0.1.0-alpha`.
+working from a commit before `v0.2.0-beta`.
 
 ---
 
@@ -199,7 +199,7 @@ preference:
 
 ## Outstanding items
 
-Known gaps. Listed because an alpha that hides them is worse than one that
+Known gaps. Listed because a release that hides them is worse than one that
 does not.
 
 - ✅ **Splunkbase redistribution** — resolved by removing both apps and having

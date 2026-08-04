@@ -1,6 +1,6 @@
 # Contributing
 
-Contributions are welcome. This is an alpha-stage personal project, so expect
+Contributions are welcome. This is a beta-stage personal project, so expect
 loose process and slow responses.
 
 ## Before you start
@@ -33,14 +33,14 @@ The project is Apache-2.0 and that only stays true if attribution keeps up. See
 **Be honest in the task board.** `project-progress.md` uses ✅ for
 "ran end-to-end and produced correct output", ⚠️ for "runs but incomplete or
 unverified", ❌ for "doesn't work". Over-claiming is how the board got into the
-state that prompted the alpha rewrite. If you haven't run it, it isn't ✅.
+state that prompted the beta rewrite. If you haven't run it, it isn't ✅.
 
 ## Scripts
 
 Use `scripts/`. It resolves paths correctly for all seven scripts.
 
 `scripts/v2/` is **unsupported**. Its path resolution was corrected in the
-alpha and `tests/run-checks.sh` now asserts it, but it is a divergent duplicate
+the rewrite and `tests/run-checks.sh` now asserts it, but it is a divergent duplicate
 that does not carry the Splunk persistence, container-collision or readiness
 fixes — running it gets you the old behaviour.
 
@@ -70,7 +70,7 @@ For PowerShell, `Invoke-ScriptAnalyzer`.
 
 ## Documentation
 
-Docs drift badly in this repo — the alpha fixed a batch of links pointing at
+Docs drift badly in this repo — the rewrite fixed a batch of links pointing at
 renamed or nonexistent files. If you rename a script or move a directory, grep
 for it:
 

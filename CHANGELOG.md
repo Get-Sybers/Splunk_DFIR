@@ -10,10 +10,10 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
-### To be resolved before `0.2.0-beta`
+### To be resolved before `1.0.0`
 
 - MITRE CAR field mapping — the headline feature, currently unimplemented.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 142 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 152 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -25,16 +25,25 @@ script names, sourcetypes, field names, and app layouts included.
   Splunk lifecycle and config. Note this requires publishing port 8089 first
   (see Known issues below).
 - **Delete `scripts/v2/`.** Its path resolution was corrected in
-  `0.1.0-alpha`, but it remains a divergent duplicate carrying none of the
+  `0.2.0-beta`, but it remains a divergent duplicate carrying none of the
   persistence, collision or readiness fixes — so running it still gets the old
   broken behaviour.
 - Whether to pin the Splunk image tag (see Known issues below).
 
-## [0.1.0-alpha] - 2026-08-03
+## [0.2.0-beta] - 2026-08-04
 
-First tagged release. The project is roughly fifteen months old and had never
-carried a version, a licence, or an accurate statement of what worked. This
-release fixes that. **It does not change pipeline behaviour.**
+First release. The project is roughly fifteen months old and had never carried a
+version, a licence, or an accurate statement of what worked. This release fixes
+that, and fixes ten defects found by auditing it.
+
+**What "beta" claims here:** the pipeline is stable enough to use, and every
+known defect is either fixed or written down. It does **not** claim
+feature-completeness — MITRE CAR mapping, the headline feature, is still not
+implemented — and it does **not** claim verification: none of the fixes below
+have been run against a real Docker and Splunk. See Known issues.
+
+The pre-beta line is preserved on the [`deprecated`](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated)
+branch. It is frozen, unsupported, and carries all ten defects.
 
 ### Added
 
@@ -58,7 +67,7 @@ release fixes that. **It does not change pipeline behaviour.**
   found that of the 101 files then under `ansible/`, only the 5 in `playbooks/`
   were mounted and only 3 were wired in — the 94 files in `tasks/` and
   `default_playbooks/` were never executed. See Removed.
-- `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" beta target.
+- `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" work, deliberately narrowed and deferred past this release.
 - **Windows Event Log ingestion** — `scripts/process-evtx-EvtxECmd.sh` and the
   `EvtxECmd_App` Splunk app. Splunk cannot read binary `.evtx`, and part of the
   long-standing "EVTX won't ingest" problem turned out to be simpler than
@@ -90,7 +99,7 @@ release fixes that. **It does not change pipeline behaviour.**
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 142 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 152 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
@@ -219,19 +228,20 @@ release fixes that. **It does not change pipeline behaviour.**
 - Replaced an `ls | grep` third-party package check with a glob loop, so a
   filename containing a space cannot confuse the match.
 
-- **Project status is now stated as alpha/experimental.** It was previously
+- **Project status is now stated as beta.** It was previously
   "In-Development", which understated how much of the headline feature is
   missing.
-- **Splunk app versions demoted `1.0.0` → `0.1.0`** across the six first-party
-  apps (`BASELINE`, `DETECT`, `Kape_App`, `Log2timeline_App`, `Rekall_App`,
-  `Velociraptor_App`). They were declaring a stable release while the project
-  had no release at all. Third-party app versions are left untouched, as they
-  reflect upstream releases.
+- **Splunk app versions demoted `1.0.0` → `0.2.0`** across the first-party apps
+  (`BASELINE`, `DETECT`, `EvtxECmd_App`, `Kape_App`, `Log2timeline_App`,
+  `Rekall_App`, `Velociraptor_App`), tracking the project version. They were
+  declaring a stable release while the project had no release at all.
+  Third-party app versions are left untouched, as they reflect upstream
+  releases.
 - `README.md` rewritten with a capability table distinguishing what works, what
   is partial, and what is not delivered.
 - `project-progress.md` rewritten. Several items previously marked done are now
   marked partial, and the empty Data Model column is called out as the reason
-  this is alpha rather than beta.
+  the headline feature is still marked as not delivered.
 - Documentation corrected throughout — stale script names, wrong output paths,
   and broken cross-references.
 
@@ -421,5 +431,5 @@ when someone ran it. They are listed first, because how they got in matters.
   make that deliberate — deferred, because it is a decision about which version
   you want to run.
 
-[Unreleased]: https://github.com/Get-Sybers/Splunk_DFIR/compare/v0.1.0-alpha...HEAD
-[0.1.0-alpha]: https://github.com/Get-Sybers/Splunk_DFIR/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/Get-Sybers/Splunk_DFIR/compare/v0.2.0-beta...HEAD
+[0.2.0-beta]: https://github.com/Get-Sybers/Splunk_DFIR/releases/tag/v0.2.0-beta

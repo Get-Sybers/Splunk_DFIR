@@ -1,10 +1,13 @@
 # 🚀 Splunk DFIR Pipeline
 
-> **Status: 🧪 Alpha — experimental.** `v0.1.0-alpha`
+> **Status: 🧪 Beta.** `v0.2.0-beta`
 >
-> Parts of this work well. Parts are half-built. The core promise — normalised
-> MITRE CAR fields across every source — is **not delivered yet**. Read
-> [What Actually Works](#what-actually-works) before you spend time here.
+> Beta here means the pipeline is stable enough to use and every known defect is
+> either fixed or written down — **not** that it is feature-complete. The core
+> promise, normalised MITRE CAR fields across every source, is **still not
+> delivered**, and none of this release's fixes have been verified against a
+> running Splunk. Read [What Actually Works](#what-actually-works) before you
+> spend time here.
 
 Automates the processing and ingestion of forensic data into
 **[Splunk](https://www.splunk.com/)** using **[Plaso (log2timeline)](https://github.com/log2timeline/plaso)**,
@@ -23,6 +26,12 @@ working toward field mappings aligned to the
 - [5. Ansible](/docs/Ansible.md) — how it actually works here
 - [6. Docs](/docs/)
 - [7. Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
+
+> The pre-beta code lives on the frozen
+> [`deprecated`](https://github.com/Get-Sybers/Splunk_DFIR/tree/deprecated)
+> branch. It is unsupported and keeps every defect this release fixed — most
+> notably that Splunk kept **no persistent state**, so every index died with the
+> container. Don't build on it.
 
 ### 📚 This Page
 
@@ -63,9 +72,11 @@ That's the idea. Here's where it honestly stands.
 ## 🧪 What Actually Works
 <a name="what-actually-works"></a>
 
-**Alpha means alpha.** This runs on the author's machine and has not been
-validated anywhere else. Nothing here is production-ready, nothing has automated
-tests, and interfaces will change without notice.
+**Beta means the honest version of beta.** This runs on the author's machine and
+has not been validated anywhere else. Nothing here is production-ready, nothing
+exercises the pipeline automatically, and interfaces may still change. What beta
+buys you over the previous line is that the defects below are known and stated
+rather than waiting to be discovered.
 
 | Capability | State | Notes |
 |:---|:---|:---|
@@ -81,12 +92,12 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 142 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 152 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
 - **`scripts/v2/` is a divergent duplicate — don't use it.** Its path
-  resolution was fixed in the alpha, but it does **not** carry the Splunk
+  resolution was fixed in the rewrite, but it does **not** carry the Splunk
   persistence, container-collision or readiness fixes, so running it gets you
   the old broken behaviour: indexes that die with the container, and a deploy
   that can report success having done nothing. **Use `scripts/`.** The roadmap
@@ -98,20 +109,20 @@ tests, and interfaces will change without notice.
   `SPLUNK_START_ARGS=--accept-license`.
 - **The `_time` normalisation story is inconsistent** across sources. Plaso and
   Zeek are good; KAPE is mostly right; everything else is unverified.
-- **Seven pre-existing defects were found and fixed during the alpha** —
+- **Seven pre-existing defects were found and fixed in this release** —
   including one where Splunk kept no persistent state at all (`splunk/var` was
   mounted at `/data/var`, a path Splunk never reads, so every index died with
-  the container). Three more were *introduced* by the alpha's own changes and
+  the container). Three more were *introduced* by this release's own changes and
   then fixed, including an isolation mechanism that made the Splunk UI
   unreachable. **None of the fixes are runtime-tested** — there is no Docker or
   Splunk in the development environment. See
-  [project-progress.md](/project-progress.md#-defects-found-and-fixed-in-the-alpha).
+  [project-progress.md](/project-progress.md#-defects-found-and-fixed-in-this-release).
 - **Ansible runs *inside* the Splunk container, not from a control node.**
   There is no inventory, no roles, and `ansible-playbook` is never run on the
   host — it is 3 playbooks injected at container start. (It was 101 files until
-  the alpha removed 94 that nothing executed.) See
+  this release removed 94 that nothing executed.) See
   [docs/Ansible.md](/docs/Ansible.md). Driving the whole pipeline through
-  Ansible — "Ansible it all" — is the [beta target](/docs/Ansible-Roadmap.md).
+  Ansible — "Ansible it all" — is a [post-beta target](/docs/Ansible-Roadmap.md).
 
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
@@ -138,7 +149,7 @@ Five things that will bite you otherwise:
 5. **This handles real evidence.** `data_store/` is now gitignored
    deny-by-default, so unknown and extensionless formats are covered. It is
    still a safety net, not a guarantee — check `git status` before you commit,
-   every time. (Until `v0.1.0-alpha` this was an extension blocklist, and
+   every time. (Until `v0.2.0-beta` this was an extension blocklist, and
    VMware exports were committable through it.)
 
 ## 🏴‍☠️ Why This Exists

@@ -4,10 +4,12 @@
 
 | Version | Supported |
 |:---|:---|
-| `0.1.x-alpha` | ⚠️ Alpha — best effort only |
+| `0.2.x-beta` | ⚠️ Beta — best effort only |
+| Anything on the `deprecated` branch | ❌ No. It is the frozen pre-beta line and carries known unfixed defects — see [DEPRECATED.md](https://github.com/Get-Sybers/Splunk_DFIR/blob/deprecated/DEPRECATED.md) |
 
-This project is experimental. Nothing here is hardened, and there is no
-automated test coverage. Do not treat it as a secure system.
+This project is experimental. Nothing here is hardened, nothing exercises the
+pipeline automatically, and none of the current release's fixes have been
+verified against a running Splunk. Do not treat it as a secure system.
 
 ## Reporting a vulnerability
 
@@ -34,7 +36,7 @@ These are already known. You do not need to report them.
   deny-by-default, but a determined `git add -f` defeats it.
 - **Egress restriction is best-effort; the localhost binding is not.** The
   container publishes only on `127.0.0.1`, which is a real control — before
-  `v0.1.0-alpha` it bound `0.0.0.0` and was reachable from the whole LAN.
+  `v0.2.0-beta` it bound `0.0.0.0` and was reachable from the whole LAN.
 
   Outbound is restricted by disabling IP masquerade on the container's network.
   That breaks return traffic rather than dropping packets, so a host with its
