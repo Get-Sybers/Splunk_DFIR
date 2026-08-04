@@ -57,6 +57,10 @@ SPLUNK_REPLACE="${SPLUNK_REPLACE:-always}"
 # destroys indexed evidence.
 ASSUME_YES="${ASSUME_YES:-0}"
 
+# --purge wipes the indexes AND redeploys, because it is a flag on the deploy
+# script. --purge-only wipes and stops, for when you just want the data gone.
+PURGE_ONLY="${PURGE_ONLY:-0}"
+
 usage() {
     cat <<'USAGE'
 Usage: deploy-splunk.sh [OPTIONS]
@@ -68,8 +72,10 @@ Data:
   --persist          Keep the index volume across the redeploy.  (default)
                      Indexed events and the fishbucket survive, so
                      already-ingested files are not re-read.
-  --purge            Delete the index volume as part of this deploy.
+  --purge            Delete the index volume, then redeploy.
                      ⚠️  DESTROYS ALL INDEXED EVIDENCE. Prompts unless --yes.
+  --purge-only       Delete the container and index volume, then STOP.
+                     No redeploy. Same as scripts/purge-splunk-container.sh.
 
 Container:
   --ask              Prompt before replacing an existing container.
@@ -113,6 +119,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --persist)     SPLUNK_DATA_MODE="persist" ;;
         --purge)       SPLUNK_DATA_MODE="purge" ;;
+        --purge-only)  SPLUNK_DATA_MODE="purge"; PURGE_ONLY=1 ;;
         --ask)         SPLUNK_REPLACE="ask" ;;
         --no-replace)  SPLUNK_REPLACE="never" ;;
         --skip-chmod)  SPLUNK_SKIP_CHMOD=1 ;;
@@ -238,10 +245,19 @@ if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
             echo "❌ Could not remove volume '$SPLUNK_VAR_VOLUME'. Aborting."
             exit 1
         }
-        echo "✅ Volume removed — Splunk will start with empty indexes."
+        echo "✅ Volume removed."
     else
-        echo "ℹ️  --purge: volume '$SPLUNK_VAR_VOLUME' does not exist; nothing to delete."
+        echo "ℹ️  Volume '$SPLUNK_VAR_VOLUME' does not exist; nothing to delete."
     fi
+    echo ""
+
+    if [[ "$PURGE_ONLY" == "1" ]]; then
+        echo "🛑 --purge-only: container and indexes removed. Not redeploying."
+        echo "   Deploy again with: ./scripts/deploy-splunk.sh"
+        exit 0
+    fi
+    echo "   Continuing with the redeploy — Splunk will start with empty indexes."
+    echo "   (Use --purge-only if you want to wipe without redeploying.)"
     echo ""
 fi
 
@@ -399,27 +415,46 @@ fi
 # ------------------------------------------------------------------------------
 # Isolated network
 # ------------------------------------------------------------------------------
+# A `--internal` network was used here originally. That was wrong: an internal
+# network has no external connectivity in EITHER direction, so published ports
+# stop working and the Splunk UI becomes unreachable from the host. The egress
+# check passed while the UI was dead, because it only tested one direction.
+#
+# Instead: a normal user-defined bridge with IP masquerade disabled. Published
+# ports still work (that is inbound DNAT), but outbound traffic leaves with an
+# unroutable source address and gets no reply, so the container cannot usefully
+# reach anything off the host.
+#
+# This is weaker than a firewall rule — it breaks return traffic rather than
+# dropping the packet — so it is verified after start rather than assumed, and
+# both directions are checked now.
 NETWORK_ARGS=()
 if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
     if docker network inspect "$SPLUNK_NETWORK" >/dev/null 2>&1; then
-        # An existing network might not be internal — e.g. created by hand, or
-        # by an older version of this script. Attaching to it would silently
-        # give the container full egress while reporting it as isolated.
-        if [[ "$(docker network inspect -f '{{.Internal}}' "$SPLUNK_NETWORK" 2>/dev/null)" != "true" ]]; then
-            echo "❌ Network '$SPLUNK_NETWORK' exists but is NOT internal."
-            echo "   Attaching would give the container outbound access while"
-            echo "   claiming isolation. Remove it and let this script recreate it:"
-            echo "     docker network rm $SPLUNK_NETWORK"
-            echo "   Or run with --no-isolated if outbound access is intended."
-            exit 1
+        if [[ "$(docker network inspect -f '{{.Internal}}' "$SPLUNK_NETWORK" 2>/dev/null)" == "true" ]]; then
+            # Left behind by the earlier, broken version of this script. It
+            # makes the UI unreachable, so replace it rather than attach.
+            echo "♻️  Network '$SPLUNK_NETWORK' is --internal, which blocks published"
+            echo "    ports and makes Splunk unreachable. Recreating it correctly..."
+            docker network rm "$SPLUNK_NETWORK" >/dev/null 2>&1 || {
+                echo "❌ Could not remove '$SPLUNK_NETWORK' — is a container still on it?"
+                echo "   Try: docker rm -f $SPLUNK_CONTAINER && docker network rm $SPLUNK_NETWORK"
+                exit 1
+            }
+            docker network create \
+                --opt com.docker.network.bridge.enable_ip_masquerade=false \
+                "$SPLUNK_NETWORK" >/dev/null || {
+                echo "❌ Could not recreate network '$SPLUNK_NETWORK'."; exit 1; }
+            echo "    ✅ Recreated."
+        else
+            echo "🔒 Using network: $SPLUNK_NETWORK"
         fi
-        echo "🔒 Using existing internal network: $SPLUNK_NETWORK"
     else
-        echo "🔒 Creating internal network: $SPLUNK_NETWORK"
-        docker network create --internal "$SPLUNK_NETWORK" >/dev/null || {
-            echo "❌ Could not create network '$SPLUNK_NETWORK'."
-            exit 1
-        }
+        echo "🔒 Creating network (no IP masquerade): $SPLUNK_NETWORK"
+        docker network create \
+            --opt com.docker.network.bridge.enable_ip_masquerade=false \
+            "$SPLUNK_NETWORK" >/dev/null || {
+            echo "❌ Could not create network '$SPLUNK_NETWORK'."; exit 1; }
     fi
     NETWORK_ARGS=(--network "$SPLUNK_NETWORK")
 else
@@ -620,19 +655,21 @@ if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
             ;;
         FAILED)
             echo ""
-            echo "   ╔══════════════════════════════════════════════════════════╗"
-            echo "   ║  ❌ ISOLATION FAILED — the container reached the network ║"
-            echo "   ╚══════════════════════════════════════════════════════════╝"
+            echo "   ⚠️  ISOLATION NOT HOLDING — the container reached the network."
             echo ""
-            echo "   The container is RUNNING, but it is NOT isolated. It can make"
-            echo "   outbound connections despite being on an internal network."
+            echo "      It is running and usable, but it can make outbound"
+            echo "      connections. That matters: it holds evidence."
             echo ""
-            echo "   This matters: the container holds evidence."
+            echo "      Disabling IP masquerade breaks return traffic rather than"
+            echo "      dropping packets, so a host with its own forwarding rules"
+            echo "      can still let traffic through. For a hard guarantee, add a"
+            echo "      DOCKER-USER firewall rule for this network's subnet:"
+            echo "        docker network inspect $SPLUNK_NETWORK -f '{{(index .IPAM.Config 0).Subnet}}'"
             echo ""
-            echo "   Check:  docker network inspect $SPLUNK_NETWORK   (Internal should be true)"
-            echo "   If outbound access is intended, re-run with --no-isolated."
+            echo "      Not failing the deploy — a weakened control is not a reason"
+            echo "      to leave you without a working Splunk. Reported so you can"
+            echo "      decide."
             echo ""
-            exit 1
             ;;
     esac
 fi
@@ -649,6 +686,54 @@ if [[ "$SPLUNK_BIND_ADDR" != "0.0.0.0" ]]; then
     else
         echo "   ✅ Bound to $SPLUNK_BIND_ADDR only — not reachable from the LAN."
     fi
+fi
+echo ""
+
+# ------------------------------------------------------------------------------
+# Ingress check — can we actually REACH Splunk?
+#
+# This is the check that was missing. The previous version verified only that
+# egress was blocked, so when `--internal` also blocked published ports the
+# deploy reported success while the UI was unreachable. A one-directional test
+# of a two-directional property.
+#
+# Splunk Web takes a while after Ansible finishes, so retry rather than
+# one-shot.
+# ------------------------------------------------------------------------------
+echo "🔎 Verifying Splunk is reachable on $SPLUNK_BIND_ADDR:8000 ..."
+ingress_ok=0
+for _ in $(seq 1 30); do
+    if curl -sk --max-time 4 -o /dev/null "https://$SPLUNK_BIND_ADDR:8000" 2>/dev/null \
+       || curl -s  --max-time 4 -o /dev/null "http://$SPLUNK_BIND_ADDR:8000" 2>/dev/null; then
+        ingress_ok=1; break
+    fi
+    sleep 4
+done
+
+if [[ $ingress_ok -eq 1 ]]; then
+    echo "   ✅ Reachable at https://$SPLUNK_BIND_ADDR:8000"
+else
+    echo ""
+    echo "   ╔══════════════════════════════════════════════════════════════╗"
+    echo "   ║  ❌ SPLUNK IS NOT REACHABLE — the deploy is not usable        ║"
+    echo "   ╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "   The container is running but nothing answers on"
+    echo "   $SPLUNK_BIND_ADDR:8000."
+    echo ""
+    if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
+        echo "   Most likely the network isolation is blocking inbound traffic."
+        echo "   Recover with:"
+        echo "     ./scripts/deploy-splunk.sh --no-isolated"
+        echo ""
+        echo "   Then please report it on:"
+        echo "     https://github.com/Get-Sybers/Splunk_DFIR/issues/11"
+    else
+        echo "   Splunk may still be starting. Check:"
+        echo "     docker logs $SPLUNK_CONTAINER"
+    fi
+    echo ""
+    exit 1
 fi
 echo ""
 

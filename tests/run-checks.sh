@@ -167,10 +167,29 @@ if grep -q 'SPLUNK_ISOLATED:-1' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "deploy-splunk.sh does not default to an isolated network"
 fi
+# NOT --internal. An internal network blocks published ports too, which makes
+# Splunk unreachable — that shipped once and had to be reverted.
 if grep -q 'docker network create --internal' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "isolated network is created with --internal"
+    fail "network created with --internal — that blocks published ports and makes Splunk unreachable"
 else
-    fail "isolation network is not created --internal (would not block egress)"
+    pass "network is not --internal"
+fi
+if grep -q 'enable_ip_masquerade=false' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "egress limited via disabled IP masquerade"
+else
+    fail "no egress restriction on the container network"
+fi
+# Isolation is a two-directional property. Verifying only egress is how the
+# unreachable-UI bug got past the deploy's own check.
+if grep -q 'ingress_ok' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "deploy verifies Splunk is reachable (ingress)"
+else
+    fail "deploy does not verify Splunk is reachable — egress-only checks miss a dead UI"
+fi
+if grep -qF -- '--purge-only' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "deploy-splunk.sh accepts --purge-only"
+else
+    fail "no --purge-only: wiping data should not force a redeploy"
 fi
 # A bare `-p 8000:8000` binds 0.0.0.0 — every interface. Every publish must be
 # address-qualified.
