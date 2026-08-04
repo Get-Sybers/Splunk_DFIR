@@ -10,6 +10,28 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Added
+
+- **Kusto emulator port, stages 0-1.** `docs/Kusto-Port.md` (design) and
+  `scripts/deploy-kusto.sh` (container lifecycle). Runs Azure Data Explorer's
+  real query engine locally with no Azure, no account and no network — see the
+  doc for why it beats the ADX free cluster for this workload.
+
+  Two design decisions come from Microsoft's docs rather than from copying the
+  Splunk path. **The database is ephemeral by default**, because the emulator
+  docs advise against persisting outside the container ("potential
+  incompatibility between emulator versions and lack of extent merging") —
+  `data_store/processed` is already the source of truth, so redeploy and
+  re-ingest is both supported and cheap. And **isolation is not optional**: the
+  emulator has no authentication, no access control and speaks plaintext HTTP,
+  so binding it off localhost now requires typing a confirmation.
+
+  Readiness is a real health check — it polls `.show version` on the management
+  endpoint rather than grepping container logs, which is what let a dead Splunk
+  report success once.
+
+  Stages 2-5 (schema, ingestion, CAR in KQL, docs/notices) are not started.
+
 ### To be resolved before `1.0.0`
 
 - **Verify the MITRE CAR mapping against real evidence.** It is built and
@@ -17,7 +39,7 @@ script names, sourcetypes, field names, and app layouts included.
   Six of nine CAR objects have a source; `driver`, `module` and `thread` need
   Sysmon or a live agent and are out of reach for dead-box data. Tracked as
   issue #13.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 138 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 148 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -126,7 +148,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 138 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 148 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
