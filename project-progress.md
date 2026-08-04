@@ -96,14 +96,24 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 129 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 140 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
   on `data_store/` to work around Docker UID mismatches. Don't run on a shared
   host.
-- **`Splunk_TA_kape` is a stub** — contains only `transforms.conf`. No
-  `app.conf`, no `props.conf`. It is not a functioning app.
+- **77 lookup CSVs ship, and 74 of them are inert.** `DETECT` carries 61 files
+  and its `lookups.conf` defines **one**; `BASELINE` carries 16 and its
+  `lookups.conf` is zero bytes, so none are defined; `Log2timeline_App` defines
+  1 of 2. An undefined lookup is invisible to Splunk — it cannot be used in
+  `| lookup`, and no saved search can reach it. So ~3 MB of Splunk Security
+  Content ships, carries the project's largest Apache-2.0 attribution
+  obligation, and does nothing. Either define them or drop them; both are
+  defensible, shipping them undefined is not.
+- **`BASELINE` has four zero-byte conf files** (`props`, `transforms`, `fields`,
+  `lookups`). A zero-byte conf contributes nothing to Splunk's config merge, so
+  the app is 16 lookups and a handful of dashboards with no configuration
+  behind them.
 - **Raw EVTX ingest is built but unverified.** `process-evtx-EvtxECmd.sh` and
   `EvtxECmd_App` now exist and map EvtxECmd output onto the Splunk Add-on for
   Microsoft Windows field names. Part of the original problem was simpler than
@@ -161,7 +171,15 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
   - looking at probably making a container that can handle Windows API calls
 - Implement raw **EVTX file parsing** and ensure event logs are properly structured for Splunk ingestion.
   - currently splunk doesn't want to ingest the logs. it can see them but won't ingest them. I think it's possibly something to do with the Windows update log not registering a new change to evtx files.
-- Complete `Splunk_TA_kape` — it is currently a `transforms.conf` with no app around it.
+- ~~Complete `Splunk_TA_kape`~~ — **not needed, and removed.** Tracing the git
+  history showed its config was migrated into `Kape_App` on 2025-07-13
+  (`99eb95d`), byte-for-byte: same 20 props stanzas, identical
+  `extract_kape_sourcetype` transform. What was left behind was an empty
+  directory holding one zero-byte `transforms.conf` and no `app.conf`. The docs
+  had described that leftover as an unfinished stub for a year, so this sat on
+  the roadmap as work that was already done.
+- **Define or drop the 74 undefined lookups** — see Known Limitations. This is
+  the larger KAPE/DETECT question: `DETECT` ships 61 lookup CSVs and defines 1.
 
 ### 🔹 **Splunk Apps for Data Types**
 - Ensure `_time` is correctly extracted from **artifact creation timestamps**.

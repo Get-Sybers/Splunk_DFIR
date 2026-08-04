@@ -191,6 +191,17 @@ if grep -qF -- '--purge-only' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "no --purge-only: wiping data should not force a redeploy"
 fi
+# `docker logs -f` never exits. Backgrounding it without stopping it buries
+# every diagnostic printed afterwards — including the reachability failure —
+# and orphans the process past script exit.
+if grep -q 'docker logs -f' scripts/deploy-splunk.sh 2>/dev/null; then
+    if grep -q 'stop_log_stream' scripts/deploy-splunk.sh 2>/dev/null \
+       && grep -q 'trap stop_log_stream' scripts/deploy-splunk.sh 2>/dev/null; then
+        pass "background log stream is stopped, with a trap for early exits"
+    else
+        fail "deploy backgrounds 'docker logs -f' but never stops it"
+    fi
+fi
 # A bare `-p 8000:8000` binds 0.0.0.0 — every interface. Every publish must be
 # address-qualified.
 if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null; then
@@ -203,6 +214,15 @@ if grep -q 'ISOLATION_VERDICT' scripts/deploy-splunk.sh 2>/dev/null; then
     pass "deploy verifies isolation at runtime"
 else
     fail "deploy does not verify isolation actually holds"
+fi
+# The purge script must not delete every dangling volume on the host. It used
+# to, while announcing that it was removing volumes "related to Splunk" —
+# destroying other projects' data on any shared Docker host.
+if grep -qE 'dangling=true.*\|.*xargs docker volume rm|xargs docker volume rm' \
+     scripts/purge-splunk-container.sh 2>/dev/null; then
+    fail "purge removes ALL dangling volumes — that reaches outside this project"
+else
+    pass "purge does not blanket-remove dangling volumes"
 fi
 
 # ------------------------------------------------------------------------------
@@ -310,6 +330,49 @@ else
     pass "no author typo"
 fi
 
+# Every app directory must have an app.conf. Splunk_TA_kape did not — it was a
+# directory holding one zero-byte transforms.conf, left behind when its real
+# config was migrated into Kape_App in 2025-07. It survived a year of docs
+# describing it as "a stub to complete", which is work nobody needed to do.
+for appdir in splunk/etc/apps/*/; do
+    app=$(basename "$appdir")
+    if [[ -f "$appdir/default/app.conf" ]]; then
+        pass "$app has app.conf"
+    else
+        fail "$app has no default/app.conf — is it a real app, or a leftover?"
+    fi
+done
+
+# Lookup CSVs that no lookups.conf defines are inert: they ship, they carry
+# their upstream licence obligation, and Splunk cannot use them. Advisory
+# rather than fatal — the current gap is tracked, not a regression.
+for appdir in splunk/etc/apps/*/; do
+    app=$(basename "$appdir")
+    [[ -d "$appdir/lookups" ]] || continue
+    n_csv=$(find "$appdir/lookups" -type f | wc -l | tr -d ' ')
+    [[ "$n_csv" -gt 0 ]] || continue
+    # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would emit "0\n0".
+    n_def=$(grep -c '^\[' "$appdir/default/lookups.conf" 2>/dev/null || true)
+    n_def=${n_def:-0}
+    if [[ "$n_def" -ge "$n_csv" ]]; then
+        pass "$app: $n_csv lookup file(s), $n_def defined"
+    else
+        skip "$app: $n_csv lookup file(s) but only $n_def defined in lookups.conf — the rest are inert"
+    fi
+done
+
+# A zero-byte .conf contributes nothing to Splunk's config merge, so it is a
+# placeholder rather than configuration. Advisory: it flags apps whose confs
+# imply behaviour they do not have.
+empty_confs=$(find splunk/etc/apps -name '*.conf' -type f -empty 2>/dev/null | sort)
+if [[ -z "$empty_confs" ]]; then
+    pass "no zero-byte .conf files in Splunk apps"
+else
+    while IFS= read -r c; do
+        skip "zero-byte conf (does nothing in Splunk): $c"
+    done <<< "$empty_confs"
+fi
+
 # ------------------------------------------------------------------------------
 group "Evidence safety"
 # ------------------------------------------------------------------------------
@@ -330,6 +393,22 @@ for keep in data_store/README.md data_store/raw/disk_images/.gitkeep; do
     [[ -f "$keep" ]] || continue
     if git check-ignore -q "$keep" 2>/dev/null; then fail "$keep is wrongly ignored"; else pass "$keep kept"; fi
 done
+
+# No un-negated `**` allowlist may point at a directory that does not exist.
+# The deny-by-default rewrite carried over `!dependencies/SuperMem/**` from the
+# old blocklist without checking: SuperMem was deleted in 2025-09, so that was
+# an open-ended hole aimed at a memory-forensics tool's directory. A stale
+# allowlist is invisible until someone puts evidence behind it.
+stale_allow=0
+while IFS= read -r rule; do
+    target="${rule#!}"; target="${target%%\**}"; target="${target%/}"
+    [[ -z "$target" || "$target" == .* ]] && continue
+    if [[ ! -e "data_store/$target" ]]; then
+        fail "data_store/.gitignore allowlists '$target', which does not exist"
+        stale_allow=1
+    fi
+done < <(grep -E '^!.*\*\*' data_store/.gitignore 2>/dev/null)
+[[ $stale_allow -eq 0 ]] && pass "no stale ** allowlist rules in data_store/.gitignore"
 
 # ------------------------------------------------------------------------------
 group "Secrets"
