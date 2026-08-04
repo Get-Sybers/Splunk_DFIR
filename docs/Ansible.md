@@ -124,6 +124,76 @@ It also means:
   fixed in v0.1.0-alpha still matters for the case where a container is *not*
   recreated.
 
+## What the image's own docs say
+
+Read after the fact, and worth recording because two things here came out
+differently than assumed.
+
+Sources: [docker-splunk `STORAGE_OPTIONS.md`](https://github.com/splunk/docker-splunk/blob/develop/docs/STORAGE_OPTIONS.md),
+[`ADVANCED.md`](https://github.com/splunk/docker-splunk/blob/develop/docs/ADVANCED.md),
+[`advanced/APP_INSTALL.md`](https://github.com/splunk/docker-splunk/blob/develop/docs/advanced/APP_INSTALL.md).
+
+### ✅ The persistence fix matches their guidance
+
+> "Splunk only supports data persistence to volumes mounted outside of the
+> container. Data persistence for folders inside of the container is not
+> supported."
+
+Their documented pattern is a **named volume at `/opt/splunk/var`** — created
+with `docker volume create` — and they state plainly that "using named volume is
+recommended". That is exactly what `deploy-splunk.sh` now does. The earlier
+`splunk/var → /data/var` bind mount was persisting nothing, and this is not an
+improvised fix but the vendor's own approach.
+
+### ⚠️ `SPLUNK_APPS_URL` with a local path is source-verified, not documented
+
+`APP_INSTALL.md` frames the choice as:
+
+> "either through a file/directory volume-mounted inside the container, or
+> through an external URL for dynamic downloads. Nothing is required for the
+> former, and the environment variable `SPLUNK_APPS_URL` supports the latter."
+
+So the *documented* route for a local app is bind-mounting the extracted app
+directory at `/opt/splunk/etc/apps/<app>/`. `SPLUNK_APPS_URL` is presented as
+the URL mechanism.
+
+This project passes local `.tgz` **paths** in `SPLUNK_APPS_URL`. That works —
+`install_apps.yml` stats a bare path and uses it directly, and only calls
+`get_url` for `^(https?|file)://` — but it is behaviour read from the source
+rather than a documented contract, so a future image could change it.
+
+It was chosen because operators download `.tgz` packages from Splunkbase, and
+bind-mounting would mean extracting them first. If it ever breaks, the
+documented fallback is: extract each package into a gitignored directory at
+deploy time and bind-mount each app directory.
+
+### ⚠️ Supported upgrades need an `/opt/splunk/etc` volume too
+
+> "Upgrading Splunk instances requires volumes to be mounted for
+> `/opt/splunk/var` **and** `/opt/splunk/etc`" — plus `SPLUNK_UPGRADE=true`.
+
+This project mounts only `var`, deliberately: `etc` is rebuilt from the repo on
+every deploy, which is what keeps configuration drift-free. Splunk names that
+same tradeoff — persisting `etc` "can make it easier to save modified
+configurations, but simultaneously allows configuration drift to occur".
+
+The consequence is that **the documented upgrade path does not apply here**, and
+the image is pulled as `splunk/splunk:latest`. See Known issues below.
+
+### Native mechanisms not used, and why
+
+- **`default.yml`** (mounted at `/tmp/defaults/default.yml`, or
+  `SPLUNK_DEFAULTS_URL`) can carry configuration including a `splunk.conf` key
+  that writes conf files declaratively. That is a documented alternative to
+  `Include-local-conf.yml`. Not adopted: this project's `inputs.conf` is long
+  and hand-maintained, and re-expressing it as YAML would be harder to read, not
+  easier. Environment variables take precedence over `default.yml` regardless.
+- **`SPLUNKBASE_USERNAME` / `SPLUNKBASE_PASSWORD`** let the image download
+  Splunkbase apps directly. Not usable here — the container has no network
+  access by design.
+- **`SPLUNK_LICENSE_URI`** applies a Splunk licence, if you have one beyond the
+  free tier.
+
 ## Known issues
 
 - **Splunk's management port 8089 is not published.** `deploy-splunk.sh` maps
@@ -132,6 +202,17 @@ It also means:
   needs that port published first. It is a one-line change to the `docker run`
   invocation, but exposing splunkd's management port on a workstation holding
   evidence deserves a deliberate decision, and binding it to localhost.
+- **The image is `splunk/splunk:latest`, and the documented upgrade path is not
+  available.** Splunk requires both `/opt/splunk/var` and `/opt/splunk/etc`
+  mounted, plus `SPLUNK_UPGRADE=true`, to upgrade an instance. This project
+  mounts only `var` by design. So if `latest` rolls to a new Splunk version, a
+  redeploy puts a newer Splunk against an existing index volume without the
+  supported upgrade procedure.
+
+  Pinning the tag (`splunk/splunk:9.x.y`) would make that a deliberate,
+  scheduled action instead of something that happens on whichever redeploy
+  happens to follow an upstream release. Not changed yet — pinning is a
+  decision about which version you want to run.
 - `deploy-splunk.sh` runs `sudo chmod -R 777` over `ansible/`, `splunk/`, and
   `data_store/` to work around container UID mismatch. This is a workaround, not
   a fix, and it is one of the things a proper Ansible layer should eliminate.

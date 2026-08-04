@@ -267,6 +267,14 @@ shopt -u nullglob
 # entries are downloaded — so mounted packages install with no network access,
 # which matters because this container has none.
 #
+# CAVEAT: Splunk's own APP_INSTALL.md documents SPLUNK_APPS_URL as the mechanism
+# for URL downloads, and bind-mounting the extracted app directory as the route
+# for local apps. Passing a local .tgz path is verified against install_apps.yml
+# but is not a documented contract, so a future image could change it. Chosen
+# because operators have .tgz packages from Splunkbase, not extracted trees.
+# Fallback if it breaks: extract at deploy time and bind-mount each app dir.
+# See docs/Ansible.md.
+#
 # Paths are the CONTAINER-side mount point, not the host path.
 APPS_URL_LIST=""
 for pkg in "${tp_pkgs[@]}"; do
