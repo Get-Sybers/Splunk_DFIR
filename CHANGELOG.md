@@ -13,7 +13,7 @@ script names, sourcetypes, field names, and app layouts included.
 ### To be resolved before `0.2.0-beta`
 
 - MITRE CAR field mapping — the headline feature, currently unimplemented.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 129 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 140 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -90,7 +90,7 @@ release fixes that. **It does not change pipeline behaviour.**
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 129 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 140 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
@@ -139,6 +139,13 @@ release fixes that. **It does not change pipeline behaviour.**
   *BSL-host_triage* dashboard error. `deploy-splunk.sh` now checks for both
   before deploying and names the specific consequence of continuing without each.
 
+- **`splunk/etc/apps/Splunk_TA_kape/` deleted.** It was one zero-byte
+  `transforms.conf` with no `app.conf`. Its real configuration was migrated into
+  `Kape_App` on 2025-07-13 (`99eb95d`) — verified byte-identical: the same 20
+  props stanzas and the same `extract_kape_sourcetype` transform. What remained
+  was a leftover directory, but the docs described it as an unfinished stub, and
+  "complete `Splunk_TA_kape`" sat on the roadmap for a year as work that had
+  already been done elsewhere.
 - **`ansible/` went from 101 files to 4.** An audit established that nothing in
   the repository executed 94 of them: only `ansible/playbooks/` is bind-mounted
   into the container, and the `splunk/splunk` image already ships its own copy
@@ -291,6 +298,26 @@ when someone ran it. They are listed first, because how they got in matters.
 - **`--purge` redeployed the container.** It is a flag on the deploy script, so
   wiping the indexes was always followed by a fresh deploy — never stated, and
   not what "purge" implies. Added `--purge-only`, which wipes and exits.
+- **The deploy's own diagnostics were buried by a log firehose.** The script
+  backgrounds `docker logs -f` while waiting for Ansible, inherited from the
+  original where it was the last thing before exit. Verification steps were then
+  added *after* it — so the isolation verdict, the port bindings and the
+  reachability failure banner all printed into a stream of Splunk logs. `docker
+  logs -f` never exits and bash does not SIGHUP background jobs on exit, so it
+  also outlived the script. Now tracked by PID, stopped once the wait ends, with
+  an EXIT trap for the early-failure paths.
+- **`purge-splunk-container.sh` removed every dangling Docker volume on the
+  host**, while announcing it was removing volumes "related to Splunk". On a
+  machine with other Docker work that destroyed unrelated data. It now captures
+  the container's own anonymous volumes *before* `docker rm` and removes exactly
+  those; other dangling volumes are reported, not deleted.
+- **A stale `**` allowlist in `data_store/.gitignore`.** The deny-by-default
+  rewrite carried `!dependencies/SuperMem/**` over from the old blocklist
+  without checking whether it still applied — SuperMem was deleted in 2025-09
+  (`dc58d8c`). That left an open-ended hole pointed at a memory-forensics tool's
+  directory, in the file whose whole purpose is keeping evidence out. Removed,
+  and a check now fails on any allowlist rule targeting a path that doesn't
+  exist.
 - **A CI step ran unconditionally.** Written as
   `command -v x || echo skip && run x`, which shell precedence groups as
   `(command -v x || echo skip) && run x` — so `run x` executed whether or not
@@ -362,7 +389,10 @@ when someone ran it. They are listed first, because how they got in matters.
   does not affect the current pipeline, but it blocks any host-side Ansible that
   uses the `splunk_api` module — a prerequisite for the beta plan.
 - Processing scripts `chmod -R 777` their working directories.
-- `Splunk_TA_kape` is a stub containing only `transforms.conf`.
+- **77 lookup CSVs ship and 74 are inert** — `DETECT` defines 1 of 61,
+  `BASELINE` 0 of 16 (its `lookups.conf` is zero bytes), `Log2timeline_App` 1 of
+  2. Splunk cannot use an undefined lookup, so ~3 MB of Splunk Security Content
+  ships, carries the project's largest attribution obligation, and does nothing.
 - **The EVTX lane is built but unverified.** `process-evtx-EvtxECmd.sh` and
   `EvtxECmd_App` have never been run against a real event log — no Windows, no
   `.evtx` sample, no .NET in the environment they were written in.

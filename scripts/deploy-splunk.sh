@@ -575,8 +575,31 @@ if [[ -z "$SPLUNK_CID" ]]; then
 fi
 echo "🆔 Container: ${SPLUNK_CID:0:12}"
 
-# 🪵 Stream all logs immediately in background
+# 🪵 Stream all logs immediately in background, so the wait isn't a blank screen.
+#
+# The PID is tracked because this has to be STOPPED once the wait is over.
+# `docker logs -f` never exits on its own, and bash does not SIGHUP background
+# jobs when a non-interactive script exits — so without this it outlives the
+# script and keeps writing to the terminal. Worse, everything the deploy prints
+# after this point (isolation verdict, port bindings, the reachability failure
+# banner) would be interleaved with a log firehose and effectively invisible.
+#
+# That is not hypothetical: it is how the unreachable-UI bug went unnoticed for
+# as long as it did. The original script started this stream immediately before
+# exiting, so it never mattered; it only became a problem once verification
+# steps were added after it.
 docker logs -f "$SPLUNK_CID" &
+LOG_STREAM_PID=$!
+
+stop_log_stream() {
+    if [[ -n "${LOG_STREAM_PID:-}" ]] && kill -0 "$LOG_STREAM_PID" 2>/dev/null; then
+        kill "$LOG_STREAM_PID" 2>/dev/null || true
+        wait "$LOG_STREAM_PID" 2>/dev/null || true
+    fi
+    LOG_STREAM_PID=""
+}
+# Covers the early `exit 1` paths below as well as a normal finish.
+trap stop_log_stream EXIT
 
 # ⏳ In parallel, wait until Ansible is complete
 echo "⏳ Waiting for Ansible to complete inside container (timeout ${SPLUNK_READY_TIMEOUT}s)..."
@@ -602,8 +625,12 @@ while ! docker logs "$SPLUNK_CID" 2>&1 | grep -q "Ansible playbook complete, wil
     fi
 done
 
-# Step 3: Stream splunkd_stderr.log from inside the container in background
-echo "✅ Ansible complete."
+# Stop the log firehose here. Everything below is verification output, and it
+# is the part you actually need to read.
+stop_log_stream
+echo ""
+echo "✅ Ansible complete.  (log streaming stopped — follow with:"
+echo "   docker logs -f $SPLUNK_CONTAINER)"
 sleep 1
 echo
 echo "Splunk initialising..."

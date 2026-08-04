@@ -72,7 +72,7 @@ tests, and interfaces will change without notice.
 | E01 → Plaso → Splunk | ✅ Works | Timeline search fully integrated; `_time` comes from Plaso's `datetime` field |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek → Splunk | ✅ Works | ISO8601 timestamps preserved. Requires operator-supplied `Splunk_TA_zeek` — see [Before You Run Anything](#before-you-run-anything) |
-| KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly. `Splunk_TA_kape` is a stub — `transforms.conf` only, no `app.conf` or `props.conf` |
+| KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly, via `Kape_App` (20 sourcetype stanzas). Field extraction beyond sourcetype routing is incomplete |
 | Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md). Runs isolated: no egress, localhost-only |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
 | **MITRE CAR field mapping** | ❌ **Not delivered** | `car_data_model.json` and a data model conf exist. **No actual mapping is wired up.** This is the project's headline feature and it is not done |
@@ -81,7 +81,7 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 129 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 140 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."

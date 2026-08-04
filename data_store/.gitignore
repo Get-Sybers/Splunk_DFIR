@@ -26,12 +26,20 @@
 !.gitkeep
 !README.md
 
-# ------------------------------------------------------------------------------
-# Pre-existing exception, retained from the previous .gitignore.
-#
-# ⚠️ Note: this tracks SuperMem, a third-party tool, if it is placed here.
-#    Doing so vendors third-party code into the repository and would need to be
-#    accounted for in THIRD_PARTY_NOTICES.md. Flagged for review in beta.
-# ------------------------------------------------------------------------------
 !dependencies/.gitkeep
-!dependencies/SuperMem/**
+
+# ------------------------------------------------------------------------------
+# Removed: !dependencies/SuperMem/**
+#
+# That rule was carried over from the old blocklist without checking whether it
+# still applied. It does not: SuperMem's files were deleted from the repository
+# in dc58d8c (2025-09-10) and nothing has been tracked under that path since.
+#
+# Leaving it was an unbounded `**` hole in a deny-by-default file, aimed at a
+# directory for a MEMORY FORENSICS tool — so anything a future operator dropped
+# or generated there, including memory-derived output, would have been
+# committable. Exactly the failure mode this file was rewritten to close.
+#
+# If SuperMem is ever vendored again, add a narrow rule for the specific files
+# and record it in THIRD_PARTY_NOTICES.md.
+# ------------------------------------------------------------------------------
