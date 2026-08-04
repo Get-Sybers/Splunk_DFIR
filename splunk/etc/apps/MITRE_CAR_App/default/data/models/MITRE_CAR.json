@@ -1,0 +1,1509 @@
+{
+  "modelName": "MITRE_CAR",
+  "displayName": "MITRE CAR",
+  "description": "MITRE Cyber Analytics Repository data model, generated from car_data_model.json by dev-scripts/generate-car-datamodel.py. Do not edit by hand.",
+  "objectSummary": {
+    "Event-Based": 9,
+    "Transaction-Based": 0,
+    "Search-Based": 0
+  },
+  "objects": [
+    {
+      "objectName": "car_driver",
+      "displayName": "driver (load, unload)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'driver' object. Actions: load, unload. Populated only for events tagged car_driver \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "base_address",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "base_address",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "md5_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "md5_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "module_name",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "module_name",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha1_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha1_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha256_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha256_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "signer",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "signer",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_driver",
+          "owner": "car_driver"
+        }
+      ],
+      "lineage": "car_driver"
+    },
+    {
+      "objectName": "car_file",
+      "displayName": "file (timestomp, create, delete, modify, read, write)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'file' object. Actions: timestomp, create, delete, modify, read, write. Populated only for events tagged car_file \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "company",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "company",
+          "comment": ""
+        },
+        {
+          "fieldName": "creation_time",
+          "owner": "BaseEvent",
+          "type": "timestamp",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "creation_time",
+          "comment": ""
+        },
+        {
+          "fieldName": "file_name",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "file_name",
+          "comment": ""
+        },
+        {
+          "fieldName": "file_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "file_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "md5_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "md5_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "ppid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "ppid",
+          "comment": ""
+        },
+        {
+          "fieldName": "previous_creation_time",
+          "owner": "BaseEvent",
+          "type": "timestamp",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "previous_creation_time",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha1_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha1_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha256_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha256_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "signer",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "signer",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_file",
+          "owner": "car_file"
+        }
+      ],
+      "lineage": "car_file"
+    },
+    {
+      "objectName": "car_flow",
+      "displayName": "flow (end, message, start)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'flow' object. Actions: end, message, start. Populated only for events tagged car_flow \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "content",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "content",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_ip",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_ip",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_port",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_port",
+          "comment": ""
+        },
+        {
+          "fieldName": "end_time",
+          "owner": "BaseEvent",
+          "type": "timestamp",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "end_time",
+          "comment": ""
+        },
+        {
+          "fieldName": "exe",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "exe",
+          "comment": ""
+        },
+        {
+          "fieldName": "flags",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "flags",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "packet_count",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "packet_count",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "ppid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "ppid",
+          "comment": ""
+        },
+        {
+          "fieldName": "proto_info",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "proto_info",
+          "comment": ""
+        },
+        {
+          "fieldName": "protocol",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "protocol",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_ip",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_ip",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_port",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_port",
+          "comment": ""
+        },
+        {
+          "fieldName": "start_time",
+          "owner": "BaseEvent",
+          "type": "timestamp",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "start_time",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_flow",
+          "owner": "car_flow"
+        }
+      ],
+      "lineage": "car_flow"
+    },
+    {
+      "objectName": "car_module",
+      "displayName": "module (load, unload)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'module' object. Actions: load, unload. Populated only for events tagged car_module \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "base_address",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "base_address",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "md5_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "md5_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "module_name",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "module_name",
+          "comment": ""
+        },
+        {
+          "fieldName": "module_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "module_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha1_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha1_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha256_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha256_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "signer",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "signer",
+          "comment": ""
+        },
+        {
+          "fieldName": "tid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "tid",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_module",
+          "owner": "car_module"
+        }
+      ],
+      "lineage": "car_module"
+    },
+    {
+      "objectName": "car_process",
+      "displayName": "process (create, terminate)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'process' object. Actions: create, terminate. Populated only for events tagged car_process \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "command_line",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "command_line",
+          "comment": ""
+        },
+        {
+          "fieldName": "exe",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "exe",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "md5_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "md5_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "parent_exe",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "parent_exe",
+          "comment": ""
+        },
+        {
+          "fieldName": "parent_image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "parent_image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "ppid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "ppid",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha1_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha1_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "sha256_hash",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sha256_hash",
+          "comment": ""
+        },
+        {
+          "fieldName": "sid",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "sid",
+          "comment": ""
+        },
+        {
+          "fieldName": "signer",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "signer",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_process",
+          "owner": "car_process"
+        }
+      ],
+      "lineage": "car_process"
+    },
+    {
+      "objectName": "car_registry",
+      "displayName": "registry (add, edit, remove)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'registry' object. Actions: add, edit, remove. Populated only for events tagged car_registry \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "data",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "data",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hive",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hive",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "key",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "key",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "type",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "type",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        },
+        {
+          "fieldName": "value",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "value",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_registry",
+          "owner": "car_registry"
+        }
+      ],
+      "lineage": "car_registry"
+    },
+    {
+      "objectName": "car_service",
+      "displayName": "service (create, delete, pause, start, stop)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'service' object. Actions: create, delete, pause, start, stop. Populated only for events tagged car_service \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "command_line",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "command_line",
+          "comment": ""
+        },
+        {
+          "fieldName": "exe",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "exe",
+          "comment": ""
+        },
+        {
+          "fieldName": "fqdn",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "fqdn",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "image_path",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "image_path",
+          "comment": ""
+        },
+        {
+          "fieldName": "name",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "name",
+          "comment": ""
+        },
+        {
+          "fieldName": "pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "ppid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "ppid",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_service",
+          "owner": "car_service"
+        }
+      ],
+      "lineage": "car_service"
+    },
+    {
+      "objectName": "car_thread",
+      "displayName": "thread (create, suspend, terminate, remote_create)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'thread' object. Actions: create, suspend, terminate, remote_create. Populated only for events tagged car_thread \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_tid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_tid",
+          "comment": ""
+        },
+        {
+          "fieldName": "stack_base",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "stack_base",
+          "comment": ""
+        },
+        {
+          "fieldName": "stack_limit",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "stack_limit",
+          "comment": ""
+        },
+        {
+          "fieldName": "start_address",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "start_address",
+          "comment": ""
+        },
+        {
+          "fieldName": "start_function",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "start_function",
+          "comment": ""
+        },
+        {
+          "fieldName": "start_module",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "start_module",
+          "comment": ""
+        },
+        {
+          "fieldName": "start_module_name",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "start_module_name",
+          "comment": ""
+        },
+        {
+          "fieldName": "subprocess_tag",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "subprocess_tag",
+          "comment": ""
+        },
+        {
+          "fieldName": "tgt_pid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "tgt_pid",
+          "comment": ""
+        },
+        {
+          "fieldName": "tgt_tid",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "tgt_tid",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        },
+        {
+          "fieldName": "user_stack_base",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user_stack_base",
+          "comment": ""
+        },
+        {
+          "fieldName": "user_stack_limit",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user_stack_limit",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_thread",
+          "owner": "car_thread"
+        }
+      ],
+      "lineage": "car_thread"
+    },
+    {
+      "objectName": "car_user_session",
+      "displayName": "user_session (interactive, local, lock, login, logout, rdp, reconnect, remote, unlock)",
+      "parentName": "BaseEvent",
+      "comment": "MITRE CAR 'user_session' object. Actions: interactive, local, lock, login, logout, rdp, reconnect, remote, unlock. Populated only for events tagged car_user_session \u2014 see eventtypes.conf.",
+      "fields": [
+        {
+          "fieldName": "action",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "action",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_ip",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_ip",
+          "comment": ""
+        },
+        {
+          "fieldName": "dest_port",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "dest_port",
+          "comment": ""
+        },
+        {
+          "fieldName": "hostname",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "hostname",
+          "comment": ""
+        },
+        {
+          "fieldName": "logon_id",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "logon_id",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_ip",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_ip",
+          "comment": ""
+        },
+        {
+          "fieldName": "src_port",
+          "owner": "BaseEvent",
+          "type": "number",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "src_port",
+          "comment": ""
+        },
+        {
+          "fieldName": "user",
+          "owner": "BaseEvent",
+          "type": "string",
+          "required": false,
+          "multivalue": false,
+          "hidden": false,
+          "editable": true,
+          "displayName": "user",
+          "comment": ""
+        }
+      ],
+      "calculations": [],
+      "constraints": [
+        {
+          "search": "tag=car_user_session",
+          "owner": "car_user_session"
+        }
+      ],
+      "lineage": "car_user_session"
+    }
+  ]
+}

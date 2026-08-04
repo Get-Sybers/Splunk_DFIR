@@ -28,14 +28,14 @@ word, not a test result.
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Ingest | Extract | Data Model |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------:|:-------:|:----------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅     |    ✅   |     ❌     |
-| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅     |    ✅   |     ❌     |
-| [Kape](https://github.com/EricZimmerman/KapeFiles)            | ✅            | json, csv       | ✅     |    ⚠️   |     ❌     |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅     |    ✅   |     ◑     |
+| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅     |    ✅   |     ◑     |
+| [Kape](https://github.com/EricZimmerman/KapeFiles)            | ✅            | json, csv       | ✅     |    ⚠️   |     ◑     |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ⚠️     |    ❌   |     ❌     |
 | [Rekall](https://github.com/google/rekall)                    | ⚠️            | json            | ⚠️     |    ❌   |     ❌     |
 | CSVs                                                          |               | csv             | ✅     |         |     ❌     |
 | JSON                                                          |               | json            | ✅     |         |     ❌     |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     | ⚠️            | evtx            | ⚠️     |    ⚠️   |     ❌     |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/)     | ⚠️            | evtx            | ⚠️     |    ⚠️   |     ◑     |
 | Linux Logs                                                    |               |                 |        |         |            |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |        |         |            |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |        |         |            |
@@ -43,28 +43,22 @@ word, not a test result.
 | [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |        |         |            |
 | [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |        |         |            |
 
-**The Data Model column is empty across the board.** MITRE CAR mapping is the
-project's headline feature and none of it is wired up yet. That single gap is
-what keeps this short of `1.0.0`, and it is why "beta" here means *known and
-documented*, not *feature-complete*.
+**The Data Model column is ◑, not ✅.** `MITRE_CAR_App` now exists: a data
+model generated from MITRE's own `car_data_model.json`, plus the eventtype/tag
+layer and field mappings that populate it from Plaso, Zeek, EvtxECmd and KAPE.
+Six of the nine CAR objects have a source; `driver`, `module` and `thread` have
+none, because nothing dead-box produces driver loads, image loads or thread
+creation — those need Sysmon or a live agent.
+
+**None of it has been run against Splunk.** ◑ means built and internally
+consistent, not working. Turning those into ✅ is what stands between this and
+`1.0.0`, and it needs a real deploy, not more code.
 
 ---
 
 # 🚨 Known Limitations
 
 Things that are broken or unsafe right now.
-
-### 🔻 `scripts/v2/` is a divergent duplicate — use `scripts/`
-
-Its path resolution was **fixed** in this release (all seven scripts now resolve
-the repo root correctly, and `tests/run-checks.sh` asserts it). But it does not
-carry the Splunk fixes: running `scripts/v2/deploy-splunk.sh` still gets you
-indexes that die with the container and a deploy that can report success having
-done nothing.
-
-Keeping it means porting every fix twice. The
-[roadmap](/docs/Ansible-Roadmap.md) recommends deleting it; that call has not
-been made.
 
 ### ✅ The inert Ansible layer has been removed
 
@@ -102,7 +96,7 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 155 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 138 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
@@ -220,7 +214,6 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 - Develop playbook to persist important configs inside container
 
 ### 🔹 **Script consolidation**
-- Resolve the `scripts/` vs `scripts/v2/` split — see [Known Limitations](#-known-limitations).
 
 ---
 

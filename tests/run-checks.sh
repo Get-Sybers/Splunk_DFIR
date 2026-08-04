@@ -52,9 +52,11 @@ fi
 # ------------------------------------------------------------------------------
 group "Repo-root path resolution"
 # ------------------------------------------------------------------------------
-# scripts/v2 shipped four scripts computing $SCRIPT_DIR/.. while living one
-# directory deeper, so they resolved the repo root to <repo>/scripts. Every
-# script that computes REPO_ROOT_DIR must land on the real repo root.
+# The now-deleted scripts/v2 shipped four scripts computing $SCRIPT_DIR/..
+# while living one directory deeper, so they resolved the repo root to
+# <repo>/scripts. Three more in scripts/deprecated/ had the same bug and were
+# only found by this check. Every script that computes REPO_ROOT_DIR must land
+# on the real repo root, whatever depth it lives at.
 while IFS= read -r f; do
     line=$(grep -m1 'REPO_ROOT_DIR=' "$f" 2>/dev/null | sed 's/^[[:space:]]*//')
     [[ -z "$line" ]] && continue
@@ -382,6 +384,77 @@ if grep -rIl -E '(Status:.*Alpha|🧪 Alpha)' --include='*.md' . 2>/dev/null | g
     fail "a document still labels this project Alpha"
 else
     pass "no stale Alpha status labels"
+fi
+
+# ------------------------------------------------------------------------------
+# MITRE CAR data model wiring.
+#
+# The model constrains each object on tag=car_<object>. If tags.conf does not
+# produce that tag, the object is silently empty — which looks identical to
+# "no data ingested yet". These assert the two halves actually meet, and that
+# the model still matches MITRE's own file.
+# ------------------------------------------------------------------------------
+CAR_APP="splunk/etc/apps/MITRE_CAR_App"
+CAR_MODEL="$CAR_APP/default/data/models/MITRE_CAR.json"
+if [[ -f "$CAR_MODEL" ]]; then
+    if python3 - "$CAR_MODEL" "$CAR_APP" car_data_model.json <<'PY' 2>/dev/null
+import json, re, sys
+model_p, app, src_p = sys.argv[1:4]
+model = json.load(open(model_p))
+src   = json.load(open(src_p))
+
+# The generated model must still cover every object and field MITRE declares.
+want = {o['name'][0]: set(o.get('fields', [])) for o in src['objects']}
+have = {o['objectName'][4:]: {f['fieldName'] for f in o['fields']}
+        for o in model['objects']}
+assert set(want) == set(have), f"object drift: {set(want) ^ set(have)}"
+for name, fields in want.items():
+    missing = fields - have[name]
+    assert not missing, f"{name} missing CAR fields: {missing}"
+
+# Every tag the model constrains on must be produced by tags.conf.
+tags = open(f"{app}/default/tags.conf").read()
+produced = {m.group(1) for m in re.finditer(r'^(car_\w+)\s*=\s*enabled', tags, re.M)}
+needed   = {o['constraints'][0]['search'].split('=', 1)[1] for o in model['objects']}
+orphan   = produced - needed
+assert not orphan, f"tags.conf produces tags no object uses: {orphan}"
+
+# Coverage is the headline claim ("6 of 9 objects have a source"), and
+# swapping which object gets tagged is structurally legal — so it would
+# regress silently. Pinned: change this set deliberately when adding or
+# losing a source, and update the app README's coverage table with it.
+EXPECTED = {'car_flow', 'car_user_session', 'car_process',
+            'car_service', 'car_registry', 'car_file'}
+assert produced == EXPECTED, (
+    f"CAR coverage changed: +{produced - EXPECTED} -{EXPECTED - produced}. "
+    "Update EXPECTED here and the coverage table in the app README.")
+
+# Every tagged eventtype must be declared.
+ets  = {m.group(1) for m in re.finditer(r'^\[eventtype=(\w+)\]', tags, re.M)}
+decl = set(re.findall(r'^\[(\w+)\]',
+           open(f"{app}/default/eventtypes.conf").read(), re.M))
+assert ets <= decl, f"tags.conf references undeclared eventtypes: {ets - decl}"
+print(len(needed & produced))
+PY
+    then
+        n=$(python3 -c "
+import json,re,sys
+m=json.load(open('$CAR_MODEL'))
+t=open('$CAR_APP/default/tags.conf').read()
+p={x.group(1) for x in re.finditer(r'^(car_\w+)\s*=\s*enabled',t,re.M)}
+print(len(p))")
+        pass "CAR model matches car_data_model.json; $n/9 objects have a source"
+    else
+        fail "MITRE CAR model/tags/eventtypes are inconsistent — see the app README"
+    fi
+    # The model is generated. A hand-edit would be silently overwritten.
+    if grep -q 'Do not edit by hand' "$CAR_MODEL"; then
+        pass "CAR model is marked generated"
+    else
+        fail "CAR model lost its generated marker"
+    fi
+else
+    fail "MITRE CAR data model is missing"
 fi
 
 # Every app directory must have an app.conf. Splunk_TA_kape did not — it was a

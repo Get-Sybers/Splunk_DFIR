@@ -25,7 +25,6 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 
 | Path                  | Status                                                                                                   |
 |-----------------------|----------------------------------------------------------------------------------------------------------|
-| `scripts/v2/`         | 🔻 **Unsupported divergent duplicate.** Paths were fixed in the rewrite, but it lacks the Splunk persistence, collision and readiness fixes — running it gets the old behaviour. Not part of the release. |
 | `scripts/deprecated/` | Superseded. Kept for reference only. `process-log2timeline-ALL.sh` here is replaced by `process-log2timeline-Dynamic.sh`. |
 
 ---
