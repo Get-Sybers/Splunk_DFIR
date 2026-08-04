@@ -96,7 +96,7 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 140 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 142 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
@@ -290,7 +290,7 @@ verifies itself at run time rather than relying on assertions here.
 
 | # | Defect | Effect | Fix |
 |:--|:---|:---|:---|
-| 1 | `splunk/var` mounted at `/data/var`; `SPLUNK_DB` never redirected | Splunk reads `/opt/splunk/var`, which wasn't mounted — **every index and the fishbucket died with the container** | Named Docker volume at `/opt/splunk/var`; purge removes it explicitly |
+| 1 | `splunk/var` mounted at `/data/var`; `SPLUNK_DB` never redirected | Splunk reads `/opt/splunk/var`, which wasn't mounted — **every index and the fishbucket died with the container**. Only the mount *point* was wrong: it was the script's one read-write mount, so a repo-local index directory was clearly the intent | Mounted at `/opt/splunk/var` — a named volume by default (Docker seeds ownership from the image), or a host directory via `--var-dir`, which restores the original design. Purge handles both |
 | 2 | `host = extracted_host` written as a literal | Every event labelled `extracted_host` | Removed; `[l2t:csv]` already sets host via `TRANSFORMS-set_host` |
 | 3 | Four copy tasks gated on a single `limits.conf` stat | Editing `indexes.conf` or `inputs.conf` was a silent no-op | Per-file stat; mode `0755`→`0644` |
 | 4 | No `set -e`, no `docker rm` before `docker run --name` | A second run collided, then greped the **old** container's logs and exited 0 having deployed nothing | Refuses to collide; polls by container ID; detects a container that dies mid-startup; 600s configurable timeout |

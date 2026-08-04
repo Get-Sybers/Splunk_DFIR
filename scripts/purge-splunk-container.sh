@@ -6,13 +6,18 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 SPLUNK_CONTAINER="splunk-enterprise"
 
-# Index data lives in this named Docker volume (see deploy-splunk.sh). It must
-# match SPLUNK_VAR_VOLUME there, or the purge silently leaves every index behind.
+# Index data lives in a named Docker volume by default. These must match
+# deploy-splunk.sh, or the purge silently leaves every index behind.
 SPLUNK_VAR_VOLUME="${SPLUNK_VAR_VOLUME:-splunk-dfir-var}"
 
-# Legacy host directory. Kept only so an existing checkout that still has data
-# here gets cleaned up too; nothing writes to it any more.
-SPLUNK_VAR_DIR="$(realpath "$REPO_ROOT_DIR/splunk/var" 2>/dev/null || echo "")"
+# If the deploy was run with --var-dir / SPLUNK_VAR_DIR, indexes are in a host
+# directory instead. Set the same value here and both get cleaned.
+SPLUNK_VAR_DIR="${SPLUNK_VAR_DIR:-}"
+
+# The repo's own splunk/var — the location this project was originally built
+# around. Always checked, so a checkout that used --var-dir ./splunk/var (or the
+# pre-fix layout) gets cleaned up whether or not SPLUNK_VAR_DIR is set here.
+LEGACY_VAR_DIR="$(realpath "$REPO_ROOT_DIR/splunk/var" 2>/dev/null || echo "")"
 
 ################################################################################
 echo ""
@@ -74,11 +79,21 @@ else
     echo "   ℹ️ Volume does not exist (nothing to remove)."
 fi
 
-# Legacy: older deployments bind-mounted splunk/var. Clean it if it holds data.
-if [[ -n "$SPLUNK_VAR_DIR" && -d "$SPLUNK_VAR_DIR" ]] && [[ -n "$(ls -A "$SPLUNK_VAR_DIR" 2>/dev/null)" ]]; then
-    echo -e "\n🧹 Clearing legacy index directory: $SPLUNK_VAR_DIR..."
-    sudo rm -rf "${SPLUNK_VAR_DIR:?}"/*
-fi
+# Host index directories: whatever --var-dir was pointed at, plus the repo's own
+# splunk/var. Deleting CONTENTS rather than the directory — it may be a mount
+# point, and removing it would change where indexes land next deploy.
+cleared_dirs=""
+for d in "$SPLUNK_VAR_DIR" "$LEGACY_VAR_DIR"; do
+    [[ -n "$d" && -d "$d" ]] || continue
+    case "$cleared_dirs" in *"|$d|"*) continue ;; esac   # both may point at the same path
+    cleared_dirs="$cleared_dirs|$d|"
+    [[ -n "$(ls -A "$d" 2>/dev/null)" ]] || continue
+    echo -e "\n🧹 Clearing index directory: $d..."
+    # .gitkeep is tracked — it is what keeps splunk/var in the repo skeleton.
+    sudo find "${d:?}" -mindepth 1 -maxdepth 1 -not -name '.gitkeep' \
+        -exec rm -rf {} + 2>/dev/null || true
+    echo "   ✅ Emptied."
+done
 
 # Remove exactly the anonymous volumes this container owned — captured above,
 # while the container still existed.

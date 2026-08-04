@@ -81,7 +81,7 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs 140 static checks in CI
+- **No pipeline tests.** `./tests/run-checks.sh` runs 142 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."

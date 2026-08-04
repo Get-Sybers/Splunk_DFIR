@@ -13,7 +13,7 @@ script names, sourcetypes, field names, and app layouts included.
 ### To be resolved before `0.2.0-beta`
 
 - MITRE CAR field mapping — the headline feature, currently unimplemented.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 140 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 142 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -90,7 +90,7 @@ release fixes that. **It does not change pipeline behaviour.**
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 140 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 142 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
@@ -323,6 +323,22 @@ when someone ran it. They are listed first, because how they got in matters.
   `(command -v x || echo skip) && run x` — so `run x` executed whether or not
   the tool was present. Rewritten as an explicit `if` block.
 
+- **The persistence fix had quietly dropped the original storage design.**
+  Every other mount in this project is staged under `/data/` and copied into
+  place by a playbook, which is why they are all `:ro`. `splunk/var` was the one
+  read-write mount — index data was meant to land in the repo, and
+  `splunk/.gitignore` still carries a `var/**` + `!var/.gitkeep` block for
+  exactly that. The bug was only the mount *point*: `/data/var` instead of
+  `/opt/splunk/var`.
+
+  Replacing it with a named volume fixed persistence but moved indexes into
+  Docker's internal storage, out of sight and onto whichever disk holds
+  `/var/lib/docker` — which on a workstation indexing a large case may not be
+  the one with room. `--var-dir PATH` / `SPLUNK_VAR_DIR` restores the host
+  directory as an option (`--var-dir ./splunk/var` for the original layout).
+  The volume stays the default because Docker seeds it from the image with the
+  right ownership; in `--var-dir` mode the deploy reads the splunk UID from the
+  image and chowns the directory rather than letting startup fail obscurely.
 - **Splunk kept no persistent state.** `deploy-splunk.sh` mounted `splunk/var`
   at `/data/var`, which Splunk never reads, while its real data directory
   (`$SPLUNK_DB` → `/opt/splunk/var`) was not mounted at all — so every index and
