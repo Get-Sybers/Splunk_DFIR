@@ -155,6 +155,37 @@ else
     fail "--purge does not remove the index volume"
 fi
 
+# The container holds evidence: it must not be reachable from the LAN, and must
+# not be able to reach out. Both defaults have to stay put.
+if grep -q 'SPLUNK_BIND_ADDR:-127.0.0.1' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "ports bind to localhost by default"
+else
+    fail "deploy-splunk.sh does not default to binding 127.0.0.1"
+fi
+if grep -q 'SPLUNK_ISOLATED:-1' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "network isolation on by default"
+else
+    fail "deploy-splunk.sh does not default to an isolated network"
+fi
+if grep -q 'docker network create --internal' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "isolated network is created with --internal"
+else
+    fail "isolation network is not created --internal (would not block egress)"
+fi
+# A bare `-p 8000:8000` binds 0.0.0.0 — every interface. Every publish must be
+# address-qualified.
+if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null; then
+    fail "deploy-splunk.sh publishes a port without a bind address (binds 0.0.0.0)"
+else
+    pass "all published ports are address-qualified"
+fi
+# Isolation is asserted at runtime, not assumed.
+if grep -q 'ISOLATION_VERDICT' scripts/deploy-splunk.sh 2>/dev/null; then
+    pass "deploy verifies isolation at runtime"
+else
+    fail "deploy does not verify isolation actually holds"
+fi
+
 # ------------------------------------------------------------------------------
 group "Third-party app installation"
 # ------------------------------------------------------------------------------

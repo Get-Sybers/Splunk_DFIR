@@ -80,6 +80,16 @@ There is still no inventory, no `ansible.cfg`, no roles, and `ansible-playbook`
 is never run on the host — see [docs/Ansible.md](/docs/Ansible.md) and the
 [roadmap](/docs/Ansible-Roadmap.md).
 
+### ✅ Network isolation
+
+The container ran on the default bridge with ports bound to `0.0.0.0` and full
+outbound access. It now attaches to an `--internal` network and publishes on
+`127.0.0.1` only, and the deploy **tests egress from inside the container** and
+fails if isolation doesn't hold. Not an airgap — see [SECURITY.md](/SECURITY.md).
+
+⚠️ Unverified at runtime like the rest of the deploy changes; that is precisely
+why the check is built into the deploy rather than asserted here.
+
 ### 🔻 Other blockers
 
 - **No pipeline tests.** `tests/run-checks.sh` runs 86 static checks, but
