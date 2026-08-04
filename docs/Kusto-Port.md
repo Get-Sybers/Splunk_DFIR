@@ -151,14 +151,16 @@ later stage is needed to get value from an earlier one.
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
 | **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; KAPE, Velociraptor and Rekall are not | 2 |
 | **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions, matching `MITRE_CAR_App` | 3 |
-| **5** | ✅ Docs, 17 checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
+| **5** | ✅ Docs, 21 checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
 
 Stated plainly so it is not mistaken for working:
 
-- **KAPE, Velociraptor and Rekall are not ingested.** Their tables, mappings
-  and CAR functions exist, but the loader does not populate them. Each needs an
+- **KAPE, Velociraptor and Rekall are not ingested.** Their tables and CAR
+  functions exist and `KapeJson`/`VelociraptorJson`/`RekallJson` have ingestion
+  mappings, but **`KapeCsv` has no mapping** and the loader populates none of
+  them. Each needs an
   `Artefact`/`Plugin` column derived from the source path, and `.ingest into`
   cannot inject a constant column — that needs either an ingest-time property
   or a post-ingest update, and picking one without a running emulator to test
@@ -167,10 +169,25 @@ Stated plainly so it is not mistaken for working:
   `CarFile()` return nothing until this is finished.
 - **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
   `car_flow` needs. The generic `Zeek` table exists for the rest.
-- **Nothing has been run against a real emulator.** No Docker here. The scripts
-  were exercised against a fake HTTP endpoint that validates the request JSON
-  and returns realistic success and error documents, which proves the request
-  shapes and error handling — not that Kusto accepts the KQL.
+- **Nothing has been run against a real emulator.** No Docker here.
+
+  An earlier version of this document claimed the scripts were "verified"
+  against a fake HTTP endpoint. That was an overclaim: the fake returned
+  success for everything, so it proved the request shapes and the KQL surviving
+  JSON escaping, and validated nothing about semantics. A code review then
+  found a dozen real defects the fake could never have surfaced — including
+  `kusto_scalar` sending control commands to the query endpoint, which made a
+  perfect schema apply report failure every time.
+
+  What IS now tested, behaviourally, in `tests/run-checks.sh`: `kusto_failed`
+  against five real response shapes including a partially-failed
+  `.execute database script`; and the Zeek column-order guard run against three
+  fixtures (correct, swapped, headerless). Everything else remains unverified.
+
+- **`pid` conversion is unverified.** Windows writes PIDs as hex strings and
+  KQL has no base-16 string parser. `pid_hex` is always correct; `pid` relies on
+  `tolong()` accepting a `0x` prefix, which is untested. See the note in
+  `40-mitre.kql`.
 
 ### Stage 1 detail
 

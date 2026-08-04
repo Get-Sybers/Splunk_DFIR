@@ -29,18 +29,22 @@
     DestPort:      int,
     Proto:         string,
     Service:       string,
-    Duration:      real,
-    OrigBytes:     long,
-    RespBytes:     long,
+    Duration:      string,
+    OrigBytes:     string,
+    RespBytes:     string,
     ConnState:     string,
-    LocalOrig:     bool,
-    LocalResp:     bool,
-    MissedBytes:   long,
+    // Zeek writes T/F for booleans and '-' for unset, neither of which Kusto's
+    // csv parser accepts as bool/numeric — they would silently become null.
+    // Kept as strings and converted in the views below, where the sentinel is
+    // visible rather than indistinguishable from "no data".
+    LocalOrig:     string,
+    LocalResp:     string,
+    MissedBytes:   string,
     History:       string,
-    OrigPkts:      long,
-    OrigIpBytes:   long,
-    RespPkts:      long,
-    RespIpBytes:   long,
+    OrigPkts:      string,
+    OrigIpBytes:   string,
+    RespPkts:      string,
+    RespIpBytes:   string,
     TunnelParents: string,
     SourceFile:    string
 )
@@ -87,7 +91,23 @@
 
 //=============================================================================
 // Views
+//
+// ZeekTyped converts Zeek's TSV sentinels once, so nothing downstream has to
+// remember that '-' means unset and 'T'/'F' mean true/false.
 //=============================================================================
+.create-or-alter function
+with (docstring = "ZeekConn with Zeek's '-' and T/F sentinels converted to real types", folder = "Views")
+ZeekTyped() {
+    ZeekConn
+    | extend
+        DurationSec  = todouble(iff(Duration    == "-", "", Duration)),
+        OrigBytesN   = tolong(iff(OrigBytes     == "-", "", OrigBytes)),
+        RespBytesN   = tolong(iff(RespBytes     == "-", "", RespBytes)),
+        OrigPktsN    = tolong(iff(OrigPkts      == "-", "", OrigPkts)),
+        RespPktsN    = tolong(iff(RespPkts      == "-", "", RespPkts)),
+        LocalOrigB   = iff(LocalOrig == "-", bool(null), LocalOrig == "T"),
+        LocalRespB   = iff(LocalResp == "-", bool(null), LocalResp == "T")
+}
 .create-or-alter function
 with (docstring = "Completed TCP connections (conn_state SF)", folder = "Views")
 ZeekCompletedConnections() {

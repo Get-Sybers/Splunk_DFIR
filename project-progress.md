@@ -96,7 +96,7 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 165 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs 169 static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
