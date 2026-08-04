@@ -13,15 +13,22 @@ script names, sourcetypes, field names, and app layouts included.
 ### To be resolved before `0.2.0-beta`
 
 - MITRE CAR field mapping — the headline feature, currently unimplemented.
-- Automated tests. Nothing in the repository is verified automatically.
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 129 static checks, but
+  nothing exercises the pipeline. Every defect that actually bit — including the
+  three this release introduced — was a runtime failure that static checks could
+  not have caught.
+- **Runtime verification of this release's fixes.** None have been executed;
+  tracked as issues #5, #6, #8, #9 and #11.
 - **"Ansible it all"** — drive the whole pipeline through Ansible rather than
-  injecting three playbooks into the container at boot. Staged plan in
-  [docs/Ansible-Roadmap.md](docs/Ansible-Roadmap.md). Note this requires
-  publishing port 8089 first (see Known issues below).
-- `scripts/v2/` path-resolution bug (see `0.1.0-alpha` notes below).
-- Redistribution rights for the two bundled Splunk apps.
-- Whether to delete the 94 never-executed vendored Ansible files, which would
-  drop the project's largest third-party obligation at no functional cost.
+  injecting playbooks into the container at boot. Staged plan in
+  [docs/Ansible-Roadmap.md](docs/Ansible-Roadmap.md), which narrows the scope to
+  Splunk lifecycle and config. Note this requires publishing port 8089 first
+  (see Known issues below).
+- **Delete `scripts/v2/`.** Its path resolution was corrected in
+  `0.1.0-alpha`, but it remains a divergent duplicate carrying none of the
+  persistence, collision or readiness fixes — so running it still gets the old
+  broken behaviour.
+- Whether to pin the Splunk image tag (see Known issues below).
 
 ## [0.1.0-alpha] - 2026-08-03
 
@@ -45,11 +52,12 @@ release fixes that. **It does not change pipeline behaviour.**
   release.
 - `CHANGELOG.md` — this file.
 - `docs/Ansible.md` — documents how Ansible actually works in this project.
-  It runs *inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS`; there is
-  no inventory, no roles, and `ansible-playbook` is never run on the host. Of
-  the 101 files under `ansible/`, only the 5 in `playbooks/` are mounted, only 3
-  of those are wired in, and exactly 2 are original work. The 94 files in
-  `tasks/` and `default_playbooks/` are never executed.
+  It runs *inside* the Splunk container via `SPLUNK_ANSIBLE_PRE_TASKS` and
+  `SPLUNK_ANSIBLE_POST_TASKS`; there is no inventory, no roles, and
+  `ansible-playbook` is never run on the host. The audit that prompted this
+  found that of the 101 files then under `ansible/`, only the 5 in `playbooks/`
+  were mounted and only 3 were wired in — the 94 files in `tasks/` and
+  `default_playbooks/` were never executed. See Removed.
 - `docs/Ansible-Roadmap.md` — staged plan for the "Ansible it all" beta target.
 - **Windows Event Log ingestion** — `scripts/process-evtx-EvtxECmd.sh` and the
   `EvtxECmd_App` Splunk app. Splunk cannot read binary `.evtx`, and part of the
@@ -76,13 +84,13 @@ release fixes that. **It does not change pipeline behaviour.**
 
   **None of this has been run against a real event log.** No Windows, no `.evtx`
   sample, no .NET, no Splunk in the environment it was written in.
-- `ansible/playbooks/Install-ThirdParty-Apps.yml` — installs operator-supplied
-  Splunk app packages at container start, then applies project overrides into
-  each app's `local/` directory rather than editing `default/`, so they survive
-  an app upgrade. Overlay lives in `splunk/etc/apps_local/<App>/local/`.
+- `ansible/playbooks/Apply-App-Overrides.yml` — applies project overrides into
+  each installed app's `local/` directory rather than editing `default/`, so
+  they survive an app upgrade. Overlay lives in
+  `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
+  for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 90 static checks at the time of writing (124 now) covering shell
-  syntax, shellcheck, repo-root path
+  kind. 129 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
@@ -119,7 +127,7 @@ release fixes that. **It does not change pipeline behaviour.**
   `"license": {"name": null, "text": null, "uri": null}` in their
   `app.manifest`. They are now supplied by the operator: Splunkbase packages go
   in `data_store/dependencies/splunk_apps/` and are installed into the container
-  at deploy time by the new `Install-ThirdParty-Apps.yml` playbook.
+  at deploy time via `SPLUNK_APPS_URL`.
 
   Installation is offline-first — it reads local package files and never
   reaches the network, because Splunkbase requires an authenticated session and
@@ -131,7 +139,7 @@ release fixes that. **It does not change pipeline behaviour.**
   *BSL-host_triage* dashboard error. `deploy-splunk.sh` now checks for both
   before deploying and names the specific consequence of continuing without each.
 
-- **`ansible/` went from 101 files to 3.** An audit established that nothing in
+- **`ansible/` went from 101 files to 4.** An audit established that nothing in
   the repository executed 94 of them: only `ansible/playbooks/` is bind-mounted
   into the container, and the `splunk/splunk` image already ships its own copy
   of splunk-ansible internally. Removed `ansible/tasks/` (79 files),
@@ -140,9 +148,9 @@ release fixes that. **It does not change pipeline behaviour.**
   referenced) and `disable_popups.yml` (superseded by the
   `SPLUNK_DISABLE_POPUPS` environment variable).
 
-  What remains is three playbooks, all wired as pre-tasks, all passing
-  `ansible-lint` at its `production` profile. The pipeline is unaffected, since
-  nothing ran any of the removed files.
+  What remains is four playbooks — three pre-tasks and one post-task — all
+  wired in and all passing `ansible-lint` at its `production` profile. The
+  pipeline is unaffected, since nothing ran any of the removed files.
 
   This also removed **the project's largest third-party obligation** at zero
   functional cost. splunk-ansible attribution now covers a single modified file
@@ -158,22 +166,25 @@ release fixes that. **It does not change pipeline behaviour.**
 
   ```bash
   ./scripts/deploy-splunk.sh                # --persist (default): keep indexes
-  ./scripts/deploy-splunk.sh --purge        # wipe indexes, start clean
+  ./scripts/deploy-splunk.sh --purge        # wipe indexes, THEN REDEPLOY
+  ./scripts/deploy-splunk.sh --purge-only   # wipe indexes and STOP
   ./scripts/deploy-splunk.sh --purge --yes  # unattended
   ./scripts/deploy-splunk.sh --help
   ```
 
-  Also `--ask`, `--no-replace`, `--skip-chmod`, `-y/--yes`, `-h/--help`. Flags
-  win over the equivalent environment variables.
+  Also `--ask`, `--no-replace`, `--skip-chmod`, `--isolated`, `--no-isolated`,
+  `--bind ADDR`, `-y/--yes`, `-h/--help`. Flags win over the equivalent
+  environment variables.
 
-  `--purge` deletes the index volume **after** the container is removed, since
-  Docker refuses to remove a volume still attached to one. It confirms unless
-  `--yes`, and refuses outright when there is no terminal to confirm on rather
-  than destroying evidence indexes unprompted. Raw and processed evidence on
-  disk is untouched — only the Splunk indexes and fishbucket go.
+  `--purge` is a flag on the *deploy* script, so it wipes and then deploys.
+  `--purge-only` wipes and exits, for when you just want the data gone — as
+  does `scripts/purge-splunk-container.sh`.
 
-  `scripts/purge-splunk-container.sh` remains, for purging without redeploying,
-  and now points at the flag.
+  Either way the index volume is deleted **after** the container is removed,
+  since Docker refuses to remove a volume still attached to one. It confirms
+  unless `--yes`, and refuses outright when there is no terminal to confirm on
+  rather than destroying evidence indexes unprompted. Raw and processed
+  evidence on disk is untouched — only the Splunk indexes and fishbucket go.
 - **Redeploying the Splunk container is now the default path, not an
   exception.** `deploy-splunk.sh` removes and rebuilds an existing container
   without prompting. The previous prompt defaulted to *No*, so a workflow that
@@ -225,19 +236,29 @@ release fixes that. **It does not change pipeline behaviour.**
   anyone on the LAN could reach the UI — with unrestricted outbound access. On
   a workstation holding evidence, both are wrong by default.
 
-  Now: attached to an `--internal` Docker network (no route off the host), with
-  ports published on `127.0.0.1` only. `--no-isolated` and `--bind ADDR` opt out
-  deliberately.
+  Now: attached to a dedicated Docker bridge with **IP masquerade disabled**, so
+  outbound traffic leaves with an unroutable source address and gets no reply,
+  with ports published on `127.0.0.1` only. `--no-isolated` and `--bind ADDR`
+  opt out deliberately.
 
-  **The deploy proves it rather than claiming it.** After the container is up it
-  opens a TCP connection from inside to a public address; if that succeeds while
-  isolation was requested, the deploy fails loudly instead of reporting a
-  control that isn't holding. It also reads back the real port bindings, because
-  Docker's rules sit ahead of the host firewall and `ufw` won't catch a wrong
-  bind address.
+  ⚠️ **This was first implemented with `--internal`, which broke the UI.** An
+  internal network removes external connectivity in *both* directions, so
+  published ports stop forwarding and Splunk becomes unreachable on
+  `localhost:8000` — see Fixed. The masquerade approach is deliberately weaker:
+  it breaks return traffic rather than dropping packets, so a host with its own
+  forwarding rules can still let traffic out. For a hard guarantee, add a
+  `DOCKER-USER` firewall rule on the network's subnet.
 
-  If the network already exists but isn't `Internal`, the deploy refuses rather
-  than silently attaching to it.
+  **The deploy proves it rather than claiming it, in both directions.** It opens
+  a TCP connection from inside the container to a public address and warns if
+  that succeeds, and it retries the published port from the host and **fails the
+  deploy** if Splunk doesn't answer. It also reads back the real port bindings,
+  because Docker's rules sit ahead of the host firewall and `ufw` won't catch a
+  wrong bind address.
+
+  Egress failure warns rather than aborting: a weakened control is not a reason
+  to leave the operator without a working Splunk. Ingress failure is fatal,
+  because that deploy is unusable.
 
   Not an airgap, and documented as such: containers on that network can still
   reach each other and host services on the bridge address.
@@ -252,6 +273,28 @@ release fixes that. **It does not change pipeline behaviour.**
   skeleton files remain tracked and that the directory structure survives.
 
 ### Fixed
+
+Three of these were introduced by this release's own changes and found only
+when someone ran it. They are listed first, because how they got in matters.
+
+- **The Splunk UI was unreachable on `localhost:8000`.** The network isolation
+  above was first built with `docker network create --internal`, on the
+  assumption that published ports would keep working. They do not — an internal
+  network has no external connectivity in either direction, so the container was
+  isolated from the host as well as from the internet.
+
+  It shipped because **the deploy's isolation check tested egress and only
+  egress.** Isolation is a two-directional property verified in one direction,
+  so the deploy printed `✅ isolation holds` over a Splunk nobody could reach.
+  The fix is the mechanism swap above *plus* an ingress check; the missing check
+  is the actual defect. A redeploy detects the bad network and recreates it.
+- **`--purge` redeployed the container.** It is a flag on the deploy script, so
+  wiping the indexes was always followed by a fresh deploy — never stated, and
+  not what "purge" implies. Added `--purge-only`, which wipes and exits.
+- **A CI step ran unconditionally.** Written as
+  `command -v x || echo skip && run x`, which shell precedence groups as
+  `(command -v x || echo skip) && run x` — so `run x` executed whether or not
+  the tool was present. Rewritten as an explicit `if` block.
 
 - **Splunk kept no persistent state.** `deploy-splunk.sh` mounted `splunk/var`
   at `/data/var`, which Splunk never reads, while its real data directory
@@ -320,7 +363,17 @@ release fixes that. **It does not change pipeline behaviour.**
   uses the `splunk_api` module — a prerequisite for the beta plan.
 - Processing scripts `chmod -R 777` their working directories.
 - `Splunk_TA_kape` is a stub containing only `transforms.conf`.
-- Raw EVTX files are visible to Splunk but will not ingest.
+- **The EVTX lane is built but unverified.** `process-evtx-EvtxECmd.sh` and
+  `EvtxECmd_App` have never been run against a real event log — no Windows, no
+  `.evtx` sample, no .NET in the environment they were written in.
+- **The image is `splunk/splunk:latest` and the documented upgrade path does
+  not apply.** Splunk requires both `/opt/splunk/var` and `/opt/splunk/etc`
+  mounted plus `SPLUNK_UPGRADE=true` to upgrade an instance; this project mounts
+  only `var` by design, so `etc` is rebuilt drift-free from the repo. If
+  `latest` rolls to a new version, a redeploy puts newer Splunk against an
+  existing index volume outside the supported procedure. Pinning the tag would
+  make that deliberate — deferred, because it is a decision about which version
+  you want to run.
 
 [Unreleased]: https://github.com/Get-Sybers/Splunk_DFIR/compare/v0.1.0-alpha...HEAD
 [0.1.0-alpha]: https://github.com/Get-Sybers/Splunk_DFIR/releases/tag/v0.1.0-alpha
