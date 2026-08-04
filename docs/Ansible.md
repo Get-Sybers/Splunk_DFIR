@@ -11,18 +11,22 @@ node on your machine.
 
 The `splunk/splunk` Docker image ships its own embedded copy of
 [splunk-ansible](https://github.com/splunk/splunk-ansible) and runs it at
-container start. This project hooks into that by passing extra playbooks through
-the image's `SPLUNK_ANSIBLE_PRE_TASKS` environment variable:
+container start. This project hooks into that through the image's own
+environment variables — it does not run Ansible itself:
 
 ```
 scripts/deploy-splunk.sh
   │
-  ├── bind-mounts  ansible/playbooks/  ->  /data/ansible/playbooks:ro
+  ├── bind-mounts  ansible/playbooks/                -> /data/ansible/playbooks:ro
+  ├── bind-mounts  data_store/dependencies/splunk_apps -> /data/dependencies/splunk_apps:ro
   │
-  └── sets  SPLUNK_ANSIBLE_PRE_TASKS=file:///data/ansible/playbooks/<playbook>.yml,...
+  ├── sets  SPLUNK_ANSIBLE_PRE_TASKS  = file:///data/ansible/playbooks/<pb>.yml,...
+  ├── sets  SPLUNK_APPS_URL           = /data/dependencies/splunk_apps/<pkg>.tgz,...
+  └── sets  SPLUNK_ANSIBLE_POST_TASKS = file:///data/ansible/playbooks/<pb>.yml
         │
-        └── splunk/splunk entrypoint runs its OWN splunk-ansible,
-            executing our playbooks as pre-tasks before Splunk starts
+        └── splunk/splunk entrypoint runs its OWN splunk-ansible:
+              pre_tasks  ->  provisioning role  ->  post_tasks
+                             (installs SPLUNK_APPS_URL here)
 ```
 
 `deploy-splunk.sh` then blocks until it sees
@@ -35,7 +39,8 @@ run on the host.
 
 ## What's actually in `ansible/`
 
-Three files. All three are mounted into the container and wired as pre-tasks.
+Four playbooks, all mounted into the container and all wired in — three as
+pre-tasks, one as a post-task.
 
 | Playbook | Hook | Origin | Purpose |
 |:---|:---|:---|:---|
@@ -62,8 +67,8 @@ this works with the container's network isolation in place.
 An earlier version of this project used a custom `Install-ThirdParty-Apps.yml`
 for the same job. It was removed: the image already did it, better.
 
-All three pass `ansible-lint` at its `production` profile. `tests/run-checks.sh`
-enforces that.
+All four pass `ansible-lint` at its `production` profile, and
+`tests/run-checks.sh` enforces both that and the hook wiring.
 
 ### What used to be here
 
@@ -104,9 +109,9 @@ This project **redeploys the container every time**, so `/opt/splunk/etc` is
 rebuilt on every deploy — it lives on the container's ephemeral layer, not in
 the index volume.
 
-That makes these three playbooks the entire mechanism by which configuration
-reaches Splunk. They are not a convenience; without them a redeployed container
-comes up with no apps and none of this project's confs.
+That makes these playbooks, plus `SPLUNK_APPS_URL`, the entire mechanism by
+which configuration reaches Splunk. They are not a convenience; without them a
+redeployed container comes up with no apps and none of this project's confs.
 
 It also means:
 
