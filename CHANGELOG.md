@@ -81,7 +81,8 @@ release fixes that. **It does not change pipeline behaviour.**
   each app's `local/` directory rather than editing `default/`, so they survive
   an app upgrade. Overlay lives in `splunk/etc/apps_local/<App>/local/`.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 90 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 90 static checks at the time of writing (124 now) covering shell
+  syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.
