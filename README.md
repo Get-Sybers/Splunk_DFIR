@@ -73,7 +73,7 @@ tests, and interfaces will change without notice.
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek → Splunk | ✅ Works | ISO8601 timestamps preserved. Requires operator-supplied `Splunk_TA_zeek` — see [Before You Run Anything](#before-you-run-anything) |
 | KAPE → Splunk | ⚠️ Partial | CSV/JSON ingest and timestamps map correctly. `Splunk_TA_kape` is a stub — `transforms.conf` only, no `app.conf` or `props.conf` |
-| Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md) |
+| Splunk container deploy | ✅ Works | Dynamic path resolution. Configured by 3 playbooks injected into the container's own Ansible — [not a host-side Ansible setup](/docs/Ansible.md). Runs isolated: no egress, localhost-only |
 | Rekall / Velociraptor ingest | ⚠️ Partial | Ingest apps exist; field extraction incomplete. Rekall upstream is archived |
 | **MITRE CAR field mapping** | ❌ **Not delivered** | `car_data_model.json` and a data model conf exist. **No actual mapping is wired up.** This is the project's headline feature and it is not done |
 | Raw EVTX ingest | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh` + `EvtxECmd_App` map EvtxECmd output onto the Splunk Add-on for Windows field names. There was previously no monitor stanza at all, and Splunk cannot read binary `.evtx` regardless. **Never run against a real event log** |
@@ -81,7 +81,7 @@ tests, and interfaces will change without notice.
 
 ### Known limitations
 
-- **No pipeline tests.** `./tests/run-checks.sh` now runs 90 static checks
+- **No pipeline tests.** `./tests/run-checks.sh` runs 124 static checks in CI
   (shell syntax, shellcheck, path resolution, Splunk conf sanity, evidence
   gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
   Every "✅" above still means "worked when the author last ran it by hand."
@@ -114,7 +114,7 @@ tests, and interfaces will change without notice.
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
 
-Four things that will bite you otherwise:
+Five things that will bite you otherwise:
 
 1. **KAPE is not free for commercial use.** KAPE Solo Edition is free for
    personal, educational, and law-enforcement use only. Using the KAPE
@@ -129,7 +129,11 @@ Four things that will bite you otherwise:
    permitting redistribution. Download them from Splunkbase into
    `data_store/dependencies/splunk_apps/` and they install automatically at
    deploy. **Without `Splunk_TA_zeek`, Zeek logs ingest unparsed.**
-4. **This handles real evidence.** `data_store/` is now gitignored
+4. **The Splunk container is isolated by default** — no outbound network access,
+   and reachable only from this machine. `--no-isolated` and `--bind 0.0.0.0`
+   opt out; think before you do on a box holding evidence. Not an airgap — see
+   [SECURITY.md](/SECURITY.md).
+5. **This handles real evidence.** `data_store/` is now gitignored
    deny-by-default, so unknown and extensionless formats are covered. It is
    still a safety net, not a guarantee — check `git status` before you commit,
    every time. (Until `v0.1.0-alpha` this was an extension blocklist, and

@@ -140,8 +140,8 @@ the best return, and none of it is Ansible:
    behaviour. Delete rather than maintain two copies.
 3. ✅ **Delete the 94 inert vendored files.** Done — `ansible/` is now 3 wired
    playbooks, and the project's largest third-party obligation went with them.
-4. **Add a pipeline test suite.** `tests/run-checks.sh` now provides 90 static
-   checks, but nothing exercises the pipeline. Idempotency is the entire value
+4. **Add a pipeline test suite.** `tests/run-checks.sh` provides 124 static
+   checks in CI, but nothing exercises the pipeline. Idempotency is the entire value
    proposition of the Ansible work and remains unfalsifiable without one.
 
 ## Staging
