@@ -1,0 +1,27 @@
+// Database: memory — Rekall
+//
+// Rekall output is per-plugin and wildly inconsistent: pslist, netscan, malfind
+// and the rest share almost no columns. The Splunk side never completed field
+// extraction for it either (project-progress.md marks it ⚠️ with extraction ❌).
+//
+// Semi-structured is the honest representation here rather than a guess at a
+// common schema. Rekall upstream is archived, so this is unlikely to grow.
+
+.create-merge table RekallJson (
+    Plugin:     string,
+    SourceFile: string,
+    Record:     dynamic
+)
+
+.create-or-alter table RekallJson ingestion json mapping "RekallJsonMapping"
+```[
+  {"Column":"Record", "Properties":{"Path":"$"}}
+]```
+
+.create-or-alter function
+with (docstring = "Distinct Rekall plugins present, with row counts", folder = "Views")
+RekallPlugins() {
+    RekallJson
+    | summarize Rows = count() by Plugin
+    | order by Rows desc
+}

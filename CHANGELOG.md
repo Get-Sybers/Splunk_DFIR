@@ -12,8 +12,7 @@ script names, sourcetypes, field names, and app layouts included.
 
 ### Added
 
-- **Kusto emulator port, stages 0-1.** `docs/Kusto-Port.md` (design) and
-  `scripts/deploy-kusto.sh` (container lifecycle). Runs Azure Data Explorer's
+- **Kusto emulator port — a second, offline analysis backend.** Runs Azure Data Explorer's
   real query engine locally with no Azure, no account and no network — see the
   doc for why it beats the ADX free cluster for this workload.
 
@@ -30,7 +29,31 @@ script names, sourcetypes, field names, and app layouts included.
   endpoint rather than grepping container logs, which is what let a dead Splunk
   report success once.
 
-  Stages 2-5 (schema, ingestion, CAR in KQL, docs/notices) are not started.
+  Stages 2-5 followed: `kusto/schema/` (5 databases mirroring the Splunk
+  indexes, typed tables for Plaso and EvtxECmd, `dynamic` columns for the
+  per-artefact sources, ingestion mappings), `scripts/apply-kusto-schema.sh`,
+  `scripts/ingest-kusto.sh`, and the MITRE CAR model as KQL functions covering
+  the same 6 of 9 objects as the Splunk app.
+
+  CAR is functions rather than update policies because an update policy
+  requires "the update policy function schema and the target table schema must
+  match in their column types, and order", and CAR objects are views over the
+  same rows, not copies.
+
+  **Zeek is mapped by ordinal, so the ingest verifies `conn.log`'s `#fields`
+  header before loading and refuses on mismatch.** A reordered file would put
+  destination addresses into the source columns silently, which on forensic
+  data is not a cosmetic bug.
+
+  Not wired up: KAPE, Velociraptor and Rekall ingestion, and 68 of Zeek's 69
+  log types. Their tables and CAR functions exist; the loader does not populate
+  them. Stated in the port doc rather than left to be discovered.
+
+  Nothing has run against a real emulator. The scripts were exercised against a
+  fake HTTP endpoint that validates request JSON and returns realistic success
+  and error documents — which proves the request shapes, the KQL surviving JSON
+  escaping, and that errors returned with HTTP 200 are detected. It does not
+  prove Kusto accepts the KQL.
 
 ### To be resolved before `1.0.0`
 
@@ -39,7 +62,7 @@ script names, sourcetypes, field names, and app layouts included.
   Six of nine CAR objects have a source; `driver`, `module` and `thread` need
   Sysmon or a live agent and are out of reach for dead-box data. Tracked as
   issue #13.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 148 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on 165 static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -148,7 +171,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 148 static checks covering shell syntax, shellcheck, repo-root path
+  kind. 165 static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.

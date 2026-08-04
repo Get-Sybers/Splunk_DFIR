@@ -277,6 +277,74 @@ if [[ -f scripts/deploy-kusto.sh ]]; then
     fi
 fi
 
+# ------------------------------------------------------------------------------
+# Kusto schema and ingestion (stages 2-4).
+# ------------------------------------------------------------------------------
+if [[ -d kusto/schema ]]; then
+    # Every schema file must name its target database, or apply-kusto-schema.sh
+    # silently skips it and the tables never exist.
+    for f in kusto/schema/[1-9]*.kql; do
+        [[ -f "$f" ]] || continue
+        if grep -qE '^// Database:[[:space:]]*[A-Za-z_]' "$f"; then
+            pass "$(basename "$f") declares its database"
+        else
+            fail "$(basename "$f") has no '// Database:' header — it would be skipped"
+        fi
+    done
+    # .execute database script is non-transactional, so a non-idempotent form
+    # leaves a half-applied schema that cannot be fixed by re-running.
+    if grep -hoE '^\.create (table|function)\b' kusto/schema/[1-9]*.kql 2>/dev/null | grep -q .; then
+        fail "a schema file uses non-idempotent .create — use .create-merge / .create-or-alter"
+    else
+        pass "all schema statements are idempotent forms"
+    fi
+    # Databases in 00-databases.kql must match what the CAR functions reference.
+    if [[ -f kusto/schema/00-databases.kql ]]; then
+        declared=$(grep -oE '^\.create database [A-Za-z_][A-Za-z0-9_]*' kusto/schema/00-databases.kql | awk '{print $3}' | sort -u)
+        referenced=$(grep -hoE 'database\("[a-z]+"\)' kusto/schema/[1-9]*.kql 2>/dev/null | sed 's/database("\(.*\)")/\1/' | sort -u)
+        missing=""
+        for r in $referenced; do
+            printf '%s\n' "$declared" | grep -qx "$r" || missing="$missing $r"
+        done
+        if [[ -z "$missing" ]]; then
+            pass "every cross-database reference names a declared database"
+        else
+            fail "CAR functions reference undeclared database(s):$missing"
+        fi
+    fi
+fi
+if [[ -f scripts/ingest-kusto.sh ]]; then
+    # Zeek is mapped by ordinal. Without the header guard, a reordered conn.log
+    # silently loads destination addresses into the source columns.
+    # Assert the guard is INVOKED and skips on mismatch, not merely that the
+    # variable name appears somewhere. The first version of this check grepped
+    # for the constant and passed after the guard had been broken.
+    if grep -q 'ZEEK_CONN_EXPECTED=' scripts/ingest-kusto.sh 2>/dev/null \
+       && grep -q '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null \
+       && grep -qA6 '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null \
+       && grep -A8 '! *zeek_fields_ok' scripts/ingest-kusto.sh 2>/dev/null | grep -q 'continue'; then
+        pass "ingest verifies Zeek conn.log column order and skips on mismatch"
+    else
+        fail "ingest maps Zeek by ordinal without a working column-order guard"
+    fi
+    # Zeek '#' header lines would otherwise be ingested as data rows.
+    if grep -q "grep -v '\^#'" scripts/ingest-kusto.sh 2>/dev/null; then
+        pass "ingest strips Zeek '#' header lines"
+    else
+        fail "ingest does not strip Zeek header lines — they would become rows"
+    fi
+fi
+if [[ -f scripts/lib/kusto-api.sh ]]; then
+    # The REST API returns HTTP 200 with an error document, so curl's exit code
+    # proves nothing. This is the only thing standing between a failed schema
+    # apply and a success message.
+    if grep -q 'kusto_failed' scripts/lib/kusto-api.sh 2>/dev/null; then
+        pass "kusto-api detects errors returned with HTTP 200"
+    else
+        fail "kusto-api trusts the HTTP status — Kusto returns errors as 200"
+    fi
+fi
+
 # Isolation is asserted at runtime, not assumed.
 if grep -q 'ISOLATION_VERDICT' scripts/deploy-splunk.sh 2>/dev/null; then
     pass "deploy verifies isolation at runtime"

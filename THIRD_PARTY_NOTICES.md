@@ -172,6 +172,42 @@ EvtxECmd path (`scripts/process-evtx-EvtxECmd.sh`) is usable in paid work where
 the KAPE path is not. The two tools' licences are genuinely different — don't
 assume the Zimmerman name implies one or the other.
 
+### Azure Data Explorer Kusto emulator — read before commercial use
+
+The Kusto emulator (`mcr.microsoft.com/azuredataexplorer/kustainer-linux`) is
+used by `scripts/deploy-kusto.sh`. It is **not vendored** — the image is pulled
+from Microsoft's registry — so this is a constraint on you rather than on this
+code, in the same way KAPE is.
+
+Microsoft's own documentation states the emulator is:
+
+- **"Provided *as-is*, without any support or warranties"**
+- **"generally unsuitable for production workloads"**
+
+and its licence terms prohibit publishing benchmark results, since the emulator
+is not optimised for that.
+
+Two consequences worth stating plainly:
+
+1. **`ACCEPT_EULA=Y` is set on your behalf** by `deploy-kusto.sh`, exactly as
+   `SPLUNK_START_ARGS=--accept-license` is by `deploy-splunk.sh`. You are
+   accepting Microsoft's Software License Terms by running it. Read them if
+   that matters for your engagement.
+2. **Whether "unsuitable for production" bars use in paid DFIR work is a
+   question this project cannot answer for you.** It is Microsoft's framing of
+   the tool's fitness, not an explicit non-commercial clause like KAPE's — but
+   it is close enough to the same class of question to deserve the same care.
+   For casework where the answer matters, use the Splunk path or read the EULA.
+
+The emulator also has **no security features at all** — no authentication, no
+access control, plaintext HTTP, no encryption at rest. That is a documented
+property, not a misconfiguration. `deploy-kusto.sh` binds it to localhost and
+requires an explicit confirmation to do otherwise; see
+[docs/Kusto-Port.md](/docs/Kusto-Port.md).
+
+Kusto Query Language itself, and the CAR mappings in `kusto/schema/`, are this
+project's own work under Apache-2.0.
+
 ---
 
 ## Why Apache-2.0

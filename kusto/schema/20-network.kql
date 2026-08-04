@@ -1,0 +1,103 @@
+// Database: network — Zeek
+//
+// Zeek writes one TSV per log type, 69 of them, each with a different schema.
+// Typing all 69 would be a schema-maintenance burden with no payoff, so this
+// takes the same split the data itself suggests:
+//
+//   ZeekConn  typed, because conn.log is stable, high-volume, and the only
+//             Zeek log the MITRE CAR mapping needs (car_flow)
+//   Zeek      everything else, semi-structured, one dynamic column
+//
+// Both are fed from `zeek-cut -C -U "%Y-%m-%dT%H:%M:%S%z"` output, which is
+// TSV with '#'-prefixed header lines. Kusto has no property to skip those, so
+// scripts/ingest-kusto.sh strips them before ingesting — see the note there.
+
+//=============================================================================
+// ZeekConn — conn.log
+//
+// Column names are already CAR-aligned (SrcIp, DestPort ...) so the car_flow
+// function is a projection rather than a translation. Zeek's own names are
+// id.orig_h / id.resp_p; the dots make them awkward as Kusto identifiers, and
+// mapping by ordinal means we do not have to keep them.
+//=============================================================================
+.create-merge table ZeekConn (
+    Ts:            datetime,
+    Uid:           string,
+    SrcIp:         string,
+    SrcPort:       int,
+    DestIp:        string,
+    DestPort:      int,
+    Proto:         string,
+    Service:       string,
+    Duration:      real,
+    OrigBytes:     long,
+    RespBytes:     long,
+    ConnState:     string,
+    LocalOrig:     bool,
+    LocalResp:     bool,
+    MissedBytes:   long,
+    History:       string,
+    OrigPkts:      long,
+    OrigIpBytes:   long,
+    RespPkts:      long,
+    RespIpBytes:   long,
+    TunnelParents: string,
+    SourceFile:    string
+)
+
+.create-or-alter table ZeekConn ingestion csv mapping "ZeekConnMapping"
+```[
+  {"Column":"Ts",           "Properties":{"Ordinal":"0"}},
+  {"Column":"Uid",          "Properties":{"Ordinal":"1"}},
+  {"Column":"SrcIp",        "Properties":{"Ordinal":"2"}},
+  {"Column":"SrcPort",      "Properties":{"Ordinal":"3"}},
+  {"Column":"DestIp",       "Properties":{"Ordinal":"4"}},
+  {"Column":"DestPort",     "Properties":{"Ordinal":"5"}},
+  {"Column":"Proto",        "Properties":{"Ordinal":"6"}},
+  {"Column":"Service",      "Properties":{"Ordinal":"7"}},
+  {"Column":"Duration",     "Properties":{"Ordinal":"8"}},
+  {"Column":"OrigBytes",    "Properties":{"Ordinal":"9"}},
+  {"Column":"RespBytes",    "Properties":{"Ordinal":"10"}},
+  {"Column":"ConnState",    "Properties":{"Ordinal":"11"}},
+  {"Column":"LocalOrig",    "Properties":{"Ordinal":"12"}},
+  {"Column":"LocalResp",    "Properties":{"Ordinal":"13"}},
+  {"Column":"MissedBytes",  "Properties":{"Ordinal":"14"}},
+  {"Column":"History",      "Properties":{"Ordinal":"15"}},
+  {"Column":"OrigPkts",     "Properties":{"Ordinal":"16"}},
+  {"Column":"OrigIpBytes",  "Properties":{"Ordinal":"17"}},
+  {"Column":"RespPkts",     "Properties":{"Ordinal":"18"}},
+  {"Column":"RespIpBytes",  "Properties":{"Ordinal":"19"}},
+  {"Column":"TunnelParents","Properties":{"Ordinal":"20"}}
+]```
+
+//=============================================================================
+// Zeek — every other log type.
+//
+// LogType comes from the filename (dns.log -> "dns"), replacing what
+// Splunk_TA_zeek's zeek_autotype transform does with sourcetypes. Fields is
+// the '#fields' header line from the file, so the columns are recoverable
+// even though they are not typed.
+//=============================================================================
+.create-merge table Zeek (
+    LogType:    string,
+    SourceFile: string,
+    Fields:     string,
+    RawLine:    string
+)
+
+//=============================================================================
+// Views
+//=============================================================================
+.create-or-alter function
+with (docstring = "Completed TCP connections (conn_state SF)", folder = "Views")
+ZeekCompletedConnections() {
+    ZeekConn
+    | where ConnState == "SF"
+}
+
+.create-or-alter function
+with (docstring = "Connections to non-RFC1918 destinations", folder = "Views")
+ZeekEgress() {
+    ZeekConn
+    | where not(ipv4_is_private(DestIp))
+}

@@ -1,0 +1,20 @@
+// Databases — one per Splunk index.
+//
+// Applied by scripts/apply-kusto-schema.sh, which sends each statement to the
+// management endpoint. This file is NOT run with .execute database script,
+// because database creation is a cluster-level command.
+//
+// ⚠️ `.create database <name> persist(...)` FAILS if the target folders already
+//    exist. apply-kusto-schema.sh therefore checks `.show databases` first and
+//    skips any that are present, rather than assuming a clean slate. That is
+//    the same trap that once let deploy-splunk.sh report success having
+//    deployed nothing.
+//
+// In ephemeral mode (the default, and Microsoft's recommendation) the volatile
+// form is used instead — no paths, nothing on disk outside the container.
+
+.create database host   volatile
+.create database network volatile
+.create database memory volatile
+.create database misc   volatile
+.create database mitre  volatile
