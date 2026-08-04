@@ -29,6 +29,13 @@ These are already known. You do not need to report them.
   permissions across `data_store/`, `splunk/`, and `ansible/` to work around
   container UID mismatch. Anyone with local access can read or modify evidence
   and configuration. Do not run this on a shared or multi-user host.
+- **The Kusto emulator has no security features at all.** No authentication, no
+  access control, plaintext HTTP, no encryption at rest — Microsoft documents
+  all four as absent. `scripts/deploy-kusto.sh` binds it to `127.0.0.1` and
+  requires typing a confirmation to bind anywhere else, and that binding is the
+  only control there is. Anyone who can reach the port can read and modify
+  everything ingested, which is evidence. See
+  [docs/Kusto-Port.md](/docs/Kusto-Port.md).
 - **Splunk runs with no meaningful authentication.** The deploy script uses the
   free tier, which has no auth features. The admin password is prompted for and
   passed to the container as an environment variable, where it is visible via

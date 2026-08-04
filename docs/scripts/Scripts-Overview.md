@@ -16,6 +16,9 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 | `process-evtx-EvtxECmd.sh`         | Linux    | Parses raw **Windows Event Logs** (`.evtx`) with EvtxECmd into JSON/XML for Splunk. ⚠️ Requires operator-supplied EvtxECmd; not runtime-tested. |
 | `process-rekall-json.sh`           | Linux    | Normalises Rekall JSON memory-analysis output for ingestion. ⚠️ Field extraction incomplete.         |
 | `deploy-splunk.sh`                 | Linux    | Starts a **Splunk Enterprise Docker container**. Redeploys by default; `--persist` (default) keeps indexes, `--purge` wipes them. `--help` for all flags. ⚠️ Auto-accepts Splunk's licence. |
+| `deploy-kusto.sh`     | Deploys the Kusto emulator — a second, offline analysis backend alongside Splunk. See [Kusto port](/docs/Kusto-Port.md). |
+| `apply-kusto-schema.sh` | Creates the Kusto databases, tables, ingestion mappings and MITRE CAR functions. Safe to re-run. |
+| `ingest-kusto.sh`     | Loads `data_store/processed` into the Kusto emulator. Plaso, EvtxECmd and Zeek `conn` only. |
 | `config-splunk-inputs.sh`          | Linux    | Generates and applies Splunk `inputs.conf` monitoring stanzas for the data store.                    |
 | `purge-splunk-container.sh`        | Linux    | Stops and removes the Splunk container, permanently deleting all indexes (**irreversible**).        |
 | `Setup-Environment-Kape.ps1`       | Windows  | Prepares the KAPE dependency layout. ⚠️ Requires operator-supplied `kape.exe`.                       |

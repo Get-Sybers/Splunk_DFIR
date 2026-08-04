@@ -158,11 +158,12 @@
   {"Column":"Record", "Properties":{"Path":"$"}}
 ]```
 
-.create-merge table KapeCsv (
-    Artefact:   string,
-    SourceFile: string,
-    Record:     dynamic
-)
+// No KapeCsv table. A CSV ingestion mapping maps ordinals to columns and
+// cannot build a `dynamic` object, so the KapeJson shape simply does not work
+// for CSV — this was declared with a Record:dynamic column and no mapping,
+// which could never have ingested anything. Zimmerman's CSV output is
+// per-artefact with different columns each time, so the real answer is typed
+// tables per artefact, or converting to JSON before ingest. Neither is done.
 
 .create-merge table VelociraptorJson (
     Artefact:   string,

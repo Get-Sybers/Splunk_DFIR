@@ -9,6 +9,12 @@
     │
     └── dev-scripts/                                  # Experimental/one-off helpers, unsupported
     │
+    └── kusto/                                        # Kusto emulator schema — the offline ADX backend
+    │   │
+    │   └── schema/                                   # Databases, tables, ingestion mappings, MITRE CAR functions
+    │
+    └── tests/                                        # run-checks.sh — the static check harness that gates CI
+    │
     └── docs/                                         # Documentation for project usage and setup
     │
     └── data_store/                                   # Data storage for raw and processed forensic data
