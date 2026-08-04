@@ -155,7 +155,7 @@ the best return, and none of it is Ansible:
 |:---|:---|:---|
 | 0 | ✅ Splunk persistence fixed (named volume at `/opt/splunk/var`). **Still needs runtime verification** that indexes survive a container recreate | — |
 | 1 | ✅ Defects 2-4 fixed in place; `scripts/v2/` and the 94 inert files deleted | — |
-| 2 | ◑ Static check gate exists (`tests/run-checks.sh`, 169 checks). Still needs a pipeline smoke test | Stage 1 |
+| 2 | ◑ Static check gate exists (`tests/run-checks.sh`). Still needs a pipeline smoke test | Stage 1 |
 | 3 | Splunk lifecycle + config as Ansible roles — the genuinely justified scope | Stages 0-2 |
 | — | Everything else above | Not in beta |
 

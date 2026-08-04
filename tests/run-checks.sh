@@ -204,9 +204,14 @@ else
     fail "no --var-dir: indexes can only live in a Docker volume"
 fi
 # A purge that deletes .gitkeep leaves a spurious git change behind.
-if grep -q "not -name '.gitkeep'" scripts/deploy-splunk.sh 2>/dev/null \
-   && grep -q "not -name '.gitkeep'" scripts/purge-splunk-container.sh 2>/dev/null; then
-    pass "purging a host index directory spares .gitkeep"
+_gk_ok=1
+for _s in scripts/deploy-splunk.sh scripts/purge-splunk-container.sh scripts/deploy-kusto.sh; do
+    [[ -f "$_s" ]] || continue
+    grep -q 'rm -rf\|-delete' "$_s" 2>/dev/null || continue
+    grep -q "not -name '.gitkeep'" "$_s" 2>/dev/null || _gk_ok=0
+done
+if [[ $_gk_ok -eq 1 ]]; then
+    pass "every purge path spares .gitkeep"
 else
     fail "purge would delete the tracked .gitkeep from an index directory"
 fi
@@ -302,6 +307,24 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     else
         pass "all schema statements are idempotent forms"
     fi
+    # A table column that no ingestion mapping covers can never be populated,
+    # and an always-empty column is indistinguishable from "captured nothing".
+    # ZeekConn shipped a SourceFile column its 21-ordinal mapping could not
+    # reach, and CarFlow() projected it.
+    _phantom=""
+    for _tbl in ZeekConn L2tCsv; do
+        _f=$(grep -l "create-merge table $_tbl " kusto/schema/*.kql 2>/dev/null | head -1)
+        [[ -n "$_f" ]] || continue
+        _ncol=$(sed -n "/create-merge table $_tbl (/,/^)/p" "$_f" | grep -cE '^[[:space:]]+[A-Za-z_]+:')
+        _nmap=$(sed -n "/ingestion csv mapping \"${_tbl}Mapping\"/,/\]\`\`\`/p" "$_f" | grep -c '"Ordinal"')
+        [[ "$_ncol" -eq "$_nmap" ]] || _phantom="$_phantom $_tbl($_ncol cols/$_nmap mapped)"
+    done
+    if [[ -z "$_phantom" ]]; then
+        pass "no CSV table has columns its mapping cannot populate"
+    else
+        fail "column(s) no mapping can fill:$_phantom"
+    fi
+
     # Databases in 00-databases.kql must match what the CAR functions reference.
     if [[ -f kusto/schema/00-databases.kql ]]; then
         declared=$(grep -oE '^\.create database [A-Za-z_][A-Za-z0-9_]*' kusto/schema/00-databases.kql | awk '{print $3}' | sort -u)
@@ -560,6 +583,18 @@ if [[ -n "$PROJECT_VERSION" ]]; then
 else
     fail "could not read a version heading from CHANGELOG.md"
 fi
+# No document may restate the number of checks. It was hand-copied into six
+# files, every harness change meant editing all six, and one still said 86 long
+# after the real count passed 160. The harness prints the number; documents
+# point at the harness.
+_counts=$(grep -rnE '[0-9]{2,4} (static )?checks' --include='*.md' . 2>/dev/null \
+          | grep -v '^./.git/' || true)
+if [[ -z "$_counts" ]]; then
+    pass "no document hardcodes the check count"
+else
+    fail "documents restate the check count (it goes stale): $(printf '%s' "$_counts" | head -3 | tr '\n' ' ')"
+fi
+
 # The project is past alpha; a stray "Alpha" label contradicts the release.
 if grep -rIl -E '(Status:.*Alpha|🧪 Alpha)' --include='*.md' . 2>/dev/null | grep -qv '^./.git/'; then
     fail "a document still labels this project Alpha"

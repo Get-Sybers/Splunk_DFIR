@@ -75,7 +75,7 @@ script names, sourcetypes, field names, and app layouts included.
   Six of nine CAR objects have a source; `driver`, `module` and `thread` need
   Sysmon or a live agent and are out of reach for dead-box data. Tracked as
   issue #13.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on 169 static checks, but
+- **A pipeline test.** `tests/run-checks.sh` gates CI on the static checks, but
   nothing exercises the pipeline. Every defect that actually bit — including the
   three this release introduced — was a runtime failure that static checks could
   not have caught.
@@ -184,7 +184,7 @@ branch. It is frozen, unsupported, and carries all ten defects.
   `splunk/etc/apps_local/<App>/local/`. Runs as a **post-task**; see Removed
   for why.
 - `tests/run-checks.sh` — the repository had no automated verification of any
-  kind. 169 static checks covering shell syntax, shellcheck, repo-root path
+  kind. Static checks covering shell syntax, shellcheck, repo-root path
   resolution, Ansible task-file lint, Splunk conf sanity, app versioning,
   evidence-gitignore coverage, secret patterns, and documentation links. Exits
   non-zero, so it can gate CI.

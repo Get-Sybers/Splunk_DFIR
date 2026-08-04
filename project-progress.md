@@ -96,7 +96,7 @@ the deploy rather than asserted here.
 
 ### 🔻 Other blockers
 
-- **No pipeline tests.** `tests/run-checks.sh` runs 169 static checks in CI, but
+- **No pipeline tests.** `tests/run-checks.sh` runs the static checks in CI, but
   nothing exercises the actual pipeline. Until something does, every ✅ on this
   board is still a claim rather than a result. Highest-value next step.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
@@ -159,12 +159,32 @@ Staged plan, scope boundaries and risks: [Ansible-Roadmap.md](/docs/Ansible-Road
 - Develop a **Splunk dashboard** to visualize **MITRE CAR-mapped events**.
 
 ### 🔹 **Testing** — *partly done*
-- ✅ Syntax/lint gating — `tests/run-checks.sh` (86 checks: `bash -n`,
-  shellcheck, path resolution, `ansible-lint`, conf sanity, gitignore, secrets,
-  doc links).
+- ✅ Syntax/lint gating — `tests/run-checks.sh` (`bash -n`, shellcheck, path
+  resolution, `ansible-lint`, conf sanity, gitignore, secrets, doc links, and
+  behavioural tests of the Kusto guards). The count is whatever the harness
+  prints; it is deliberately not restated here, because it was hand-copied into
+  six documents and went stale in all of them.
 - ⬜ A smoke test that runs the pipeline against a small public sample image.
 - ⬜ `Invoke-ScriptAnalyzer` for the PowerShell scripts.
 - ⬜ Wire the above into CI so "✅" on this board means something checkable.
+
+### 🔹 **Kusto / Azure Data Explorer backend** — *built, unverified*
+A second analysis backend alongside Splunk: the ADX emulator in a container,
+no cloud, no account. 5 databases mirroring the Splunk indexes, MITRE CAR as
+KQL functions covering the same 6 of 9 objects. Design and constraints in
+[docs/Kusto-Port.md](/docs/Kusto-Port.md).
+
+- ⬜ **Run it.** Nothing has touched a real emulator. That gates everything
+  below and is worth more than any further code.
+- ⬜ KAPE, Velociraptor and Rekall ingestion. Tables and CAR functions exist;
+  the loader populates none of them, so `CarRegistry()` and the KAPE halves of
+  `CarProcess()`/`CarFile()` return nothing.
+- ⬜ 68 of Zeek's 69 log types. Only `conn.log` is typed and ingested — it is
+  the one `car_flow` needs.
+- ⬜ `KapeCsv` needs typed per-artefact tables; a CSV mapping cannot populate a
+  `dynamic` column, which is why the first attempt was removed.
+- ⬜ Verify the `pid` hex conversion. `pid_hex` is always right; `pid` depends
+  on `tolong()` accepting a `0x` prefix, which is untested.
 
 ### 🔹 **KAPE & Raw EVTX Processing**
 - Develop ingestion pipeline for **KAPE output** (targeting forensic triage artifacts).

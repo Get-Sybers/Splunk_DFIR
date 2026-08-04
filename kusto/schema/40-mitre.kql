@@ -79,8 +79,7 @@ CarFlow() {
         packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
         hostname      = ""
     | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
-              protocol, start_time, end_time, packet_count, hostname,
-              SourceFile
+              protocol, start_time, end_time, packet_count, hostname, Uid
 }
 
 //=============================================================================

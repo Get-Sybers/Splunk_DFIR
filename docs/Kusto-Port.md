@@ -151,7 +151,7 @@ later stage is needed to get value from an earlier one.
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
 | **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; KAPE, Velociraptor and Rekall are not | 2 |
 | **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions, matching `MITRE_CAR_App` | 3 |
-| **5** | ✅ Docs, 21 checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
+| **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
 
