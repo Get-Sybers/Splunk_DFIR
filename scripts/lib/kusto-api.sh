@@ -15,6 +15,10 @@
 # of this library got that wrong in kusto_scalar, which made a completely
 # successful schema apply report failure and exit 1 every time.
 
+# ⚠️ KUSTO_BASE is computed HERE, at source time. Set KUSTO_HOST/KUSTO_PORT
+#    before sourcing (deploy-kusto.sh sources after its argument parse for
+#    exactly this reason) — assigning them afterwards leaves every kusto_*
+#    call pointed at the old endpoint.
 KUSTO_HOST="${KUSTO_HOST:-127.0.0.1}"
 KUSTO_PORT="${KUSTO_PORT:-8080}"
 KUSTO_BASE="http://${KUSTO_HOST}:${KUSTO_PORT}"
@@ -64,7 +68,11 @@ _kusto_post() {
     local path="$1" db="$2" csl="$3" body db_json
     body=$(printf '%s' "$csl" | kusto_json_escape) || return 1
     db_json=$(printf '%s' "$db" | kusto_json_escape) || return 1
-    curl -s --max-time 600 -X POST "${KUSTO_BASE}${path}" \
+    # --connect-timeout matters independently of --max-time: against a
+    # firewalled remote host each readiness poll would otherwise sit in the
+    # connect phase, not the transfer phase, and the deploy's wall-clock
+    # timeout math assumes probes return promptly.
+    curl -s --connect-timeout 5 --max-time 600 -X POST "${KUSTO_BASE}${path}" \
         -H 'Content-Type: application/json' \
         -d "{\"db\":${db_json},\"csl\":${body}}"
 }
