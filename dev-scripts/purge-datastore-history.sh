@@ -34,7 +34,7 @@ if [[ -z "$REPO_URL" ]]; then
     echo "usage: $0 <clone-url-or-path>"
     echo ""
     echo "Run against a FRESH clone, never your working copy:"
-    echo "  git clone --mirror https://github.com/Get-Sybers/Splunk_DFIR.git purge-work"
+    echo "  git clone --mirror https://github.com/Get-Sybers/DX_DFIR.git purge-work"
     echo "  $0 purge-work"
     exit 1
 fi

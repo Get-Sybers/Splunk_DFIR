@@ -73,7 +73,7 @@
 // EvtxEcmdJson — EvtxECmd --json, one object per line
 //
 // Payload is the EventData XML fragment as a string. The CAR functions parse
-// the fields they need out of it by Name attribute, exactly as the Splunk
+// the fields they need out of it by Name attribute, exactly as the Splunk-era
 // props.conf EXTRACT rules do.
 //=============================================================================
 .create-merge table EvtxEcmdJson (
@@ -145,7 +145,7 @@
 // that silently drops columns. Access is Record.FieldName in KQL.
 //
 // Artefact is derived from the source path at ingest time, replacing what
-// Splunk's extract_kape_sourcetype transform does with MetaData:Source.
+// the Splunk-era extract_kape_sourcetype transform did with MetaData:Source.
 //=============================================================================
 .create-merge table KapeJson (
     Artefact:   string,

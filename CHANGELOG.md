@@ -10,6 +10,37 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Removed — the Splunk stack. The SIEM is the Data Explorer emulator now.
+
+- **The project pivoted: the Kusto emulator is the analysis backend, and the
+  entire Splunk stack was retired in one cut.** What began as a second,
+  offline backend alongside Splunk is now the only one. Removed:
+  `deploy-splunk.sh`, `purge-splunk-container.sh`, `config-splunk-inputs.sh`,
+  the eight Splunk apps under `splunk/etc/apps/` (BASELINE, DETECT,
+  EvtxECmd_App, Kape_App, Log2timeline_App, MITRE_CAR_App, Rekall_App,
+  Velociraptor_App), the in-container Ansible provisioning (`ansible/`), the
+  vendored ESCU lookups (~3 MB, the project's largest third-party payload),
+  the operator-supplied Splunkbase app machinery, `scripts/deprecated/`, and
+  the Splunk-era docs (`docs/Ansible.md`, `docs/Ansible-Roadmap.md`,
+  `docs/splunk_apps/`). Everything survives in git history and on the frozen
+  `deprecated` branch.
+
+  What carries over: the evidence-processing scripts are untouched
+  (`data_store/processed/` remains the source of truth), the MITRE CAR model
+  lives on as KQL functions pinned against MITRE's own `car_data_model.json`,
+  and every hard-won container lesson from the Splunk era is encoded in
+  `scripts/lib/docker-lifecycle.sh`, which the Kusto deploy runs on.
+
+  The check harness dropped its Splunk groups (Ansible lint, conf sanity, app
+  metadata, Splunk CAR model wiring) and gained a Kusto-side CAR coverage
+  check pinning the six sourced objects and their `Car*()` functions against
+  `car_data_model.json`. Superseded Splunk-era issues are closed; the runtime
+  checklist (issue #14) is unchanged and still gates everything.
+
+- **Renamed: Splunk_DFIR → DX_DFIR.** Titles, badges and in-repo links now
+  point at `Get-Sybers/DX_DFIR`. (The GitHub-side repository rename is a
+  Settings action; GitHub redirects the old URLs afterwards.)
+
 ### Changed
 
 - **Container lifecycle consolidated into `scripts/lib/docker-lifecycle.sh`.**
@@ -53,7 +84,8 @@ script names, sourcetypes, field names, and app layouts included.
 
 ### Added
 
-- **Kusto emulator port — a second, offline analysis backend.** Runs Azure Data Explorer's
+- **Kusto emulator port — an offline analysis backend** (initially alongside
+  Splunk; the Splunk stack has since been retired — see Removed). Runs Azure Data Explorer's
   real query engine locally with no Azure, no account and no network — see the
   doc for why it beats the ADX free cluster for this workload.
 
@@ -111,23 +143,21 @@ script names, sourcetypes, field names, and app layouts included.
 
 ### To be resolved before `1.0.0`
 
-- **Verify the MITRE CAR mapping against real evidence.** It is built and
-  internally consistent as of this release, but has never run against Splunk.
-  Six of nine CAR objects have a source; `driver`, `module` and `thread` need
-  Sysmon or a live agent and are out of reach for dead-box data. Tracked as
-  issue #13.
-- **A pipeline test.** `tests/run-checks.sh` gates CI on the static checks, but
-  nothing exercises the pipeline. Every defect that actually bit — including the
-  three this release introduced — was a runtime failure that static checks could
-  not have caught.
-- **Runtime verification of this release's fixes.** None have been executed;
-  tracked as issues #5, #6, #8, #9 and #11.
-- **"Ansible it all"** — drive the whole pipeline through Ansible rather than
-  injecting playbooks into the container at boot. Staged plan in
-  [docs/Ansible-Roadmap.md](docs/Ansible-Roadmap.md), which narrows the scope to
-  Splunk lifecycle and config. Note this requires publishing port 8089 first
-  (see Known issues below).
-- Whether to pin the Splunk image tag (see Known issues below).
+- **Run the backend against a real emulator.** Deploy, schema, ingestion and
+  the CAR functions are verified against fakes and fixtures only. The ranked
+  checklist is issue #14; it gates everything else.
+- **Verify the MITRE CAR mapping against real evidence.** The KQL functions
+  are built and internally consistent, but never executed. Six of nine CAR
+  objects have a source; `driver`, `module` and `thread` need Sysmon or a live
+  agent and are out of reach for dead-box data.
+- **A pipeline test.** `tests/run-checks.sh` gates CI on the repo checks, but
+  nothing exercises the pipeline. Every defect that actually bit was a runtime
+  failure that static checks could not have caught.
+- **KAPE / Velociraptor / Rekall loaders**, and the remaining 68 Zeek log
+  types — tables exist, loaders do not.
+
+(The Splunk-era items that used to sit here — Splunk runtime verification,
+"Ansible it all", Splunk image pinning — left with the Splunk stack.)
 
 ## [0.2.0-beta] - 2026-08-04
 

@@ -10,9 +10,7 @@
 # surfaced by a badge that reads them directly — so prose never needs touching.
 #
 # What still carries a literal version, and why:
-#   CHANGELOG.md              the versioned record; that is its whole job
-#   splunk/etc/apps/*/app.conf  Splunk apps declare their own version, and
-#                               nothing else can declare it for them
+#   CHANGELOG.md    the versioned record; that is its whole job
 #
 # Everything else reads the release from the badge or the CHANGELOG.
 #
@@ -55,10 +53,9 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+
     exit 1
 fi
 
-CORE="${VERSION%%-*}"; CORE="${CORE%%+*}"
 TODAY="$(date -u +%Y-%m-%d)"
 
-echo "Setting version to $VERSION (apps: $CORE)"
+echo "Setting version to $VERSION"
 echo ""
 
 # CHANGELOG: retitle the topmost release heading, or open a new section under
@@ -91,7 +88,7 @@ text = re.sub(r'^(## \[[0-9])', new_section + r'\1', text, count=1, flags=re.M)
 text = re.sub(r'^\[Unreleased\]: (\S+)/compare/\S+\.\.\.HEAD',
               rf'[Unreleased]: \1/compare/v{version}...HEAD', text, count=1, flags=re.M)
 text = re.sub(r'^(\[Unreleased\]: .*\n)',
-              rf'\1[{version}]: https://github.com/Get-Sybers/Splunk_DFIR/releases/tag/v{version}\n',
+              rf'\1[{version}]: https://github.com/Get-Sybers/DX_DFIR/releases/tag/v{version}\n',
               text, count=1, flags=re.M)
 
 open('CHANGELOG.md', 'w').write(text)
@@ -105,14 +102,6 @@ else
     sed -i "s|v$CURRENT|v$VERSION|g" CHANGELOG.md
     echo "  CHANGELOG.md   [$CURRENT] -> [$VERSION] - $TODAY"
 fi
-
-# Splunk apps declare their own version; only the core, no prerelease suffix.
-for conf in splunk/etc/apps/*/default/app.conf; do
-    [[ -f "$conf" ]] || continue
-    grep -q '^version' "$conf" || continue
-    sed -i "s|^version = .*|version = $CORE|" "$conf"
-done
-echo "  app.conf       $(ls -d splunk/etc/apps/*/ | wc -l | tr -d ' ') apps -> $CORE"
 
 echo ""
 echo "✅ Done. Nothing else carries the version — the README badge reads the"

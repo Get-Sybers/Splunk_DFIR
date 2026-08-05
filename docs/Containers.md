@@ -9,7 +9,7 @@ This section lists the required Docker containers for the DFIR automation pipeli
 ```sh
 log2timeline/plaso:latest
 zeek/zeek:latest
-splunk/splunk:latest
+mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest
 ```
 
 ---
@@ -18,7 +18,10 @@ splunk/splunk:latest
 
 - [Plaso (log2timeline) – Docker Hub](https://hub.docker.com/r/log2timeline/plaso)
 - [Zeek (Network Security Monitor) – Docker Hub](https://hub.docker.com/r/zeek/zeek)
-- [Splunk Enterprise – Docker Hub](https://hub.docker.com/r/splunk/splunk)
+- [Azure Data Explorer Kusto emulator – Microsoft Learn](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview)
+
+Note: starting the Kusto emulator requires accepting Microsoft's Software
+License Terms (`ACCEPT_EULA=Y`) — `deploy-kusto.sh` does this on your behalf
+and says so. See [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 Ensure all necessary containers are installed and configured before running the DFIR pipeline. 🚀
-

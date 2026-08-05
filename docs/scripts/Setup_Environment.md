@@ -1,7 +1,7 @@
 # Setup Environment Script
 
 ## Overview
-The `setup-environment.sh` script automates the setup process for the Splunk DFIR (Digital Forensics and Incident Response) environment. It handles Docker installation, permissions, and pulls necessary Docker images required for forensic analysis.
+The `setup-environment.sh` script automates the setup process for the DX_DFIR (Digital Forensics and Incident Response) environment. It handles Docker installation, permissions, and pulls necessary Docker images required for forensic analysis.
 
 ## Prerequisites
 - A Debian-based Linux distribution
@@ -19,10 +19,10 @@ The `setup-environment.sh` script automates the setup process for the Splunk DFI
    - Downloads the following Docker images:
      - `log2timeline/plaso:latest` - Timeline analysis tools
      - `zeek/zeek:latest` - Network traffic analysis
-     - `splunk/splunk:latest` - Log aggregation and analysis
+     - `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` - the Kusto emulator (analysis backend)
    - Optionally saves Docker images as tar files for offline use
 4. **Permission Management**:
-   - Sets appropriate permissions on the Splunk_DFIR repository directories
+   - Sets appropriate permissions on the DX_DFIR repository directories
    - Sets ownership to the current user and Docker group
 
 ## Usage
@@ -31,7 +31,7 @@ The `setup-environment.sh` script automates the setup process for the Splunk DFI
 Execute the script from the terminal:
 
 ```bash
-Splunk_DFIR/scripts/setup-environment.sh
+DX_DFIR/scripts/setup-environment.sh
 ```
 
 ### Script Execution Flow
@@ -45,11 +45,11 @@ Splunk_DFIR/scripts/setup-environment.sh
 After running the script:
 
 1. **Log out and log back in** to apply the Docker group membership changes
-2. If you downloaded Docker image tarballs, you can load them using:
+2. If you downloaded Docker image tarballs, load them on the offline host
+   with:
    ```bash
-   Splunk_DFIR/scripts/deprecated/setup_load_docker_tar.sh
+   docker load -i data_store/docker_images/<image>.tar
    ```
-   ⚠️ This script now lives under `scripts/deprecated/` and is unmaintained.
 
 ## Troubleshooting
 

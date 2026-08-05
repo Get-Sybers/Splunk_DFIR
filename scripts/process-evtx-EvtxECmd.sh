@@ -1,18 +1,16 @@
 #!/bin/bash
 # ==============================================================================
-# Parse Windows Event Logs (.evtx) with EvtxECmd into a Splunk-ingestable form.
+# Parse Windows Event Logs (.evtx) with EvtxECmd into an ingestable form.
 #
-# Splunk cannot read binary .evtx. This converts them to:
+# The analysis backend cannot read binary .evtx. This converts them to:
 #
-#   *_EvtxECmd_Output.json   normalised records  -> sourcetype evtxecmd:json
-#   *_EvtxECmd_Output.xml    full <Event> XML    -> sourcetype evtxecmd:xml
+#   *_EvtxECmd_Output.json   normalised records  -> host.EvtxEcmdJson (Kusto)
+#   *_EvtxECmd_Output.xml    full <Event> XML    -> not ingested; kept for
+#                                                   manual review
 #
-# The JSON lane is the supported one. EvtxECmd_App maps its fields onto the
-# names the Splunk Add-on for Microsoft Windows uses (EventCode, RecordNumber,
-# LogName, SourceName, …) plus CIM aliases, so searches and dashboards written
-# against that add-on work against this data.
-#
-# The XML lane is best-effort — read the caveat under "XML output" below.
+# The JSON lane is the supported one: ingest-kusto.sh loads it into
+# host.EvtxEcmdJson via a JSON path mapping, and the MITRE CAR functions
+# (CarProcess, CarUserSession, CarService, …) read their fields from it.
 #
 # EvtxECmd is MIT licensed (Copyright (c) 2019 Eric Zimmerman), so unlike the
 # KAPE path there is no restriction on commercial use.
@@ -28,8 +26,8 @@ EVTX_DIR="$REPO_ROOT_DIR/data_store/raw/other_raw_data/WinEvt"
 OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/windows_logs"
 
 # EvtxECmd is not vendored. Drop the published release here — see the README in
-# that directory. Operator-supplied for the same reason the Splunk apps are:
-# we don't redistribute other people's builds.
+# that directory. Operator-supplied because we don't redistribute other
+# people's builds.
 EVTXECMD_DIR="${EVTXECMD_DIR:-$REPO_ROOT_DIR/data_store/dependencies/evtxecmd}"
 
 # EvtxECmd targets .NET; this image supplies the runtime on Linux.
@@ -121,8 +119,8 @@ for evtx_file in "${evtx_files[@]}"; do
     xml_out="${evtx_basename}_EvtxECmd_Output.xml"
 
     # Idempotency: forensic parsing is expensive and re-running should not
-    # silently redo or duplicate work. Splunk also re-indexes a file whose
-    # contents change, so overwriting would duplicate events.
+    # silently redo or duplicate work. (Kusto ingestion is additive with no
+    # fishbucket, so re-parsed files would also duplicate rows on re-ingest.)
     if [[ -s "$dest_dir/$json_out" ]]; then
         echo "⏭️  Skipping (already parsed): $rel_dir/$evtx_basename"
         skipped=$((skipped+1))
@@ -168,14 +166,12 @@ echo "  parsed: $processed   skipped: $skipped   failed: $failed"
 echo "═══════════════════════════════════════════"
 echo "💾 Output in: $OUTPUT_DIR"
 echo ""
-echo "ℹ️  Splunk picks these up via the monitor stanzas in"
-echo "   splunk/etc/system/local/inputs.conf (sourcetypes evtxecmd:json / :xml)."
-echo "   Field mapping to the Splunk Add-on for Microsoft Windows schema is in"
-echo "   splunk/etc/apps/EvtxECmd_App/."
+echo "ℹ️  Load into the analysis backend with:  ./scripts/ingest-kusto.sh --only evtx"
+echo "   (JSON -> host.EvtxEcmdJson; the CAR functions in the mitre database"
+echo "   read from it.)"
 echo ""
-echo "⚠️  XML output is best-effort: EvtxECmd beautifies its XML and strips the"
-echo "   xmlns declaration, so it is NOT guaranteed to match what the official"
-echo "   add-on's XmlWinEventLog sourcetype expects. The JSON lane is the"
+echo "⚠️  The XML lane is best-effort and is NOT ingested — EvtxECmd beautifies"
+echo "   its XML and strips the xmlns declaration. The JSON lane is the"
 echo "   supported one. See docs/scripts/processing_data/process-evtx-EvtxECmd.md"
 
 [[ $failed -gt 0 ]] && exit 1

@@ -1,10 +1,10 @@
 #!/bin/bash
 # ==============================================================================
-# Splunk DFIR — repository checks
+# DX_DFIR — repository checks
 #
 # The project had no automated verification of any kind, which meant every "✅"
 # on the task board was a claim rather than a result. This script codifies the
-# checks that can be run without Docker, Splunk, or evidence.
+# checks that can be run without Docker or evidence.
 #
 # It does NOT test the pipeline. It catches the class of defect that has
 # actually bitten this repo: path-resolution bugs, literal-string config
@@ -35,7 +35,7 @@ group "Shell syntax"
 # ------------------------------------------------------------------------------
 while IFS= read -r f; do
     if bash -n "$f" 2>/dev/null; then pass "$f"; else fail "$f does not parse"; fi
-done < <(find scripts dev-scripts tests ansible -name "*.sh" -type f 2>/dev/null | sort)
+done < <(find scripts dev-scripts tests -name "*.sh" -type f 2>/dev/null | sort)
 
 # ------------------------------------------------------------------------------
 group "Shellcheck"
@@ -67,150 +67,13 @@ while IFS= read -r f; do
 done < <(find scripts -name "*.sh" -type f | sort)
 
 # ------------------------------------------------------------------------------
-group "Ansible task files"
-# ------------------------------------------------------------------------------
-if python3 -c "import yaml" 2>/dev/null; then
-    while IFS= read -r f; do
-        if python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" "$f" 2>/dev/null; then pass "$f (yaml)"
-        else fail "$f is not valid YAML"; fi
-    done < <(find ansible/playbooks -name "*.yml" -type f | sort)
-else
-    skip "pyyaml not installed"
-fi
-
-if command -v ansible-lint >/dev/null 2>&1; then
-    # These are task files, not plays. ansible-lint must see them as tasks/ or
-    # it reports a spurious "not a valid attribute for a Play".
-    tmp=$(mktemp -d); mkdir -p "$tmp/tasks"
-    # Every playbook, discovered rather than listed, so a new one is covered
-    # automatically instead of silently escaping the gate.
-    while IFS= read -r f; do
-        cp "$f" "$tmp/tasks/main.yml"
-        if (cd "$tmp" && ansible-lint tasks/main.yml >/dev/null 2>&1); then pass "$f (lint)"
-        else fail "ansible-lint failures in $f"; fi
-    done < <(find ansible/playbooks -name "*.yml" -type f | sort)
-    rm -rf "$tmp"
-else
-    skip "ansible-lint not installed"
-fi
-
-# ------------------------------------------------------------------------------
-group "Splunk configuration"
-# ------------------------------------------------------------------------------
-# `host = extracted_host` was a literal string, so Splunk labelled every event
-# with the word "extracted_host". Catch any bareword host that is not a real
-# value or a Splunk variable.
-if grep -nE '^host[[:space:]]*=[[:space:]]*extracted_' splunk/etc/system/local/inputs.conf >/dev/null 2>&1; then
-    fail "inputs.conf sets host to a literal 'extracted_*' string"
-else
-    pass "inputs.conf has no literal extracted_* host"
-fi
-
-# deploy and purge must agree on the index volume, or purge silently leaves
-# every index behind while reporting success.
-dep=$(grep -m1 'SPLUNK_VAR_VOLUME:-' scripts/deploy-splunk.sh 2>/dev/null | sed 's/.*:-\([^}]*\)}.*/\1/')
-pur=$(grep -m1 'SPLUNK_VAR_VOLUME:-' scripts/purge-splunk-container.sh 2>/dev/null | sed 's/.*:-\([^}]*\)}.*/\1/')
-if [[ -n "$dep" && "$dep" == "$pur" ]]; then pass "deploy/purge agree on volume '$dep'"
-else fail "index volume mismatch: deploy='$dep' purge='$pur'"; fi
-
-# Splunk's data directory must actually be persisted.
-if grep -q ':/opt/splunk/var' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "Splunk var is persisted"
-else
-    fail "nothing mounted at /opt/splunk/var — indexes will not survive the container"
-fi
-
-# This project redeploys the container every time, so the deploy must not
-# block on a prompt and must accept a password non-interactively. Both have
-# regressed before by being written as unconditional `read`.
-if grep -q 'SPLUNK_REPLACE:-always' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "redeploy is the default (SPLUNK_REPLACE=always)"
-else
-    fail "deploy-splunk.sh does not default to replacing the container"
-fi
-if grep -q 'SPLUNK_PASSWORD_FILE' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "password can be supplied non-interactively"
-else
-    fail "deploy-splunk.sh has no non-interactive password path"
-fi
-
-# The deploy script's purge/persist flags are the documented interface for
-# choosing whether a redeploy keeps or wipes indexed data.
-for flag in --purge --persist --yes --help; do
-    if grep -qF -- "$flag" scripts/deploy-splunk.sh 2>/dev/null; then
-        pass "deploy-splunk.sh accepts $flag"
-    else
-        fail "deploy-splunk.sh does not accept $flag"
-    fi
-done
-# --purge must actually remove the volume, and must do so after the container is
-# gone — Docker will not remove a volume that is still attached. Container
-# removal lives in the lib now, so the ordering is asserted on the call sites:
-# dl_replace_container must sit above `docker volume rm`.
-if grep -q 'docker volume rm "$SPLUNK_VAR_VOLUME"' scripts/deploy-splunk.sh 2>/dev/null; then
-    _rm=$(grep -n '^dl_replace_container ' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
-    _vol=$(grep -n 'docker volume rm' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
-    if [[ -n "$_rm" && -n "$_vol" && "$_rm" -lt "$_vol" ]]; then
-        pass "--purge removes the volume after the container"
-    else
-        fail "--purge removes the volume before the container is gone (docker will refuse)"
-    fi
-else
-    fail "--purge does not remove the index volume"
-fi
-
-# The container holds evidence: it must not be reachable from the LAN, and must
-# not be able to reach out. Both defaults have to stay put.
-if grep -q 'SPLUNK_BIND_ADDR:-127.0.0.1' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "ports bind to localhost by default"
-else
-    fail "deploy-splunk.sh does not default to binding 127.0.0.1"
-fi
-if grep -q 'SPLUNK_ISOLATED:-1' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "network isolation on by default"
-else
-    fail "deploy-splunk.sh does not default to an isolated network"
-fi
-# How the isolated network is built (not --internal, masquerade off) is
-# asserted once, on lib/docker-lifecycle.sh — see the lifecycle group below.
-# Isolation is a two-directional property. Verifying only egress is how the
-# unreachable-UI bug got past the deploy's own check.
-if grep -q 'ingress_ok' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "deploy verifies Splunk is reachable (ingress)"
-else
-    fail "deploy does not verify Splunk is reachable — egress-only checks miss a dead UI"
-fi
-if grep -qF -- '--purge-only' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "deploy-splunk.sh accepts --purge-only"
-else
-    fail "no --purge-only: wiping data should not force a redeploy"
-fi
-# Indexes must be storable in a host directory, not only a Docker volume. The
-# original deploy bind-mounted splunk/var read-write — the only rw mount it had
-# — so a visible, backup-able index directory was the intended design. The
-# persistence fix swapped in a named volume; keeping --var-dir means that fix
-# did not quietly discard the choice.
-if grep -qF -- '--var-dir' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "deploy-splunk.sh supports --var-dir (host directory for indexes)"
-else
-    fail "no --var-dir: indexes can only live in a Docker volume"
-fi
-# A bare `-p 8000:8000` binds 0.0.0.0 — every interface. Every publish must be
-# address-qualified.
-if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null; then
-    fail "deploy-splunk.sh publishes a port without a bind address (binds 0.0.0.0)"
-else
-    pass "all published ports are address-qualified"
-fi
-
-# ------------------------------------------------------------------------------
 group "Shared container lifecycle (lib/docker-lifecycle.sh)"
 # ------------------------------------------------------------------------------
-# Both deploys and the purge script share one implementation of the container
-# lifecycle. Each lesson here was paid for by a shipped defect; consolidation
-# means asserting it ONCE, on the lib — and then asserting that the scripts
-# actually route through the lib instead of growing new inline copies, which is
-# how the two deploys drifted apart in the first place.
+# The deploy routes its container lifecycle through one library. Each lesson
+# here was paid for by a shipped defect (several on the retired Splunk path);
+# they are asserted ONCE, on the lib — and the deploy must actually route
+# through the lib instead of growing new inline copies, which is how the two
+# deploys of the Splunk era drifted apart.
 DL_LIB=scripts/lib/docker-lifecycle.sh
 if [[ ! -f "$DL_LIB" ]]; then fail "$DL_LIB is missing"; else
     # NOT --internal: that blocks published ports in both directions and
@@ -283,8 +146,8 @@ if [[ ! -f "$DL_LIB" ]]; then fail "$DL_LIB is missing"; else
     fi
 fi
 
-# The deploys must route through the lib, not re-grow inline copies.
-for _dep in scripts/deploy-splunk.sh scripts/deploy-kusto.sh; do
+# The deploy must route through the lib, not re-grow inline copies.
+for _dep in scripts/deploy-kusto.sh; do
     _b=$(basename "$_dep")
     if grep -q 'source .*lib/docker-lifecycle.sh' "$_dep" 2>/dev/null; then
         pass "$_b sources the lifecycle lib"
@@ -331,7 +194,7 @@ done
 # purge — and carry no inline deletion that could bring the old defects back.
 # The call grep is line-anchored so a comment naming the function cannot
 # satisfy it.
-for _s in scripts/deploy-splunk.sh scripts/deploy-kusto.sh scripts/purge-splunk-container.sh; do
+for _s in scripts/deploy-kusto.sh; do
     _b=$(basename "$_s")
     if grep -qE 'rm -rf|find .*-delete' "$_s" 2>/dev/null; then
         fail "$_b deletes directories inline instead of via dl_purge_dir_contents"
@@ -480,6 +343,33 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
             fail "CAR functions reference undeclared database(s):$missing"
         fi
     fi
+
+    # CAR coverage, PINNED. Swapping which CAR object has a source is
+    # structurally legal KQL, so it would regress silently. The contract: these
+    # six objects are sourced (driver/module/thread are declared unsourced in
+    # CarCoverage), each has its Car<Object>() function in 40-mitre.kql, and
+    # every pinned name exists in MITRE's own car_data_model.json — so the
+    # model file stays load-bearing, not decorative. Change the set
+    # deliberately, updating docs/Kusto-Port.md coverage with it.
+    _car_missing=$(python3 - <<'PY' 2>/dev/null
+import json
+objs = {o['name'][0] for o in json.load(open('car_data_model.json'))['objects']}
+pinned = {'flow', 'user_session', 'process', 'service', 'registry', 'file'}
+print(' '.join(sorted(pinned - objs)))
+PY
+)
+    if [[ -z "$_car_missing" ]]; then
+        pass "all six sourced CAR objects exist in MITRE's model"
+    else
+        fail "pinned CAR object(s) not in car_data_model.json:$_car_missing"
+    fi
+    for _fn in CarFlow CarUserSession CarProcess CarService CarRegistry CarFile CarCoverage; do
+        if grep -q "^${_fn}()" kusto/schema/40-mitre.kql 2>/dev/null; then
+            pass "40-mitre.kql defines ${_fn}()"
+        else
+            fail "40-mitre.kql lost ${_fn}() — CAR coverage regressed"
+        fi
+    done
 fi
 if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is missing"; else
     # Zeek is mapped by ordinal. Without the header guard, a reordered conn.log
@@ -580,121 +470,9 @@ if [[ ! -f scripts/lib/kusto-api.sh ]]; then fail "scripts/lib/kusto-api.sh is m
         fail "kusto_reachable does not query the engine — reachability degrades to a port check"
     fi
 fi
-# The purge script must not delete every dangling volume on the host. It used
-# to, while announcing that it was removing volumes "related to Splunk" —
-# destroying other projects' data on any shared Docker host.
-if grep -qE 'dangling=true.*\|.*xargs docker volume rm|xargs docker volume rm' \
-     scripts/purge-splunk-container.sh 2>/dev/null; then
-    fail "purge removes ALL dangling volumes — that reaches outside this project"
-else
-    pass "purge does not blanket-remove dangling volumes"
-fi
-
 # ------------------------------------------------------------------------------
-group "Third-party app installation"
+group "Versioning and documentation"
 # ------------------------------------------------------------------------------
-# Splunk_TA_zeek and sankey_diagram_app must not come back into the repo — they
-# carry no licence permitting redistribution.
-for app in Splunk_TA_zeek sankey_diagram_app; do
-    if [[ -d "splunk/etc/apps/$app" ]]; then
-        fail "$app is vendored again — it has no redistribution licence"
-    else
-        pass "$app not vendored"
-    fi
-done
-
-# Every playbook referenced by ANSIBLE_PRE_TASKS must actually exist, or the
-# container's Ansible run fails at start.
-for var in ANSIBLE_PRE_TASKS ANSIBLE_POST_TASKS; do
-    line=$(grep -m1 "^${var}=" scripts/deploy-splunk.sh | sed 's/.*="//;s/"$//')
-    [[ -z "$line" ]] && { fail "$var is not set in deploy-splunk.sh"; continue; }
-    IFS=',' read -ra _pt <<< "$line"
-    for task in "${_pt[@]}"; do
-        # splunk-ansible only executes entries matching ^(http|https|file)://
-        if [[ ! "$task" =~ ^(http|https|file):// ]]; then
-            fail "$var entry is not a URL, so splunk-ansible will skip it: $task"
-            continue
-        fi
-        f="ansible/playbooks/$(basename "$task")"
-        if [[ -f "$f" ]]; then pass "$var exists: $(basename "$f")"
-        else fail "$var references missing playbook: $f"; fi
-    done
-done
-
-# App installation is the image's job via SPLUNK_APPS_URL, not a custom
-# playbook. And the overrides must be a POST task: site.yml runs
-# pre_tasks -> role -> post_tasks, and the role is what installs the apps.
-if grep -q 'SPLUNK_APPS_URL=' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "apps installed via the image's SPLUNK_APPS_URL"
-else
-    fail "deploy-splunk.sh does not pass SPLUNK_APPS_URL"
-fi
-if grep -q 'ANSIBLE_POST_TASKS=.*Apply-App-Overrides' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "app overrides run as a post-task (after apps install)"
-else
-    fail "Apply-App-Overrides must be a POST task — as a pre-task the apps do not exist yet"
-fi
-
-# Conversely, every playbook present should be wired — dead playbooks are how
-# copy_installed_apps.yml and disable_popups.yml lingered unnoticed.
-while IFS= read -r f; do
-    if grep -q "$(basename "$f")" scripts/deploy-splunk.sh; then pass "wired: $(basename "$f")"
-    else fail "$f is not referenced by deploy-splunk.sh"; fi
-done < <(find ansible/playbooks -name "*.yml" -type f | sort)
-
-# The package directory must be mounted, or the install playbook finds nothing.
-if grep -q '/data/dependencies/splunk_apps' scripts/deploy-splunk.sh; then
-    pass "third-party package dir is mounted"
-else
-    fail "deploy-splunk.sh does not mount the third-party package directory"
-fi
-
-# Announced mounts must match actual -v flags. They drifted before: the script
-# announced splunk/ansible and splunk/var, neither of which was real.
-announced=$(grep -cE '^echo "⚙️ Mounting' scripts/deploy-splunk.sh)
-actual=$(grep -cE '^[[:space:]]+-v .*:/data/' scripts/deploy-splunk.sh)
-if [[ "$announced" -eq "$actual" ]]; then pass "mount announcements match ($actual)"
-else fail "deploy-splunk.sh announces $announced mounts but performs $actual"; fi
-
-# Every sourcetype an input assigns should have a props.conf stanza somewhere,
-# or the data lands in Splunk with no parsing at all — which is how the EVTX
-# path sat broken: no input, and no props to receive it.
-#
-# Sourcetypes deliberately provided by an operator-supplied app rather than by
-# this repository. Listed explicitly so the external dependency is visible and
-# checkable, instead of the check either failing forever or being deleted.
-declare -A EXTERNAL_SOURCETYPE=(
-    [zeek]="Splunk_TA_zeek (Corelight Add-on for Zeek) — see data_store/dependencies/splunk_apps/"
-)
-while IFS= read -r st; do
-    if grep -rqF "[$st]" splunk/etc/apps/*/default/props.conf splunk/etc/system/local/props.conf 2>/dev/null; then
-        pass "sourcetype has props: $st"
-    elif [[ -n "${EXTERNAL_SOURCETYPE[$st]:-}" ]]; then
-        pass "sourcetype '$st' provided externally by ${EXTERNAL_SOURCETYPE[$st]}"
-    else
-        fail "inputs.conf assigns sourcetype '$st' with no props.conf stanza"
-    fi
-done < <(grep -hE '^sourcetype[[:space:]]*=' splunk/etc/system/local/inputs.conf 2>/dev/null \
-         | sed 's/.*=[[:space:]]*//' | grep -v '\$' | sort -u)
-
-# ------------------------------------------------------------------------------
-group "Splunk app metadata"
-# ------------------------------------------------------------------------------
-FIRST_PARTY=(BASELINE DETECT Kape_App Log2timeline_App Rekall_App Velociraptor_App)
-for app in "${FIRST_PARTY[@]}"; do
-    conf="splunk/etc/apps/$app/default/app.conf"
-    [[ -f "$conf" ]] || { fail "$conf missing"; continue; }
-    v=$(grep -m1 '^version' "$conf" | sed 's/.*=[[:space:]]*//')
-    if [[ "$v" =~ ^0\. ]]; then pass "$app version $v"
-    else fail "$app declares version '$v' — pre-1.0 project should not ship 1.x"; fi
-    if grep -q '^description[[:space:]]*=[[:space:]]*$' "$conf"; then fail "$app has an empty description"; fi
-done
-if grep -rq 'get-syebrs' splunk/etc/apps/*/default/app.conf 2>/dev/null; then
-    fail "author typo 'get-syebrs' present"
-else
-    pass "no author typo"
-fi
-
 # One project version, stated in one form. Relabelling alpha -> beta touched a
 # dozen files by hand; this is what stops the next one leaving a stray behind.
 PROJECT_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' CHANGELOG.md 2>/dev/null | tr -d '#[] ')
@@ -713,15 +491,6 @@ if [[ -n "$PROJECT_VERSION" ]]; then
     else
         pass "no hardcoded status line in README or task board"
     fi
-    # App versions track the project's major.minor.
-    want_app="${PROJECT_VERSION%%-*}"
-    for conf in splunk/etc/apps/*/default/app.conf; do
-        [[ -f "$conf" ]] || continue
-        app=$(basename "$(dirname "$(dirname "$conf")")")
-        v=$(grep -m1 '^version' "$conf" | sed 's/.*=[[:space:]]*//')
-        if [[ "$v" == "$want_app" ]]; then pass "$app version $v"
-        else fail "$app version '$v' does not match project '$want_app'"; fi
-    done
 else
     fail "could not read a version heading from CHANGELOG.md"
 fi
@@ -742,117 +511,6 @@ if grep -rIl -E '(Status:.*Alpha|🧪 Alpha)' --include='*.md' . 2>/dev/null | g
     fail "a document still labels this project Alpha"
 else
     pass "no stale Alpha status labels"
-fi
-
-# ------------------------------------------------------------------------------
-# MITRE CAR data model wiring.
-#
-# The model constrains each object on tag=car_<object>. If tags.conf does not
-# produce that tag, the object is silently empty — which looks identical to
-# "no data ingested yet". These assert the two halves actually meet, and that
-# the model still matches MITRE's own file.
-# ------------------------------------------------------------------------------
-CAR_APP="splunk/etc/apps/MITRE_CAR_App"
-CAR_MODEL="$CAR_APP/default/data/models/MITRE_CAR.json"
-if [[ -f "$CAR_MODEL" ]]; then
-    # The script's final print is the coverage count, captured for the pass
-    # message — uncaptured it leaked a bare "6" into the harness output.
-    if n=$(python3 - "$CAR_MODEL" "$CAR_APP" car_data_model.json <<'PY' 2>/dev/null
-import json, re, sys
-model_p, app, src_p = sys.argv[1:4]
-model = json.load(open(model_p))
-src   = json.load(open(src_p))
-
-# The generated model must still cover every object and field MITRE declares.
-want = {o['name'][0]: set(o.get('fields', [])) for o in src['objects']}
-have = {o['objectName'][4:]: {f['fieldName'] for f in o['fields']}
-        for o in model['objects']}
-assert set(want) == set(have), f"object drift: {set(want) ^ set(have)}"
-for name, fields in want.items():
-    missing = fields - have[name]
-    assert not missing, f"{name} missing CAR fields: {missing}"
-
-# Every tag the model constrains on must be produced by tags.conf.
-tags = open(f"{app}/default/tags.conf").read()
-produced = {m.group(1) for m in re.finditer(r'^(car_\w+)\s*=\s*enabled', tags, re.M)}
-needed   = {o['constraints'][0]['search'].split('=', 1)[1] for o in model['objects']}
-orphan   = produced - needed
-assert not orphan, f"tags.conf produces tags no object uses: {orphan}"
-
-# Coverage is the headline claim ("6 of 9 objects have a source"), and
-# swapping which object gets tagged is structurally legal — so it would
-# regress silently. Pinned: change this set deliberately when adding or
-# losing a source, and update the app README's coverage table with it.
-EXPECTED = {'car_flow', 'car_user_session', 'car_process',
-            'car_service', 'car_registry', 'car_file'}
-assert produced == EXPECTED, (
-    f"CAR coverage changed: +{produced - EXPECTED} -{EXPECTED - produced}. "
-    "Update EXPECTED here and the coverage table in the app README.")
-
-# Every tagged eventtype must be declared.
-ets  = {m.group(1) for m in re.finditer(r'^\[eventtype=(\w+)\]', tags, re.M)}
-decl = set(re.findall(r'^\[(\w+)\]',
-           open(f"{app}/default/eventtypes.conf").read(), re.M))
-assert ets <= decl, f"tags.conf references undeclared eventtypes: {ets - decl}"
-print(len(needed & produced))
-PY
-    )
-    then
-        pass "CAR model matches car_data_model.json; $n/9 objects have a source"
-    else
-        fail "MITRE CAR model/tags/eventtypes are inconsistent — see the app README"
-    fi
-    # The model is generated. A hand-edit would be silently overwritten.
-    if grep -q 'Do not edit by hand' "$CAR_MODEL"; then
-        pass "CAR model is marked generated"
-    else
-        fail "CAR model lost its generated marker"
-    fi
-else
-    fail "MITRE CAR data model is missing"
-fi
-
-# Every app directory must have an app.conf. Splunk_TA_kape did not — it was a
-# directory holding one zero-byte transforms.conf, left behind when its real
-# config was migrated into Kape_App in 2025-07. It survived a year of docs
-# describing it as "a stub to complete", which is work nobody needed to do.
-for appdir in splunk/etc/apps/*/; do
-    app=$(basename "$appdir")
-    if [[ -f "$appdir/default/app.conf" ]]; then
-        pass "$app has app.conf"
-    else
-        fail "$app has no default/app.conf — is it a real app, or a leftover?"
-    fi
-done
-
-# Lookup CSVs that no lookups.conf defines are inert: they ship, they carry
-# their upstream licence obligation, and Splunk cannot use them. Advisory
-# rather than fatal — the current gap is tracked, not a regression.
-for appdir in splunk/etc/apps/*/; do
-    app=$(basename "$appdir")
-    [[ -d "$appdir/lookups" ]] || continue
-    n_csv=$(find "$appdir/lookups" -type f | wc -l | tr -d ' ')
-    [[ "$n_csv" -gt 0 ]] || continue
-    # `grep -c` prints 0 AND exits 1 on no match, so `|| echo 0` would emit "0\n0".
-    n_def=$(grep -c '^\[' "$appdir/default/lookups.conf" 2>/dev/null || true)
-    n_def=${n_def:-0}
-    if [[ "$n_def" -ge "$n_csv" ]]; then
-        pass "$app: $n_csv lookup file(s), $n_def defined"
-    else
-        skip "$app: $n_csv lookup file(s) but only $n_def defined in lookups.conf — the rest are inert"
-    fi
-done
-
-# A zero-byte .conf contributes nothing to Splunk's config merge, so it is a
-# placeholder rather than configuration. Advisory: it flags apps whose confs
-# imply behaviour they do not have.
-empty_confs=$(find splunk/etc/apps -name '*.conf' -type f -empty 2>/dev/null | sort)
-if [[ -z "$empty_confs" ]]; then
-    pass "no zero-byte .conf files in Splunk apps"
-else
-    while IFS= read -r c; do
-        skip "zero-byte conf (does nothing in Splunk): $c"
-    done <<< "$empty_confs"
 fi
 
 # ------------------------------------------------------------------------------

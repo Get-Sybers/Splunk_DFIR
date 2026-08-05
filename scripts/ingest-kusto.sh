@@ -2,7 +2,7 @@
 #
 # Stage 3 of the Kusto port — load data_store/processed into the emulator.
 #
-# This replaces Splunk's inputs.conf monitor stanzas. There is no monitoring:
+# This is the loading step — there is no file monitoring:
 # the emulator has no managed ingestion pipeline and no streaming ingestion, so
 # loading is an explicit batch step you run after processing evidence.
 #

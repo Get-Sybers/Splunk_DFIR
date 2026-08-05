@@ -1,6 +1,6 @@
 # 📂 `data_store`
 
-This directory contains **all raw and processed forensic data** utilized within the **Splunk DFIR pipeline**.
+This directory contains **all raw and processed forensic data** utilized within the **DX_DFIR pipeline**.
 
 ---
 
@@ -203,9 +203,14 @@ data_store/
   ```
   Zeek outputs are stored in `processed/zeek/`.
 
-### 3️⃣ **Splunk Integration**
+### 3️⃣ **Load into the analysis backend**
 
-- Processed data is automatically ingested into Splunk for detailed analysis and visualization.
+- Load processed data into the Kusto emulator for analysis in KQL:
+  ```bash
+  ./scripts/deploy-kusto.sh          # once
+  ./scripts/apply-kusto-schema.sh    # once per deploy
+  ./scripts/ingest-kusto.sh          # after each processing run
+  ```
 
 ---
 

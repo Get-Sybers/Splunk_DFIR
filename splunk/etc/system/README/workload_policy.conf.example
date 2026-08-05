@@ -1,3 +1,0 @@
-# Enable the admission rules defined in workload_rules.conf.
-[search_admission_control]
-admission_rules_enabled = 1

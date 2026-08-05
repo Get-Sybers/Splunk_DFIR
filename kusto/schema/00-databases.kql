@@ -1,4 +1,4 @@
-// Databases — one per Splunk index.
+// Databases — one per data domain (the Splunk-era indexes they replaced).
 //
 // Applied by scripts/apply-kusto-schema.sh, which sends each statement to the
 // management endpoint. This file is NOT run with .execute database script,
@@ -7,7 +7,7 @@
 // ⚠️ `.create database <name> persist(...)` FAILS if the target folders already
 //    exist. apply-kusto-schema.sh therefore checks `.show databases` first and
 //    skips any that are present, rather than assuming a clean slate. That is
-//    the same trap that once let deploy-splunk.sh report success having
+//    the same trap that once let the retired Splunk deploy report success having
 //    deployed nothing.
 //
 // In ephemeral mode (the default, and Microsoft's recommendation) the volatile

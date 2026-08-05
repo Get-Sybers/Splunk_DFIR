@@ -1,16 +1,17 @@
 name: checks
 
-# Runs everything that can be verified without Docker, Splunk, or evidence.
+# Runs everything that can be verified without Docker or evidence.
 #
 # What this DOES cover: shell syntax, shellcheck, repo-root path resolution,
-# Ansible task-file linting, Splunk conf sanity, app versioning, evidence
-# gitignore coverage, secret patterns, and documentation links.
+# the shared container-lifecycle library's behaviour, Kusto schema and
+# ingestion consistency, evidence gitignore coverage, secret patterns, and
+# documentation links.
 #
 # What it does NOT cover: the pipeline. Nothing here processes a disk image,
-# a PCAP, or an event log, and nothing starts Splunk. Those need a real host
-# with Docker and real evidence — see the open issues tagged `needs-runtime`.
-# A green tick here means the repository is internally consistent, not that
-# the pipeline works.
+# a PCAP, or an event log, and nothing starts the Kusto emulator. Those need a
+# real host with Docker and real evidence — see the open issues tagged
+# `needs-runtime`. A green tick here means the repository is internally
+# consistent, not that the pipeline works.
 
 on:
   push:
@@ -50,13 +51,11 @@ jobs:
             sudo apt-get install -y -qq shellcheck
           fi
           python -m pip install --quiet --upgrade pip
-          python -m pip install --quiet pyyaml ansible-lint
 
       - name: Report tool versions
         run: |
           echo "bash        $(bash --version | head -1)"
           echo "shellcheck  $(shellcheck --version | grep version: | head -1)"
-          echo "ansible-lint $(ansible-lint --version | head -1)"
           echo "python      $(python --version)"
 
       - name: Run repository checks

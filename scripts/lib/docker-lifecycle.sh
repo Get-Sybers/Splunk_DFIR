@@ -2,8 +2,8 @@
 # shellcheck shell=bash
 #
 # Shared Docker container lifecycle for the deploy scripts.
-# Sourced by deploy-splunk.sh, deploy-kusto.sh and purge-splunk-container.sh —
-# not executable.
+# Sourced by deploy-kusto.sh — not executable. (Built when the retired
+# Splunk deploy shared it; the lessons below were paid for on both paths.)
 #
 # Every function here encodes a lesson one of the deploys paid for:
 #

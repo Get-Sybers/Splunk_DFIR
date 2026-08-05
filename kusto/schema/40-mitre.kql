@@ -1,6 +1,7 @@
 // Database: mitre — the MITRE CAR data model in KQL
 //
-// The Kusto equivalent of splunk/etc/apps/MITRE_CAR_App. Same object model,
+// The MITRE CAR model as KQL functions (it replaced the retired Splunk-era
+// MITRE_CAR_App). Same object model,
 // same coverage, same deliberate gaps — expressed as functions rather than as
 // a data model with eventtypes and tags.
 //
@@ -13,16 +14,16 @@
 // simultaneously an EvtxEcmdJson row and a car_process row. Materialising each
 // object would double storage, force exact schema lockstep across every field,
 // and make each mapping fix an ingestion-time change rather than a query-time
-// one. Functions cost nothing to iterate on and match how the Splunk side
+// one. Functions cost nothing to iterate on and match how the Splunk era
 // already works: the data model is a view, not a copy.
 //
 // CROSS-DATABASE ACCESS
 //
 // Source tables live in the host / network / memory databases, so these use
 // database("<name>").<Table>. That is why the databases are separate at all —
-// they mirror the Splunk indexes, as intended.
+// they mirror the data domains, as intended.
 //
-// COVERAGE — 6 of 9 objects, identical to the Splunk app
+// COVERAGE — 6 of 9 objects
 //
 //   CarFlow         Zeek conn
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
@@ -44,7 +45,7 @@
 //
 // EvtxECmd puts EventData in Payload as <Data Name="X">value</Data>, and its
 // PayloadData1..6 summary fields vary by map, so they are not dependable for a
-// specific value. Same approach as the Splunk EXTRACT rules.
+// specific value. Same approach as the Splunk-era EXTRACT rules.
 //=============================================================================
 .create-or-alter function
 with (docstring = "Extract <Data Name='key'> from an EvtxECmd Payload fragment", folder = "Helpers")
@@ -320,7 +321,7 @@ CarFile() {
 // CarCoverage — which objects actually have data.
 //
 // The equivalent of `| tstats count FROM datamodel=MITRE_CAR BY nodename` on
-// the Splunk side. Run this first after ingesting: an object that should be
+// the Splunk era. Run this first after ingesting: an object that should be
 // populated and is not means the mapping is wrong, not that the model is.
 //
 // driver, module and thread are listed with 0 deliberately — they have no
