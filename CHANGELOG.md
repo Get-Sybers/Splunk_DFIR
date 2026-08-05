@@ -594,5 +594,5 @@ when someone ran it. They are listed first, because how they got in matters.
   make that deliberate — deferred, because it is a decision about which version
   you want to run.
 
-[Unreleased]: https://github.com/Get-Sybers/Splunk_DFIR/compare/v0.2.0-beta...HEAD
-[0.2.0-beta]: https://github.com/Get-Sybers/Splunk_DFIR/releases/tag/v0.2.0-beta
+[Unreleased]: https://github.com/Get-Sybers/DX_DFIR/compare/v0.2.0-beta...HEAD
+[0.2.0-beta]: https://github.com/Get-Sybers/DX_DFIR/releases/tag/v0.2.0-beta
