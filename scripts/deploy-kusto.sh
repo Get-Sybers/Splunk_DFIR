@@ -32,13 +32,13 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-KUSTO_CONTAINER="${KUSTO_CONTAINER:-kusto-emulator}"
+# KUSTO_CONTAINER and KUSTO_PORT defaults live in lib/kusto-api.sh (sourced
+# after the argument parse); re-declaring them here made two sources of truth.
 KUSTO_IMAGE="${KUSTO_IMAGE:-mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest}"
 
 # Docs: "at least 2 GB of RAM (4 GB or more recommended)".
 KUSTO_MEMORY="${KUSTO_MEMORY:-4G}"
 
-KUSTO_PORT="${KUSTO_PORT:-8080}"
 KUSTO_BIND_ADDR="${KUSTO_BIND_ADDR:-127.0.0.1}"
 
 # The image is several GB; the first pull is slow.
@@ -210,14 +210,20 @@ if [[ "$PURGE" == "1" ]]; then
 fi
 
 if docker ps -a --format '{{.Names}}' | grep -qx "$KUSTO_CONTAINER"; then
-    case "$KUSTO_REPLACE" in
-        never) echo "🚫 KUSTO_REPLACE=never — container left untouched."; exit 1 ;;
-        ask)
-            [[ -t 0 ]] || { echo "❌ --ask needs a terminal."; exit 1; }
-            read -r -p "Replace existing container '$KUSTO_CONTAINER'? [y/N] " r
-            [[ "$r" =~ ^[Yy]$ ]] || { echo "🚫 Aborted."; exit 1; }
-            ;;
-    esac
+    # A confirmed --purge already authorised destroying the container, so the
+    # replace policy is not consulted again — otherwise KUSTO_REPLACE=never
+    # would veto a purge the operator just typed 'yes' to, and =ask would ask
+    # a second, redundant question about the same destruction.
+    if [[ "$PURGE" != "1" ]]; then
+        case "$KUSTO_REPLACE" in
+            never) echo "🚫 KUSTO_REPLACE=never — container left untouched."; exit 1 ;;
+            ask)
+                [[ -t 0 ]] || { echo "❌ --ask needs a terminal."; exit 1; }
+                read -r -p "Replace existing container '$KUSTO_CONTAINER'? [y/N] " r
+                [[ "$r" =~ ^[Yy]$ ]] || { echo "🚫 Aborted."; exit 1; }
+                ;;
+        esac
+    fi
     echo "🛑 Removing existing container..."
     docker rm -f "$KUSTO_CONTAINER" >/dev/null || {
         echo "❌ Could not remove '$KUSTO_CONTAINER'."; exit 1; }
@@ -313,7 +319,9 @@ echo ""
 # Run
 # ------------------------------------------------------------------------------
 echo "🚀 Starting $KUSTO_CONTAINER ..."
-KUSTO_CID=$(docker run -d --name "$KUSTO_CONTAINER" \
+# -t matches Microsoft's documented invocation exactly
+# (`docker run -e ACCEPT_EULA=Y -m 4G -d -p 8080:8080 -t ...`).
+KUSTO_CID=$(docker run -d -t --name "$KUSTO_CONTAINER" \
     --hostname kusto-emulator \
     "${NETWORK_ARGS[@]}" \
     "${VOLUME_ARGS[@]}" \

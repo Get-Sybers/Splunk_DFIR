@@ -151,10 +151,20 @@ push_to_container() {
 # "<channel>_EvtxECmd_Output.json" per host directory, so three hosts all
 # produce "Security_EvtxECmd_Output.json". Copying them by basename means the
 # last one wins, the earlier hosts are never ingested, and the survivor is
-# ingested once per collision — while the script reports success. The Zeek
-# branch always did this correctly; l2t and evtx did not.
+# ingested once per collision — while the script reports success.
+#
+# The name is also SANITISED to [A-Za-z0-9._-]. Staged names are spliced into
+# KQL as @"..." verbatim strings, where an embedded double-quote terminates the
+# literal — and host directories are operator-named, so a path like
+# WinEvt/WKS"1/ would otherwise break (or worse, reshape) the ingest command.
+# Sanitising can collide ("a b" and "a_b" both become "a_b"), so an 8-char hash
+# of the original path is prefixed: uniqueness comes from the hash, safety from
+# the charset.
 staged_name() {
-    printf '%s' "${1#"$PROCESSED_DIR"/}" | tr '/' '_'
+    local rel="${1#"$PROCESSED_DIR"/}" safe hash
+    safe=$(printf '%s' "$rel" | tr -c 'A-Za-z0-9._-' '_')
+    hash=$(printf '%s' "$rel" | sha1sum | cut -c1-8)
+    printf '%s_%s' "$hash" "$safe"
 }
 
 # stage_and_collect <array-name> <file...>
@@ -188,7 +198,12 @@ cleanup_staging() {
     rm -rf "${STAGING_DIR:?}" 2>/dev/null || true
     docker exec "$KUSTO_CONTAINER" rm -rf "$CONTAINER_STAGE" >/dev/null 2>&1 || true
 }
-trap cleanup_staging EXIT INT TERM
+# EXIT alone is not enough, and INT/TERM alone is wrong in a different way: a
+# trap handler that does not exit lets bash RESUME the script after Ctrl-C —
+# with the staging directories now deleted, every later copy fails confusingly.
+# So INT/TERM clean up and then actually exit (130 = interrupted).
+trap cleanup_staging EXIT
+trap 'cleanup_staging; trap - EXIT; exit 130' INT TERM
 
 if [[ $DRY_RUN -eq 0 ]]; then
     docker exec "$KUSTO_CONTAINER" mkdir -p "$CONTAINER_STAGE" >/dev/null 2>&1 || {
@@ -285,14 +300,15 @@ if want zeek; then
                 TOTAL_FAILED=$((TOTAL_FAILED + 1))
                 continue
             fi
-            staged="$STAGING_DIR/$(echo "${f#"$PROCESSED_DIR"/}" | tr '/' '_')"
+            # Same sanitised, collision-proof naming as every other source.
+            staged="$STAGING_DIR/$(staged_name "$f")"
             if [[ $DRY_RUN -eq 0 ]]; then
                 # Strip Zeek's '#' header lines. Kusto cannot skip them and
                 # they would otherwise be ingested as data rows.
                 grep -v '^#' "$f" > "$staged" 2>/dev/null || true
                 [[ -s "$staged" ]] || { rm -f "$staged"; continue; }
             fi
-            r="$CONTAINER_STAGE/$(basename "$staged")"
+            r="$CONTAINER_STAGE/$(staged_name "$f")"
             if [[ $DRY_RUN -eq 0 ]]; then
                 if ! push_to_container "$staged" "$r"; then
                     echo "      ❌ could not copy into the container: $f"
