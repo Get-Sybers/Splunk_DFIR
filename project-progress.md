@@ -125,9 +125,11 @@ zero-byte `BASELINE` confs, and the operator-supplied `Splunk_TA_zeek` /
   resolution, the container-lifecycle library's behavioural tests, Kusto
   schema consistency, gitignore, secrets, doc links). The count is whatever
   the harness prints; it is deliberately not restated here.
-- ✅ `Invoke-ScriptAnalyzer` for the PowerShell scripts — runs in CI on
-  `windows-latest`.
 - ⬜ A smoke test that runs the pipeline against a small public sample image.
+
+(The `Invoke-ScriptAnalyzer` CI job went with the KAPE PowerShell scripts —
+there is no PowerShell in the repo now. If the Velociraptor collector path
+brings any back, the job comes back with it.)
 
 ### 🔹 **Velociraptor offline collectors (EZ Tools) & Raw EVTX**
 - Build the offline-collector path: Velociraptor collectors running the EZ
