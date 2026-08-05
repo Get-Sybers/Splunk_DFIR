@@ -43,6 +43,14 @@ script names, sourcetypes, field names, and app layouts included.
   never actually purge `/kustodata/dbs/<db>/…` — to `-exec rm -rf` with the
   same honest failure reporting.
 
+- **`ingest-kusto.sh` sources are a descriptor table.** The three
+  near-identical find→stage→ingest blocks (Plaso, EvtxECmd, Zeek) collapsed
+  into one table-driven loop; adding a source is now a row, plus hooks only if
+  its files need per-file handling. Zeek's conn-only filter, fail-closed
+  `#fields` order guard and `#`-header strip live on as its prepare hook, and
+  every guarantee is unchanged: same output, same refusal messages, same
+  collision-free container naming from the original path.
+
 ### Added
 
 - **Kusto emulator port — a second, offline analysis backend.** Runs Azure Data Explorer's

@@ -214,137 +214,160 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Plaso — CSV, fixed 23-column schema
+# Zeek hooks — the one source whose files cannot be staged as-is.
 # ------------------------------------------------------------------------------
-if want l2t; then
-    echo "📄 Plaso (l2t:csv -> host.L2tCsv)"
-    mapfile -t files < <(find "$PROCESSED_DIR/log2timeline/csv" -name '*.csv' -type f 2>/dev/null | sort)
-    if [[ ${#files[@]} -eq 0 ]]; then
-        echo "      (none)"
-    else
-        remote=()
-        stage_and_collect remote "${files[@]}" || true
-        # psteal writes a header row. Without ignoreFirstRecord it is ingested
-        # as data: ordinal 1 maps to Timestamp:datetime and receives the literal
-        # string "datetime", giving one null-timestamped junk row per file that
-        # then flows into CarFile()/CarProcess(). The comment used to claim this
-        # was handled while the property was never emitted.
-        ingest_files host L2tCsv L2tCsvMapping csv 1 "${remote[@]}"
+
+# ZeekConnMapping maps by ORDINAL, so it is only correct if conn.log's columns
+# are in the order the mapping assumes. Zeek's field order is stable in
+# practice, but a different version or a site script can change it — and a
+# silent shift would load destination IPs into the source column. On forensic
+# data that is not a cosmetic bug, so the '#fields' header is checked before
+# anything is ingested.
+ZEEK_CONN_EXPECTED="ts uid id.orig_h id.orig_p id.resp_h id.resp_p proto"
+# FAILS CLOSED. Originally `|| return 0` — no header meant "verified", which is
+# backwards: a file with no #fields is exactly the case where the ordinal
+# mapping cannot be checked, so ingesting it is the risk the guard exists to
+# prevent.
+zeek_fields_ok() {
+    local log="$1" line actual
+    line=$(grep -m1 '^#fields' "$log" 2>/dev/null)
+    [[ -n "$line" ]] || return 1
+    # First 7 fields are the ones CAR depends on; the tail varies more.
+    actual=$(printf '%s' "$line" | cut -f2-8 | tr '\t' ' ')
+    [[ "$actual" == "$ZEEK_CONN_EXPECTED" ]]
+}
+
+# prepare hook: stdout is the HOST PATH to stage (captured by the driver), so
+# all diagnostics go to stderr. Return 1 to skip the file quietly, 2 to refuse
+# it (the driver counts that as a failure).
+zeek_prepare() {
+    local f="$1" staged
+    # Only conn.log is typed and ingested. Staging the other 68 log types read
+    # and rewrote every byte of them for nothing — on a large capture that is
+    # tens of GB of pointless I/O and transient disk.
+    [[ "$(basename "$f" .log)" == "conn" ]] || return 1
+    if ! zeek_fields_ok "$f"; then
+        {
+            echo "      ❌ $f"
+            echo "         conn.log column order does not match ZeekConnMapping."
+            echo "         Expected first 7: $ZEEK_CONN_EXPECTED"
+            if grep -q '^#fields' "$f" 2>/dev/null; then
+                echo "         Found:            $(grep -m1 '^#fields' "$f" | cut -f2-8 | tr '\t' ' ')"
+            else
+                echo "         Found:            (no #fields header — cannot verify)"
+            fi
+            echo "         Refusing to ingest — an ordinal mapping against a"
+            echo "         reordered file would put addresses in the wrong columns."
+        } >&2
+        return 2
     fi
-fi
+    staged="$STAGING_DIR/$(staged_name "$f")"
+    if [[ $DRY_RUN -eq 0 ]]; then
+        # Strip Zeek's '#' header lines. Kusto cannot skip them and they would
+        # otherwise be ingested as data rows.
+        grep -v '^#' "$f" > "$staged" 2>/dev/null || true
+        [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
+    fi
+    printf '%s\n' "$staged"
+}
+
+# post hook: runs after the source's ingest, with every found file as args.
+zeek_post() {
+    local non_conn
+    non_conn=$(printf '%s\n' "$@" | grep -cv '/conn\.log$' || true)
+    if [[ "${non_conn:-0}" -gt 0 ]]; then
+        echo "      ℹ️  ${non_conn} non-conn Zeek log(s) not ingested."
+        echo "         Only conn.log is typed — it is the one CAR needs."
+        echo "         The generic Zeek table exists; wiring the other 68"
+        echo "         log types is deliberately left undone."
+    fi
+}
 
 # ------------------------------------------------------------------------------
-# EvtxECmd — line-delimited JSON
+# Source table — one row per source, one driver below. The three ingest paths
+# were near-identical blocks that had already drifted in small ways; a new
+# source is now a row (plus hooks only if its files need rewriting).
+#
+#   key | label | subdir | glob | db | table | mapping | format | hdr | prepare | post
+#
+#   prepare '-'  stage the found files as-is (batched)
+#   prepare fn   per file: prints the host path to stage (a rewritten copy is
+#                fine), prints nothing/rc 1 to skip, rc 2 to refuse (counted
+#                as a failure)
+#   db '-'       NOT IMPLEMENTED: announced honestly, nothing ingested. Their
+#                tables and mappings exist, but Artefact/Plugin must be derived
+#                from the source path per file and .ingest cannot inject a
+#                constant column — doing it properly needs an ingest-time
+#                property or a post-ingest update, and guessing at that without
+#                a running emulator to test against is how the --internal bug
+#                happened. See docs/Kusto-Port.md, 'What is not done'.
 # ------------------------------------------------------------------------------
-if want evtx; then
-    echo "📄 EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)"
-    mapfile -t files < <(find "$PROCESSED_DIR/windows_logs" -name '*_EvtxECmd_Output.json' -type f 2>/dev/null | sort)
-    if [[ ${#files[@]} -eq 0 ]]; then
-        echo "      (none)"
-    else
-        remote=()
-        stage_and_collect remote "${files[@]}" || true
-        ingest_files host EvtxEcmdJson EvtxEcmdJsonMapping multijson 0 "${remote[@]}"
-    fi
-fi
+SOURCES=(
+    "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
+    "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
+    "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
+    "kape|kape — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
+    "velociraptor|velociraptor — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
+    "rekall|rekall — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
+)
 
-# ------------------------------------------------------------------------------
-# Zeek — TSV, '#' header lines stripped into a staging copy
-# ------------------------------------------------------------------------------
-if want zeek; then
-    echo "📄 Zeek (-> network.ZeekConn / network.Zeek)"
-    mapfile -t files < <(find "$PROCESSED_DIR/zeek" -name '*.log' -type f 2>/dev/null | sort)
+# hdr=1 sets ignoreFirstRecord for the ingest. psteal writes a header row;
+# without it the header is ingested as data: ordinal 1 maps to
+# Timestamp:datetime and receives the literal string "datetime", giving one
+# null-timestamped junk row per file that then flows into CarFile()/
+# CarProcess(). The comment used to claim this was handled while the property
+# was never emitted.
+run_source() {
+    local key label subdir glob db table mapping fmt hdr prepare post
+    IFS='|' read -r key label subdir glob db table mapping fmt hdr prepare post <<< "$1"
+    want "$key" || return 0
+    echo "📄 $label"
+    if [[ "$db" == "-" ]]; then
+        echo "      Tables and mappings exist; the loader does not."
+        echo "      See docs/Kusto-Port.md, 'What is not done'."
+        return 0
+    fi
+
+    local files=() remote=() f hostpath rc r
+    mapfile -t files < <(find "$PROCESSED_DIR/$subdir" -name "$glob" -type f 2>/dev/null | sort)
     if [[ ${#files[@]} -eq 0 ]]; then
         echo "      (none)"
+        return 0
+    fi
+
+    if [[ "$prepare" == "-" ]]; then
+        stage_and_collect remote "${files[@]}" || true
     else
         [[ $DRY_RUN -eq 0 ]] && mkdir -p "$STAGING_DIR"
-        conn_remote=()
-
-        # ZeekConnMapping maps by ORDINAL, so it is only correct if conn.log's
-        # columns are in the order the mapping assumes. Zeek's field order is
-        # stable in practice, but a different version or a site script can
-        # change it — and a silent shift would load destination IPs into the
-        # source column. On forensic data that is not a cosmetic bug, so the
-        # '#fields' header is checked before anything is ingested.
-        ZEEK_CONN_EXPECTED="ts uid id.orig_h id.orig_p id.resp_h id.resp_p proto"
-        # FAILS CLOSED. Originally `|| return 0` — no header meant "verified",
-        # which is backwards: a file with no #fields is exactly the case where
-        # the ordinal mapping cannot be checked, so ingesting it is the risk the
-        # guard exists to prevent.
-        zeek_fields_ok() {
-            local log="$1" line actual
-            line=$(grep -m1 '^#fields' "$log" 2>/dev/null)
-            [[ -n "$line" ]] || return 1
-            # First 7 fields are the ones CAR depends on; the tail varies more.
-            actual=$(printf '%s' "$line" | cut -f2-8 | tr '\t' ' ')
-            [[ "$actual" == "$ZEEK_CONN_EXPECTED" ]]
-        }
-
         for f in "${files[@]}"; do
-            logtype="$(basename "$f" .log)"
-            # Only conn.log is typed and ingested. Staging the other 68 log
-            # types read and rewrote every byte of them for nothing — on a large
-            # capture that is tens of GB of pointless I/O and transient disk.
-            [[ "$logtype" == "conn" ]] || continue
-            if ! zeek_fields_ok "$f"; then
-                echo "      ❌ $f"
-                echo "         conn.log column order does not match ZeekConnMapping."
-                echo "         Expected first 7: $ZEEK_CONN_EXPECTED"
-                if grep -q '^#fields' "$f" 2>/dev/null; then
-                    echo "         Found:            $(grep -m1 '^#fields' "$f" | cut -f2-8 | tr '\t' ' ')"
-                else
-                    echo "         Found:            (no #fields header — cannot verify)"
-                fi
-                echo "         Refusing to ingest — an ordinal mapping against a"
-                echo "         reordered file would put addresses in the wrong columns."
+            hostpath=$("$prepare" "$f"); rc=$?
+            if (( rc == 2 )); then
                 TOTAL_FAILED=$((TOTAL_FAILED + 1))
                 continue
             fi
-            # Same sanitised, collision-proof naming as every other source.
-            staged="$STAGING_DIR/$(staged_name "$f")"
-            if [[ $DRY_RUN -eq 0 ]]; then
-                # Strip Zeek's '#' header lines. Kusto cannot skip them and
-                # they would otherwise be ingested as data rows.
-                grep -v '^#' "$f" > "$staged" 2>/dev/null || true
-                [[ -s "$staged" ]] || { rm -f "$staged"; continue; }
-            fi
+            (( rc != 0 )) && continue
+            [[ -n "$hostpath" ]] || continue
+            # The container-side name still derives from the ORIGINAL file, so
+            # per-host files stay collision-free regardless of staging layout.
             r="$CONTAINER_STAGE/$(staged_name "$f")"
             if [[ $DRY_RUN -eq 0 ]]; then
-                if ! push_to_container "$staged" "$r"; then
+                if ! push_to_container "$hostpath" "$r"; then
                     echo "      ❌ could not copy into the container: $f"
                     TOTAL_FAILED=$((TOTAL_FAILED + 1))
                     continue
                 fi
             fi
-            conn_remote+=("$r")
+            remote+=("$r")
         done
-        ingest_files network ZeekConn ZeekConnMapping tsv 0 "${conn_remote[@]}"
-        non_conn=$(printf '%s\n' "${files[@]}" | grep -cv '/conn\.log$' || true)
-        if [[ "${non_conn:-0}" -gt 0 ]]; then
-            echo "      ℹ️  ${non_conn} non-conn Zeek log(s) not ingested."
-            echo "         Only conn.log is typed — it is the one CAR needs."
-            echo "         The generic Zeek table exists; wiring the other 68"
-            echo "         log types is deliberately left undone."
-        fi
     fi
-fi
 
-# ------------------------------------------------------------------------------
-# KAPE / Velociraptor / Rekall — semi-structured
-#
-# Not wired up. Their tables and mappings exist, but Artefact/Plugin has to be
-# derived from the source path per file, which means a per-file ingest with an
-# extra column — and the .ingest command cannot inject a constant. Doing it
-# properly needs either an ingest-time property or a post-ingest update, and
-# guessing at that without a running emulator to test against is how the
-# --internal bug happened.
-# ------------------------------------------------------------------------------
-for src in kape velociraptor rekall; do
-    if want "$src"; then
-        echo "📄 ${src} — NOT IMPLEMENTED"
-        echo "      Tables and mappings exist; the loader does not."
-        echo "      See docs/Kusto-Port.md, 'What is not done'."
-    fi
+    ingest_files "$db" "$table" "$mapping" "$fmt" "$hdr" "${remote[@]}"
+    [[ "$post" != "-" ]] && "$post" "${files[@]}"
+    return 0
+}
+
+for _row in "${SOURCES[@]}"; do
+    run_source "$_row"
 done
 
 echo ""
