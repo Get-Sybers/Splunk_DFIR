@@ -141,8 +141,8 @@ than failing halfway and leaving a partial state.
 > necessary, the data is 'coerced' into this schema during ingestion."
 
 No schema inference. Every table needs explicit DDL, which means the port has
-to decide column types for each source up front — Plaso CSV, Zeek TSV, KAPE
-CSV/JSON, EvtxECmd JSON. That is the bulk of Stage 2's work.
+to decide column types for each source up front — Plaso CSV, Zeek TSV,
+EvtxECmd JSON, Velociraptor JSON. That is the bulk of Stage 2's work.
 
 One `.ingest into` locator is one file; multiple files go in one command as
 multiple locators, or via an external table over the directory.
@@ -156,24 +156,26 @@ later stage is needed to get value from an earlier one.
 |:--|:---|:---|
 | **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
-| **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; KAPE, Velociraptor and Rekall are not | 2 |
-| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
+| **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; Velociraptor and Rekall are not | 2 |
+| **4** | ✅ `kusto/schema/40-mitre.kql` — 5 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
 
 Stated plainly so it is not mistaken for working:
 
-- **KAPE, Velociraptor and Rekall are not ingested.** Their tables and CAR
-  functions exist and `KapeJson`/`VelociraptorJson`/`RekallJson` have ingestion
-  mappings, but **`KapeCsv` has no mapping** and the loader populates none of
-  them. Each needs an
+- **Velociraptor and Rekall are not ingested.** Their tables exist with
+  ingestion mappings, but the loader populates neither. Each needs an
   `Artefact`/`Plugin` column derived from the source path, and `.ingest into`
   cannot inject a constant column — that needs either an ingest-time property
   or a post-ingest update, and picking one without a running emulator to test
   against is exactly how the `--internal` bug happened.
-  Consequence: `CarRegistry()` and the KAPE half of `CarProcess()` and
-  `CarFile()` return nothing until this is finished.
+- **The `registry` CAR object is unsourced.** Its only source was the removed
+  KAPE path. The planned replacement is **Velociraptor offline collectors
+  running the EZ Tools** — the same Zimmerman parsers with the same field
+  names, so the retired `KapeJson` mapping in git history is the starting
+  point when that lands. Until then `CarCoverage()` pins registry at 0
+  alongside driver/module/thread.
 - **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
   `car_flow` needs. The generic `Zeek` table exists for the rest.
 - **Nothing has been run against a real emulator.** No Docker here. The full

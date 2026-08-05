@@ -37,7 +37,7 @@ Loads data_store/processed into the Kusto emulator. Run after processing
 evidence, and again after any redeploy — the database is ephemeral by default.
 
   --only SOURCE    Ingest one source only:
-                   l2t | zeek | evtx | kape | velociraptor | rekall
+                   l2t | zeek | evtx | velociraptor | rekall
   --dry-run        List what would be ingested; contact nothing.
   -h, --help       Show this and exit.
 
@@ -65,8 +65,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$ONLY" in
-    ""|l2t|zeek|evtx|kape|velociraptor|rekall) ;;
-    *) echo "❌ --only must be one of: l2t zeek evtx kape velociraptor rekall"; exit 1 ;;
+    ""|l2t|zeek|evtx|velociraptor|rekall) ;;
+    *) echo "❌ --only must be one of: l2t zeek evtx velociraptor rekall"; exit 1 ;;
 esac
 
 want() { [[ -z "$ONLY" || "$ONLY" == "$1" ]]; }
@@ -306,7 +306,6 @@ SOURCES=(
     "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
-    "kape|kape — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
     "velociraptor|velociraptor — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
     "rekall|rekall — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
 )

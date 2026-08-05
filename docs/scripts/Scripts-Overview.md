@@ -2,7 +2,8 @@
 
 This directory contains automation scripts for **forensic data processing** and
 for **deploying, schema-loading and ingesting into the Kusto emulator** — the
-DX_DFIR pipeline.
+DX_DFIR pipeline. Artefact collection is planned via **Velociraptor offline
+collectors running the EZ Tools** (replacing the removed KAPE automation).
 
 ---
 
@@ -19,9 +20,7 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 | `process-rekall-json.sh`           | Linux    | Normalises Rekall JSON memory-analysis output. ⚠️ No Kusto loader yet.                               |
 | `deploy-kusto.sh`                  | Linux    | Deploys the **Kusto emulator** — the analysis backend. Localhost-only by default (the emulator has **no auth**), isolated network, ephemeral database by default. ⚠️ Sets `ACCEPT_EULA=Y` on your behalf. `--help` for all flags. |
 | `apply-kusto-schema.sh`            | Linux    | Creates the Kusto databases, tables, ingestion mappings and MITRE CAR functions. Idempotent — safe to re-run. |
-| `ingest-kusto.sh`                  | Linux    | Loads `data_store/processed` into the emulator. Plaso, EvtxECmd and Zeek `conn` only; KAPE/Velociraptor/Rekall loaders are not implemented yet. |
-| `Setup-Environment-Kape.ps1`       | Windows  | Prepares the KAPE dependency layout. ⚠️ Requires operator-supplied `kape.exe`.                       |
-| `Process-Kape-ALL.ps1`             | Windows  | Runs KAPE targets/modules and writes output into the data store. ⚠️ See KAPE licensing below.        |
+| `ingest-kusto.sh`                  | Linux    | Loads `data_store/processed` into the emulator. Plaso, EvtxECmd and Zeek `conn` only; Velociraptor/Rekall loaders are not implemented yet. |
 
 Shared libraries live in `scripts/lib/`: `docker-lifecycle.sh` (container
 replace policy, isolated network, readiness, egress verification, honest
@@ -29,17 +28,15 @@ directory purge) and `kusto-api.sh` (the emulator's REST endpoints, failure
 detection, reachability).
 
 The Splunk-era scripts (`deploy-splunk.sh`, `purge-splunk-container.sh`,
-`config-splunk-inputs.sh`) were retired with the Splunk stack — git history
-and the frozen `deprecated` branch keep them.
+`config-splunk-inputs.sh`) were retired with the Splunk stack, and the KAPE
+PowerShell automation (`Process-Kape-ALL.ps1`, `Setup-Environment-Kape.ps1`)
+was removed in favour of the planned Velociraptor collector path — git
+history and the frozen `deprecated` branch keep them.
 
 ---
 
 ## ⚠️ Licensing before you run
 
-- **KAPE is not free for commercial use.** The two PowerShell scripts drive
-  KAPE, which under its Solo Edition EULA is restricted to personal,
-  educational, and law-enforcement use. A paid engagement or client network
-  needs a KAPE Enterprise licence from Kroll.
 - **`deploy-kusto.sh` accepts Microsoft's Software License Terms for you**
   (`ACCEPT_EULA=Y`). The emulator is provided *as-is*, without support or
   warranties, and is documented as generally unsuitable for production

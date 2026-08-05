@@ -38,8 +38,7 @@ Extract the **.NET** build of EvtxECmd into
 `data_store/dependencies/evtxecmd/`, including its `Maps/` folder. See
 [the README there](/data_store/dependencies/evtxecmd/README.md).
 
-EvtxECmd is **MIT licensed**, so unlike the KAPE path there is no restriction on
-commercial use.
+EvtxECmd is **MIT licensed** — no restriction on commercial use.
 
 ## Usage
 

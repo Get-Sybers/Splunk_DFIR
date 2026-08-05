@@ -134,36 +134,24 @@
 ]```
 
 //=============================================================================
-// KAPE and Velociraptor — semi-structured.
+// Velociraptor — semi-structured.
 //
-// These are deliberately NOT given typed columns. KAPE output is Eric
-// Zimmerman's per-artefact tool output: every artefact has a different shape,
-// and there are dozens. Velociraptor's JSON varies per VQL artefact.
+// Deliberately NOT given typed columns: Velociraptor's JSON varies per VQL
+// artefact, and the planned offline collectors run Eric Zimmerman's tools,
+// whose output is per-artefact with a different shape each time. Kusto
+// handles this natively with a dynamic column — the honest representation,
+// better than inventing a lowest-common-denominator schema that silently
+// drops columns. Access is Record.FieldName in KQL.
 //
-// Kusto handles this natively with a dynamic column — which is the honest
-// representation, and better than inventing a lowest-common-denominator schema
-// that silently drops columns. Access is Record.FieldName in KQL.
+// Artefact is derived from the source path at ingest time.
 //
-// Artefact is derived from the source path at ingest time, replacing what
-// the Splunk-era extract_kape_sourcetype transform did with MetaData:Source.
+// (A KapeJson twin of this table existed until the KAPE path was removed in
+// favour of Velociraptor offline collectors running the same EZ Tools. One
+// lesson from it survives: a CSV ingestion mapping maps ordinals to columns
+// and CANNOT build a `dynamic` object — so if the collectors emit EZ-tool
+// CSV rather than JSON, the answer is typed per-artefact tables or a
+// JSON-conversion step, never a dynamic-column CSV table.)
 //=============================================================================
-.create-merge table KapeJson (
-    Artefact:   string,
-    SourceFile: string,
-    Record:     dynamic
-)
-
-.create-or-alter table KapeJson ingestion json mapping "KapeJsonMapping"
-```[
-  {"Column":"Record", "Properties":{"Path":"$"}}
-]```
-
-// No KapeCsv table. A CSV ingestion mapping maps ordinals to columns and
-// cannot build a `dynamic` object, so the KapeJson shape simply does not work
-// for CSV — this was declared with a Record:dynamic column and no mapping,
-// which could never have ingested anything. Zimmerman's CSV output is
-// per-artefact with different columns each time, so the real answer is typed
-// tables per artefact, or converting to JSON before ingest. Neither is done.
 
 .create-merge table VelociraptorJson (
     Artefact:   string,

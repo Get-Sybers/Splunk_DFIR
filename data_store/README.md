@@ -18,7 +18,6 @@ data_store/
    │   └── other_raw_data/  # Additional raw data sources
    │
    └── processed/
-      └── kape/
       │   └── <your-disk-image>/
       │       └── EventLogs/
       │       │   └── yyyymmddhhmmss_EvtxECmd_Output.json

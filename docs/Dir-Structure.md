@@ -24,26 +24,9 @@
         │   └── memory/                               # Raw memory captures
         │   └── other_raw_data/                       # Additional raw data sources (WinEvt/<host>/ for .evtx)
         │
-        └── dependencies/                             # Operator-supplied tools (EvtxECmd, KAPE)
+        └── dependencies/                             # Operator-supplied tools (EvtxECmd)
         │
         └── processed/                                # Everything ingest-kusto.sh loads
-            └── kape/                                 # Various kape outputs in the filestructure kape creates
-            │   └── <your-disk-image>/
-            │       └── EventLogs/
-            │       │
-            │       └── FileDeletion/
-            │       │
-            │       └── FileFolderAccess/
-            │       │
-            │       └── ProgramExecution/
-            │       │
-            │       └── SRUMDatabase/
-            │       │
-            │       └── Registry/
-            │       │   └── yyyymmddhhmmss/
-            │       │
-            │       └── SOF-ELK/
-            │
             └── linux_logs/                           # Linux Distro logs (not yet wired into the backend)
             │   └── syslog/                           # Global System Activity
             │   │
@@ -73,7 +56,7 @@
             └── zeek/
             │   └── your-pcap-filename/               # Zeek logs            -> network.ZeekConn (conn.log)
             │
-            └── zimmerman/                            # Zimmerman Tools Output
+            └── zimmerman/                            # EZ Tools output (planned: Velociraptor offline collectors)
             │
             └── csv/                                  # Any CSV
             │
@@ -82,5 +65,7 @@
 
 The Splunk-era tree (`splunk/` with its eight apps, `ansible/` with the
 in-container provisioning playbooks) was retired when the SIEM moved to the
-Kusto emulator. It survives in git history and on the frozen
+Kusto emulator, and the KAPE automation (`processed/kape/`, the two PowerShell
+scripts) was removed in favour of the planned Velociraptor offline collectors
+running the EZ Tools. All of it survives in git history and on the frozen
 [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) branch.

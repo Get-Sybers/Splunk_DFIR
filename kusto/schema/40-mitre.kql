@@ -23,14 +23,18 @@
 // database("<name>").<Table>. That is why the databases are separate at all —
 // they mirror the data domains, as intended.
 //
-// COVERAGE — 6 of 9 objects
+// COVERAGE — 5 of 9 objects
 //
 //   CarFlow         Zeek conn
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
-//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts, KAPE
+//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts
 //   CarService      EvtxECmd 7045/4697
-//   CarRegistry     KAPE Registry
-//   CarFile         Plaso filesystem rows, KAPE file access/deletion
+//   CarFile         Plaso filesystem rows
+//
+//   registry — NO SOURCE right now. Its only source was the removed KAPE
+//   path; the planned replacement is Velociraptor offline collectors running
+//   the EZ Tools (same Zimmerman field names, so the old KapeJson mapping in
+//   git history is the starting point when that lands).
 //
 //   driver, module, thread — NO SOURCE. Nothing dead-box produces driver
 //   loads, image loads or thread creation; those need Sysmon (events 6/7/8) or
@@ -129,11 +133,10 @@ CarUserSession() {
 //=============================================================================
 // CarProcess — process creation / termination
 //
-// Three sources with genuinely different fidelity, unioned:
+// Two sources with genuinely different fidelity, unioned:
 //
 //   EvtxECmd 4688/4689  full: pid, ppid, parent, command line
 //   Plaso execution     Prefetch/Amcache/AppCompatCache — exe only
-//   KAPE ProgramExecution — exe only
 //
 // The artefact sources record THAT a binary ran, not the process tree that ran
 // it, so pid/ppid/parent_exe/command_line are null for them. That is the
@@ -209,28 +212,7 @@ CarProcess() {
         | project Timestamp, action, exe, image_path, parent_exe,
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
                   user, hostname, Origin, SourceFile = DisplayName;
-    let FromKape =
-        database("host").KapeJson
-        | where Artefact has "ProgramExecution"
-        | extend
-            Timestamp         = todatetime(coalesce(Record.LastRun, Record.TimeCreated, Record.RunTime)),
-            action            = "create",
-            exe               = tostring(coalesce(Record.ExecutableName, Record.ApplicationName, Record.FileName)),
-            image_path        = tostring(coalesce(Record.FullPath, Record.Path, Record.ExecutablePath)),
-            parent_exe        = "",
-            parent_image_path = "",
-            command_line      = "",
-            pid               = long(null),
-            ppid              = long(null),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = tostring(coalesce(Record.UserName, Record.User)),
-            hostname          = "",
-            Origin            = strcat("kape:", Artefact)
-        | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile;
-    union FromEvtx, FromPlaso, FromKape
+    union FromEvtx, FromPlaso
 }
 
 //=============================================================================
@@ -252,35 +234,10 @@ CarService() {
 }
 
 //=============================================================================
-// CarRegistry — registry keys and values
-//
-// Mapped on the field names Zimmerman's registry tools share. KAPE output is
-// per-artefact, so a coalesce over the plausible names is the pragmatic
-// approach; anything artefact-specific belongs in a dedicated function.
-//=============================================================================
-.create-or-alter function
-with (docstring = "MITRE CAR 'registry' object", folder = "CAR")
-CarRegistry() {
-    database("host").KapeJson
-    | where Artefact has "Registry"
-    | extend
-        key      = tostring(coalesce(Record.KeyPath, Record.Key)),
-        value    = tostring(coalesce(Record.ValueName, Record.Value)),
-        data     = tostring(Record.ValueData),
-        hive     = tostring(coalesce(Record.HiveName, Record.HivePath)),
-        user     = tostring(coalesce(Record.UserName, Record.User)),
-        hostname = "",
-        action   = ""
-    | project Timestamp = todatetime(coalesce(Record.LastWriteTimestamp, Record.TimeCreated)),
-              action, key, value, data, hive, user, hostname, SourceFile
-}
-
-//=============================================================================
 // CarFile — filesystem activity
 //
 // Plaso's timestamp_desc says WHICH timestamp a row represents, which is what
-// makes the CAR action derivable at all. KAPE's file sets carry the action in
-// the artefact name instead.
+// makes the CAR action derivable at all.
 //=============================================================================
 .create-or-alter function
 with (docstring = "MITRE CAR 'file' object", folder = "CAR")
@@ -301,20 +258,7 @@ CarFile() {
         | extend creation_time = iff(action == "create", Timestamp, datetime(null))
         | project Timestamp, action, file_name, file_path, hostname, user,
                   creation_time, Origin = "plaso", SourceFile = DisplayName;
-    let FromKape =
-        database("host").KapeJson
-        | where Artefact has "FileFolderAccess" or Artefact has "FileDeletion"
-        | extend
-            action        = iff(Artefact has "FileDeletion", "delete", "read"),
-            file_name     = tostring(coalesce(Record.FileName, Record.Name)),
-            file_path     = tostring(coalesce(Record.FullPath, Record.Path)),
-            hostname      = "",
-            user          = tostring(coalesce(Record.UserName, Record.User)),
-            creation_time = todatetime(Record.CreatedOn)
-        | project Timestamp = todatetime(coalesce(Record.TimeCreated, Record.LastModified, Record.CreatedOn)),
-                  action, file_name, file_path, hostname, user, creation_time,
-                  Origin = strcat("kape:", Artefact), SourceFile;
-    union FromPlaso, FromKape
+    FromPlaso
 }
 
 //=============================================================================
@@ -324,8 +268,10 @@ CarFile() {
 // the Splunk era. Run this first after ingesting: an object that should be
 // populated and is not means the mapping is wrong, not that the model is.
 //
-// driver, module and thread are listed with 0 deliberately — they have no
-// source, and showing them absent is the point.
+// registry, driver, module and thread are listed with 0 deliberately — they
+// have no source (registry's went with the KAPE path; Velociraptor offline
+// collectors running the EZ Tools are the planned replacement), and showing
+// them absent is the point.
 //=============================================================================
 .create-or-alter function
 with (docstring = "Row counts per CAR object; the three unsourced objects show 0", folder = "CAR")
@@ -335,8 +281,8 @@ CarCoverage() {
         (CarUserSession() | summarize Rows = count() | extend Object = "user_session"),
         (CarProcess()     | summarize Rows = count() | extend Object = "process"),
         (CarService()     | summarize Rows = count() | extend Object = "service"),
-        (CarRegistry()    | summarize Rows = count() | extend Object = "registry"),
         (CarFile()        | summarize Rows = count() | extend Object = "file"),
+        (print Object = "registry", Rows = 0L),
         (print Object = "driver", Rows = 0L),
         (print Object = "module", Rows = 0L),
         (print Object = "thread", Rows = 0L)

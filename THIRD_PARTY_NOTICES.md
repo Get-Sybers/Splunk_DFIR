@@ -81,21 +81,27 @@ repository.**
 | [Plaso / log2timeline](https://github.com/log2timeline/plaso) | `log2timeline/plaso:latest` container | Apache-2.0 | None |
 | [Zeek](https://zeek.org/) | `zeek/zeek:latest` container | BSD-3-Clause | None |
 | [Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview) | `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` container — **the analysis backend** | **Proprietary** — Microsoft Software License Terms | See below |
-| [KAPE](https://www.kroll.com/en/services/cyber-risk/incident-response-litigation-support/kroll-artifact-parser-extractor-kape) | `scripts/Process-Kape-ALL.ps1` invokes operator-supplied `kape.exe` | **Proprietary** — Kroll EULA | See below |
 | [EvtxECmd](https://github.com/EricZimmerman/evtx) | `scripts/process-evtx-EvtxECmd.sh` runs operator-supplied `EvtxECmd.dll` in a .NET container | **MIT** | None — no commercial-use restriction |
 | [Velociraptor](https://github.com/Velocidex/velociraptor) | JSON output normalised by `dev-scripts/`; Kusto loader not yet implemented | AGPL-3.0 | None — output ingestion does not trigger AGPL |
 | [Rekall](https://github.com/google/rekall) | JSON output normalised by `scripts/process-rekall-json.sh`; Kusto loader not yet implemented | Apache-2.0 | None. Upstream is archived/unmaintained |
 
-No tool binaries are vendored in this repository. KAPE in particular is never
-shipped — the PowerShell scripts expect the operator to place `kape.exe` under
-`dependencies/kape/`.
+No tool binaries are vendored in this repository — every tool above is either
+pulled as a container image or supplied by the operator.
+
+**Formerly invoked: KAPE** (Kroll Artifact Parser and Extractor). The KAPE
+PowerShell automation was removed in favour of the planned **Velociraptor
+offline collectors running the EZ Tools** — the same Zimmerman parsers under
+MIT-style licences, without KAPE Solo's non-commercial restriction, which was
+the sharpest licensing constraint this project carried. Nothing of KAPE was
+ever vendored, so no attribution debt remains; the scripts are in git
+history.
 
 ### Azure Data Explorer Kusto emulator — read before commercial use
 
 The Kusto emulator is the analysis backend, deployed by
 `scripts/deploy-kusto.sh`. It is **not vendored** — the image is pulled from
 Microsoft's registry — so this is a constraint on you rather than on this
-code, in the same way KAPE is.
+code.
 
 Microsoft's own documentation states the emulator is:
 
@@ -112,10 +118,10 @@ Three consequences worth stating plainly:
    that matters for your engagement.
 2. **Whether "unsuitable for production" bars use in paid DFIR work is a
    question this project cannot answer for you.** It is Microsoft's framing of
-   the tool's fitness, not an explicit non-commercial clause like KAPE's — but
-   it is close enough to the same class of question to deserve the same care.
-   For casework where the answer matters, read the EULA — or use a licensed
-   Azure Data Explorer cluster, to which the same KQL schema applies.
+   the tool's fitness, not an explicit non-commercial clause — but it is close
+   enough to the same class of question to deserve care. For casework where
+   the answer matters, read the EULA — or use a licensed Azure Data Explorer
+   cluster, to which the same KQL schema applies.
 3. The emulator has **no security features at all** — no authentication, no
    access control, plaintext HTTP, no encryption at rest. That is a documented
    property, not a misconfiguration. `deploy-kusto.sh` binds it to localhost
@@ -124,28 +130,6 @@ Three consequences worth stating plainly:
 
 Kusto Query Language itself, and the CAR mappings in `kusto/schema/`, are this
 project's own work under Apache-2.0.
-
-### KAPE licensing — read this before commercial use
-
-KAPE Solo Edition is free **for non-commercial personal use, and for law
-enforcement and comparable government agencies**. It is not free for business
-use.
-
-Kroll defines commercial use as use "undertaken for a business purpose, rather
-than hobby, recreational, educational, or other purpose". Running the KAPE
-automation in this repository as part of a paid engagement, on a client network,
-or otherwise for a for-profit purpose requires a **KAPE Enterprise licence** from
-Kroll.
-
-This is the sharpest licensing constraint in the project, and it is a constraint
-on you rather than on this code. Everything else here can be used commercially
-under Apache-2.0. The KAPE path cannot, without a Kroll licence.
-
-Note the contrast with **EvtxECmd**, also by Eric Zimmerman but MIT licensed
-with no commercial-use restriction. If Windows Event Logs are what you need, the
-EvtxECmd path (`scripts/process-evtx-EvtxECmd.sh`) is usable in paid work where
-the KAPE path is not. The two tools' licences are genuinely different — don't
-assume the Zimmerman name implies one or the other.
 
 ---
 

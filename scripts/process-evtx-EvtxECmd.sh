@@ -12,8 +12,8 @@
 # host.EvtxEcmdJson via a JSON path mapping, and the MITRE CAR functions
 # (CarProcess, CarUserSession, CarService, …) read their fields from it.
 #
-# EvtxECmd is MIT licensed (Copyright (c) 2019 Eric Zimmerman), so unlike the
-# KAPE path there is no restriction on commercial use.
+# EvtxECmd is MIT licensed (Copyright (c) 2019 Eric Zimmerman) — no
+# restriction on commercial use.
 # ==============================================================================
 set -o pipefail
 
