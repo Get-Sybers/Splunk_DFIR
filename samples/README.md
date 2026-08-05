@@ -1,54 +1,51 @@
 # DFIR test samples
 
-Small, public, freely redistributable forensic images for exercising the
-pipeline. They exist because the project's largest gap is that
-**nothing has been run against real evidence** —
+**No sample data is committed to this repository.** This directory is
+documentation and a landing place; everything is fetched on demand from
+[Digital Corpora](https://digitalcorpora.org/) by
+[`dev-scripts/fetch-samples.sh`](/dev-scripts/fetch-samples.sh).
+
+They exist because the project's largest gap is that **nothing has been run
+against real evidence** —
 [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the checklist
-these are meant to satisfy.
+they are meant to satisfy.
 
-> **This is not case evidence, and this directory must never hold any.**
-> Real evidence goes in `data_store/`, which is deny-by-default precisely so
-> it cannot be committed. That control is unchanged; nothing here relaxes it.
+> **None of this is case evidence, and this directory must never hold any.**
+> Real evidence goes in `data_store/`, which is deny-by-default precisely so it
+> cannot be committed. That control is unchanged. `samples/.gitignore` is now
+> written the same way — deny everything, re-include only this file and the
+> `.gitignore` itself — so a new image format cannot slip in the way it once
+> did in `data_store/` (defect 7).
 
-Everything below was already public before it was copied here. Sources and
-licences are recorded in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+## A small starter set
 
-## Contents
+Twelve small files, 91 MB in total, that used to be committed here. They are
+now fetched like everything else, and every one is hash-pinned:
 
-| File | Format | Size | SHA-256 (first 16) |
+```bash
+./dev-scripts/fetch-samples.sh --fetch drives-dftt-2004
+./dev-scripts/fetch-samples.sh --fetch drives-nps-2009-ntfs1
+./dev-scripts/fetch-samples.sh --fetch scenarios-2008-nitroba
+```
+
+| File | Format | Size | Group |
 |:---|:---|---:|:---|
-| `disk/ntfs1-gen0.E01` | EnCase EWF | 1.1 MB | `96e525f53d50f986` |
-| `disk/ntfs1-gen0.aff` | **AFF** | 272 KB | `bf0291a0ee840396` |
-| `disk/nps-2010-emails.E01` | EnCase EWF | 508 KB | `c9ffd969954c2f9b` |
-| `disk/exfat1.E01` | EnCase EWF (exFAT) | 272 KB | `9249cbb06fef129c` |
-| `disk/ubnist1.casper-rw.gen0.E01` | EnCase EWF | 1.2 MB | `dd6408ab2ed13b42` |
-| `disk/imageformat_mmls_1.E01` | EnCase EWF | 408 KB | `5125bbc40154a6ac` |
-| `disk/imageformat_mmls_1.vmdk` | **VMDK** | 5.6 MB | `787a1a151cbafff6` |
-| `disk/imageformat_mmls_1.vhd` | **VHD** | 19 MB | `eb2d0de0a1c45d95` |
-| `raw/8-jpeg-search.dd` | **raw / dd** (NTFS) | 9.9 MB | `9c43d6a2dd5132cf` |
-| `network/nitroba.pcap` | **pcap** | 54 MB | `2b77a9eaefc1d6af` |
-| `archives/12-carve-ext2.zip` | zip → raw ext2 | 1.1 MB | `826c24466f2d7f94` |
-| `archives/sleuthkit_test_data.zip` | zip → mixed | 18 MB | `41c3a784b7f4c2af` |
+| `ntfs1-gen0.E01` | EnCase EWF | 1.1 MB | `drives-nps-2009-ntfs1` |
+| `ntfs1-gen0.aff` | **AFF** | 272 KB | `drives-nps-2009-ntfs1` |
+| `nps-2010-emails.E01` | EnCase EWF | 508 KB | `drives-nps-2010-emails` |
+| `exfat1.E01` | EnCase EWF (exFAT) | 272 KB | `drives-dftt-2004` |
+| `ubnist1.casper-rw.gen0.E01` | EnCase EWF | 1.2 MB | `drives-nps-2009-casper-rw` |
+| `imageformat_mmls_1.E01` | EnCase EWF | 408 KB | `drives-dftt-2004` |
+| `imageformat_mmls_1.vmdk` | **VMDK** | 5.6 MB | `drives-dftt-2004` |
+| `imageformat_mmls_1.vhd` | **VHD** | 19 MB | `drives-dftt-2004` |
+| `8-jpeg-search.zip` → `.dd` | **raw / dd** (NTFS) | 1.9 MB | `drives-dftt-2004` |
+| `12-carve-ext2.zip` → `.dd` | raw ext2 (124 MB extracted) | 1.1 MB | `drives-dftt-2004` |
+| `sleuthkit_test_data.zip` | mixed | 18 MB | `drives-tsk-2024` |
+| `nitroba.pcap` | **pcap** | 54 MB | `scenarios-2008-nitroba` |
 
 The three `imageformat_mmls_1.*` files are **the same disk in three container
 formats** — the most useful thing here for testing whether a tool handles the
 container or only the filesystem inside it.
-
-## The one file that is not committed
-
-`12-carve-ext2.dd` is **124 MB**, over GitHub's hard 100 MB per-file limit — a
-push carrying it is rejected outright, not warned about. It is excluded in
-`samples/.gitignore`. The data is still here, compressed:
-
-```bash
-cd samples/archives && unzip 12-carve-ext2.zip     # extraction is gitignored
-```
-
-Verify anything in this directory with:
-
-```bash
-sha256sum samples/disk/* samples/raw/*.dd samples/network/*.pcap
-```
 
 ## Larger samples, fetched not committed
 

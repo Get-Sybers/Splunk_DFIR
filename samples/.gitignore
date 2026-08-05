@@ -1,27 +1,20 @@
-# samples/ holds small, public, freely redistributable DFIR test fixtures.
-# It is NOT for case evidence. Real evidence belongs in data_store/, which is
-# deny-by-default and must stay that way — see data_store/.gitignore.
+# No sample data is committed. Not one byte of it.
 #
-# One specific exclusion, and the reason for it:
+# This directory is documentation plus a place for fetched samples to land.
+# Everything you actually analyse comes from dev-scripts/fetch-samples.sh,
+# which pins each file to a size and, where hashed, a SHA-256.
 #
-#   12-carve-ext2.dd is 124 MB. GitHub rejects any file over 100 MB outright,
-#   so a push carrying it fails rather than warns. The image is not lost —
-#   archives/12-carve-ext2.zip holds the same data at 1.1 MB compressed.
-#   Extract it locally when you need it; the extraction stays out of git.
-12-carve-ext2.dd
+# Deny by default, then re-include only the two files that describe the
+# arrangement. Written this way round on purpose: a rule listing what to
+# exclude fails silently the first time someone adds a format nobody listed,
+# which is exactly how data_store/ leaked before it was rewritten the same way
+# (defect 7). An allowlist cannot fail that way.
+*
+!.gitignore
+!README.md
 
-# Extraction directories for the archives in archives/.
-12-carve-ext2/
-sleuthkit_test_data/
-
-# Large samples, fetched on demand by dev-scripts/fetch-samples.sh. They are
-# 112 MB to 2 GB each, so they cannot go in git: GitHub's 100 MB per-file block
-# applies on every plan, and LFS uploads to lfs.github.com, which some networks
-# do not permit. Fetch them; never commit them.
+# Fetched samples land in large/<group>/. They range from a few KB to 40 GB and
+# total 2.8 TB, so they cannot go in git regardless: GitHub's 100 MB per-file
+# block applies on every plan, and LFS uploads to lfs.github.com, which some
+# networks refuse. Fetch them; never commit them.
 large/
-
-# The root .gitignore drops **.zip as junk. These two are not junk — they are
-# sample data, and 12-carve-ext2.zip is the only committed copy of the image
-# excluded above. Re-include exactly these two, nothing else.
-!archives/12-carve-ext2.zip
-!archives/sleuthkit_test_data.zip

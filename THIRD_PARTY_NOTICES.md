@@ -29,55 +29,32 @@ attribution required — hence `NOTICE`. The check harness pins the CAR function
 in `kusto/schema/40-mitre.kql` against it, so it is load-bearing, not
 decorative.
 
-### DFIR test samples (`samples/`)
+### DFIR test samples — catalogued, not redistributed
 
-Public forensic images redistributed for pipeline testing. They are data, not
-code, and are aggregated with — not derived from — anything in this repository,
-so they do not affect the project's Apache-2.0 licence. Two distinct licence
-situations, and the difference matters:
+**This repository ships no sample data at all.** `dev-scripts/samples-manifest.tsv`
+catalogues 860 files (2.8 TB) held by [Digital Corpora](https://digitalcorpora.org/),
+recording their public URLs, sizes and hashes so `dev-scripts/fetch-samples.sh`
+can retrieve them. Nothing is copied into this repository, so **no
+redistribution obligation attaches to this project** for any of it.
 
-| Sample | Origin | Licence |
-|---|---|---|
-| `samples/raw/8-jpeg-search.dd` | [DFTT](http://dftt.sf.net) test 8, Brian Carrier | **GPL** |
-| `samples/archives/12-carve-ext2.zip` | [DFTT](http://dftt.sf.net) test 12, Nick Mikus | **GPL** |
-| `samples/archives/sleuthkit_test_data.zip` | [The Sleuth Kit](https://github.com/sleuthkit/sleuthkit) | IBM-PL / CPL / GPL (mixed, per file) |
-| `samples/disk/nps-*`, `samples/disk/ntfs1-*`, `samples/disk/imageformat_mmls_1.*`, `samples/disk/exfat1.E01`, `samples/disk/ubnist1.*` | [NPS corpora via Digital Corpora](https://digitalcorpora.org/) | Public domain / unrestricted research use |
-| `samples/network/nitroba.pcap` | Nitroba University Harassment Scenario, Digital Corpora | Unrestricted research/education use |
+That is a genuine change in kind, not bookkeeping. An earlier revision did
+commit twelve of these files, two of them GPL-licensed, which meant carrying
+their licence texts and passing them on. Fetching instead of vendoring retires
+that obligation entirely.
 
-**The GPL images carry a redistribution obligation.** Their upstream `README`
-and the GPL text ship with them — `samples/raw/8-jpeg-search.README.txt`,
-`samples/raw/COPYING-GNU.txt`, `samples/archives/12-carve-ext2.README.txt` —
-and must accompany them in any onward redistribution. They are test fixtures
-consumed by the pipeline, never linked into it, so the GPL does not reach the
-project's own code.
+The terms still bind whoever downloads them, and they are not uniform:
 
-`dev-scripts/fetch-samples.sh` fetches a further 5.7 GB from the same NPS
-`ubnist1` corpora on Digital Corpora. Those are **not redistributed by this
-repository** — the script downloads them from source, so no additional
-attribution obligation attaches here beyond the corpus terms above.
-
-**Fetched, not redistributed.** `dev-scripts/samples-manifest.tsv` catalogues a
-further 856 files (2.8 TB) that this repository does *not* ship — it records
-their public URLs, sizes and hashes so they can be fetched from Digital
-Corpora directly. Cataloguing a public URL carries no redistribution
-obligation, but the terms still bind whoever downloads them, and they are not
-uniform:
-
-- **NPS corpora and DFTT** — as above: public domain / unrestricted research
-  use, except the GPL DFTT images.
-- **Magnet CTF sets** (`scenarios-magnet`) — published by Magnet Forensics for
-  training and competition use. Not public domain; check their terms before
-  using these in anything commercial or redistributing them onward.
-- **DFRWS challenge data** (`dfrws-challenge-2021`) — released for the DFRWS
-  forensic challenge, research and education use.
-- **Scenario corpora** (LoneWolf, Narcos, Owl, Tuck, NGDC, the Linux
-  threat-analysis set) — produced for forensic education, generally free for
-  research and teaching. Several were built by university programmes with
-  their own citation requests; the scenario READMEs on Digital Corpora carry
-  the specifics.
+| Source | Licence / terms |
+|---|---|
+| NPS corpora (`drives-nps-*`, `scenarios-2011-nps-*`) | Public domain / unrestricted research use |
+| DFTT images — `8-jpeg-search`, `12-carve-ext2` (Brian Carrier, Nick Mikus) | **GPL.** Redistributing them means carrying the GPL text and their READMEs; simply downloading them does not |
+| The Sleuth Kit test data | IBM-PL / CPL / GPL, mixed per file |
+| Magnet CTF sets (`scenarios-magnet`) | Published by Magnet Forensics for **training and competition**. Not public domain — check their terms before commercial use or onward redistribution |
+| DFRWS challenge data (`dfrws-challenge-2021`) | Released for the DFRWS forensic challenge; research and education |
+| Scenario corpora (LoneWolf, Narcos, Owl, Tuck, NGDC, Linux threat-analysis) | Produced for forensic education; generally free for research and teaching, several with citation requests recorded in their Digital Corpora READMEs |
 
 None of these are case evidence. `data_store/` remains deny-by-default and
-holds nothing.
+holds nothing, and `samples/` is now written the same way.
 
 ---
 
