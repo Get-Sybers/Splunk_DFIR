@@ -45,6 +45,7 @@ Environment:
   PROCESSED_DIR    default data_store/processed
   KUSTO_HOST       default 127.0.0.1
   KUSTO_PORT       default 8080
+  KUSTO_CONTAINER  default kusto-emulator (files are docker-cp'd into it)
 
 Ingestion is additive. Re-running loads the same files again and duplicates
 rows — there is no fishbucket. To start clean, redeploy (the default database
@@ -77,6 +78,7 @@ echo "   Endpoint:  $KUSTO_BASE"
 echo "   Processed: $PROCESSED_DIR"
 echo ""
 
+kusto_require_tools
 [[ -d "$PROCESSED_DIR" ]] || { echo "❌ No processed directory at $PROCESSED_DIR"; exit 1; }
 
 if [[ $DRY_RUN -eq 0 ]] && ! kusto_reachable; then

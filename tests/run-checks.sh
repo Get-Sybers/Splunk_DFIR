@@ -273,6 +273,31 @@ if [[ ! -f scripts/deploy-kusto.sh ]]; then fail "scripts/deploy-kusto.sh is mis
     else
         fail "deploy-kusto.sh binds non-locally without friction — it has no auth"
     fi
+    # apply must resolve persist from the CONTAINER, with an explicit override —
+    # deploy's flag cannot reach a fresh shell. Parse-level: --volatile accepted,
+    # and a dry run exits 0 without contacting anything.
+    if grep -qF -- '--volatile' scripts/apply-kusto-schema.sh 2>/dev/null; then
+        pass "apply-kusto-schema.sh accepts --volatile"
+    else
+        fail "apply-kusto-schema.sh has no --volatile override for auto-detected persist"
+    fi
+    if ./scripts/apply-kusto-schema.sh --dry-run >/dev/null 2>&1; then
+        pass "apply-kusto-schema.sh --dry-run exits 0"
+    else
+        fail "apply-kusto-schema.sh --dry-run fails"
+    fi
+    # Every script sourcing the lib must run the tool preflight, or a missing
+    # python3 sends the literal body {"db":,"csl":} — a helper existed for this
+    # and was called by NOTHING, the same promised-never-wired class as the
+    # ignoreFirstRecord comment.
+    for _s in scripts/deploy-kusto.sh scripts/apply-kusto-schema.sh scripts/ingest-kusto.sh; do
+        if grep -q '^kusto_require_tools$' "$_s" 2>/dev/null; then
+            pass "$(basename "$_s") runs the tool preflight"
+        else
+            fail "$(basename "$_s") never calls kusto_require_tools"
+        fi
+    done
+
     # Ephemeral must stay the default: Microsoft advises against persisting.
     if grep -qE '^KUSTO_PERSIST="\$\{KUSTO_PERSIST:-0\}"' scripts/deploy-kusto.sh 2>/dev/null; then
         pass "deploy-kusto.sh defaults to ephemeral storage, per Microsoft's guidance"

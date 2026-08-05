@@ -24,14 +24,32 @@ KUSTO_CONTAINER="${KUSTO_CONTAINER:-kusto-emulator}"
 
 kusto_die() { echo "❌ $*" >&2; exit 1; }
 
-# kusto_need_value <flag> <value>
-kusto_need_value() {
-    [[ -n "${2:-}" ]] || kusto_die "$1 needs a value."
-}
-
+# Called by every script that sources this library, before the first request.
+# Without it, a missing python3 makes kusto_json_escape emit nothing and the
+# request body becomes the literal string {"db":,"csl":} — malformed JSON sent
+# to an endpoint whose error response we then cannot parse either.
 kusto_require_tools() {
     command -v curl >/dev/null 2>&1 || kusto_die "curl not found on PATH."
     command -v python3 >/dev/null 2>&1 || kusto_die "python3 not found on PATH."
+}
+
+# kusto_data_mount_state — does the running container persist /kustodata?
+#
+# Return: 0 = mounted, 1 = container exists WITHOUT the mount, 2 = cannot tell
+# (no docker, or no such container — e.g. a remote KUSTO_HOST).
+#
+# Why this exists: deploy's --persist cannot propagate to apply (fresh shell),
+# and trusting the operator to repeat the flag invites the worst mismatch —
+# `.create database ... persist(...)` against an unmounted /kustodata writes
+# into the container's ephemeral layer. That LOOKS persisted and is destroyed
+# with the container: the exact defect the Splunk path spent a release killing.
+kusto_data_mount_state() {
+    command -v docker >/dev/null 2>&1 || return 2
+    local m
+    m=$(docker inspect -f '{{range .Mounts}}{{.Destination}}{{"\n"}}{{end}}' \
+        "$KUSTO_CONTAINER" 2>/dev/null) || return 2
+    printf '%s' "$m" | grep -qx /kustodata && return 0
+    return 1
 }
 
 # --- request plumbing ---------------------------------------------------------

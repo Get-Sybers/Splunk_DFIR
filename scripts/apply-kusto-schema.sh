@@ -22,7 +22,11 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 source "$SCRIPT_DIR/lib/kusto-api.sh"
 
 SCHEMA_DIR="${SCHEMA_DIR:-$REPO_ROOT_DIR/kusto/schema}"
-KUSTO_PERSIST="${KUSTO_PERSIST:-0}"
+# Empty means "not decided" — resolved after parsing by asking the CONTAINER
+# whether /kustodata is mounted, because deploy's --persist cannot propagate to
+# this fresh shell and repeating the flag by hand is exactly the step people
+# forget. --persist / --volatile / the env var all override detection.
+KUSTO_PERSIST="${KUSTO_PERSIST:-}"
 DRY_RUN=0
 
 usage() {
@@ -33,9 +37,15 @@ Creates the databases and applies every schema file in kusto/schema/.
 Safe to re-run: existing databases are skipped and every other statement is
 an idempotent .create-merge / .create-or-alter form.
 
-  --persist        Create databases with on-disk persistence rather than
-                   volatile. Only meaningful if deploy-kusto.sh was run with
-                   --persist too, and Microsoft advises against it.
+  --persist        Create databases with on-disk persistence. Requires the
+                   container to have /kustodata mounted (deploy-kusto.sh
+                   --persist); refused otherwise, because persist() against an
+                   unmounted path writes into the container's ephemeral layer —
+                   it LOOKS persisted and dies with the container.
+  --volatile       Force volatile databases even on a persist-capable container.
+  (neither)        Ask the running container: /kustodata mounted -> persist,
+                   otherwise volatile. Deploy's choice cannot propagate to this
+                   fresh shell, so the container itself is the source of truth.
   --dry-run        Print what would be sent; contact nothing.
   --schema-dir D   Where the .kql files live.  (default kusto/schema)
   -h, --help       Show this and exit.
@@ -49,6 +59,7 @@ USAGE
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --persist)    KUSTO_PERSIST=1 ;;
+        --volatile)   KUSTO_PERSIST=0 ;;
         --dry-run)    DRY_RUN=1 ;;
         --schema-dir) [[ -n "${2:-}" ]] || { echo "❌ --schema-dir needs a PATH."; exit 1; }
                       SCHEMA_DIR="$2"; shift ;;
@@ -58,6 +69,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+kusto_require_tools
 [[ -d "$SCHEMA_DIR" ]] || { echo "❌ No schema directory at $SCHEMA_DIR"; exit 1; }
 
 echo ""
@@ -75,7 +87,33 @@ if [[ $DRY_RUN -eq 0 ]]; then
     fi
     echo "   ✅ Engine reachable."
     echo ""
+
+    # Resolve persist mode against the container's actual mount state.
+    kusto_data_mount_state; mount_state=$?
+    case "$KUSTO_PERSIST:$mount_state" in
+        1:1)
+            echo "❌ --persist requested but container '$KUSTO_CONTAINER' has NO"
+            echo "   /kustodata mount. persist() would write into the container's"
+            echo "   ephemeral layer — it would LOOK persisted and die with the"
+            echo "   container. Redeploy first:  ./scripts/deploy-kusto.sh --persist"
+            exit 1
+            ;;
+        :0) KUSTO_PERSIST=1
+            echo "💾 Container persists /kustodata — creating persistent databases."
+            echo "   (Override with --volatile.)" ;;
+        :1) KUSTO_PERSIST=0 ;;
+        :2) KUSTO_PERSIST=0
+            echo "ℹ️  Cannot inspect container '$KUSTO_CONTAINER' (remote engine or"
+            echo "   no docker here) — defaulting to volatile. Pass --persist if the"
+            echo "   container was deployed with --persist." ;;
+        0:0)
+            echo "ℹ️  Container persists /kustodata but --volatile was given —"
+            echo "   creating volatile databases as requested." ;;
+    esac
+    echo ""
 fi
+# Dry runs never contact the container, so undecided means volatile for display.
+[[ -z "$KUSTO_PERSIST" ]] && KUSTO_PERSIST=0
 
 # ------------------------------------------------------------------------------
 # Databases. Cluster-level, so sent individually rather than as a script.
