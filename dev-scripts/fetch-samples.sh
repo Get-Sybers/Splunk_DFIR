@@ -1,10 +1,12 @@
 #!/bin/bash
 #
-# Fetch the large DFIR test samples that cannot live in git.
+# Fetch DFIR test samples that cannot live in git.
 #
-#   ./dev-scripts/fetch-samples.sh            # fetch and verify everything
-#   ./dev-scripts/fetch-samples.sh --list     # show the manifest, download nothing
-#   ./dev-scripts/fetch-samples.sh --verify   # re-check what is already on disk
+#   ./dev-scripts/fetch-samples.sh --list              # every group and its size
+#   ./dev-scripts/fetch-samples.sh --list <group>      # the files in one group
+#   ./dev-scripts/fetch-samples.sh --fetch <group>     # fetch one group
+#   ./dev-scripts/fetch-samples.sh --fetch all --yes   # fetch everything (2.8 TB)
+#   ./dev-scripts/fetch-samples.sh --verify [<group>]  # re-check what is on disk
 #
 # Why this exists rather than the files being committed:
 #
@@ -16,15 +18,23 @@
 #   with a bare "Forbidden" that looks like a billing problem and is not.
 #
 #   So the images are not in the repository at all. This script fetches them
-#   from the same public source they came from, and pins every one to a
-#   SHA-256 computed from a byte-exact copy. That is reproducible anywhere
-#   with outbound access to Digital Corpora, costs no LFS quota, and needs
-#   no git-lfs on the client.
+#   from the public source they came from. That is reproducible anywhere with
+#   outbound access to Digital Corpora, costs no LFS quota, and needs no
+#   git-lfs on the client.
 #
-# The small samples committed under samples/ need none of this — they are
-# already in the repository. This is only the set too big to go there.
+# TWO LEVELS OF VERIFICATION, and the difference matters:
 #
-# Everything lands in samples/large/, which is gitignored. Do not commit it.
+#   sha256 present  — pinned to a hash computed by streaming the object
+#                     through sha256sum. A mismatch means the upstream object
+#                     changed or the download was tampered with.
+#   sha256 is "-"   — size-verified only. The manifest carries S3's own
+#                     Content-Length, so a truncated or wrong-file download is
+#                     still caught, but a same-size substitution is not.
+#                     Hashing all 2.8 TB takes roughly a day of streaming;
+#                     entries are promoted from "-" as that work is done.
+#
+# The small samples committed under samples/ need none of this. Everything
+# here lands in samples/large/<group>/, which is gitignored. Do not commit it.
 
 set -euo pipefail
 
@@ -34,144 +44,150 @@ cd "$REPO_ROOT_DIR"
 
 DEST="samples/large"
 BASE="https://digitalcorpora.s3.amazonaws.com/corpora"
+MANIFEST_FILE="dev-scripts/samples-manifest.tsv"
 
-# name | bytes | sha256 | path under $BASE
-#
-# Sizes and hashes were taken from a verified download, each checked against
-# the S3 Content-Length before hashing. A mismatch below means the upstream
-# object changed, not that your download is merely incomplete — investigate
-# rather than deleting and retrying.
-MANIFEST=(
-  "ubnist1.casper-rw.gen2.E01|116788106|c15c836993331b0e6ff37d2fdbbdf8798dfd92723b8839e1fcebe80892d97ad9|drives/nps-2009-casper-rw/ubnist1.casper-rw.gen2.E01"
-  "ubnist1.casper-rw.gen3.E01|168365166|f2ad970ab2c8ed41e2d26d0c7e821aaee0bb6fe71063ae17bea894306a8e55ff|drives/nps-2009-casper-rw/ubnist1.casper-rw.gen3.E01"
-  "ubnist1.gen0.E01|728367756|4c517df5e66c24e849fe43a460b50638f2c6cffb571e3e7fbb60255cc2392eaf|drives/nps-2009-ubnist1/ubnist1.gen0.E01"
-  "ubnist1.gen3.aff|890164681|60f427154ce917600873f96ecb4098cb2079f46aa80a3fe8ffe88c2bd212c932|drives/nps-2009-ubnist1/ubnist1.gen3.aff"
-  "ubnist1.gen3.001|536870912|0aebf1edbd2f4d4076d662ed5a8c1f9dafd7d9a264f0eecbe354c579e13665fa|drives/nps-2009-ubnist1/ubnist1.gen3.001"
-  "ubnist1.gen3.002|536870912|6a19d436c73166204cee238a977ec56b63bf68aa4bc9e1d75fc8ea6cfa9c8a0b|drives/nps-2009-ubnist1/ubnist1.gen3.002"
-  "ubnist1.gen3.003|536870912|c61c99532e4fc43b7532b1376ad9abd1f7d03aef636c295cae8bc41935e10d3f|drives/nps-2009-ubnist1/ubnist1.gen3.003"
-  "ubnist1.gen3.004|495976448|9081988c9e10cc0766e3ee5c274beba674816023f759e1958fd1ca1453d90eaa|drives/nps-2009-ubnist1/ubnist1.gen3.004"
-  "ubnist1.gen3.raw|2106589184|c0172d79ec23b2fce54e725b00062a38fc3988dfc036b4aa99bbaf243628b3fb|drives/nps-2009-ubnist1/ubnist1.gen3.raw"
-
-  # ── Linux threat-analysis scenario (2020) ────────────────────────────────
-  # Feeds two lanes the task board still marks "not started": Linux logs and
-  # syslog. The three log archives are small enough to iterate on quickly.
-  "internaldns_logs.zip|1741837|63a0f1928b15e52f178db52c33e2aaaf7f75046a62149e01a0ead42262bf4c49|scenarios/2020-linux-threat-analysis/Stage2/internaldns_logs.zip"
-  "pfsense_logs.zip|14187201|d7ae073400814a001a9d45350d597a8fc773e81fed6a969e7b628cb0d9f7c0a1|scenarios/2020-linux-threat-analysis/Stage2/pfsense_logs.zip"
-  "dualserver_logs.zip|17998746|133d2139de15ac187f8a93cdbe949cae252271a2f3c1ab21bad1ac8060faf96d|scenarios/2020-linux-threat-analysis/Stage2/dualserver_logs.zip"
-  "linux-swapfile.7z|5505845|a617a0646a7b6434dca917c83404b1b19fe226e30559f1bba608babc3566baf0|scenarios/2020-linux-threat-analysis/Stage5/swapfile.7z"
-  "ggmemday1.7z|552477198|6d1f09d052be60a99c158f15e06b8ff5a9a3bd828910d6ac6756b13924f87d0f|scenarios/2020-linux-threat-analysis/Stage1/ggmemday1.7z"
-  "mmmemend.7z|605380634|25e14f285683bd4a3e036ec539fc8120f9c423f644e285ab9f36b8a28c405576|scenarios/2020-linux-threat-analysis/Stage5/mmmemend.7z"
-
-  # ── Network captures ─────────────────────────────────────────────────────
-  "Day_1_Capture.7z|924827765|3f75a2f78beee4abe8876be311c5dd5729556482d1c903758eb7651a8cf7c31a|scenarios/2020-linux-threat-analysis/Stage1/Day_1_Capture.7z"
-  "Day_2_Capture.7z|486142014|ae46a724b2f0a0de91a28511a4c69fb8786f538e8ce8ef516baa6dcc7a609701|scenarios/2020-linux-threat-analysis/Stage1/Day_2_Capture.7z"
-  "multifile_25_21.pcap|52986978|7864cb02c73143da436696ceaef0d74f6def5525776ec161152d28c017b672be|packets/2013-httpxfer/multifile_25_21.pcap"
-  "ngdc-interior-2012-07-10.pcap|26069999|d47a9e1144c92a5a818b295546bf5c3219a2bb18a21bb9dcc9702ee48f200548|scenarios/2012-ngdc/net/ngdc-interior-2012-07-10.pcap"
-  "5gb-tcp-connection.pcap.gz|832659417|5e9e12de5f4e2b762645f3204af4d30a4f56b1a4a6c253b41b9104e3552997c6|packets/5gb-tcp-connection.pcap.gz"
-
-  # ── DFRWS 2021 challenge ─────────────────────────────────────────────────
-  "1_Skimmer_mSD.zip|36665139|1c5ad394daa49573f4088a31fb7f6a3f537dbcd092fdfd5abc8b572ebedbc262|dfrws/challenge-2021/1_Skimmer_mSD.zip"
-)
+[[ -f "$MANIFEST_FILE" ]] || { echo "missing $MANIFEST_FILE" >&2; exit 1; }
 
 human() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$1 bytes"; }
 
-total_bytes() {
-    local sum=0 entry
-    for entry in "${MANIFEST[@]}"; do
-        IFS='|' read -r _ bytes _ _ <<< "$entry"
-        sum=$(( sum + bytes ))
-    done
-    echo "$sum"
+# A progress bar is worth having on a multi-GB file, but curl falls back to its
+# full transfer table when stdout is not a terminal, which turns a CI log into
+# noise. Show the bar interactively, stay quiet when piped.
+if [[ -t 1 ]]; then CURL_PROGRESS=(--progress-bar); else CURL_PROGRESS=(--no-progress-meter); fi
+
+# Every read of the manifest goes through here, so the comment convention is
+# defined in exactly one place.
+manifest_rows() { grep -v '^#' "$MANIFEST_FILE" | grep -v '^[[:space:]]*$'; }
+
+rows_for() { # group, where "all" matches everything
+    if [[ "$1" == "all" ]]; then manifest_rows
+    else manifest_rows | awk -F'\t' -v g="$1" '$1==g'
+    fi
 }
 
-list_manifest() {
-    printf '%-30s %10s  %s\n' NAME SIZE SHA256
-    local entry name bytes sha _
-    for entry in "${MANIFEST[@]}"; do
-        IFS='|' read -r name bytes sha _ <<< "$entry"
-        printf '%-30s %10s  %s\n' "$name" "$(human "$bytes")" "${sha:0:16}…"
+list_groups() {
+    printf '%-38s %6s %10s %s\n' GROUP FILES SIZE PINNED
+    manifest_rows | awk -F'\t' '
+        { n[$1]++; b[$1]+=$3; if ($4!="-") p[$1]++ }
+        END { for (g in n) printf "%s\t%d\t%d\t%d\n", g, n[g], b[g], p[g]+0 }' \
+    | sort | while IFS=$'\t' read -r g n b p; do
+        printf '%-38s %6d %10s %d/%d\n' "$g" "$n" "$(human "$b")" "$p" "$n"
     done
     echo
-    echo "Total: $(human "$(total_bytes)") into $DEST/"
+    manifest_rows | awk -F'\t' '
+        { n++; b+=$3; if ($4!="-") p++ }
+        END { printf "%d files, %.1f GB total, %d hash-pinned\n", n, b/1024/1024/1024, p+0 }'
 }
 
-# Returns 0 when the file on disk matches both size and hash.
-verify_one() {
+list_group() { # group
+    local rows; rows="$(rows_for "$1")"
+    [[ -n "$rows" ]] || { echo "no such group: $1" >&2; echo "try --list" >&2; exit 2; }
+    printf '%-44s %10s  %s\n' NAME SIZE SHA256
+    while IFS=$'\t' read -r _ name bytes sha _; do
+        printf '%-44s %10s  %s\n' "$name" "$(human "$bytes")" \
+            "$( [[ "$sha" == "-" ]] && echo 'size only' || echo "${sha:0:16}…" )"
+    done <<< "$rows"
+}
+
+# 0 when the file matches its manifest row: size always, hash when pinned.
+verify_one() { # path bytes sha
     local path="$1" bytes="$2" sha="$3" actual
     [[ -f "$path" ]] || return 1
     [[ "$(stat -c%s "$path")" == "$bytes" ]] || return 1
+    [[ "$sha" == "-" ]] && return 0
     actual="$(sha256sum "$path" | cut -d' ' -f1)"
     [[ "$actual" == "$sha" ]]
 }
 
-verify_all() {
-    local entry name bytes sha _ ok=0 bad=0 missing=0
-    for entry in "${MANIFEST[@]}"; do
-        IFS='|' read -r name bytes sha _ <<< "$entry"
-        if [[ ! -f "$DEST/$name" ]]; then
-            printf '  –  %-30s not fetched\n' "$name"; missing=$(( missing + 1 ))
-        elif verify_one "$DEST/$name" "$bytes" "$sha"; then
-            printf '  ✅ %-30s %s\n' "$name" "$(human "$bytes")"; ok=$(( ok + 1 ))
+verify_all() { # group
+    local ok=0 bad=0 missing=0 sizeonly=0 group name bytes sha _ f
+    while IFS=$'\t' read -r group name bytes sha _; do
+        f="$DEST/$group/$name"
+        if [[ ! -f "$f" ]]; then
+            missing=$(( missing + 1 ))
+        elif verify_one "$f" "$bytes" "$sha"; then
+            if [[ "$sha" == "-" ]]; then
+                printf '  ◑ %-42s %s (size only)\n' "$name" "$(human "$bytes")"
+                sizeonly=$(( sizeonly + 1 ))
+            else
+                printf '  ✅ %-42s %s\n' "$name" "$(human "$bytes")"
+                ok=$(( ok + 1 ))
+            fi
         else
-            printf '  ❌ %-30s FAILED verification\n' "$name"; bad=$(( bad + 1 ))
+            printf '  ❌ %-42s FAILED verification\n' "$name"
+            bad=$(( bad + 1 ))
         fi
-    done
+    done <<< "$(rows_for "${1:-all}")"
     echo
-    echo "verified: $ok   failed: $bad   not fetched: $missing"
+    echo "hash-verified: $ok   size-only: $sizeonly   failed: $bad   not fetched: $missing"
     [[ "$bad" -eq 0 ]]
 }
 
-fetch_all() {
-    mkdir -p "$DEST"
-    echo "Fetching $(human "$(total_bytes)") into $DEST/"
+fetch_group() { # group
+    local group="$1" rows total avail failed=0 g name bytes sha rel out
+    rows="$(rows_for "$group")"
+    [[ -n "$rows" ]] || { echo "no such group: $group" >&2; echo "try --list" >&2; exit 2; }
+
+    total=$(awk -F'\t' '{b+=$3} END{print b+0}' <<< "$rows")
+    echo "Group: $group"
+    echo "Size:  $(human "$total") across $(wc -l <<< "$rows") file(s)"
     echo "Source: Digital Corpora (public). Nothing here is case evidence."
+
+    # Refusing up front beats dying half way through a 400 GB fetch.
+    avail=$(stat -f --format="%a" . )
+    avail=$(( avail * $(stat -f --format="%S" .) ))
+    if (( avail < total )); then
+        echo
+        echo "❌ not enough disk: $(human "$avail") free, $(human "$total") needed" >&2
+        return 1
+    fi
     echo
 
-    local entry name bytes sha rel failed=0
-    for entry in "${MANIFEST[@]}"; do
-        IFS='|' read -r name bytes sha rel <<< "$entry"
-
-        if verify_one "$DEST/$name" "$bytes" "$sha"; then
-            printf '  ✅ %-30s already present and verified\n' "$name"
+    while IFS=$'\t' read -r g name bytes sha rel; do
+        mkdir -p "$DEST/$g"
+        out="$DEST/$g/$name"
+        if verify_one "$out" "$bytes" "$sha"; then
+            printf '  ✅ %-42s already present\n' "$name"
             continue
         fi
-
-        printf '  ⬇  %-30s %s\n' "$name" "$(human "$bytes")"
-        # -C - resumes a partial file; a truncated download is the normal
-        # failure here, and re-fetching 2 GB to recover a dropped connection
-        # is not worth it.
-        if ! curl -fSL --retry 3 --retry-delay 5 -C - -o "$DEST/$name" "$BASE/$rel"; then
-            printf '  ❌ %-30s download failed\n' "$name"
-            failed=$(( failed + 1 ))
-            continue
+        printf '  ⬇  %-42s %s\n' "$name" "$(human "$bytes")"
+        # -C - resumes a partial file. A dropped connection part way through a
+        # multi-GB image is the normal failure here, not a rare one.
+        if ! curl -fSL "${CURL_PROGRESS[@]}" --retry 3 --retry-delay 5 -C - -o "$out" "$BASE/$rel"; then
+            printf '  ❌ %-42s download failed\n' "$name"; failed=$(( failed + 1 )); continue
         fi
-
-        if verify_one "$DEST/$name" "$bytes" "$sha"; then
-            printf '  ✅ %-30s verified\n' "$name"
+        if verify_one "$out" "$bytes" "$sha"; then
+            printf '  ✅ %-42s verified\n' "$name"
         else
-            printf '  ❌ %-30s verification FAILED after download\n' "$name"
-            failed=$(( failed + 1 ))
+            printf '  ❌ %-42s verification FAILED\n' "$name"; failed=$(( failed + 1 ))
         fi
-    done
+    done <<< "$rows"
 
     echo
-    if [[ "$failed" -gt 0 ]]; then
+    if (( failed > 0 )); then
         echo "❌ $failed file(s) failed. Re-run to resume; downloads continue where they stopped."
         return 1
     fi
-    echo "✅ all samples fetched and verified"
+    echo "✅ $group fetched and verified"
 }
 
-case "${1:---fetch}" in
-    --list)   list_manifest ;;
-    --verify) verify_all ;;
-    --fetch)  fetch_all ;;
-    -h|--help)
-        sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+case "${1:---list}" in
+    --list)   if [[ -n "${2:-}" ]]; then list_group "$2"; else list_groups; fi ;;
+    --verify) verify_all "${2:-all}" ;;
+    --fetch)
+        group="${2:-}"
+        [[ -n "$group" ]] || { echo "usage: $0 --fetch <group|all>" >&2; exit 2; }
+        if [[ "$group" == "all" && "${3:-}" != "--yes" ]]; then
+            echo "Refusing to fetch all 2.8 TB without --yes." >&2
+            echo "Pick a group instead: $0 --list" >&2
+            exit 2
+        fi
+        fetch_group "$group"
         ;;
+    -h|--help) sed -n '2,37p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)
         echo "unknown option: $1" >&2
-        echo "usage: $0 [--fetch|--list|--verify|--help]" >&2
+        echo "usage: $0 [--list [group]|--fetch <group|all>|--verify [group]|--help]" >&2
         exit 2
         ;;
 esac

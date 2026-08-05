@@ -52,34 +52,41 @@ sha256sum samples/disk/* samples/raw/*.dd samples/network/*.pcap
 
 ## Larger samples, fetched not committed
 
-Twenty-one bigger files — 9.1 GB in total — are **not in this repository** and
-are pulled on demand:
+The full Digital Corpora inventory — **856 files, 2.8 TB, in 56 groups** — is
+catalogued in [`dev-scripts/samples-manifest.tsv`](/dev-scripts/samples-manifest.tsv)
+and fetched on demand. Nothing of it is in this repository.
 
 ```bash
-./dev-scripts/fetch-samples.sh            # fetch and verify all of it
-./dev-scripts/fetch-samples.sh --list     # see the manifest first
-./dev-scripts/fetch-samples.sh --verify   # re-check what you already have
+./dev-scripts/fetch-samples.sh --list                 # all 56 groups and their sizes
+./dev-scripts/fetch-samples.sh --list <group>         # the files in one group
+./dev-scripts/fetch-samples.sh --fetch <group>        # fetch one group
+./dev-scripts/fetch-samples.sh --verify [<group>]     # re-check what is on disk
 ```
 
-They land in `samples/large/`, which is gitignored. Every file is pinned to a
-SHA-256 taken from a byte-exact copy, so a corrupted or substituted download
-fails loudly rather than silently becoming your test evidence.
+Fetch **by group**. `--fetch all` needs an explicit `--yes` because it is 2.8 TB,
+and the script refuses any group that would not fit the free space it measures
+first — dying half way through a 400 GB download is a worse outcome than
+refusing up front.
 
-| File | Size | Why it is worth the download |
+**Two verification levels, and the difference is not cosmetic.** An entry with a
+SHA-256 is pinned to a hash computed by streaming the object through
+`sha256sum`; a mismatch means the upstream object changed or the download was
+tampered with. An entry showing `size only` is checked against S3's own
+`Content-Length`, which catches a truncated or wrong file but *not* a same-size
+substitution. Hashing all 2.8 TB is roughly a day of continuous streaming, so
+entries are promoted from `size only` as that work is done.
+
+### The groups worth starting with
+
+| Group | Size | Why |
 |:---|---:|:---|
-| `ubnist1.gen3.aff` | 849 MB | A realistic **AFF**. The committed one is 272 KB — enough to prove the reader opens, nothing more |
-| `ubnist1.gen0.E01` | 695 MB | A whole Ubuntu image rather than a fragment |
-| `ubnist1.gen3.001`–`.004` | 512 MB ×3, 473 MB | **Split raw segments** — segmented-image handling, which nothing else here exercises |
-| `ubnist1.gen3.raw` | 2.0 GB | The same disk as a single raw file; pair it with the segments above |
-| `ubnist1.casper-rw.gen2/gen3.E01` | 112 / 161 MB | Live-USB persistence layer |
-| `pfsense_logs.zip`, `dualserver_logs.zip`, `internaldns_logs.zip` | 14 / 18 / 1.7 MB | **Linux and syslog sources** — the two lanes the task board marks not started. Small enough to iterate on in seconds |
-| `ggmemday1.7z`, `mmmemend.7z` | 527 / 577 MB | **Linux memory** captures, day-one and end-state |
-| `linux-swapfile.7z` | 5.3 MB | Swap from the same host — pairs with the memory above |
-| `Day_1_Capture.7z`, `Day_2_Capture.7z` | 882 / 464 MB | Two days of traffic from one intrusion, for the Zeek lane |
-| `5gb-tcp-connection.pcap.gz` | 794 MB | A single very long TCP conversation — a reassembly stress case |
-| `multifile_25_21.pcap` | 51 MB | Concurrent HTTP transfers |
-| `ngdc-interior-2012-07-10.pcap` | 25 MB | Small scenario capture with a written answer key |
-| `1_Skimmer_mSD.zip` | 35 MB | DFRWS 2021 card-skimmer media |
+| `scenarios-2020-linux-threat-analysis` | 34 GB | The **Linux and syslog** lanes the board marks not started. `pfsense_logs`, `dualserver_logs` and `internaldns_logs` are 1.7–18 MB — iterable in seconds. Also Linux memory, swap, and two days of capture from one intrusion |
+| `scenarios-2018-lonewolf` | 79 GB | **Windows 10**: nine-part `.E01`, `pagefile.sys`, and a 17 GB `memdump.mem`. The realistic source of `.evtx` for the EVTX lane, which has never seen a real event log |
+| `drives-nps-2009-ubnist1` | 7 GB | A realistic **AFF** (849 MB), a whole Ubuntu `.E01`, and the same disk as both a single 2 GB raw file and four split segments — segmented-image handling nothing else here exercises |
+| `scenarios-magnet` | 203 GB | Magnet CTF sets across Windows, macOS, Linux, iOS and Android. `2020 CTF - Windows Memory.zip` is 1.25 GB — Windows memory small enough to iterate on |
+| `packets-*`, `scenarios-2012-ngdc` | varies | Captures for the Zeek lane, including a single very long TCP conversation as a reassembly stress case |
+| `scenarios-2019-narcos` | 153 GB | ~86 GB of Windows memory across five hosts |
+| `scenarios-2019-tuck` | 45 GB | **macOS**, segmented `.E01` — a platform nothing else here covers |
 
 **Why they are not committed, since it is a fair question.** GitHub blocks any
 file over 100 MB on the ordinary git path, on every plan — no paid tier lifts
@@ -96,6 +103,13 @@ quota, and needs no `git-lfs` on the client.
   `disk/imageformat_mmls_1.vmdk` is a monolithic VMDK, so it exercises the
   VMDK reader but not the descriptor + flat-extent pair. Still open if a
   reachable source turns up.
+- **SANS challenge material** — `digital-forensics.sans.org`, `sans.org`,
+  `forensicscontest.com` and `for572.com` are all refused at the network
+  proxy (`403` on the CONNECT tunnel), and none of it is mirrored in the
+  Digital Corpora bucket. This is an egress-policy limit, not an absence:
+  allowlisting those hosts is what would unblock it. The same refusal covers
+  NIST CFReDS, Netresec, malware-traffic-analysis.net and the Wireshark wiki,
+  which is why Digital Corpora is the single source used here.
 
 Memory images *were* listed here as unavailable. That was wrong, and the
 mistake is worth recording because of how it happened: `corpora/ram/` exists
