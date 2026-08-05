@@ -51,6 +51,11 @@ and must accompany them in any onward redistribution. They are test fixtures
 consumed by the pipeline, never linked into it, so the GPL does not reach the
 project's own code.
 
+`dev-scripts/fetch-samples.sh` fetches a further 5.7 GB from the same NPS
+`ubnist1` corpora on Digital Corpora. Those are **not redistributed by this
+repository** — the script downloads them from source, so no additional
+attribution obligation attaches here beyond the corpus terms above.
+
 None of these are case evidence. `data_store/` remains deny-by-default and
 holds nothing.
 
