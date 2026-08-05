@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# Establish Splunk_DFIR repo filepath
+# Establish DX_DFIR repo filepath
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
@@ -27,7 +27,7 @@ echo "$REPO_ROOT_DIR"
 IMAGES=(
     "log2timeline/plaso:latest"
     "zeek/zeek:latest"
-    "splunk/splunk:latest"
+    "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
 )
 
 # Function to check for existing Docker tar balls
@@ -210,7 +210,7 @@ if [ "$SKIP_DOWNLOAD" != true ]; then
 else
     echo -e "3. ✅ Docker images (already loaded from tar balls)"
 fi
-echo -e "4. 🔧 Set up Splunk DFIR environment permissions"
+echo -e "4. 🔧 Set up DX_DFIR environment permissions"
 echo -e "\n==================================================\n"
 
 # Prompt user if they wish to proceed
@@ -242,7 +242,7 @@ fi
 
 ################################################################################
 # Download and optionally save Docker images (only if not skipping)
-echo "🔧 Preparing Splunk_DFIR directory permissions and setting ownership to $(whoami):docker"
+echo "🔧 Preparing DX_DFIR directory permissions and setting ownership to $(whoami):docker"
 sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR"
 sudo chmod -R 744 "$REPO_ROOT_DIR"
 
@@ -281,8 +281,8 @@ else
 fi
 
 ################################################################################
-# Set permissions for Splunk_DFIR
-echo "🔧 Setting final permissions for Splunk_DFIR repository..."
+# Set permissions for DX_DFIR
+echo "🔧 Setting final permissions for the DX_DFIR repository..."
 if [ -d "$REPO_ROOT_DIR" ]; then
     # Use find to avoid issues with missing files
     sudo chown -R "$(whoami):docker" "$REPO_ROOT_DIR" 2>/dev/null || echo "⚠️  Some permission changes may have been skipped"
@@ -305,4 +305,4 @@ if [ "$PULL_IMAGES" = true ]; then
 fi
 
 echo ""
-echo "🚀 You can now run the Splunk DFIR scripts!"
+echo "🚀 You can now run the DX_DFIR scripts!"

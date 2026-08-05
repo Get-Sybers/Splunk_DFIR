@@ -1,7 +1,7 @@
 // Database: memory — Rekall
 //
 // Rekall output is per-plugin and wildly inconsistent: pslist, netscan, malfind
-// and the rest share almost no columns. The Splunk side never completed field
+// and the rest share almost no columns. The Splunk era never completed field
 // extraction for it either (project-progress.md marks it ⚠️ with extraction ❌).
 //
 // Semi-structured is the honest representation here rather than a guess at a

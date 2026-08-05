@@ -1,16 +1,21 @@
-# 🧊 Porting the pipeline to the Kusto emulator
+# 🧊 The Kusto emulator — the analysis backend
 
 > **Status: built, unverified.** Stages 1-5 are implemented; three sources are
 > not wired up — see [What is not done](#what-is-not-done). Nothing has run
 > against a real emulator, because there is no Docker in the environment this
 > was written in.
 >
+> **This began as a port alongside Splunk and is now the SIEM.** The Splunk
+> stack was retired; the emulator is the only analysis backend. The
+> Splunk-vs-Kusto comparisons below are kept because they explain why each
+> design decision was taken.
+>
 > Everything below is sourced from Microsoft's documentation rather than from
 > assumption — see [Sources](#sources). The one time this project designed a
 > container control from a search result instead of the vendor's own words, it
 > shipped an isolation mechanism that made the UI unreachable.
 
-## What we are porting to
+## What we run on
 
 The **Azure Data Explorer Kusto emulator** (`kustainer`) — the real Kusto query
 engine in a Linux container. No Azure, no account, no network once pulled.
@@ -79,11 +84,14 @@ Splunk at least has authentication. The emulator has **none at all**:
 > Encryption at rest"
 
 Plaintext HTTP, no auth, no encryption at rest, on a container holding
-evidence. `SPLUNK_BIND_ADDR`'s equivalent is mandatory, not a default to be
-overridden casually, and `--bind 0.0.0.0` should require more friction than it
-does on the Splunk path.
+evidence. The localhost binding is mandatory, not a default to be overridden
+casually — `deploy-kusto.sh` requires typing `expose` to bind anywhere else,
+because that binding is the only control there is.
 
 ## Concept mapping
+
+How each Splunk-era concept was re-expressed — the design contract of the
+schema, kept for the reasoning even though the Splunk side is retired.
 
 | Splunk | Kusto | Notes |
 |:---|:---|:---|
@@ -111,8 +119,7 @@ schema lockstep across 123 field definitions, and makes every mapping fix an
 ingestion-time change rather than a query-time one.
 
 `.create-or-alter function` gives the same result, costs nothing to iterate on,
-and matches how the Splunk side already works: the data model is a view, not a
-second copy. Update policies stay available for the one case they suit — a
+and matches how the Splunk-era data model worked: a view, not a second copy. Update policies stay available for the one case they suit — a
 genuinely expensive parse worth doing once at ingestion.
 
 ### Schema is applied with `.execute database script`
@@ -150,7 +157,7 @@ later stage is needed to get value from an earlier one.
 | **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
 | **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; KAPE, Velociraptor and Rekall are not | 2 |
-| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions, matching `MITRE_CAR_App` | 3 |
+| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
@@ -171,7 +178,7 @@ Stated plainly so it is not mistaken for working:
   `car_flow` needs. The generic `Zeek` table exists for the rest.
 - **Nothing has been run against a real emulator.** No Docker here. The full
   list of unverified assumptions, ranked by blast radius, is
-  [issue #14](https://github.com/Get-Sybers/Splunk_DFIR/issues/14).
+  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
   An earlier version of this document claimed the scripts were "verified"
   against a fake HTTP endpoint. That was an overclaim: the fake returned
@@ -193,29 +200,29 @@ Stated plainly so it is not mistaken for working:
 
 ### Stage 1 detail
 
-`deploy-kusto.sh` mirrors `deploy-splunk.sh` deliberately, because that script
-now encodes several defects' worth of hard-won behaviour:
+`deploy-kusto.sh` routes its container lifecycle through
+`scripts/lib/docker-lifecycle.sh`, which encodes several defects' worth of
+hard-won behaviour (much of it paid for on the retired Splunk path):
 
 - refuses to collide with an existing container; polls by **container ID**, not
   name
 - detects a container that dies during startup instead of waiting out the clock
 - verifies **both directions** — that the container has no useful egress, *and*
-  that the endpoint actually answers. Checking only egress is what shipped the
-  unreachable Splunk UI
+  that the endpoint actually answers. Checking only egress is what once shipped
+  an unreachable UI
 - stops its own background log stream before printing diagnostics
 - `--purge` / `--purge-only` distinction
 
-Readiness is cleaner than Splunk's: instead of grepping container logs for a
+Readiness is a real health check: instead of grepping container logs for a
 magic string, poll the management endpoint with `.show version`.
 
 ## What this does not change
 
 The processing pipeline is untouched. Plaso, Zeek and EvtxECmd still write to
-`data_store/processed/`; this port changes only what reads from it. Splunk and
-Kusto can run side by side against the same processed directory, which is the
-intended state for as long as both are useful — the CAR object model is
-vendor-neutral, and having it expressed twice is a way to find out where the
-Splunk expression of it is wrong.
+`data_store/processed/`, and that directory remains the source of truth; the
+backend only reads from it. The CAR object model is vendor-neutral — the KQL
+functions express it, and `car_data_model.json` (MITRE's own file) stays in
+the repo with the check harness pinning the coverage against it.
 
 ## Licensing — read before any engagement
 
@@ -225,11 +232,11 @@ records KAPE's:
 - **"Provided *as-is*, without any support or warranties"**
 - **"generally unsuitable for production workloads"**
 - The licence terms prohibit benchmarking
-- `ACCEPT_EULA=Y` auto-accepts on your behalf — the same pattern the README
-  already warns about for `SPLUNK_START_ARGS=--accept-license`
+- `ACCEPT_EULA=Y` auto-accepts on your behalf — `deploy-kusto.sh` and the
+  README both say so
 
-Stage 5 adds this to `THIRD_PARTY_NOTICES.md`. Until then, treat commercial use
-as an open question, exactly as with KAPE Solo.
+All of this is recorded in `THIRD_PARTY_NOTICES.md`. Treat commercial use as
+an open question, exactly as with KAPE Solo.
 
 ## Sources
 

@@ -25,10 +25,9 @@ them in that order. Going `0.1.0-alpha` → `0.2.0-beta` is not a promotion: tho
 are prereleases of two different versions, and it means 0.1.0 was abandoned
 unreleased. This project did exactly that once — hence the note.
 
-Only two things carry a literal version: `CHANGELOG.md`, whose job that is, and
-each Splunk app's `app.conf`, because a Splunk app must declare its own. The
-checks enforce that they agree and that no status line creeps back into the
-README.
+Only one thing carries a literal version: `CHANGELOG.md`, whose job that is.
+The checks enforce that no status line creeps back into the README — the badge
+reads the latest Release directly.
 
 ## Contributing
 
@@ -45,9 +44,10 @@ The most useful contributions right now, roughly in order:
 
 1. **Tests.** There are none. Anything that makes a "✅" on the task board
    checkable rather than a claim is the highest-value change available.
-2. **Verify the MITRE CAR mapping.** It is built as of `v0.2.0-beta` but has
-   never run against Splunk. Confirming which fields actually populate — and
-   which are silently null — is worth more than adding more mappings.
+2. **Verify the MITRE CAR mapping.** The KQL functions are built but have
+   never run against a live emulator. Confirming which fields actually
+   populate — and which are silently null — is worth more than adding more
+   mappings. The ranked checklist is issue #14.
 3. **EVTX ingest.** Built via EvtxECmd, never run against a real event log.
 
 ## Ground rules
@@ -57,7 +57,7 @@ is a safety net, not a guarantee. Check `git status` before every commit, and
 never use `git add -f` inside `data_store/`.
 
 **Don't add third-party code without recording it.** If you vendor anything —
-a Splunk app, a script, a library — add it to
+a script, a library, a data file — add it to
 [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md) with its upstream and licence.
 The project is Apache-2.0 and that only stays true if attribution keeps up. See
 [why](/THIRD_PARTY_NOTICES.md#why-apache-20).
@@ -72,10 +72,10 @@ state that prompted the beta rewrite. If you haven't run it, it isn't ✅.
 Use `scripts/`. A check asserts every script resolves the repo root correctly,
 whatever depth it lives at.
 
-`scripts/v2/` was deleted in `v0.2.0-beta` — a divergent duplicate carrying none
-of the Splunk fixes, so running it got the old broken behaviour.
-
-`scripts/deprecated/` is kept for reference. Don't build on it.
+`scripts/v2/` was deleted in `v0.2.0-beta` — a divergent duplicate carrying
+none of that release's fixes, so running it got the old broken behaviour.
+`scripts/deprecated/` was retired with the Splunk stack; git history keeps
+both.
 
 ## Checks
 
@@ -85,10 +85,10 @@ Run this before submitting anything:
 ./tests/run-checks.sh          # static checks; -v to see each one
 ```
 
-It covers shell syntax, shellcheck, repo-root path resolution, Ansible
-task-file linting, Splunk conf sanity, app versioning, evidence-gitignore
-coverage, secret patterns, and documentation links. It exits non-zero on
-failure.
+It covers shell syntax, shellcheck, repo-root path resolution, the shared
+container-lifecycle library (behavioural tests included), Kusto schema and
+ingestion consistency, evidence-gitignore coverage, secret patterns, and
+documentation links. It exits non-zero on failure.
 
 It does **not** test the pipeline — nothing does yet. That is the single most
 valuable contribution available (see above), and it runs in CI on every push via

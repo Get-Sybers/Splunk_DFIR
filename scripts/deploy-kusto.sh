@@ -7,9 +7,9 @@
 #
 # The container lifecycle (replace policy, isolated network, readiness with
 # died-container detection, log-stream management, isolation verified in BOTH
-# directions, honest directory purge) is shared with deploy-splunk.sh via
-# lib/docker-lifecycle.sh — each function there encodes a defect one of the
-# deploys paid for.
+# directions, honest directory purge) lives in lib/docker-lifecycle.sh — each
+# function there encodes a defect this project paid for, several of them on
+# the retired Splunk path.
 #
 # Two things differ deliberately, and both come from Microsoft's own docs:
 #
@@ -161,9 +161,9 @@ kusto_require_tools
 MGMT_URL="${KUSTO_BASE}/v1/rest/mgmt"
 
 # Container lifecycle — replace policy, isolated network, log stream,
-# readiness, egress verification, port readback, directory purge — is shared
-# with deploy-splunk.sh. lib/docker-lifecycle.sh documents the defect each
-# function encodes the fix for.
+# readiness, egress verification, port readback, directory purge.
+# lib/docker-lifecycle.sh documents the defect each function encodes the
+# fix for.
 # shellcheck source=lib/docker-lifecycle.sh
 source "$SCRIPT_DIR/lib/docker-lifecycle.sh"
 
@@ -248,9 +248,9 @@ if [[ "$PURGE" == "1" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Isolated network — shared with deploy-splunk.sh. The lib uses a bridge with
-# IP masquerade disabled, NOT --internal (which blocks published ports in both
-# directions; that mistake shipped once on the Splunk path already).
+# Isolated network — a bridge with IP masquerade disabled, NOT --internal
+# (which blocks published ports in both directions; that mistake shipped once
+# on the retired Splunk path).
 # ------------------------------------------------------------------------------
 NETWORK_ARGS=()
 if [[ "$KUSTO_ISOLATED" == "1" ]]; then
@@ -311,9 +311,9 @@ trap dl_stop_log_stream EXIT
 # ------------------------------------------------------------------------------
 # Readiness — a real health check.
 #
-# deploy-splunk.sh greps container logs for a magic string because Splunk gives
-# it nothing better. The emulator has a management endpoint, so ask the engine
-# whether it is actually serving queries.
+# The retired Splunk deploy had to grep container logs for a magic string.
+# The emulator has a management endpoint, so ask the engine whether it is
+# actually serving queries.
 # ------------------------------------------------------------------------------
 echo "⏳ Waiting for the engine to answer (timeout ${KUSTO_READY_TIMEOUT}s)..."
 echo "   The first run pulls a multi-GB image."

@@ -85,7 +85,7 @@
 // Zeek — every other log type.
 //
 // LogType would come from the filename (dns.log -> "dns"), replacing what
-// Splunk_TA_zeek's zeek_autotype transform does with sourcetypes, and Fields
+// Splunk_TA_zeek's zeek_autotype transform did with sourcetypes, and Fields
 // would hold the '#fields' header so the columns stay recoverable.
 //=============================================================================
 // NOT POPULATED by any current loader — only conn.log is ingested. LogType,

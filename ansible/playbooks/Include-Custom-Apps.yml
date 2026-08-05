@@ -1,9 +1,0 @@
----
-- name: Copy Splunk apps to the container
-  ansible.builtin.copy:
-    src: /data/etc/apps/
-    dest: /opt/splunk/etc/apps/
-    remote_src: true
-    owner: splunk
-    group: splunk
-    mode: "0755"

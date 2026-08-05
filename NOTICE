@@ -1,37 +1,13 @@
-Splunk DFIR Pipeline
+DX_DFIR Pipeline
 Copyright 2025-2026 Get-Sybers
 
 This product includes software developed by third parties, redistributed
 under the terms of their respective licenses. Full details, including the
-provenance of every vendored component, are in THIRD_PARTY_NOTICES.md.
-
---------------------------------------------------------------------------------
-splunk-ansible
---------------------------------------------------------------------------------
-Copyright 2018-2024 Splunk Inc.
-Licensed under the Apache License, Version 2.0.
-Source: https://github.com/splunk/splunk-ansible
-
-ansible/playbooks/remove_first_login.yml is derived from splunk-ansible and has
-been modified by Get-Sybers.
-
-Earlier releases vendored 97 further files from splunk-ansible under
-ansible/tasks/ and ansible/default_playbooks/. None were ever executed — the
-splunk/splunk container image ships its own copy of splunk-ansible — and they
-were removed in v0.1.0-alpha. They remain in this repository's git history.
-
---------------------------------------------------------------------------------
-Splunk Security Content (ESCU)
---------------------------------------------------------------------------------
-Copyright 2022-2024 Splunk Inc.
-Licensed under the Apache License, Version 2.0.
-Source: https://github.com/splunk/security_content
-
-The lookup files in splunk/etc/apps/DETECT/lookups/ and
-splunk/etc/apps/BASELINE/lookups/ (77 files) are derived from Splunk Security
-Content, authored by the Splunk Threat Research Team and contributors. Filenames
-have been given a local taxonomy prefix (bad_, com_, sus_); file contents and
-their upstream identifiers are unmodified.
+provenance of every vendored component and of the components vendored by
+earlier releases (splunk-ansible playbook code, Splunk Security Content
+lookups), are in THIRD_PARTY_NOTICES.md. Formerly vendored components remain
+in this repository's git history, and their attributions continue to apply to
+anyone working from an older commit.
 
 --------------------------------------------------------------------------------
 MITRE Cyber Analytics Repository (CAR)

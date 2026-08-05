@@ -11,7 +11,7 @@
 # The one command that is NOT idempotent is `.create database`, which fails if
 # it already exists (and, in persist mode, fails if the target folders exist).
 # Existing databases are therefore detected and skipped rather than assumed
-# absent. That is the same class of assumption that once let deploy-splunk.sh
+# absent. That is the same class of assumption that once let the old Splunk deploy
 # report success having deployed nothing.
 
 set -o pipefail
@@ -224,7 +224,7 @@ for db in "${DATABASES[@]}"; do
     n=$(kusto_scalar "$db" ".show tables | count")
     f=$(kusto_scalar "$db" ".show functions | count")
     printf '   %-8s tables=%-4s functions=%s\n' "$db" "${n:-?}" "${f:-?}"
-    # `misc` is declared to mirror the Splunk index but has no schema file yet.
+    # `misc` is declared for uncategorised sources but has no schema file yet.
     [[ "$db" == "misc" ]] && continue
     if ! [[ "${n:-x}" =~ ^[0-9]+$ ]]; then
         echo "      ❌ could not read a table count for '$db'"; fail=1; continue

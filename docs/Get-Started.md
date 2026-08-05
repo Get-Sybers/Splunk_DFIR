@@ -1,57 +1,57 @@
-## 🚀 Get Started
+# 🚀 Get Started
 
 > These steps reflect the paths that actually work today. See
 > [What Actually Works](/README.md#what-actually-works) before you start, and
-> note that KAPE and Splunk carry licensing restrictions —
-> [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+> note that KAPE and the Kusto emulator carry licensing terms you are accepting
+> — [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 ### ⚙️ **Step 1: Setup Environment**
 - **Run setup-environment.sh:**
   ```bash
-  Splunk_DFIR/scripts/setup-environment.sh
+  DX_DFIR/scripts/setup-environment.sh
   ```
 _Refer to [📁 Setup_Environment](/docs/scripts/Setup_Environment.md) for details on the script._
 
 ### 🗂️ **Step 2: Place Raw Data**
 - **Disk Images (`.E01`):**
   ```bash
-  Splunk_DFIR/data_store/raw/disk_images/
+  DX_DFIR/data_store/raw/disk_images/
   ```
 
 - **VMware VM Exports (one folder per VM):**
   ```bash
-  Splunk_DFIR/data_store/raw/VM_files/
+  DX_DFIR/data_store/raw/VM_files/
   ```
 
 - **Network Captures (`.pcap`, `.pcapng`):**
   ```bash
-  Splunk_DFIR/data_store/raw/pcaps/
+  DX_DFIR/data_store/raw/pcaps/
   ```
 
 - **Other Raw Data Sources:**
   ```bash
-  Splunk_DFIR/data_store/raw/other_raw_data/
+  DX_DFIR/data_store/raw/other_raw_data/
   ```
 
 _Refer to [📁 Dir-Structure](/docs/Dir-Structure.md) for detailed directory structures._
 
 ### 💾 **Step 3: Process Forensic Images (E01 / VMware)**
 ```bash
-Splunk_DFIR/scripts/process-log2timeline-Dynamic.sh
+DX_DFIR/scripts/process-log2timeline-Dynamic.sh
 ```
 - Automates forensic analysis of all `.E01` disk images and VMware VM exports using Plaso.
 - Output lands in `data_store/processed/log2timeline/csv/`, with job logs in `logs/`.
 
 ### 🛜 **Step 4: Process PCAPs with Zeek**
 ```bash
-Splunk_DFIR/scripts/process-zeek-ALL.sh
+DX_DFIR/scripts/process-zeek-ALL.sh
 ```
 - Automates processing of all network capture files (`.pcap` and `.pcapng`) using Zeek.
 - Output lands in `data_store/processed/zeek/<pcap-name>/`.
 
 ### 🪟 **Step 5: Parse Windows Event Logs (optional)**
 ```bash
-Splunk_DFIR/scripts/process-evtx-EvtxECmd.sh
+DX_DFIR/scripts/process-evtx-EvtxECmd.sh
 ```
 - Converts `.evtx` in `data_store/raw/other_raw_data/WinEvt/<host>/` using EvtxECmd.
 - Requires operator-supplied EvtxECmd — see
@@ -60,122 +60,87 @@ Splunk_DFIR/scripts/process-evtx-EvtxECmd.sh
 - ⚠️ Not runtime-tested — see
   [the script docs](/docs/scripts/processing_data/process-evtx-EvtxECmd.md).
 
-### 📊 **Step 6: Deploy Splunk**
+### 🧊 **Step 6: Deploy the Kusto emulator**
 ```bash
-Splunk_DFIR/scripts/deploy-splunk.sh
+DX_DFIR/scripts/deploy-kusto.sh
 ```
-- Deploys Splunk Enterprise using Docker, configured for automatic data ingestion.
-- **Redeploying is the normal path.** An existing container is removed and
-  rebuilt without prompting, because indexes live in a Docker volume and survive.
-- ⚠️ This accepts the Splunk software licence on your behalf via
-  `SPLUNK_START_ARGS=--accept-license`, and runs the volume-capped free tier.
+- Starts the **Azure Data Explorer Kusto emulator** in Docker — the real Kusto
+  engine, entirely local. No Azure, no account, no cloud.
+- ⚠️ This sets `ACCEPT_EULA=Y`, **accepting Microsoft's Software License Terms
+  on your behalf.** The emulator is provided *as-is*, without support or
+  warranties, and Microsoft documents it as generally unsuitable for
+  production workloads.
+- ⚠️ **The emulator has NO authentication and speaks plaintext HTTP.** It is
+  published on `127.0.0.1` only; binding anywhere else requires typing
+  `expose`. It also runs on an isolated network with no usable egress, and the
+  deploy verifies both directions after start.
 
-**What survives a redeploy**
-
-| | |
-|:---|:---|
-| **Persists** — `/opt/splunk/var` (volume `splunk-dfir-var`) | Indexed events, and the fishbucket — so already-ingested files are not re-read and events are not duplicated |
-| **Rebuilt** — `/opt/splunk/etc` | Apps and confs re-seeded from `splunk/etc/` every deploy, so edits there take effect on the next one. **Changes made in the Splunk UI are lost.** |
-
-Use `scripts/purge-splunk-container.sh` to wipe indexes as well.
-
-**Where indexes are stored**
-
-Everything this project mounts is staged under `/data/` inside the container and
-copied into place by the pre-task playbooks — which is why `splunk/etc`,
-`data_store/processed` and `ansible/playbooks` are all mounted read-only.
-
-Indexes are the exception, and you get to choose:
+**Ephemeral by default — and that is the recommended mode.** Microsoft advises
+against persisting emulator data outside the container (version compatibility,
+no extent merging). `data_store/processed/` is the source of truth here, so the
+intended workflow is redeploy + re-ingest, which is cheap:
 
 ```bash
-./scripts/deploy-splunk.sh                              # Docker volume (default)
-./scripts/deploy-splunk.sh --var-dir ./splunk/var       # a directory you can see
-./scripts/deploy-splunk.sh --var-dir /mnt/case01/idx    # ...on whichever disk has room
+./scripts/deploy-kusto.sh                 # ephemeral database (default)
+./scripts/deploy-kusto.sh --persist       # opt in to a host-dir database, with the caveats above
+./scripts/deploy-kusto.sh --purge         # delete container + persisted data, then redeploy
+./scripts/deploy-kusto.sh --purge-only    # delete and STOP — no redeploy
+./scripts/deploy-kusto.sh --help          # all options
 ```
-
-| | Why |
-|:---|:---|
-| **Docker volume** (default) | Docker seeds it from the image, so `/opt/splunk/var` keeps the container's splunk-user ownership. Nothing to set up. Lives wherever Docker's storage is — usually `/var/lib/docker`, which may not be the disk with your free space |
-| **`--var-dir PATH`** | Indexes are a directory: visible, sizeable with `du`, backup-able, and on the disk you pick. Needs the directory owned by the container's splunk UID, which the deploy does for you |
-
-`--var-dir ./splunk/var` is the layout this project was originally built
-around — `splunk/.gitignore` already has a `var/**` rule for it. Indexing a
-large case can run to hundreds of GB, so on a forensics workstation the disk it
-lands on is worth deciding deliberately.
-
-**Network isolation**
-
-The container holds evidence, so by default it is **only reachable from this
-machine** and **cannot usefully reach the network**:
-
-- ports published on `127.0.0.1` only, not `0.0.0.0` — this is the solid half
-- attached to a bridge with IP masquerade disabled, so outbound traffic gets no
-  reply
-
-> **An earlier version used `--internal` for this. That was wrong** — an internal
-> network blocks published ports too, so Splunk became unreachable on localhost.
-> If you hit that, redeploying picks up the fix; the script detects and
-> recreates the bad network.
-
-The deploy now tests **both directions** after starting: that the container
-can't reach out, and that Splunk actually answers. Checking only egress is what
-let the unreachable-UI bug through.
-
-```bash
-./scripts/deploy-splunk.sh                 # isolated, localhost-only (default)
-./scripts/deploy-splunk.sh --no-isolated   # allow outbound — and to recover if
-                                           # you still can't reach the UI
-./scripts/deploy-splunk.sh --bind 0.0.0.0  # expose on the LAN — think first
-```
-
-Not an airgap. Disabling masquerade breaks return traffic rather than dropping
-packets, so a host with its own forwarding rules can still let traffic out. For
-a hard guarantee use a `DOCKER-USER` firewall rule on the network's subnet. See
-[SECURITY.md](/SECURITY.md).
-
-**Purge vs persist**
-
-The deploy script decides whether a redeploy keeps or wipes indexed data:
-
-```bash
-./scripts/deploy-splunk.sh                # --persist (default): keep indexes
-./scripts/deploy-splunk.sh --purge        # wipe indexes, THEN REDEPLOY
-./scripts/deploy-splunk.sh --purge-only   # wipe indexes and STOP — no redeploy
-./scripts/deploy-splunk.sh --purge --yes  # ...without the confirmation prompt
-./scripts/deploy-splunk.sh --help         # all options
-```
-
-`--purge` is a flag on the *deploy* script, so it deploys afterwards. Use
-`--purge-only` (or `scripts/purge-splunk-container.sh`) when you just want the
-data gone.
-
-`--purge` deletes the index volume, so **every indexed event and the fishbucket
-go**. Raw and processed evidence on disk is untouched — you can re-ingest. It
-prompts for confirmation unless `--yes`, and refuses outright if there is no
-terminal to confirm on.
-
-`scripts/purge-splunk-container.sh` still exists for purging *without*
-redeploying.
 
 **Unattended deploys**
 
 | Variable | Default | Purpose |
 |:---|:---|:---|
-| `SPLUNK_PASSWORD_FILE` | — | Read the admin password from a file (preferred) |
-| `SPLUNK_PASSWORD` | — | Admin password from the environment |
-| `SPLUNK_REPLACE` | `always` | `always` \| `ask` \| `never` |
-| `SPLUNK_READY_TIMEOUT` | `600` | Seconds to wait for the container's Ansible run |
-| `SPLUNK_VAR_VOLUME` | `splunk-dfir-var` | Index volume name |
-| `SPLUNK_VAR_DIR` | — | Host directory for indexes; overrides the volume. Same as `--var-dir`. Set the same value for `purge-splunk-container.sh` |
-| `SPLUNK_ISOLATED` | `1` | `1` = masquerade-disabled bridge, no usable egress; `0` = allow outbound |
-| `SPLUNK_BIND_ADDR` | `127.0.0.1` | Host address published ports bind to |
-| `SPLUNK_NETWORK` | `splunk-dfir-isolated` | Isolated network name |
-| `SPLUNK_SKIP_CHMOD` | `0` | Skip the permission fixup. It is O(files) over `data_store/processed` and runs every deploy; safe to skip once permissions are already right |
+| `KUSTO_MEMORY` | `4G` | Container memory limit (Microsoft recommends ≥4G) |
+| `KUSTO_READY_TIMEOUT` | `900` | Seconds to wait for the engine (first pull is multi-GB) |
+| `KUSTO_BIND_ADDR` | `127.0.0.1` | Host address to publish on — **think hard before widening** |
+| `KUSTO_PORT` | `8080` | Host port |
+| `KUSTO_PERSIST` | `0` | `1` mounts `data_store/kusto` at `/kustodata` |
+| `KUSTO_ISOLATED` | `1` | `1` = masquerade-disabled bridge, no usable egress |
+| `KUSTO_REPLACE` | `always` | `always` \| `ask` \| `never` |
+| `KUSTO_CONTAINER` | `kusto-emulator` | Container name |
+| `KUSTO_NETWORK` | `kusto-dfir-isolated` | Isolated network name |
 
+### 🏗️ **Step 7: Apply the schema**
 ```bash
-SPLUNK_PASSWORD_FILE=~/.splunk-admin ./scripts/deploy-splunk.sh
+DX_DFIR/scripts/apply-kusto-schema.sh
+```
+- Creates the databases (`host`, `network`, `memory`, `misc`, `mitre`), typed
+  tables, ingestion mappings, and the MITRE CAR functions from
+  `kusto/schema/`. Idempotent — safe to re-run.
+- Detects from the running container whether `/kustodata` is mounted and picks
+  persist/volatile to match; `--persist` / `--volatile` override.
+
+### 📥 **Step 8: Ingest processed evidence**
+```bash
+DX_DFIR/scripts/ingest-kusto.sh
+```
+- Loads `data_store/processed/` into the emulator: Plaso CSV → `host.L2tCsv`,
+  EvtxECmd JSON → `host.EvtxEcmdJson`, Zeek `conn.log` → `network.ZeekConn`.
+- KAPE / Velociraptor / Rekall loaders are **not implemented yet** — the
+  tables exist, the loaders do not. The script says so rather than pretending.
+- Ingestion is additive with no fishbucket: re-running duplicates rows. To
+  start clean, redeploy (ephemeral default) and re-ingest.
+- `--only l2t|zeek|evtx` limits to one source; `--dry-run` lists without
+  contacting anything.
+
+### 🔎 **Step 9: Query**
+
+Connect any Kusto client to `http://127.0.0.1:8080` (for example
+[Kusto.Explorer](https://learn.microsoft.com/en-us/kusto/tools/kusto-explorer)
+on Windows), or drive it with `curl` — the deploy banner prints the endpoints.
+
+Start in the `mitre` database:
+
+```kusto
+CarCoverage()          // which CAR objects have data right now
+CarProcess() | take 50
+CarFlow() | where dest_port == 445
 ```
 
 ---
 
 For detailed script usage, refer to the [📜 Scripts Overview](/docs/scripts/Scripts-Overview.md).
+The design, the schema layout, and what is deliberately not done yet:
+[docs/Kusto-Port.md](/docs/Kusto-Port.md).
