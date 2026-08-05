@@ -11,6 +11,8 @@ drives-dftt-2004	12-carve-ext2.zip	1101117	-	drives/dftt-2004/12-carve-ext2.zip
 drives-dftt-2004	3-kwsrch-ntfs.zip	6034758	-	drives/dftt-2004/3-kwsrch-ntfs.zip
 drives-dftt-2004	4-kwsrch-ext3.zip	3954200	-	drives/dftt-2004/4-kwsrch-ext3.zip
 drives-dftt-2004	8-jpeg-search.zip	1944066	-	drives/dftt-2004/8-jpeg-search.zip
+drives-dftt-2004	exfat1.E01	274722	9249cbb06fef129cc411b5e1e65a6780cafad4dfa9f3566c583b5968504e5153	drives/dftt-2004/exfat1.E01
+drives-dftt-2004	imageformat_mmls_1.E01	414941	5125bbc40154a6acdf96b7aded0fc28686e9c0882afb5b95ddf2dc8345ccf44e	drives/dftt-2004/imageformat_mmls_1.E01
 drives-dftt-2004	imageformat_mmls_1.vhd	18919424	-	drives/dftt-2004/imageformat_mmls_1.vhd
 drives-dftt-2004	imageformat_mmls_1.vmdk	5832704	-	drives/dftt-2004/imageformat_mmls_1.vmdk
 drives-m57-patents	terry-2009-12-11-001.E01	10593607497	-	drives/m57-patents/terry-2009-12-11-001.E01
@@ -44,6 +46,7 @@ drives-nps-2009-edu-corrupt1	gilbert1.E01	17987821	-	drives/nps-2009-edu-corrupt
 drives-nps-2009-ipod1	nps-2009-ipod1.E01	28237898179	-	drives/nps-2009-ipod1/nps-2009-ipod1.E01
 drives-nps-2009-ipod160	nps-2009-ipod160.E01	28237898181	-	drives/nps-2009-ipod160/nps-2009-ipod160.E01
 drives-nps-2009-ntfs1	ntfs1-gen0.E01	1089252	-	drives/nps-2009-ntfs1/ntfs1-gen0.E01
+drives-nps-2009-ntfs1	ntfs1-gen0.aff	277228	bf0291a0ee8403962f2de8ea93d908088e4265a02438dfb5b1c85efc07037b76	drives/nps-2009-ntfs1/ntfs1-gen0.aff
 drives-nps-2009-ntfs1	ntfs1-gen1.E01	9332369	-	drives/nps-2009-ntfs1/ntfs1-gen1.E01
 drives-nps-2009-ntfs1	ntfs1-gen1.aff	8481452	-	drives/nps-2009-ntfs1/ntfs1-gen1.aff
 drives-nps-2009-ntfs1	ntfs1-gen2.E01	36083007	-	drives/nps-2009-ntfs1/ntfs1-gen2.E01
@@ -263,6 +266,7 @@ drives-nps-2009-ubnist1	ubnist1.gen3.E01	1572852102	-	drives/nps-2009-ubnist1/ub
 drives-nps-2009-ubnist1	ubnist1.gen3.E02	534512293	-	drives/nps-2009-ubnist1/ubnist1.gen3.E02
 drives-nps-2009-ubnist1	ubnist1.gen3.aff	890164681	60f427154ce917600873f96ecb4098cb2079f46aa80a3fe8ffe88c2bd212c932	drives/nps-2009-ubnist1/ubnist1.gen3.aff
 drives-nps-2009-ubnist1	ubnist1.gen3.raw	2106589184	c0172d79ec23b2fce54e725b00062a38fc3988dfc036b4aa99bbaf243628b3fb	drives/nps-2009-ubnist1/ubnist1.gen3.raw
+drives-nps-2010-emails	nps-2010-emails.E01	518680	c9ffd969954c2f9b9f97f459916c3d2e8755f596eda952c306ab3f9bc0d43bf1	drives/nps-2010-emails/nps-2010-emails.E01
 drives-nps-2011-2tb	nps-2011-2tb.E01	10737391518	-	drives/nps-2011-2tb/nps-2011-2tb.E01
 drives-nps-2011-2tb	nps-2011-2tb.E02	10737389890	-	drives/nps-2011-2tb/nps-2011-2tb.E02
 drives-nps-2011-2tb	nps-2011-2tb.E03	10737398728	-	drives/nps-2011-2tb/nps-2011-2tb.E03
