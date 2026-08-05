@@ -52,8 +52,8 @@ sha256sum samples/disk/* samples/raw/*.dd samples/network/*.pcap
 
 ## Larger samples, fetched not committed
 
-Nine bigger images — 5.7 GB in total — are **not in this repository** and are
-pulled on demand:
+Twenty-one bigger files — 9.1 GB in total — are **not in this repository** and
+are pulled on demand:
 
 ```bash
 ./dev-scripts/fetch-samples.sh            # fetch and verify all of it
@@ -72,6 +72,14 @@ fails loudly rather than silently becoming your test evidence.
 | `ubnist1.gen3.001`–`.004` | 512 MB ×3, 473 MB | **Split raw segments** — segmented-image handling, which nothing else here exercises |
 | `ubnist1.gen3.raw` | 2.0 GB | The same disk as a single raw file; pair it with the segments above |
 | `ubnist1.casper-rw.gen2/gen3.E01` | 112 / 161 MB | Live-USB persistence layer |
+| `pfsense_logs.zip`, `dualserver_logs.zip`, `internaldns_logs.zip` | 14 / 18 / 1.7 MB | **Linux and syslog sources** — the two lanes the task board marks not started. Small enough to iterate on in seconds |
+| `ggmemday1.7z`, `mmmemend.7z` | 527 / 577 MB | **Linux memory** captures, day-one and end-state |
+| `linux-swapfile.7z` | 5.3 MB | Swap from the same host — pairs with the memory above |
+| `Day_1_Capture.7z`, `Day_2_Capture.7z` | 882 / 464 MB | Two days of traffic from one intrusion, for the Zeek lane |
+| `5gb-tcp-connection.pcap.gz` | 794 MB | A single very long TCP conversation — a reassembly stress case |
+| `multifile_25_21.pcap` | 51 MB | Concurrent HTTP transfers |
+| `ngdc-interior-2012-07-10.pcap` | 25 MB | Small scenario capture with a written answer key |
+| `1_Skimmer_mSD.zip` | 35 MB | DFRWS 2021 card-skimmer media |
 
 **Why they are not committed, since it is a fair question.** GitHub blocks any
 file over 100 MB on the ordinary git path, on every plan — no paid tier lifts
@@ -84,14 +92,18 @@ quota, and needs no `git-lfs` on the client.
 
 ## Formats not present
 
-- **Memory images** — Digital Corpora carries none, and every other DFIR
-  sample host tried (NIST CFReDS, Netresec, malware-traffic-analysis.net,
-  the Wireshark wiki) is unreachable from the build environment.
 - **`-flat.vmdk`** — a VMware export artifact, not published in this corpus.
   `disk/imageformat_mmls_1.vmdk` is a monolithic VMDK, so it exercises the
-  VMDK reader but not the descriptor + flat-extent pair.
+  VMDK reader but not the descriptor + flat-extent pair. Still open if a
+  reachable source turns up.
 
-Both remain open if a reachable source turns up.
+Memory images *were* listed here as unavailable. That was wrong, and the
+mistake is worth recording because of how it happened: `corpora/ram/` exists
+in the bucket and is empty, and the m57-patents scenario has no memory
+capture, so two reasonable checks both came back negative. The memory dumps
+are filed under the *scenarios* that produced them, not under a format-named
+prefix — LoneWolf, Narcos, and the Linux threat-analysis set all carry them.
+Searching by format missed what searching by scenario found.
 
 ## Provenance
 
