@@ -29,6 +29,33 @@ attribution required — hence `NOTICE`. The check harness pins the CAR function
 in `kusto/schema/40-mitre.kql` against it, so it is load-bearing, not
 decorative.
 
+### DFIR test samples (`samples/`)
+
+Public forensic images redistributed for pipeline testing. They are data, not
+code, and are aggregated with — not derived from — anything in this repository,
+so they do not affect the project's Apache-2.0 licence. Two distinct licence
+situations, and the difference matters:
+
+| Sample | Origin | Licence |
+|---|---|---|
+| `samples/raw/8-jpeg-search.dd` | [DFTT](http://dftt.sf.net) test 8, Brian Carrier | **GPL** |
+| `samples/archives/12-carve-ext2.zip` | [DFTT](http://dftt.sf.net) test 12, Nick Mikus | **GPL** |
+| `samples/archives/sleuthkit_test_data.zip` | [The Sleuth Kit](https://github.com/sleuthkit/sleuthkit) | IBM-PL / CPL / GPL (mixed, per file) |
+| `samples/disk/nps-*`, `samples/disk/ntfs1-*`, `samples/disk/imageformat_mmls_1.*`, `samples/disk/exfat1.E01`, `samples/disk/ubnist1.*` | [NPS corpora via Digital Corpora](https://digitalcorpora.org/) | Public domain / unrestricted research use |
+| `samples/network/nitroba.pcap` | Nitroba University Harassment Scenario, Digital Corpora | Unrestricted research/education use |
+
+**The GPL images carry a redistribution obligation.** Their upstream `README`
+and the GPL text ship with them — `samples/raw/8-jpeg-search.README.txt`,
+`samples/raw/COPYING-GNU.txt`, `samples/archives/12-carve-ext2.README.txt` —
+and must accompany them in any onward redistribution. They are test fixtures
+consumed by the pipeline, never linked into it, so the GPL does not reach the
+project's own code.
+
+None of these are case evidence. `data_store/` remains deny-by-default and
+holds nothing.
+
+---
+
 ---
 
 ## Formerly vendored components
