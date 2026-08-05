@@ -53,9 +53,15 @@ script names, sourcetypes, field names, and app layouts included.
   The repo now contains no PowerShell, so the PSScriptAnalyzer CI job is
   removed with it.
 
-- **Renamed: Splunk_DFIR → DX_DFIR.** Titles, badges and in-repo links now
-  point at `Get-Sybers/DX_DFIR`. (The GitHub-side repository rename is a
-  Settings action; GitHub redirects the old URLs afterwards.)
+- **Renamed: Splunk_DFIR → DX_DFIR.** Titles, badges and in-repo links point at
+  `Get-Sybers/DX_DFIR`, and the GitHub-side rename is done. It renamed the
+  existing repository rather than creating a new one, so stars, issues, tags,
+  releases and the `alpha`/`deprecated` branches carry over untouched, and
+  GitHub redirects the old URLs. An existing clone still pushing to a
+  `Splunk_DFIR` remote keeps working through that redirect —
+  `git remote set-url origin https://github.com/Get-Sybers/DX_DFIR.git` makes
+  it explicit, which matters because the redirect lapses if the old name is
+  ever taken by another repository.
 
 ### Changed
 
