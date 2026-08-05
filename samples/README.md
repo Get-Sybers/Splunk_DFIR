@@ -50,6 +50,38 @@ Verify anything in this directory with:
 sha256sum samples/disk/* samples/raw/*.dd samples/network/*.pcap
 ```
 
+## Larger samples, fetched not committed
+
+Nine bigger images — 5.7 GB in total — are **not in this repository** and are
+pulled on demand:
+
+```bash
+./dev-scripts/fetch-samples.sh            # fetch and verify all of it
+./dev-scripts/fetch-samples.sh --list     # see the manifest first
+./dev-scripts/fetch-samples.sh --verify   # re-check what you already have
+```
+
+They land in `samples/large/`, which is gitignored. Every file is pinned to a
+SHA-256 taken from a byte-exact copy, so a corrupted or substituted download
+fails loudly rather than silently becoming your test evidence.
+
+| File | Size | Why it is worth the download |
+|:---|---:|:---|
+| `ubnist1.gen3.aff` | 849 MB | A realistic **AFF**. The committed one is 272 KB — enough to prove the reader opens, nothing more |
+| `ubnist1.gen0.E01` | 695 MB | A whole Ubuntu image rather than a fragment |
+| `ubnist1.gen3.001`–`.004` | 512 MB ×3, 473 MB | **Split raw segments** — segmented-image handling, which nothing else here exercises |
+| `ubnist1.gen3.raw` | 2.0 GB | The same disk as a single raw file; pair it with the segments above |
+| `ubnist1.casper-rw.gen2/gen3.E01` | 112 / 161 MB | Live-USB persistence layer |
+
+**Why they are not committed, since it is a fair question.** GitHub blocks any
+file over 100 MB on the ordinary git path, on every plan — no paid tier lifts
+it. Git LFS is the supported route around that, but LFS traffic goes to
+`lfs.github.com`, a different host from `github.com`, and networks that
+allowlist the latter often do not permit the former. Where that happens LFS
+fails at push with a bare `Forbidden` that reads like a billing fault and is
+not one. A pinned fetch script has none of those failure modes, costs no LFS
+quota, and needs no `git-lfs` on the client.
+
 ## Formats not present
 
 - **Memory images** — Digital Corpora carries none, and every other DFIR

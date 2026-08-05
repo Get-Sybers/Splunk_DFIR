@@ -14,6 +14,12 @@
 12-carve-ext2/
 sleuthkit_test_data/
 
+# Large samples, fetched on demand by dev-scripts/fetch-samples.sh. They are
+# 112 MB to 2 GB each, so they cannot go in git: GitHub's 100 MB per-file block
+# applies on every plan, and LFS uploads to lfs.github.com, which some networks
+# do not permit. Fetch them; never commit them.
+large/
+
 # The root .gitignore drops **.zip as junk. These two are not junk — they are
 # sample data, and 12-carve-ext2.zip is the only committed copy of the image
 # excluded above. Re-include exactly these two, nothing else.
