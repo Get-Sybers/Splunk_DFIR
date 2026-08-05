@@ -25,12 +25,6 @@ with field mappings aligned to the
 **[MITRE CAR Data Model](https://car.mitre.org/data_model/)** exposed as KQL
 functions.
 
-> **DX_DFIR was Splunk_DFIR.** The SIEM layer was rebuilt from Splunk onto the
-> Kusto emulator, and the Splunk stack (deploy scripts, eight Splunk apps, the
-> in-container Ansible provisioning) was retired in one cut — analysis is KQL
-> now. The full Splunk implementation survives in git history and on the frozen
-> [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) branch.
-
 ---
 
 ## 📚 Repo
