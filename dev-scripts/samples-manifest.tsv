@@ -797,7 +797,7 @@ scenarios-2018-lonewolf	LoneWolf.E07	1572769343	821abac9b7b53e37cb5b296ef2954ea8
 scenarios-2018-lonewolf	LoneWolf.E08	1572723308	a363c2009617798312c52ffdbd5f8b442ebaf60c1d6cb55ff53e03f9a878ac39	scenarios/2018-lonewolf/LoneWolf_Image_Files/LoneWolf.E08
 scenarios-2018-lonewolf	LoneWolf.E09	963603171	37c980ee3ca37e779d4e260f23a5f7a23585183c89231c2825145a911e0a8280	scenarios/2018-lonewolf/LoneWolf_Image_Files/LoneWolf.E09
 scenarios-2018-lonewolf	LoneWolf_Image_Files.zip	34590427251	-	scenarios/2018-lonewolf/LoneWolf_Image_Files.zip
-scenarios-2018-lonewolf	memdump.mem	17957912576	-	scenarios/2018-lonewolf/LoneWolf_Image_Files/memdump.mem
+scenarios-2018-lonewolf	memdump.mem	17957912576	df5d101c908d402e9771ff2ebdc3152fa68601c6bdf04a76216b9c93c625e6ef	scenarios/2018-lonewolf/LoneWolf_Image_Files/memdump.mem
 scenarios-2018-lonewolf	pagefile.sys	3087007744	3221ea54b5b4fac7b0336dc05cf18bcfa3074dfb29e09270826b51434cc65578	scenarios/2018-lonewolf/LoneWolf_Image_Files/pagefile.sys
 scenarios-2019-narcos	Narcos-1.zip	9691815547	-	scenarios/2019-narcos/Narcos-1.zip
 scenarios-2019-narcos	Narcos-2.zip	9897049095	-	scenarios/2019-narcos/Narcos-2.zip
