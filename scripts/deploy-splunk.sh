@@ -6,6 +6,13 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
+# Container lifecycle — replace policy, isolated network, log stream,
+# readiness, egress verification, port readback, directory purge — is shared
+# with deploy-kusto.sh. lib/docker-lifecycle.sh documents the defect each
+# function encodes the fix for; several of them were paid for by this script.
+# shellcheck source=lib/docker-lifecycle.sh
+source "$SCRIPT_DIR/lib/docker-lifecycle.sh"
+
 SPLUNK_CONTAINER="splunk-enterprise"
 
 # ------------------------------------------------------------------------------
@@ -61,17 +68,18 @@ THIRD_PARTY_APP_DIR="${THIRD_PARTY_APP_DIR:-$REPO_ROOT_DIR/data_store/dependenci
 # This container holds evidence. It has no business making outbound connections,
 # and no business being reachable from the LAN.
 #
-#   SPLUNK_ISOLATED=1  attach to an --internal Docker network, which has no
-#                      route off the host. Splunk cannot phone home, check for
-#                      updates, or reach Splunkbase.
+#   SPLUNK_ISOLATED=1  attach to a bridge with IP masquerade disabled, so the
+#                      container gets no useful egress. Splunk cannot phone
+#                      home, check for updates, or reach Splunkbase. (NOT
+#                      --internal — that blocks published ports too and shipped
+#                      an unreachable UI once; see lib/docker-lifecycle.sh.)
 #   SPLUNK_BIND_ADDR   host address the published ports bind to. 127.0.0.1 means
 #                      only this machine can reach the UI. The previous
 #                      behaviour, `-p 8000:8000`, bound 0.0.0.0 — every
 #                      interface, so anyone on the network could reach it.
 #
-# NOTE: --internal blocks egress off the host. Containers on the network can
-# still reach each other and services on the host's bridge address. This is
-# isolation from the network, not an airgap.
+# NOTE: containers on the network can still reach each other and services on
+# the host's bridge address. This is isolation from the network, not an airgap.
 SPLUNK_ISOLATED="${SPLUNK_ISOLATED:-1}"
 SPLUNK_NETWORK="${SPLUNK_NETWORK:-splunk-dfir-isolated}"
 SPLUNK_BIND_ADDR="${SPLUNK_BIND_ADDR:-127.0.0.1}"
@@ -219,68 +227,26 @@ echo ""
 echo "$REPO_ROOT_DIR"
 echo ""
 
-# 🔁 Replace any existing container. Redeploying is the normal path here, not
-# an exception, so this does NOT prompt by default.
-#
-# That is only safe because index data lives in a named volume: removing the
-# container no longer destroys anything. Before that fix, `docker rm` meant
-# silent total data loss, and an unattended replace would have been reckless.
-#
-# It still must not simply collide. The original bug was `docker run --name`
-# with no check at all: the second run failed on the name conflict, carried on
-# (no `set -e`), then polled readiness by grepping the OLD container's logs,
-# matched the completion string instantly, and exited 0 having deployed nothing.
-#
-#   --ask / SPLUNK_REPLACE=ask         prompt before removing
-#   --no-replace / SPLUNK_REPLACE=never  abort if a container already exists
-#   default                            remove and redeploy, no prompt
-
-if docker ps -a --format '{{.Names}}' | grep -qx "$SPLUNK_CONTAINER"; then
-    echo "🔁 Existing container found:"
-    docker ps -a --filter "name=^${SPLUNK_CONTAINER}$" --format '   {{.Names}}  {{.Status}}  ({{.Image}})'
-    echo ""
-
-    case "$SPLUNK_REPLACE" in
-        never)
-            echo "🚫 SPLUNK_REPLACE=never — aborting, container left untouched."
-            exit 1
-            ;;
-        ask)
-            read -r -p "Remove it and redeploy? [y/N]: " replace_existing
-            if [[ "${replace_existing,,}" != "y" && "${replace_existing,,}" != "yes" ]]; then
-                echo "🚫 Aborting. Existing container left untouched."
-                exit 1
-            fi
-            ;;
-        always) ;;
-        *)
-            echo "❌ SPLUNK_REPLACE must be always|ask|never (got '$SPLUNK_REPLACE')."
-            exit 1
-            ;;
-    esac
-
-    echo "   Indexes and the fishbucket live in $VAR_DESC and survive this."
-    echo "   (To delete indexes too, use scripts/purge-splunk-container.sh.)"
-    echo "🛑 Removing container..."
-    docker rm -f "$SPLUNK_CONTAINER" >/dev/null || {
-        echo "❌ Could not remove '$SPLUNK_CONTAINER'. Aborting."
-        exit 1
-    }
-    echo "✅ Removed."
-    echo ""
-fi
+# Fail on a missing/unreachable Docker before any prompt or destructive step,
+# not at whatever line first happens to call it.
+dl_require_docker || exit 1
 
 # ------------------------------------------------------------------------------
-# --purge: delete the index volume.
+# --purge confirmation — collected BEFORE anything is destroyed.
 #
-# Must happen AFTER the container is removed — Docker refuses to remove a volume
-# that is still attached to one. This is the destructive path, so it confirms
-# unless --yes, and refuses outright if there is no way to confirm.
+# The volume itself can only be deleted after the container is removed (Docker
+# refuses to remove a volume still attached to one), but the QUESTION comes
+# first: the replace block used to run before this prompt, so declining the
+# purge still cost you the container. The Kusto deploy was built with the
+# confirmation first for exactly that reason; now both order it the same way.
 # ------------------------------------------------------------------------------
-if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
+PURGE_REQUESTED=0
+[[ "$SPLUNK_DATA_MODE" == "purge" ]] && PURGE_REQUESTED=1
+
+purge_target=""
+if [[ "$PURGE_REQUESTED" == "1" ]]; then
     # Is there actually anything to destroy? Ask before prompting, so a purge
     # with no data doesn't demand a scary confirmation for a no-op.
-    purge_target=""
     if [[ "$VAR_MODE" == "dir" ]]; then
         [[ -n "$(ls -A "$SPLUNK_VAR_DIR" 2>/dev/null)" ]] && purge_target="$VAR_DESC"
     else
@@ -304,14 +270,41 @@ if [[ "$SPLUNK_DATA_MODE" == "purge" ]]; then
                 exit 1
             fi
         fi
+        echo ""
+    fi
+fi
+
+# 🔁 Replace any existing container. Redeploying is the normal path here, not
+# an exception, so this does NOT prompt by default. That is only safe because
+# index data lives in $VAR_DESC: removing the container no longer destroys
+# anything. (The original bug was `docker run --name` with no check at all:
+# the second run failed on the name conflict, carried on, then polled
+# readiness against the OLD container's logs and exited 0 having deployed
+# nothing. dl_replace_container exists so that cannot come back.)
+#
+# skip_policy is $PURGE_REQUESTED: --purge's documented contract is
+# wipe-and-redeploy, so the replace policy is not consulted again — otherwise
+# SPLUNK_REPLACE=never would veto the redeploy the operator just confirmed,
+# and =ask would ask a second question about the same operation.
+DL_REPLACE_NOTE="   Indexes and the fishbucket live in $VAR_DESC and survive the removal.
+   (To delete indexes too, use scripts/purge-splunk-container.sh.)"
+[[ "$PURGE_REQUESTED" == "1" ]] && DL_REPLACE_NOTE=""
+dl_replace_container "$SPLUNK_CONTAINER" "$SPLUNK_REPLACE" "$PURGE_REQUESTED" || exit 1
+DL_REPLACE_NOTE=""
+
+# ------------------------------------------------------------------------------
+# --purge: delete the index volume — after the container is gone, with the
+# operator's answer already in hand.
+# ------------------------------------------------------------------------------
+if [[ "$PURGE_REQUESTED" == "1" ]]; then
+    if [[ -n "$purge_target" ]]; then
         if [[ "$VAR_MODE" == "dir" ]]; then
-            # Delete the CONTENTS, not the directory — it may be a mount point,
-            # and removing it would silently change where indexes land next time.
-            # .gitkeep is spared: it is what keeps splunk/var in the repo
-            # skeleton, and deleting it would show up as a spurious git change.
-            sudo find "${SPLUNK_VAR_DIR:?}" -mindepth 1 -maxdepth 1 \
-                -not -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
-            echo "✅ Index directory emptied."
+            echo "🔥 Emptying $SPLUNK_VAR_DIR ..."
+            # dl_purge_dir_contents spares .gitkeep, deletes contents rather
+            # than the directory (it may be a mount point), and REPORTS
+            # failure — the previous version discarded the exit status and
+            # printed success while the indexes were still on disk.
+            dl_purge_dir_contents "$SPLUNK_VAR_DIR" || exit 1
         else
             docker volume rm "$SPLUNK_VAR_VOLUME" >/dev/null || {
                 echo "❌ Could not remove volume '$SPLUNK_VAR_VOLUME'. Aborting."
@@ -397,7 +390,7 @@ if [[ ${#missing_apps[@]} -gt 0 ]]; then
     echo "      • sankey_diagram_app missing -> 3 panels in the BASELINE"
     echo "                                     BSL-host_triage dashboard will error"
     echo ""
-    read -p "Continue without them? [y/N]: " continue_missing
+    read -r -p "Continue without them? [y/N]: " continue_missing
     if [[ "${continue_missing,,}" != "y" && "${continue_missing,,}" != "yes" ]]; then
         echo "🚫 Aborting."
         exit 1
@@ -486,49 +479,17 @@ sudo chmod -R 777 "$REPO_ROOT_DIR"/ansible/*
 fi
 
 # ------------------------------------------------------------------------------
-# Isolated network
+# Isolated network — shared with deploy-kusto.sh. The lib uses a bridge with IP
+# masquerade disabled, NOT --internal: an internal network has no external
+# connectivity in EITHER direction, so published ports stop working — that
+# shipped here once as an unreachable UI while the one-directional egress check
+# passed. The lib also detects and recreates a leftover --internal network from
+# that version. Weaker than a firewall rule (it breaks return traffic rather
+# than dropping packets), so it is verified after start, in both directions.
 # ------------------------------------------------------------------------------
-# A `--internal` network was used here originally. That was wrong: an internal
-# network has no external connectivity in EITHER direction, so published ports
-# stop working and the Splunk UI becomes unreachable from the host. The egress
-# check passed while the UI was dead, because it only tested one direction.
-#
-# Instead: a normal user-defined bridge with IP masquerade disabled. Published
-# ports still work (that is inbound DNAT), but outbound traffic leaves with an
-# unroutable source address and gets no reply, so the container cannot usefully
-# reach anything off the host.
-#
-# This is weaker than a firewall rule — it breaks return traffic rather than
-# dropping the packet — so it is verified after start rather than assumed, and
-# both directions are checked now.
 NETWORK_ARGS=()
 if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
-    if docker network inspect "$SPLUNK_NETWORK" >/dev/null 2>&1; then
-        if [[ "$(docker network inspect -f '{{.Internal}}' "$SPLUNK_NETWORK" 2>/dev/null)" == "true" ]]; then
-            # Left behind by the earlier, broken version of this script. It
-            # makes the UI unreachable, so replace it rather than attach.
-            echo "♻️  Network '$SPLUNK_NETWORK' is --internal, which blocks published"
-            echo "    ports and makes Splunk unreachable. Recreating it correctly..."
-            docker network rm "$SPLUNK_NETWORK" >/dev/null 2>&1 || {
-                echo "❌ Could not remove '$SPLUNK_NETWORK' — is a container still on it?"
-                echo "   Try: docker rm -f $SPLUNK_CONTAINER && docker network rm $SPLUNK_NETWORK"
-                exit 1
-            }
-            docker network create \
-                --opt com.docker.network.bridge.enable_ip_masquerade=false \
-                "$SPLUNK_NETWORK" >/dev/null || {
-                echo "❌ Could not recreate network '$SPLUNK_NETWORK'."; exit 1; }
-            echo "    ✅ Recreated."
-        else
-            echo "🔒 Using network: $SPLUNK_NETWORK"
-        fi
-    else
-        echo "🔒 Creating network (no IP masquerade): $SPLUNK_NETWORK"
-        docker network create \
-            --opt com.docker.network.bridge.enable_ip_masquerade=false \
-            "$SPLUNK_NETWORK" >/dev/null || {
-            echo "❌ Could not create network '$SPLUNK_NETWORK'."; exit 1; }
-    fi
+    dl_ensure_isolated_network "$SPLUNK_NETWORK" "$SPLUNK_CONTAINER" || exit 1
     NETWORK_ARGS=(--network "$SPLUNK_NETWORK")
 else
     echo "⚠️  SPLUNK_ISOLATED=0 — container will have outbound network access."
@@ -540,7 +501,7 @@ echo "⚙️ Mounting:      $REPO_ROOT_DIR/splunk/etc --> /data/etc:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/data_store/processed --> /data/processed:ro"
 echo "⚙️ Mounting:      $REPO_ROOT_DIR/ansible/playbooks --> /data/ansible/playbooks:ro"
 echo "⚙️ Mounting:      $THIRD_PARTY_APP_DIR --> /data/dependencies/splunk_apps:ro"
-echo "🔒 Network:       $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "$SPLUNK_NETWORK (internal — no egress)" || echo "default bridge (egress ALLOWED)")"
+echo "🔒 Network:       $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "$SPLUNK_NETWORK (no IP masquerade — no egress)" || echo "default bridge (egress ALLOWED)")"
 echo "🔒 Published on:  $SPLUNK_BIND_ADDR:8000 (web), $SPLUNK_BIND_ADDR:8088 (HEC)"
 if [[ -n "$APPS_URL_LIST" ]]; then
     echo "📦 SPLUNK_APPS_URL: ${#tp_pkgs[@]} package(s) for the image to install"
@@ -676,59 +637,42 @@ if [[ -z "$SPLUNK_CID" ]]; then
 fi
 echo "🆔 Container: ${SPLUNK_CID:0:12}"
 
-# 🪵 Stream all logs immediately in background, so the wait isn't a blank screen.
-#
-# The PID is tracked because this has to be STOPPED once the wait is over.
-# `docker logs -f` never exits on its own, and bash does not SIGHUP background
-# jobs when a non-interactive script exits — so without this it outlives the
-# script and keeps writing to the terminal. Worse, everything the deploy prints
-# after this point (isolation verdict, port bindings, the reachability failure
-# banner) would be interleaved with a log firehose and effectively invisible.
-#
-# That is not hypothetical: it is how the unreachable-UI bug went unnoticed for
-# as long as it did. The original script started this stream immediately before
-# exiting, so it never mattered; it only became a problem once verification
-# steps were added after it.
-docker logs -f "$SPLUNK_CID" &
-LOG_STREAM_PID=$!
-
-stop_log_stream() {
-    if [[ -n "${LOG_STREAM_PID:-}" ]] && kill -0 "$LOG_STREAM_PID" 2>/dev/null; then
-        kill "$LOG_STREAM_PID" 2>/dev/null || true
-        wait "$LOG_STREAM_PID" 2>/dev/null || true
-    fi
-    LOG_STREAM_PID=""
-}
+# 🪵 Stream all logs in background so the wait isn't a blank screen. The lib
+# tracks the PID: `docker logs -f` never exits on its own and would bury every
+# verification line printed below — which is how the unreachable-UI bug went
+# unnoticed for as long as it did.
+dl_start_log_stream "$SPLUNK_CID"
 # Covers the early `exit 1` paths below as well as a normal finish.
-trap stop_log_stream EXIT
+trap dl_stop_log_stream EXIT
 
-# ⏳ In parallel, wait until Ansible is complete
+# ⏳ In parallel, wait until Ansible is complete.
+#
+# Splunk gives this script nothing better than a log grep to poll (the Kusto
+# deploy asks its engine directly). Polls by container ID, not name, and
+# dl_wait_ready bails out if the container dies — a crashed container used to
+# look identical to a slow one until timeout. It also counts REAL elapsed time:
+# the old loop counted only its sleeps, and each `docker logs` pass over a
+# growing log takes time of its own, so the timeout ran long.
+splunk_ansible_complete() {
+    docker logs "$SPLUNK_CID" 2>&1 | grep -q "Ansible playbook complete, will begin streaming splunkd_stderr.log"
+}
+
 echo "⏳ Waiting for Ansible to complete inside container (timeout ${SPLUNK_READY_TIMEOUT}s)..."
-
-timeout=$SPLUNK_READY_TIMEOUT
-elapsed=0
-interval=2
-
-# Poll by container ID, not by name. Also bail out if the container dies —
-# otherwise a crashed container looks identical to a slow one until timeout.
-while ! docker logs "$SPLUNK_CID" 2>&1 | grep -q "Ansible playbook complete, will begin streaming splunkd_stderr.log"; do
-    if [[ "$(docker inspect -f '{{.State.Running}}' "$SPLUNK_CID" 2>/dev/null)" != "true" ]]; then
-        echo "❌ Container exited before Ansible finished (exit code $(docker inspect -f '{{.State.ExitCode}}' "$SPLUNK_CID" 2>/dev/null))."
-        echo "   Logs:  docker logs ${SPLUNK_CID:0:12}"
-        exit 1
-    fi
-    sleep $interval
-    ((elapsed+=interval))
-    if [[ $elapsed -ge $timeout ]]; then
-        echo "❌ Timeout after ${timeout}s waiting for Ansible playbook to complete."
-        echo "   Raise it with:  SPLUNK_READY_TIMEOUT=1200 $0"
-        exit 1
-    fi
-done
+ready_rc=0
+dl_wait_ready "$SPLUNK_CID" "$SPLUNK_READY_TIMEOUT" 2 splunk_ansible_complete || ready_rc=$?
+if (( ready_rc == 2 )); then
+    # The container died; dl_wait_ready printed its exit code and a logs hint.
+    exit 1
+fi
+if (( ready_rc != 0 )); then
+    echo "❌ Timeout after ${SPLUNK_READY_TIMEOUT}s waiting for Ansible playbook to complete."
+    echo "   Raise it with:  SPLUNK_READY_TIMEOUT=1200 $0"
+    exit 1
+fi
 
 # Stop the log firehose here. Everything below is verification output, and it
 # is the part you actually need to read.
-stop_log_stream
+dl_stop_log_stream
 echo ""
 echo "✅ Ansible complete.  (log streaming stopped — follow with:"
 echo "   docker logs -f $SPLUNK_CONTAINER)"
@@ -748,73 +692,26 @@ if [[ "$(docker inspect -f '{{.State.Running}}' "$SPLUNK_CID" 2>/dev/null)" != "
 fi
 
 # ------------------------------------------------------------------------------
-# Prove the isolation rather than assume it.
-#
-# --internal is documented to block egress, but that is a claim about Docker's
-# behaviour on THIS host and Docker version, not something this script can take
-# on faith. A security control that silently does not hold is worse than no
-# control, because it is believed. So: test it, from inside the container.
-#
-# Uses bash's /dev/tcp against an IP rather than curl against a hostname, so the
-# result does not depend on curl being installed or on DNS.
+# Prove the isolation rather than assume it. Disabled masquerade is a claim
+# about Docker's behaviour on THIS host, not something to take on faith — a
+# security control that silently does not hold is worse than no control,
+# because it is believed. The lib probes with bash /dev/tcp against an IP, so
+# the result depends on neither curl nor DNS inside the container.
 # ------------------------------------------------------------------------------
-ISOLATION_VERDICT="not checked"
 if [[ "$SPLUNK_ISOLATED" == "1" ]]; then
-    echo "🔎 Verifying the container cannot reach the network..."
-    if docker exec "$SPLUNK_CID" bash -c 'true' >/dev/null 2>&1; then
-        if docker exec "$SPLUNK_CID" bash -c \
-             'timeout 4 bash -c "echo > /dev/tcp/1.1.1.1/443" 2>/dev/null' >/dev/null 2>&1; then
-            ISOLATION_VERDICT="FAILED"
-        else
-            ISOLATION_VERDICT="confirmed"
-        fi
-    else
-        ISOLATION_VERDICT="could not test"
-    fi
-
-    case "$ISOLATION_VERDICT" in
-        confirmed)
-            echo "   ✅ Outbound TCP blocked — isolation holds."
-            ;;
-        "could not test")
-            echo "   ⚠️  Could not run the test inside the container (no shell?)."
-            echo "      Isolation is UNVERIFIED. Check manually:"
-            echo "        docker exec $SPLUNK_CONTAINER bash -c 'echo > /dev/tcp/1.1.1.1/443'"
-            ;;
-        FAILED)
-            echo ""
-            echo "   ⚠️  ISOLATION NOT HOLDING — the container reached the network."
-            echo ""
-            echo "      It is running and usable, but it can make outbound"
-            echo "      connections. That matters: it holds evidence."
-            echo ""
-            echo "      Disabling IP masquerade breaks return traffic rather than"
-            echo "      dropping packets, so a host with its own forwarding rules"
-            echo "      can still let traffic through. For a hard guarantee, add a"
-            echo "      DOCKER-USER firewall rule for this network's subnet:"
-            echo "        docker network inspect $SPLUNK_NETWORK -f '{{(index .IPAM.Config 0).Subnet}}'"
-            echo ""
-            echo "      Not failing the deploy — a weakened control is not a reason"
-            echo "      to leave you without a working Splunk. Reported so you can"
-            echo "      decide."
-            echo ""
-            ;;
-    esac
+    dl_verify_egress_blocked "$SPLUNK_CID" "$SPLUNK_NETWORK"
 fi
 
-# Confirm the published ports really did bind where we asked. Docker inserts its
-# own iptables rules ahead of the host firewall, so a wrong bind address is not
-# something ufw will save you from.
-echo "🔎 Published port bindings:"
-docker port "$SPLUNK_CID" 2>/dev/null | sed 's/^/   /' || echo "   (could not read)"
-if [[ "$SPLUNK_BIND_ADDR" != "0.0.0.0" ]]; then
-    if docker port "$SPLUNK_CID" 2>/dev/null | grep -q "0\.0\.0\.0"; then
-        echo "   ⚠️  A port is bound to 0.0.0.0 despite SPLUNK_BIND_ADDR=$SPLUNK_BIND_ADDR"
-        echo "      That port is reachable from the network."
-    else
-        echo "   ✅ Bound to $SPLUNK_BIND_ADDR only — not reachable from the LAN."
-    fi
-fi
+# Confirm the published ports really did bind where we asked. Docker inserts
+# its own iptables rules ahead of the host firewall, so a wrong bind address is
+# not something ufw will save you from. Fatal now (it used to warn and carry
+# on): a port exposed to the LAN when localhost was requested means the deploy
+# is not what was asked for, on a host holding evidence.
+dl_assert_port_bindings "$SPLUNK_CID" "$SPLUNK_BIND_ADDR" || {
+    echo "      The container is still running and exposed — remove it with:"
+    echo "        docker rm -f $SPLUNK_CONTAINER"
+    exit 1
+}
 echo ""
 
 # ------------------------------------------------------------------------------
@@ -889,7 +786,7 @@ echo "               next deploy, which is the point"
 echo "             • changes made in the Splunk UI are LOST"
 echo ""
 echo ""
-echo "  NETWORK    $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT) — no route off this host" || echo "NOT isolated — outbound allowed")"
+echo "  NETWORK    $([[ "$SPLUNK_ISOLATED" == "1" ]] && echo "isolated ($DL_ISOLATION_VERDICT) — no route off this host" || echo "NOT isolated — outbound allowed")"
 echo "             reachable on $SPLUNK_BIND_ADDR only"
 echo ""
 echo " To wipe indexes as well: scripts/purge-splunk-container.sh"

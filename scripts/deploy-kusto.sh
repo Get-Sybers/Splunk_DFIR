@@ -5,11 +5,11 @@
 # Stage 1 of the Kusto port — see docs/Kusto-Port.md for the design and the
 # Microsoft documentation it is based on.
 #
-# This deliberately mirrors deploy-splunk.sh, because that script encodes
-# several defects' worth of behaviour that took a while to learn: refusing to
-# collide with an existing container, polling by container ID rather than name,
-# detecting a container that dies during startup, stopping its own log stream
-# before printing diagnostics, and verifying isolation in BOTH directions.
+# The container lifecycle (replace policy, isolated network, readiness with
+# died-container detection, log-stream management, isolation verified in BOTH
+# directions, honest directory purge) is shared with deploy-splunk.sh via
+# lib/docker-lifecycle.sh — each function there encodes a defect one of the
+# deploys paid for.
 #
 # Two things differ deliberately, and both come from Microsoft's own docs:
 #
@@ -160,6 +160,13 @@ source "$SCRIPT_DIR/lib/kusto-api.sh"
 kusto_require_tools
 MGMT_URL="${KUSTO_BASE}/v1/rest/mgmt"
 
+# Container lifecycle — replace policy, isolated network, log stream,
+# readiness, egress verification, port readback, directory purge — is shared
+# with deploy-splunk.sh. lib/docker-lifecycle.sh documents the defect each
+# function encodes the fix for.
+# shellcheck source=lib/docker-lifecycle.sh
+source "$SCRIPT_DIR/lib/docker-lifecycle.sh"
+
 echo ""
 echo "🧊 Kusto emulator — offline DFIR analysis"
 echo "─────────────────────────────────────────────────────────────"
@@ -182,8 +189,7 @@ if [[ "$KUSTO_BIND_ADDR" != "127.0.0.1" && "$KUSTO_BIND_ADDR" != "localhost" ]];
     fi
 fi
 
-command -v docker >/dev/null 2>&1 || { echo "❌ docker not found on PATH."; exit 1; }
-docker info >/dev/null 2>&1 || { echo "❌ Cannot talk to the Docker daemon."; exit 1; }
+dl_require_docker || exit 1
 
 # ------------------------------------------------------------------------------
 # Replace an existing container.
@@ -196,7 +202,7 @@ docker info >/dev/null 2>&1 || { echo "❌ Cannot talk to the Docker daemon."; e
 if [[ "$PURGE" == "1" ]]; then
     has_data=0
     [[ -d "$KUSTO_DATA_DIR" && -n "$(ls -A "$KUSTO_DATA_DIR" 2>/dev/null)" ]] && has_data=1
-    docker ps -a --format '{{.Names}}' | grep -qx "$KUSTO_CONTAINER" && has_data=1
+    dl_container_exists "$KUSTO_CONTAINER" && has_data=1
     if [[ $has_data -eq 1 ]]; then
         echo "🔥 --purge will DELETE the container and any persisted databases."
         [[ "$KUSTO_PERSIST" == "1" ]] && echo "   Directory: $KUSTO_DATA_DIR"
@@ -209,25 +215,16 @@ if [[ "$PURGE" == "1" ]]; then
     fi
 fi
 
-if docker ps -a --format '{{.Names}}' | grep -qx "$KUSTO_CONTAINER"; then
-    # A confirmed --purge already authorised destroying the container, so the
-    # replace policy is not consulted again — otherwise KUSTO_REPLACE=never
-    # would veto a purge the operator just typed 'yes' to, and =ask would ask
-    # a second, redundant question about the same destruction.
-    if [[ "$PURGE" != "1" ]]; then
-        case "$KUSTO_REPLACE" in
-            never) echo "🚫 KUSTO_REPLACE=never — container left untouched."; exit 1 ;;
-            ask)
-                [[ -t 0 ]] || { echo "❌ --ask needs a terminal."; exit 1; }
-                read -r -p "Replace existing container '$KUSTO_CONTAINER'? [y/N] " r
-                [[ "$r" =~ ^[Yy]$ ]] || { echo "🚫 Aborted."; exit 1; }
-                ;;
-        esac
-    fi
-    echo "🛑 Removing existing container..."
-    docker rm -f "$KUSTO_CONTAINER" >/dev/null || {
-        echo "❌ Could not remove '$KUSTO_CONTAINER'."; exit 1; }
-fi
+# skip_policy is $PURGE: a confirmed --purge already authorised destroying the
+# container, so the replace policy is not consulted again — otherwise
+# KUSTO_REPLACE=never would veto a purge the operator just typed 'yes' to, and
+# =ask would ask a second, redundant question about the same destruction.
+DL_REPLACE_NOTE=""
+[[ "$KUSTO_PERSIST" != "1" ]] && \
+    DL_REPLACE_NOTE="   Ephemeral mode: this container IS the database. Removing it deletes
+   everything ingested; re-ingest from data_store/processed afterwards."
+dl_replace_container "$KUSTO_CONTAINER" "$KUSTO_REPLACE" "$PURGE" || exit 1
+DL_REPLACE_NOTE=""
 
 # ------------------------------------------------------------------------------
 # Purge persisted data.
@@ -235,21 +232,11 @@ fi
 if [[ "$PURGE" == "1" ]]; then
     if [[ -d "$KUSTO_DATA_DIR" && -n "$(ls -A "$KUSTO_DATA_DIR" 2>/dev/null)" ]]; then
         echo "🔥 Deleting persisted databases in $KUSTO_DATA_DIR ..."
-        # Only escalate if the files are not already ours. And REPORT failure:
-        # this used to discard stderr and the exit status, then print success
-        # regardless — so a sudo that could not run reported the data deleted
-        # when it was still there, and the next .create database failed far
-        # from the cause.
-        purge_cmd=(find "${KUSTO_DATA_DIR:?}" -mindepth 1 -maxdepth 1 -not -name '.gitkeep' -delete)
-        if ! "${purge_cmd[@]}" 2>/dev/null; then
-            if ! sudo "${purge_cmd[@]}"; then
-                echo "   ❌ Could not empty $KUSTO_DATA_DIR."
-                echo "      The databases are still there. .create database refuses a"
-                echo "      non-empty target, so a --persist apply would fail later."
-                exit 1
-            fi
+        if ! dl_purge_dir_contents "$KUSTO_DATA_DIR"; then
+            echo "      .create database refuses a non-empty target, so a --persist"
+            echo "      apply would fail later."
+            exit 1
         fi
-        echo "   ✅ Emptied."
     else
         echo "ℹ️  No persisted data to delete."
     fi
@@ -261,33 +248,13 @@ if [[ "$PURGE" == "1" ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Isolated network — same mechanism as deploy-splunk.sh, and for the same
-# reason. `--internal` is NOT used: it blocks published ports in both
-# directions, which would make the endpoint unreachable from the host. That
-# mistake shipped once on the Splunk path already.
+# Isolated network — shared with deploy-splunk.sh. The lib uses a bridge with
+# IP masquerade disabled, NOT --internal (which blocks published ports in both
+# directions; that mistake shipped once on the Splunk path already).
 # ------------------------------------------------------------------------------
 NETWORK_ARGS=()
 if [[ "$KUSTO_ISOLATED" == "1" ]]; then
-    if docker network inspect "$KUSTO_NETWORK" >/dev/null 2>&1; then
-        if [[ "$(docker network inspect -f '{{.Internal}}' "$KUSTO_NETWORK" 2>/dev/null)" == "true" ]]; then
-            echo "♻️  Network '$KUSTO_NETWORK' is --internal, which blocks published ports."
-            docker network rm "$KUSTO_NETWORK" >/dev/null 2>&1 || {
-                echo "❌ Could not remove '$KUSTO_NETWORK'."; exit 1; }
-            docker network create \
-                --opt com.docker.network.bridge.enable_ip_masquerade=false \
-                "$KUSTO_NETWORK" >/dev/null || {
-                echo "❌ Could not recreate '$KUSTO_NETWORK'."; exit 1; }
-            echo "    ✅ Recreated."
-        else
-            echo "🔒 Using network: $KUSTO_NETWORK"
-        fi
-    else
-        echo "🔒 Creating network (no IP masquerade): $KUSTO_NETWORK"
-        docker network create \
-            --opt com.docker.network.bridge.enable_ip_masquerade=false \
-            "$KUSTO_NETWORK" >/dev/null || {
-            echo "❌ Could not create '$KUSTO_NETWORK'."; exit 1; }
-    fi
+    dl_ensure_isolated_network "$KUSTO_NETWORK" "$KUSTO_CONTAINER" || exit 1
     NETWORK_ARGS=(--network "$KUSTO_NETWORK")
 else
     echo "🌐 NOT isolated — the container has outbound network access."
@@ -336,18 +303,10 @@ if [[ -z "$KUSTO_CID" ]]; then
 fi
 echo "🆔 Container: ${KUSTO_CID:0:12}"
 
-# Stream logs while waiting, but track the PID — `docker logs -f` never exits,
-# and left running it buries every diagnostic printed below.
-docker logs -f "$KUSTO_CID" &
-LOG_STREAM_PID=$!
-stop_log_stream() {
-    if [[ -n "${LOG_STREAM_PID:-}" ]] && kill -0 "$LOG_STREAM_PID" 2>/dev/null; then
-        kill "$LOG_STREAM_PID" 2>/dev/null || true
-        wait "$LOG_STREAM_PID" 2>/dev/null || true
-    fi
-    LOG_STREAM_PID=""
-}
-trap stop_log_stream EXIT
+# Stream logs while waiting — the lib tracks the PID, because `docker logs -f`
+# never exits on its own and left running it buries every diagnostic below.
+dl_start_log_stream "$KUSTO_CID"
+trap dl_stop_log_stream EXIT
 
 # ------------------------------------------------------------------------------
 # Readiness — a real health check.
@@ -359,26 +318,19 @@ trap stop_log_stream EXIT
 echo "⏳ Waiting for the engine to answer (timeout ${KUSTO_READY_TIMEOUT}s)..."
 echo "   The first run pulls a multi-GB image."
 
-# Track REAL elapsed time. Counting only the sleeps ignored up to 5s of curl
-# timeout per pass, so a 900s timeout could run for ~30 minutes.
-ready=0; interval=5; _start=$SECONDS
-while (( SECONDS - _start < KUSTO_READY_TIMEOUT )); do
-    if [[ "$(docker inspect -f '{{.State.Running}}' "$KUSTO_CID" 2>/dev/null)" != "true" ]]; then
-        stop_log_stream
-        echo "❌ Container exited before becoming ready (exit code $(docker inspect -f '{{.State.ExitCode}}' "$KUSTO_CID" 2>/dev/null))."
-        echo "   Logs:  docker logs ${KUSTO_CID:0:12}"
-        exit 1
-    fi
-    if kusto_reachable; then
-        ready=1; break
-    fi
-    sleep $interval
-done
+# dl_wait_ready tracks REAL elapsed time (counting only the sleeps once let a
+# 900s timeout run ~30 minutes) and detects a container that dies mid-startup.
+ready_rc=0
+dl_wait_ready "$KUSTO_CID" "$KUSTO_READY_TIMEOUT" 5 kusto_reachable || ready_rc=$?
 
-stop_log_stream
+dl_stop_log_stream
 echo ""
 
-if [[ $ready -ne 1 ]]; then
+if (( ready_rc == 2 )); then
+    # The container died; dl_wait_ready printed its exit code and a logs hint.
+    exit 1
+fi
+if (( ready_rc != 0 )); then
     echo "   ╔══════════════════════════════════════════════════════════════╗"
     echo "   ║  ❌ THE ENGINE NEVER ANSWERED — this deploy is not usable     ║"
     echo "   ╚══════════════════════════════════════════════════════════════╝"
@@ -399,43 +351,19 @@ fi
 echo "   ✅ Engine is answering."
 
 # ------------------------------------------------------------------------------
-# Isolation, verified in both directions.
+# Isolation, verified in both directions: egress probed from inside the
+# container, and the published bindings read back (Docker's port rules sit
+# ahead of the host firewall, so a wrong bind address is not caught by ufw).
 # ------------------------------------------------------------------------------
-ISOLATION_VERDICT="not checked"
 if [[ "$KUSTO_ISOLATED" == "1" ]]; then
-    echo "🔎 Verifying the container cannot reach the network..."
-    if docker exec "$KUSTO_CID" bash -c 'true' >/dev/null 2>&1; then
-        if docker exec "$KUSTO_CID" bash -c \
-             'timeout 4 bash -c "echo > /dev/tcp/1.1.1.1/443" 2>/dev/null' >/dev/null 2>&1; then
-            ISOLATION_VERDICT="FAILED"
-            echo "   ⚠️  ISOLATION NOT HOLDING — the container reached the network."
-            echo "      It works, but it can make outbound connections while holding"
-            echo "      evidence. Disabling masquerade breaks return traffic rather"
-            echo "      than dropping packets, so a host with its own forwarding"
-            echo "      rules can still let traffic out. For a hard guarantee add a"
-            echo "      DOCKER-USER rule for this network's subnet:"
-            echo "        docker network inspect $KUSTO_NETWORK -f '{{(index .IPAM.Config 0).Subnet}}'"
-            echo "      Not failing the deploy — reported so you can decide."
-        else
-            ISOLATION_VERDICT="confirmed"
-            echo "   ✅ Outbound TCP blocked."
-        fi
-    else
-        ISOLATION_VERDICT="could not test"
-        echo "   ⚠️  Could not run the test inside the container. Isolation UNVERIFIED."
-    fi
+    dl_verify_egress_blocked "$KUSTO_CID" "$KUSTO_NETWORK"
 fi
 
-# Read back the real bindings — Docker's published-port rules sit ahead of the
-# host firewall, so a wrong bind address is not caught by ufw.
-echo "🔎 Published ports:"
-docker port "$KUSTO_CONTAINER" 2>/dev/null | sed 's/^/   /'
-if [[ "$KUSTO_BIND_ADDR" != "0.0.0.0" ]]; then
-    if docker port "$KUSTO_CONTAINER" 2>/dev/null | grep -q '0\.0\.0\.0'; then
-        echo "   ❌ A port is bound to 0.0.0.0 despite --bind $KUSTO_BIND_ADDR."
-        exit 1
-    fi
-fi
+dl_assert_port_bindings "$KUSTO_CONTAINER" "$KUSTO_BIND_ADDR" || {
+    echo "      The container is still running and exposed — remove it with:"
+    echo "        docker rm -f $KUSTO_CONTAINER"
+    exit 1
+}
 
 echo ""
 echo "✅ Kusto emulator ready."
@@ -453,7 +381,7 @@ echo "             That is the recommended mode. data_store/processed is the"
 echo "             source of truth; re-ingest rather than persisting."
 fi
 echo ""
-echo "  NETWORK    $([[ "$KUSTO_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT)" || echo "NOT isolated")"
+echo "  NETWORK    $([[ "$KUSTO_ISOLATED" == "1" ]] && echo "isolated ($DL_ISOLATION_VERDICT)" || echo "NOT isolated")"
 echo "             NO authentication, NO encryption — localhost only by default"
 echo ""
 # apply/ingest run in a fresh shell and default to 127.0.0.1:8080. A deploy on

@@ -144,9 +144,11 @@ for flag in --purge --persist --yes --help; do
     fi
 done
 # --purge must actually remove the volume, and must do so after the container is
-# gone — Docker will not remove a volume that is still attached.
+# gone — Docker will not remove a volume that is still attached. Container
+# removal lives in the lib now, so the ordering is asserted on the call sites:
+# dl_replace_container must sit above `docker volume rm`.
 if grep -q 'docker volume rm "$SPLUNK_VAR_VOLUME"' scripts/deploy-splunk.sh 2>/dev/null; then
-    _rm=$(grep -n 'docker rm -f' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
+    _rm=$(grep -n '^dl_replace_container ' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
     _vol=$(grep -n 'docker volume rm' scripts/deploy-splunk.sh | head -1 | cut -d: -f1)
     if [[ -n "$_rm" && -n "$_vol" && "$_rm" -lt "$_vol" ]]; then
         pass "--purge removes the volume after the container"
@@ -169,18 +171,8 @@ if grep -q 'SPLUNK_ISOLATED:-1' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "deploy-splunk.sh does not default to an isolated network"
 fi
-# NOT --internal. An internal network blocks published ports too, which makes
-# Splunk unreachable — that shipped once and had to be reverted.
-if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' scripts/deploy-splunk.sh 2>/dev/null; then
-    fail "network created with --internal — that blocks published ports and makes Splunk unreachable"
-else
-    pass "network is not --internal"
-fi
-if grep -q 'enable_ip_masquerade=false' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "egress limited via disabled IP masquerade"
-else
-    fail "no egress restriction on the container network"
-fi
+# How the isolated network is built (not --internal, masquerade off) is
+# asserted once, on lib/docker-lifecycle.sh — see the lifecycle group below.
 # Isolation is a two-directional property. Verifying only egress is how the
 # unreachable-UI bug got past the deploy's own check.
 if grep -q 'ingress_ok' scripts/deploy-splunk.sh 2>/dev/null; then
@@ -203,29 +195,6 @@ if grep -qF -- '--var-dir' scripts/deploy-splunk.sh 2>/dev/null; then
 else
     fail "no --var-dir: indexes can only live in a Docker volume"
 fi
-# A purge that deletes .gitkeep leaves a spurious git change behind.
-_gk_ok=1
-for _s in scripts/deploy-splunk.sh scripts/purge-splunk-container.sh scripts/deploy-kusto.sh; do
-    [[ -f "$_s" ]] || continue
-    grep -q 'rm -rf\|-delete' "$_s" 2>/dev/null || continue
-    grep -q "not -name '.gitkeep'" "$_s" 2>/dev/null || _gk_ok=0
-done
-if [[ $_gk_ok -eq 1 ]]; then
-    pass "every purge path spares .gitkeep"
-else
-    fail "purge would delete the tracked .gitkeep from an index directory"
-fi
-# `docker logs -f` never exits. Backgrounding it without stopping it buries
-# every diagnostic printed afterwards — including the reachability failure —
-# and orphans the process past script exit.
-if grep -q 'docker logs -f' scripts/deploy-splunk.sh 2>/dev/null; then
-    if grep -q 'stop_log_stream' scripts/deploy-splunk.sh 2>/dev/null \
-       && grep -q 'trap stop_log_stream' scripts/deploy-splunk.sh 2>/dev/null; then
-        pass "background log stream is stopped, with a trap for early exits"
-    else
-        fail "deploy backgrounds 'docker logs -f' but never stops it"
-    fi
-fi
 # A bare `-p 8000:8000` binds 0.0.0.0 — every interface. Every publish must be
 # address-qualified.
 if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null; then
@@ -233,6 +202,145 @@ if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-splunk.sh 2>/dev/null
 else
     pass "all published ports are address-qualified"
 fi
+
+# ------------------------------------------------------------------------------
+group "Shared container lifecycle (lib/docker-lifecycle.sh)"
+# ------------------------------------------------------------------------------
+# Both deploys and the purge script share one implementation of the container
+# lifecycle. Each lesson here was paid for by a shipped defect; consolidation
+# means asserting it ONCE, on the lib — and then asserting that the scripts
+# actually route through the lib instead of growing new inline copies, which is
+# how the two deploys drifted apart in the first place.
+DL_LIB=scripts/lib/docker-lifecycle.sh
+if [[ ! -f "$DL_LIB" ]]; then fail "$DL_LIB is missing"; else
+    # NOT --internal: that blocks published ports in both directions and
+    # shipped once as an unreachable Splunk UI. Continuation-aware — the
+    # create is written `docker network create \` with flags on the next
+    # line, which a single-line grep can never match.
+    if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' "$DL_LIB" 2>/dev/null; then
+        fail "lib creates an --internal network — that blocks published ports"
+    else
+        pass "lib network is not --internal (continuations checked)"
+    fi
+    if grep -q 'enable_ip_masquerade=false' "$DL_LIB" 2>/dev/null; then
+        pass "lib disables IP masquerade for isolation"
+    else
+        fail "lib has no egress control on the isolated network"
+    fi
+    # find -delete refuses a non-empty directory (and -maxdepth 1 never
+    # descends to empty it first), so a -delete purge cannot remove nested
+    # data at all — Kusto's /kustodata/dbs/<db>/... is exactly that shape.
+    # Comments are stripped before the grep: the function's own comment names
+    # both forms, which once satisfied this check while the code regressed.
+    if sed -n '/^dl_purge_dir_contents()/,/^}/p' "$DL_LIB" | grep -v '^[[:space:]]*#' \
+       | grep -q -- '-exec rm -rf'; then
+        pass "lib purge uses -exec rm -rf (find -delete cannot remove nested dirs)"
+    else
+        fail "lib purge cannot remove nested directories"
+    fi
+    # BEHAVIOURAL: the purge really empties nested content, spares .gitkeep,
+    # and reports failure honestly when the delete (and its sudo escalation)
+    # fail — the swallowed-failure version printed success over surviving data.
+    if ( set +e
+         # shellcheck source=../scripts/lib/docker-lifecycle.sh disable=SC2317
+         source "$DL_LIB" 2>/dev/null
+         _d=$(mktemp -d) || exit 1
+         mkdir -p "$_d/dbs/host/md"; echo x > "$_d/dbs/host/md/meta.bin"; touch "$_d/.gitkeep"
+         dl_purge_dir_contents "$_d" >/dev/null 2>&1 || exit 1
+         [[ ! -e "$_d/dbs" ]] || exit 1                         # nested content gone
+         [[ -e "$_d/.gitkeep" ]] || exit 1                      # .gitkeep spared
+         find() { return 1; }; sudo() { return 1; }
+         mkdir -p "$_d/dbs"
+         dl_purge_dir_contents "$_d" >/dev/null 2>&1 && exit 1  # must report failure
+         command rm -rf "$_d"; exit 0 ) 2>/dev/null; then
+        pass "lib purge empties nested dirs, spares .gitkeep, reports failure honestly"
+    else
+        fail "lib purge misbehaves on nested content, .gitkeep, or a failed delete"
+    fi
+    # BEHAVIOURAL: readiness must detect a container that died mid-startup
+    # (rc 2) rather than polling a corpse until timeout, and must enforce the
+    # timeout on WALL-CLOCK time (rc 1) — counting only the sleeps once let a
+    # 900s timeout run ~30 minutes, because each probe can block for seconds.
+    if ( set +e
+         # shellcheck source=../scripts/lib/docker-lifecycle.sh disable=SC2317
+         source "$DL_LIB" 2>/dev/null
+         docker() {
+             [[ "$*" == *'.State.Running'* ]] && { echo "false"; return 0; }
+             echo "1"; return 0
+         }
+         dl_wait_ready cid 5 1 true >/dev/null 2>&1
+         [[ $? -eq 2 ]] || exit 1
+         docker() { [[ "$*" == *'.State.Running'* ]] && { echo "true"; return 0; }; echo ""; }
+         _slowprobe() { sleep 2; return 1; }
+         _t0=$SECONDS
+         dl_wait_ready cid 3 1 _slowprobe >/dev/null 2>&1
+         [[ $? -eq 1 ]] || exit 1
+         (( SECONDS - _t0 <= 6 )) || exit 1                     # wall-clock, not sleep-count
+         exit 0 ) 2>/dev/null; then
+        pass "lib readiness detects a died container and enforces wall-clock timeout"
+    else
+        fail "lib readiness misses a died container or overruns its timeout"
+    fi
+fi
+
+# The deploys must route through the lib, not re-grow inline copies.
+for _dep in scripts/deploy-splunk.sh scripts/deploy-kusto.sh; do
+    _b=$(basename "$_dep")
+    if grep -q 'source .*lib/docker-lifecycle.sh' "$_dep" 2>/dev/null; then
+        pass "$_b sources the lifecycle lib"
+    else
+        fail "$_b does not source lib/docker-lifecycle.sh"
+        continue
+    fi
+    for _fn in dl_replace_container dl_ensure_isolated_network dl_wait_ready \
+               dl_verify_egress_blocked dl_assert_port_bindings; do
+        if grep -q "^[[:space:]]*$_fn " "$_dep" 2>/dev/null; then
+            pass "$_b calls $_fn"
+        else
+            fail "$_b does not call $_fn"
+        fi
+    done
+    # `docker logs -f` never exits on its own; only the lib may background it,
+    # and the deploy must stop it on every exit path.
+    if grep -q 'trap dl_stop_log_stream EXIT' "$_dep" 2>/dev/null; then
+        pass "$_b traps dl_stop_log_stream for early exits"
+    else
+        fail "$_b never stops its background log stream on early exits"
+    fi
+    if grep -qE 'docker logs -f.*&[[:space:]]*$' "$_dep" 2>/dev/null; then
+        fail "$_b backgrounds docker logs -f outside the lib"
+    else
+        pass "$_b has no unmanaged log stream"
+    fi
+    # Direct network creation would bypass the lib's --internal detection and
+    # masquerade handling.
+    if grep -q 'docker network create' "$_dep" 2>/dev/null; then
+        fail "$_b creates a network directly instead of via the lib"
+    else
+        pass "$_b creates no network outside the lib"
+    fi
+    # The closing banner must state the VERIFIED verdict, not a guess.
+    if grep -q 'DL_ISOLATION_VERDICT' "$_dep" 2>/dev/null; then
+        pass "$_b reports the runtime isolation verdict"
+    else
+        fail "$_b does not report the isolation verdict"
+    fi
+done
+
+# Every script that empties a data/index directory must use the lib's honest
+# purge — and carry no inline deletion that could bring the old defects back.
+# The call grep is line-anchored so a comment naming the function cannot
+# satisfy it.
+for _s in scripts/deploy-splunk.sh scripts/deploy-kusto.sh scripts/purge-splunk-container.sh; do
+    _b=$(basename "$_s")
+    if grep -qE 'rm -rf|find .*-delete' "$_s" 2>/dev/null; then
+        fail "$_b deletes directories inline instead of via dl_purge_dir_contents"
+    elif grep -qE '^[[:space:]]*(if ! )?dl_purge_dir_contents ' "$_s" 2>/dev/null; then
+        pass "$_b purges directories via the lib"
+    else
+        fail "$_b has no directory purge — expected a dl_purge_dir_contents call"
+    fi
+done
 # ------------------------------------------------------------------------------
 # Kusto emulator deploy (stage 1 of the port).
 #
@@ -241,31 +349,39 @@ fi
 # already paid for did in fact carry across.
 # ------------------------------------------------------------------------------
 if [[ ! -f scripts/deploy-kusto.sh ]]; then fail "scripts/deploy-kusto.sh is missing"; else
-    # Must survive line continuations: the script writes `docker network create \`
-    # then the flags on following lines, so a single-line grep for
-    # "docker network create --internal" can NEVER match — the original version
-    # of this check was incapable of failing.
-    if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' scripts/deploy-kusto.sh 2>/dev/null; then
-        fail "deploy-kusto.sh uses --internal, which blocks published ports"
-    else
-        pass "deploy-kusto.sh does not use --internal (continuations checked)"
-    fi
-    if grep -q 'enable_ip_masquerade=false' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh disables IP masquerade for isolation"
-    else
-        fail "deploy-kusto.sh has no egress control"
-    fi
-    if grep -q 'trap stop_log_stream' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh stops its background log stream"
-    else
-        fail "deploy-kusto.sh leaves 'docker logs -f' running over its diagnostics"
-    fi
-    # Readiness must be a real health check. Grepping logs is what let a dead
-    # Splunk report success.
-    if grep -q '\.show version' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh polls the engine rather than grepping logs"
+    # Network mechanism, log-stream handling and the purge are asserted on the
+    # shared lib (lifecycle group above). Here: the Kusto-specific choices.
+    #
+    # Readiness must be a real health check against the ENGINE — the probe
+    # handed to the shared dl_wait_ready must be kusto_reachable, which asks
+    # for `.show version` (asserted in the kusto-api checks below). Grepping
+    # logs is what let a dead Splunk report success.
+    if grep -qE 'dl_wait_ready .* kusto_reachable' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "deploy-kusto.sh polls the engine (kusto_reachable) rather than grepping logs"
     else
         fail "deploy-kusto.sh does not verify the engine actually answers"
+    fi
+    # The emulator has NO auth and speaks plaintext HTTP, so the safe defaults
+    # the Splunk deploy earned must hold here too.
+    if grep -q 'KUSTO_BIND_ADDR:-127.0.0.1' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "kusto binds to localhost by default"
+    else
+        fail "deploy-kusto.sh does not default to 127.0.0.1 — the emulator has no auth"
+    fi
+    if grep -q 'KUSTO_ISOLATED:-1' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "kusto network isolation on by default"
+    else
+        fail "deploy-kusto.sh does not default to an isolated network"
+    fi
+    if grep -q 'KUSTO_REPLACE:-always' scripts/deploy-kusto.sh 2>/dev/null; then
+        pass "kusto redeploy is the default (KUSTO_REPLACE=always)"
+    else
+        fail "deploy-kusto.sh does not default to replacing the container"
+    fi
+    if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-kusto.sh 2>/dev/null; then
+        fail "deploy-kusto.sh publishes a port without a bind address (binds 0.0.0.0)"
+    else
+        pass "kusto published ports are address-qualified"
     fi
     # Binding an unauthenticated engine off-localhost must take deliberate effort.
     if grep -q "Type 'expose' to continue" scripts/deploy-kusto.sh 2>/dev/null; then
@@ -455,13 +571,14 @@ if [[ ! -f scripts/lib/kusto-api.sh ]]; then fail "scripts/lib/kusto-api.sh is m
     else
         fail "kusto_scalar sends '.' commands to the query endpoint — always fails"
     fi
-fi
-
-# Isolation is asserted at runtime, not assumed.
-if grep -q 'ISOLATION_VERDICT' scripts/deploy-splunk.sh 2>/dev/null; then
-    pass "deploy verifies isolation at runtime"
-else
-    fail "deploy does not verify isolation actually holds"
+    # kusto_reachable is the readiness probe both deploy and apply lean on. It
+    # must ask the engine a real question — `grep -q .` once accepted a proxy
+    # block page as a running Kusto.
+    if sed -n '/^kusto_reachable()/,/^}/p' scripts/lib/kusto-api.sh 2>/dev/null | grep -q '\.show version'; then
+        pass "kusto_reachable asks the engine for .show version"
+    else
+        fail "kusto_reachable does not query the engine — reachability degrades to a port check"
+    fi
 fi
 # The purge script must not delete every dangling volume on the host. It used
 # to, while announcing that it was removing volumes "related to Splunk" —
@@ -638,7 +755,9 @@ fi
 CAR_APP="splunk/etc/apps/MITRE_CAR_App"
 CAR_MODEL="$CAR_APP/default/data/models/MITRE_CAR.json"
 if [[ -f "$CAR_MODEL" ]]; then
-    if python3 - "$CAR_MODEL" "$CAR_APP" car_data_model.json <<'PY' 2>/dev/null
+    # The script's final print is the coverage count, captured for the pass
+    # message — uncaptured it leaked a bare "6" into the harness output.
+    if n=$(python3 - "$CAR_MODEL" "$CAR_APP" car_data_model.json <<'PY' 2>/dev/null
 import json, re, sys
 model_p, app, src_p = sys.argv[1:4]
 model = json.load(open(model_p))
@@ -677,13 +796,8 @@ decl = set(re.findall(r'^\[(\w+)\]',
 assert ets <= decl, f"tags.conf references undeclared eventtypes: {ets - decl}"
 print(len(needed & produced))
 PY
+    )
     then
-        n=$(python3 -c "
-import json,re,sys
-m=json.load(open('$CAR_MODEL'))
-t=open('$CAR_APP/default/tags.conf').read()
-p={x.group(1) for x in re.finditer(r'^(car_\w+)\s*=\s*enabled',t,re.M)}
-print(len(p))")
         pass "CAR model matches car_data_model.json; $n/9 objects have a source"
     else
         fail "MITRE CAR model/tags/eventtypes are inconsistent — see the app README"

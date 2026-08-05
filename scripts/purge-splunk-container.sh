@@ -4,6 +4,12 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
+# Shared with the deploy scripts — used here for dl_purge_dir_contents, which
+# spares .gitkeep and REPORTS a failed delete instead of printing success over
+# indexes that are still on disk.
+# shellcheck source=lib/docker-lifecycle.sh
+source "$SCRIPT_DIR/lib/docker-lifecycle.sh"
+
 SPLUNK_CONTAINER="splunk-enterprise"
 
 # Index data lives in a named Docker volume by default. These must match
@@ -42,7 +48,7 @@ echo -e "⚠️ WARNING: This will stop and remove the Splunk container, and DEL
 echo -e "❌ This action CANNOT be undone."
 
 # Ask for confirmation
-read -p "Are you absolutely sure you want to PURGE the container and all indexes? (yes/no): " CONFIRMATION
+read -r -p "Are you absolutely sure you want to PURGE the container and all indexes? (yes/no): " CONFIRMATION
 
 # Check user input
 if [[ "$CONFIRMATION" != "yes" ]]; then
@@ -80,8 +86,10 @@ else
 fi
 
 # Host index directories: whatever --var-dir was pointed at, plus the repo's own
-# splunk/var. Deleting CONTENTS rather than the directory — it may be a mount
-# point, and removing it would change where indexes land next deploy.
+# splunk/var. dl_purge_dir_contents deletes CONTENTS rather than the directory
+# (it may be a mount point), spares the tracked .gitkeep, and reports failure —
+# this used to swallow a failed sudo and print success over surviving indexes.
+purge_failures=0
 cleared_dirs=""
 for d in "$SPLUNK_VAR_DIR" "$LEGACY_VAR_DIR"; do
     [[ -n "$d" && -d "$d" ]] || continue
@@ -89,10 +97,7 @@ for d in "$SPLUNK_VAR_DIR" "$LEGACY_VAR_DIR"; do
     cleared_dirs="$cleared_dirs|$d|"
     [[ -n "$(ls -A "$d" 2>/dev/null)" ]] || continue
     echo -e "\n🧹 Clearing index directory: $d..."
-    # .gitkeep is tracked — it is what keeps splunk/var in the repo skeleton.
-    sudo find "${d:?}" -mindepth 1 -maxdepth 1 -not -name '.gitkeep' \
-        -exec rm -rf {} + 2>/dev/null || true
-    echo "   ✅ Emptied."
+    dl_purge_dir_contents "$d" || purge_failures=1
 done
 
 # Remove exactly the anonymous volumes this container owned — captured above,
@@ -129,4 +134,9 @@ if [[ "${DANGLING_COUNT:-0}" -gt 0 ]]; then
     echo "   Remove:  docker volume prune     ⚠️  affects ALL projects on this host"
 fi
 
+if [[ "$purge_failures" == "1" ]]; then
+    echo -e "\n❌ Purge finished with errors — at least one index directory could"
+    echo "   not be emptied. Its indexes are still on disk."
+    exit 1
+fi
 echo -e "\n✅ Splunk container and indexes have been purged."
