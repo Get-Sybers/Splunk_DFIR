@@ -33,7 +33,7 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 cd "$REPO_ROOT_DIR"
 
 DEST="samples/large"
-BASE="https://digitalcorpora.s3.amazonaws.com/corpora/drives"
+BASE="https://digitalcorpora.s3.amazonaws.com/corpora"
 
 # name | bytes | sha256 | path under $BASE
 #
@@ -42,15 +42,35 @@ BASE="https://digitalcorpora.s3.amazonaws.com/corpora/drives"
 # object changed, not that your download is merely incomplete — investigate
 # rather than deleting and retrying.
 MANIFEST=(
-  "ubnist1.casper-rw.gen2.E01|116788106|c15c836993331b0e6ff37d2fdbbdf8798dfd92723b8839e1fcebe80892d97ad9|nps-2009-casper-rw/ubnist1.casper-rw.gen2.E01"
-  "ubnist1.casper-rw.gen3.E01|168365166|f2ad970ab2c8ed41e2d26d0c7e821aaee0bb6fe71063ae17bea894306a8e55ff|nps-2009-casper-rw/ubnist1.casper-rw.gen3.E01"
-  "ubnist1.gen0.E01|728367756|4c517df5e66c24e849fe43a460b50638f2c6cffb571e3e7fbb60255cc2392eaf|nps-2009-ubnist1/ubnist1.gen0.E01"
-  "ubnist1.gen3.aff|890164681|60f427154ce917600873f96ecb4098cb2079f46aa80a3fe8ffe88c2bd212c932|nps-2009-ubnist1/ubnist1.gen3.aff"
-  "ubnist1.gen3.001|536870912|0aebf1edbd2f4d4076d662ed5a8c1f9dafd7d9a264f0eecbe354c579e13665fa|nps-2009-ubnist1/ubnist1.gen3.001"
-  "ubnist1.gen3.002|536870912|6a19d436c73166204cee238a977ec56b63bf68aa4bc9e1d75fc8ea6cfa9c8a0b|nps-2009-ubnist1/ubnist1.gen3.002"
-  "ubnist1.gen3.003|536870912|c61c99532e4fc43b7532b1376ad9abd1f7d03aef636c295cae8bc41935e10d3f|nps-2009-ubnist1/ubnist1.gen3.003"
-  "ubnist1.gen3.004|495976448|9081988c9e10cc0766e3ee5c274beba674816023f759e1958fd1ca1453d90eaa|nps-2009-ubnist1/ubnist1.gen3.004"
-  "ubnist1.gen3.raw|2106589184|c0172d79ec23b2fce54e725b00062a38fc3988dfc036b4aa99bbaf243628b3fb|nps-2009-ubnist1/ubnist1.gen3.raw"
+  "ubnist1.casper-rw.gen2.E01|116788106|c15c836993331b0e6ff37d2fdbbdf8798dfd92723b8839e1fcebe80892d97ad9|drives/nps-2009-casper-rw/ubnist1.casper-rw.gen2.E01"
+  "ubnist1.casper-rw.gen3.E01|168365166|f2ad970ab2c8ed41e2d26d0c7e821aaee0bb6fe71063ae17bea894306a8e55ff|drives/nps-2009-casper-rw/ubnist1.casper-rw.gen3.E01"
+  "ubnist1.gen0.E01|728367756|4c517df5e66c24e849fe43a460b50638f2c6cffb571e3e7fbb60255cc2392eaf|drives/nps-2009-ubnist1/ubnist1.gen0.E01"
+  "ubnist1.gen3.aff|890164681|60f427154ce917600873f96ecb4098cb2079f46aa80a3fe8ffe88c2bd212c932|drives/nps-2009-ubnist1/ubnist1.gen3.aff"
+  "ubnist1.gen3.001|536870912|0aebf1edbd2f4d4076d662ed5a8c1f9dafd7d9a264f0eecbe354c579e13665fa|drives/nps-2009-ubnist1/ubnist1.gen3.001"
+  "ubnist1.gen3.002|536870912|6a19d436c73166204cee238a977ec56b63bf68aa4bc9e1d75fc8ea6cfa9c8a0b|drives/nps-2009-ubnist1/ubnist1.gen3.002"
+  "ubnist1.gen3.003|536870912|c61c99532e4fc43b7532b1376ad9abd1f7d03aef636c295cae8bc41935e10d3f|drives/nps-2009-ubnist1/ubnist1.gen3.003"
+  "ubnist1.gen3.004|495976448|9081988c9e10cc0766e3ee5c274beba674816023f759e1958fd1ca1453d90eaa|drives/nps-2009-ubnist1/ubnist1.gen3.004"
+  "ubnist1.gen3.raw|2106589184|c0172d79ec23b2fce54e725b00062a38fc3988dfc036b4aa99bbaf243628b3fb|drives/nps-2009-ubnist1/ubnist1.gen3.raw"
+
+  # ── Linux threat-analysis scenario (2020) ────────────────────────────────
+  # Feeds two lanes the task board still marks "not started": Linux logs and
+  # syslog. The three log archives are small enough to iterate on quickly.
+  "internaldns_logs.zip|1741837|63a0f1928b15e52f178db52c33e2aaaf7f75046a62149e01a0ead42262bf4c49|scenarios/2020-linux-threat-analysis/Stage2/internaldns_logs.zip"
+  "pfsense_logs.zip|14187201|d7ae073400814a001a9d45350d597a8fc773e81fed6a969e7b628cb0d9f7c0a1|scenarios/2020-linux-threat-analysis/Stage2/pfsense_logs.zip"
+  "dualserver_logs.zip|17998746|133d2139de15ac187f8a93cdbe949cae252271a2f3c1ab21bad1ac8060faf96d|scenarios/2020-linux-threat-analysis/Stage2/dualserver_logs.zip"
+  "linux-swapfile.7z|5505845|a617a0646a7b6434dca917c83404b1b19fe226e30559f1bba608babc3566baf0|scenarios/2020-linux-threat-analysis/Stage5/swapfile.7z"
+  "ggmemday1.7z|552477198|6d1f09d052be60a99c158f15e06b8ff5a9a3bd828910d6ac6756b13924f87d0f|scenarios/2020-linux-threat-analysis/Stage1/ggmemday1.7z"
+  "mmmemend.7z|605380634|25e14f285683bd4a3e036ec539fc8120f9c423f644e285ab9f36b8a28c405576|scenarios/2020-linux-threat-analysis/Stage5/mmmemend.7z"
+
+  # ── Network captures ─────────────────────────────────────────────────────
+  "Day_1_Capture.7z|924827765|3f75a2f78beee4abe8876be311c5dd5729556482d1c903758eb7651a8cf7c31a|scenarios/2020-linux-threat-analysis/Stage1/Day_1_Capture.7z"
+  "Day_2_Capture.7z|486142014|ae46a724b2f0a0de91a28511a4c69fb8786f538e8ce8ef516baa6dcc7a609701|scenarios/2020-linux-threat-analysis/Stage1/Day_2_Capture.7z"
+  "multifile_25_21.pcap|52986978|7864cb02c73143da436696ceaef0d74f6def5525776ec161152d28c017b672be|packets/2013-httpxfer/multifile_25_21.pcap"
+  "ngdc-interior-2012-07-10.pcap|26069999|d47a9e1144c92a5a818b295546bf5c3219a2bb18a21bb9dcc9702ee48f200548|scenarios/2012-ngdc/net/ngdc-interior-2012-07-10.pcap"
+  "5gb-tcp-connection.pcap.gz|832659417|5e9e12de5f4e2b762645f3204af4d30a4f56b1a4a6c253b41b9104e3552997c6|packets/5gb-tcp-connection.pcap.gz"
+
+  # ── DFRWS 2021 challenge ─────────────────────────────────────────────────
+  "1_Skimmer_mSD.zip|36665139|1c5ad394daa49573f4088a31fb7f6a3f537dbcd092fdfd5abc8b572ebedbc262|dfrws/challenge-2021/1_Skimmer_mSD.zip"
 )
 
 human() { numfmt --to=iec --suffix=B "$1" 2>/dev/null || echo "$1 bytes"; }
