@@ -2,7 +2,7 @@
 
 > These steps reflect the paths that actually work today. See
 > [What Actually Works](/README.md#what-actually-works) before you start, and
-> note that KAPE and the Kusto emulator carry licensing terms you are accepting
+> note that the Kusto emulator carries licensing terms you are accepting
 > — [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 ### ⚙️ **Step 1: Setup Environment**
@@ -118,8 +118,10 @@ DX_DFIR/scripts/ingest-kusto.sh
 ```
 - Loads `data_store/processed/` into the emulator: Plaso CSV → `host.L2tCsv`,
   EvtxECmd JSON → `host.EvtxEcmdJson`, Zeek `conn.log` → `network.ZeekConn`.
-- KAPE / Velociraptor / Rekall loaders are **not implemented yet** — the
-  tables exist, the loaders do not. The script says so rather than pretending.
+- Velociraptor / Rekall loaders are **not implemented yet** — the tables
+  exist, the loaders do not. The script says so rather than pretending.
+  (Artefact collection is planned via Velociraptor offline collectors running
+  the EZ Tools; the KAPE path was removed.)
 - Ingestion is additive with no fishbucket: re-running duplicates rows. To
   start clean, redeploy (ephemeral default) and re-ingest.
 - `--only l2t|zeek|evtx` limits to one source; `--dry-run` lists without

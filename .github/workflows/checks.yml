@@ -60,24 +60,3 @@ jobs:
 
       - name: Run repository checks
         run: ./tests/run-checks.sh -v
-
-  # PowerShell is not covered by tests/run-checks.sh, because the scripts only
-  # run on Windows and the harness is bash. Analysing them here is the one thing
-  # CI can do that a Linux dev box does not do by default.
-  powershell:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: PSScriptAnalyzer
-        shell: pwsh
-        run: |
-          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -ErrorAction Stop
-          $results = Get-ChildItem -Path scripts -Filter *.ps1 -Recurse |
-              ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Error }
-          if ($results) {
-              $results | Format-Table -AutoSize | Out-String | Write-Host
-              Write-Error "PSScriptAnalyzer reported $($results.Count) error(s)"
-              exit 1
-          }
-          Write-Host "No PSScriptAnalyzer errors."

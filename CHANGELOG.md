@@ -33,9 +33,25 @@ script names, sourcetypes, field names, and app layouts included.
 
   The check harness dropped its Splunk groups (Ansible lint, conf sanity, app
   metadata, Splunk CAR model wiring) and gained a Kusto-side CAR coverage
-  check pinning the six sourced objects and their `Car*()` functions against
+  check pinning the sourced objects and their `Car*()` functions against
   `car_data_model.json`. Superseded Splunk-era issues are closed; the runtime
   checklist (issue #14) is unchanged and still gates everything.
+
+- **The KAPE automation is removed; Velociraptor offline collectors running
+  the EZ Tools are the planned replacement.** `Process-Kape-ALL.ps1`,
+  `Setup-Environment-Kape.ps1`, the `KapeJson` table and mapping, and the
+  KAPE branches of the CAR functions go; with them goes KAPE Solo's
+  non-commercial licence restriction — the sharpest licensing constraint the
+  project carried. The replacement uses the same Zimmerman parsers (MIT-style
+  licences, usable in paid work), so the retired `KapeJson` mapping in git
+  history is the starting point when the collector path lands.
+
+  Consequence, stated rather than hidden: the `registry` CAR object lost its
+  only source, so coverage is **5 of 9 objects** and `CarCoverage()` pins
+  registry at 0 alongside driver/module/thread until the collector path
+  exists. `CarProcess()` and `CarFile()` keep their EvtxECmd/Plaso sources.
+  The repo now contains no PowerShell, so the PSScriptAnalyzer CI job is
+  removed with it.
 
 - **Renamed: Splunk_DFIR → DX_DFIR.** Titles, badges and in-repo links now
   point at `Get-Sybers/DX_DFIR`. (The GitHub-side repository rename is a

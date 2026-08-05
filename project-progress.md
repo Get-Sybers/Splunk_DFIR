@@ -42,7 +42,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ◑            |     ◑        |
 | [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ◑ (`conn` only) | ◑         |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ◑            |     ◑        |
-| [Kape](https://github.com/EricZimmerman/KapeFiles)            | ✅            | json, csv       | ❌ loader not implemented | ❌ |
+| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ❌ planned — replaces the removed KAPE path | json | ❌ | ❌ |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ❌ loader not implemented | ❌ |
 | [Rekall](https://github.com/google/rekall)                    | ⚠️            | json            | ❌ loader not implemented | ❌ |
 | Linux Logs                                                    |               |                 |              |               |
@@ -54,11 +54,12 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 
 **The CAR column is ◑, not ✅.** The MITRE CAR data model is expressed as KQL
 functions in the `mitre` database — `CarFlow()`, `CarUserSession()`,
-`CarProcess()`, `CarService()`, `CarRegistry()`, `CarFile()`, with
-`CarCoverage()` reporting what has data. Six of the nine CAR objects have a
-source; `driver`, `module` and `thread` have none, because nothing dead-box
-produces driver loads, image loads or thread creation — those need Sysmon or a
-live agent.
+`CarProcess()`, `CarService()`, `CarFile()`, with `CarCoverage()` reporting
+what has data. Five of the nine CAR objects have a source. `registry` lost its
+only source when the KAPE path was removed and awaits the Velociraptor/EZ-Tools
+collectors; `driver`, `module` and `thread` have none, because nothing
+dead-box produces driver loads, image loads or thread creation — those need
+Sysmon or a live agent.
 
 **None of it has been run against a live emulator.** ◑ means built and
 internally consistent, not working. Turning those into ✅ is what stands
@@ -102,13 +103,10 @@ zero-byte `BASELINE` confs, and the operator-supplied `Splunk_TA_zeek` /
   below and is worth more than any further code —
   [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
   checklist.
-- ⬜ KAPE, Velociraptor and Rekall ingestion. Tables and CAR functions exist;
-  the loader populates none of them, so `CarRegistry()` and the KAPE halves of
-  `CarProcess()`/`CarFile()` return nothing.
+- ⬜ Velociraptor and Rekall ingestion. Tables exist; the loader populates
+  neither.
 - ⬜ 68 of Zeek's 69 log types. Only `conn.log` is typed and ingested — it is
   the one `car_flow` needs.
-- ⬜ `KapeCsv` needs typed per-artefact tables; a CSV mapping cannot populate a
-  `dynamic` column, which is why the first attempt was removed.
 - ⬜ Verify the `pid` hex conversion. `pid_hex` is always right; `pid` depends
   on `tolong()` accepting a `0x` prefix, which is untested
   ([issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14), item 6).
@@ -131,8 +129,14 @@ zero-byte `BASELINE` confs, and the operator-supplied `Splunk_TA_zeek` /
   `windows-latest`.
 - ⬜ A smoke test that runs the pipeline against a small public sample image.
 
-### 🔹 **KAPE & Raw EVTX Processing**
-- Develop the KAPE ingestion path (typed per-artefact tables — see above).
+### 🔹 **Velociraptor offline collectors (EZ Tools) & Raw EVTX**
+- Build the offline-collector path: Velociraptor collectors running the EZ
+  Tools for artefact collection and parsing — the replacement for the removed
+  KAPE automation. Same Zimmerman parsers and field names, so the retired
+  `KapeJson` mapping in git history is the starting point; re-sources the
+  `registry` CAR object when it lands. If the collectors emit EZ-tool CSV,
+  the answer is typed per-artefact tables or JSON conversion — a CSV mapping
+  cannot populate a `dynamic` column.
 - Verify `process-evtx-EvtxECmd.sh` against a real event log.
 
 ### 🔹 **Environment & Dependencies**

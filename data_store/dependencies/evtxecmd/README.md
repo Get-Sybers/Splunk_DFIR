@@ -36,10 +36,10 @@ Update the maps with `EvtxECmd.dll --sync` (needs network).
 
 **MIT** — Copyright (c) 2019 Eric Zimmerman.
 
-Worth noting explicitly: unlike KAPE, which is proprietary and forbids
-commercial use under its Solo Edition EULA, EvtxECmd carries **no restriction on
-commercial use**. The EVTX path in this repository is usable in paid work; the
-KAPE path is not without a Kroll licence. See
+Worth noting explicitly: EvtxECmd carries **no restriction on commercial
+use** — one reason this project standardises on the EZ Tools (here directly,
+and via the planned Velociraptor offline collectors) rather than KAPE, whose
+Solo Edition EULA forbids business use. See
 [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 It is not vendored here for the same reason nothing else is: this project does

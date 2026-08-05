@@ -16,7 +16,8 @@
 
 Automates the processing of forensic evidence with
 **[Plaso (log2timeline)](https://github.com/log2timeline/plaso)**,
-**[Zeek](https://zeek.org/)**, and **[KAPE](https://www.kroll.com/en/services/cyber-risk/incident-response-litigation-support/kroll-artifact-parser-extractor-kape)**,
+**[Zeek](https://zeek.org/)**, and
+**[EvtxECmd](https://github.com/EricZimmerman/evtx)**,
 and loads it into a local, offline
 **[Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview)**
 — the real Kusto query engine in a container, no Azure, no account, no cloud —
@@ -99,11 +100,11 @@ discovered.
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek logs | ✅ Works | ISO8601 timestamps preserved |
 | Raw EVTX → EvtxECmd JSON | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh`; operator-supplied EvtxECmd (MIT). **Never run against a real event log** |
-| KAPE collection/parsing | ⚠️ Partial | Windows-side PowerShell automation; output lands in `data_store/processed/kape/` |
+| Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
 | Rekall / Velociraptor processing | ⚠️ Partial | Normalisation scripts exist; Rekall upstream is archived |
 | **Kusto emulator deploy** | ◑ Built, unverified | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check. **Never run against a live emulator** |
-| **Schema + ingestion** | ◑ Built, unverified | 5 databases; typed tables + ingestion mappings for Plaso CSV, EvtxECmd JSON, Zeek `conn`; loaders for KAPE / Velociraptor / Rekall are **not implemented** |
-| **MITRE CAR field mapping (KQL)** | ◑ **Built, unverified** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarRegistry()`, `CarFile()`, plus `CarCoverage()`. **6 of 9 CAR objects have a source**; `driver`, `module`, `thread` have none. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
+| **Schema + ingestion** | ◑ Built, unverified | 5 databases; typed tables + ingestion mappings for Plaso CSV, EvtxECmd JSON, Zeek `conn`; loaders for Velociraptor / Rekall are **not implemented** |
+| **MITRE CAR field mapping (KQL)** | ◑ **Built, unverified** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, plus `CarCoverage()`. **5 of 9 CAR objects have a source**; `registry` (awaiting the Velociraptor/EZ-Tools path), `driver`, `module`, `thread` have none. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
 | Linux logs, Sysmon, Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
 
 ### Known limitations
@@ -129,24 +130,19 @@ discovered.
 ## 🛑 Before You Run Anything
 <a name="before-you-run-anything"></a>
 
-Four things that will bite you otherwise:
+Three things that will bite you otherwise:
 
-1. **KAPE is not free for commercial use.** KAPE Solo Edition is free for
-   personal, educational, and law-enforcement use only. Using the KAPE
-   automation here in a paid engagement or on a client network requires a
-   **KAPE Enterprise licence** from Kroll. This is the tightest constraint in
-   the project — see [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
-2. **The emulator has no security features at all.** No authentication, no
+1. **The emulator has no security features at all.** No authentication, no
    access control, plaintext HTTP, no encryption at rest — documented
    properties, not misconfigurations. `deploy-kusto.sh` binds it to
    `127.0.0.1` and requires typing `expose` to bind anywhere else; that
    binding is the only control there is. It also runs isolated by default —
    no outbound network access. Not an airgap — see [SECURITY.md](/SECURITY.md).
-3. **Deploying accepts Microsoft's Software License Terms on your behalf**
+2. **Deploying accepts Microsoft's Software License Terms on your behalf**
    (`ACCEPT_EULA=Y`), and Microsoft provides the emulator *as-is*, without
    support or warranties. Whether that fits your engagement is your call to
    make, not this project's.
-4. **This handles real evidence.** `data_store/` is gitignored
+3. **This handles real evidence.** `data_store/` is gitignored
    deny-by-default, so unknown and extensionless formats are covered. It is
    still a safety net, not a guarantee — check `git status` before you commit,
    every time.
