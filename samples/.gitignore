@@ -1,0 +1,21 @@
+# samples/ holds small, public, freely redistributable DFIR test fixtures.
+# It is NOT for case evidence. Real evidence belongs in data_store/, which is
+# deny-by-default and must stay that way — see data_store/.gitignore.
+#
+# One specific exclusion, and the reason for it:
+#
+#   12-carve-ext2.dd is 124 MB. GitHub rejects any file over 100 MB outright,
+#   so a push carrying it fails rather than warns. The image is not lost —
+#   archives/12-carve-ext2.zip holds the same data at 1.1 MB compressed.
+#   Extract it locally when you need it; the extraction stays out of git.
+12-carve-ext2.dd
+
+# Extraction directories for the archives in archives/.
+12-carve-ext2/
+sleuthkit_test_data/
+
+# The root .gitignore drops **.zip as junk. These two are not junk — they are
+# sample data, and 12-carve-ext2.zip is the only committed copy of the image
+# excluded above. Re-include exactly these two, nothing else.
+!archives/12-carve-ext2.zip
+!archives/sleuthkit_test_data.zip
