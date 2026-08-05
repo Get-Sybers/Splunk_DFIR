@@ -149,7 +149,7 @@ CarUserSession() {
 //    accepts 0x integer *literals*, but that is not the same as run-time
 //    string conversion. If pid comes back null against a real emulator, the
 //    fix is a conversion expression here, not a change to the model.
-//    Tracked as part of the port's runtime verification.
+//    Tracked in issue #14 (Kusto runtime verification), item 6.
 //
 // ppid comes from EventData's ProcessId (the creating process), NOT from the
 // table's top-level ProcessId column — that is the Execution ProcessID of

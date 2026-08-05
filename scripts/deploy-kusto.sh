@@ -102,6 +102,9 @@ Environment (flags win):
   KUSTO_DATA_DIR         persist location
   KUSTO_ISOLATED         1 isolated, 0 allow egress          (default 1)
   KUSTO_REPLACE          always | ask | never
+  KUSTO_PORT             host port                           (default 8080)
+  KUSTO_CONTAINER        container name             (default kusto-emulator)
+  KUSTO_NETWORK          isolated network name  (default kusto-dfir-isolated)
 
 Licence:
   Starting the container sets ACCEPT_EULA=Y, accepting Microsoft's Software
@@ -144,14 +147,17 @@ case "$KUSTO_REPLACE" in
     *) echo "❌ KUSTO_REPLACE must be always|ask|never (got '$KUSTO_REPLACE')."; exit 1 ;;
 esac
 
-# The library owns the endpoint and the readiness probe. Reimplementing them
-# here meant deploy and the other two scripts could disagree about where Kusto
-# is: deploy used KUSTO_BIND_ADDR, the library uses KUSTO_HOST, so
-# `--bind X --port N` produced a working deploy that apply/ingest could not find.
+# The library owns the endpoint and the readiness probe, so deploy's own probe
+# cannot disagree with apply/ingest about where Kusto is.
+#
+# What sourcing does NOT do: propagate --bind/--port to the next scripts. They
+# run in a fresh shell, so an `export` here reaches nothing (an earlier version
+# claimed otherwise). For a non-default endpoint the closing banner prints the
+# exact KUSTO_HOST=/KUSTO_PORT= prefix to run them with.
 KUSTO_HOST="$KUSTO_BIND_ADDR"
-export KUSTO_HOST KUSTO_PORT KUSTO_CONTAINER KUSTO_PERSIST
 # shellcheck source=lib/kusto-api.sh
 source "$SCRIPT_DIR/lib/kusto-api.sh"
+kusto_require_tools
 MGMT_URL="${KUSTO_BASE}/v1/rest/mgmt"
 
 echo ""
@@ -442,9 +448,15 @@ echo ""
 echo "  NETWORK    $([[ "$KUSTO_ISOLATED" == "1" ]] && echo "isolated ($ISOLATION_VERDICT)" || echo "NOT isolated")"
 echo "             NO authentication, NO encryption — localhost only by default"
 echo ""
+# apply/ingest run in a fresh shell and default to 127.0.0.1:8080. A deploy on
+# a non-default endpoint must hand them the address explicitly, or they will
+# probe the wrong one and advise redeploying a cluster that is already up.
+NEXT_PREFIX=""
+if [[ "$KUSTO_HOST" != "127.0.0.1" ]]; then NEXT_PREFIX+="KUSTO_HOST=$KUSTO_HOST "; fi
+if [[ "$KUSTO_PORT" != "8080" ]]; then NEXT_PREFIX+="KUSTO_PORT=$KUSTO_PORT "; fi
 echo "  The engine is running and EMPTY. Two steps left:"
-echo "    1.  ./scripts/apply-kusto-schema.sh    databases, tables, CAR functions"
-echo "    2.  ./scripts/ingest-kusto.sh          load data_store/processed"
+echo "    1.  ${NEXT_PREFIX}./scripts/apply-kusto-schema.sh    databases, tables, CAR functions"
+echo "    2.  ${NEXT_PREFIX}./scripts/ingest-kusto.sh          load data_store/processed"
 echo ""
 echo "  Then, in the 'mitre' database:  CarCoverage()"
 echo "  Plan and known gaps: docs/Kusto-Port.md"

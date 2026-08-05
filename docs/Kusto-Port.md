@@ -169,7 +169,9 @@ Stated plainly so it is not mistaken for working:
   `CarFile()` return nothing until this is finished.
 - **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
   `car_flow` needs. The generic `Zeek` table exists for the rest.
-- **Nothing has been run against a real emulator.** No Docker here.
+- **Nothing has been run against a real emulator.** No Docker here. The full
+  list of unverified assumptions, ranked by blast radius, is
+  [issue #14](https://github.com/Get-Sybers/Splunk_DFIR/issues/14).
 
   An earlier version of this document claimed the scripts were "verified"
   against a fake HTTP endpoint. That was an overclaim: the fake returned
