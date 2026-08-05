@@ -10,6 +10,39 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Changed
+
+- **Container lifecycle consolidated into `scripts/lib/docker-lifecycle.sh`.**
+  Both deploys and the purge script had grown near-identical copies of the
+  replace-existing-container policy, the isolated-network setup, the background
+  log stream, the readiness poll, the egress probe, the published-port readback
+  and the directory purge — and the copies had already drifted (each carried
+  fixes the other lacked). One shared library now encodes each lesson once,
+  and the check harness asserts both the lib's behaviour and that the scripts
+  actually route through it instead of growing new inline copies.
+
+  Consolidating surfaced and fixed three real defects in the Splunk path:
+
+  - `--purge`'s confirmation now comes BEFORE the container is removed.
+    Declining the purge used to leave you without a container anyway, because
+    the replace block ran first. (The Kusto deploy was already built with the
+    confirmation first; now both order it the same way.)
+  - The `--var-dir` index purge reported success unconditionally — a failed
+    `sudo find … | true` swallowed the error, so indexes could survive a purge
+    that claimed to delete them. The shared purge tries unprivileged first,
+    escalates once, and fails loudly. `purge-splunk-container.sh` had the same
+    bug and now exits non-zero if a directory could not be emptied.
+  - The Ansible readiness timeout now counts wall-clock time, not just its
+    sleeps — each `docker logs` pass over a growing log took real time, so the
+    old loop overran its stated timeout.
+
+  Two deliberate behaviour changes ride along: a port bound to `0.0.0.0` when
+  a narrower bind address was requested is now FATAL on the Splunk deploy too
+  (it already was on Kusto), and the Kusto data purge switched from
+  `find -delete` — which cannot remove non-empty directories, so it could
+  never actually purge `/kustodata/dbs/<db>/…` — to `-exec rm -rf` with the
+  same honest failure reporting.
+
 ### Added
 
 - **Kusto emulator port — a second, offline analysis backend.** Runs Azure Data Explorer's
