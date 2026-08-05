@@ -94,8 +94,6 @@ It does **not** test the pipeline — nothing does yet. That is the single most
 valuable contribution available (see above), and it runs in CI on every push via
 `.github/workflows/checks.yml`.
 
-For PowerShell, `Invoke-ScriptAnalyzer`.
-
 ## Documentation
 
 Docs drift badly in this repo — the rewrite fixed a batch of links pointing at
