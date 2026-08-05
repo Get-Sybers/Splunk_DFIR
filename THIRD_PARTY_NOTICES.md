@@ -56,6 +56,26 @@ project's own code.
 repository** — the script downloads them from source, so no additional
 attribution obligation attaches here beyond the corpus terms above.
 
+**Fetched, not redistributed.** `dev-scripts/samples-manifest.tsv` catalogues a
+further 856 files (2.8 TB) that this repository does *not* ship — it records
+their public URLs, sizes and hashes so they can be fetched from Digital
+Corpora directly. Cataloguing a public URL carries no redistribution
+obligation, but the terms still bind whoever downloads them, and they are not
+uniform:
+
+- **NPS corpora and DFTT** — as above: public domain / unrestricted research
+  use, except the GPL DFTT images.
+- **Magnet CTF sets** (`scenarios-magnet`) — published by Magnet Forensics for
+  training and competition use. Not public domain; check their terms before
+  using these in anything commercial or redistributing them onward.
+- **DFRWS challenge data** (`dfrws-challenge-2021`) — released for the DFRWS
+  forensic challenge, research and education use.
+- **Scenario corpora** (LoneWolf, Narcos, Owl, Tuck, NGDC, the Linux
+  threat-analysis set) — produced for forensic education, generally free for
+  research and teaching. Several were built by university programmes with
+  their own citation requests; the scenario READMEs on Digital Corpora carry
+  the specifics.
+
 None of these are case evidence. `data_store/` remains deny-by-default and
 holds nothing.
 
