@@ -149,11 +149,12 @@ CarUserSession() {
 // value is 4660. Both the raw hex and a best-effort numeric form are exposed:
 // pid_hex is always correct, pid is what CAR asks for.
 //
-// ⚠️ Whether tolong() accepts a "0x"-prefixed string is UNVERIFIED — KQL
-//    accepts 0x integer *literals*, but that is not the same as run-time
-//    string conversion. If pid comes back null against a real emulator, the
-//    fix is a conversion expression here, not a change to the model.
-//    Tracked in issue #14 (Kusto runtime verification), item 6.
+// ✅ VERIFIED against the live emulator (issue #14, item 6): tolong() DOES
+//    accept a "0x"-prefixed string at run time, not just a 0x integer literal —
+//    tolong("0x1a4") = 420, tolong("0x1234") = 4660, and pid=420 on the
+//    ingested 4688 row. Note tolong("1a4") without the prefix = null, so pid_hex
+//    stays the always-correct raw form; EvtxECmd emits the "0x" form, so pid is
+//    populated. See docs/Runtime-Validation.md.
 //
 // ppid comes from EventData's ProcessId (the creating process), NOT from the
 // table's top-level ProcessId column — that is the Execution ProcessID of
@@ -246,8 +247,18 @@ CarFile() {
         database("host").L2tCsv
         | where SourceLong matches regex @"(?i)\bfs\b|ntfs|file"
         | extend
+            // MACB -> CAR action. The modify branch matches "modification"
+            // broadly, not just "content modification": against real Plaso
+            // output an NTFS image emits THREE modification descriptions —
+            // "Content Modification Time" (mtime, the M), "Metadata
+            // Modification Time" (the MFT metadata-change time, the C in MACB)
+            // and "File Last Modification Time". The original regex caught only
+            // the first, leaving 260 of 1240 rows on real images with an empty
+            // action. Metadata change (permissions/MFT record) is still a file
+            // modification for CAR's purposes, so all three map to "modify".
+            // create is tested first, so any overlap resolves in its favour.
             action = case(TimestampDesc matches regex @"(?i)creation|crtime|birth", "create",
-                          TimestampDesc matches regex @"(?i)content modification|mtime", "modify",
+                          TimestampDesc matches regex @"(?i)modification|mtime", "modify",
                           TimestampDesc matches regex @"(?i)last access|atime", "read",
                           TimestampDesc matches regex @"(?i)deletion|deleted", "delete",
                           ""),
@@ -282,10 +293,14 @@ CarCoverage() {
         (CarProcess()     | summarize Rows = count() | extend Object = "process"),
         (CarService()     | summarize Rows = count() | extend Object = "service"),
         (CarFile()        | summarize Rows = count() | extend Object = "file"),
-        (print Object = "registry", Rows = 0L),
-        (print Object = "driver", Rows = 0L),
-        (print Object = "module", Rows = 0L),
-        (print Object = "thread", Rows = 0L)
+        // long(0), not 0L: the emulator's parser rejects the typed-literal
+        // suffix form (`0L`) with a semantic error, though it is valid in the
+        // cloud grammar. long(0) is accepted by both and keeps these branches'
+        // Rows column a long, matching the count() branches above.
+        (print Object = "registry", Rows = long(0)),
+        (print Object = "driver", Rows = long(0)),
+        (print Object = "module", Rows = long(0)),
+        (print Object = "thread", Rows = long(0))
     | project Object, Rows
     | order by Rows desc
 }

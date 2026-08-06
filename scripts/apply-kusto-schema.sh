@@ -122,8 +122,13 @@ DB_FILE="$SCHEMA_DIR/00-databases.kql"
 [[ -f "$DB_FILE" ]] || { echo "❌ Missing $DB_FILE"; exit 1; }
 
 # Parse the database names out of the file rather than hardcoding them here,
-# so the .kql stays the single source of truth.
-mapfile -t DATABASES < <(grep -oE '^\.create database [A-Za-z_][A-Za-z0-9_]*' "$DB_FILE" | awk '{print $3}')
+# so the .kql stays the single source of truth. Names are bracket-quoted there
+# (`["network"]`) because `network` is a reserved engine keyword — the plain
+# name is stripped back out so existence checks and command construction below
+# work with `network`, not `["network"]`. The optional-bracket regex still
+# accepts the legacy bare form.
+mapfile -t DATABASES < <(grep -oE '^\.create database +\[?"?[A-Za-z_][A-Za-z0-9_]*"?\]?' "$DB_FILE" \
+    | sed -E 's/^\.create database +//; s/^\["?//; s/"?\]$//')
 [[ ${#DATABASES[@]} -gt 0 ]] || { echo "❌ No databases declared in $DB_FILE"; exit 1; }
 
 echo "📚 Databases: ${DATABASES[*]}"
@@ -148,10 +153,14 @@ for db in "${DATABASES[@]}"; do
         echo "   ⏭️  $db already exists — skipping creation"
         continue
     fi
+    # Bracket-quote the name in the command too: `network` is a reserved word,
+    # so `.create database network ...` is rejected. The path literals in the
+    # persist form take the plain name — they are string arguments, not entity
+    # identifiers.
     if [[ "$KUSTO_PERSIST" == "1" ]]; then
-        cmd=".create database $db persist (@\"/kustodata/dbs/$db/md\", @\"/kustodata/dbs/$db/data\")"
+        cmd=".create database [\"$db\"] persist (@\"/kustodata/dbs/$db/md\", @\"/kustodata/dbs/$db/data\")"
     else
-        cmd=".create database $db volatile"
+        cmd=".create database [\"$db\"] volatile"
     fi
     resp=$(kusto_mgmt "NetDefaultDB" "$cmd")
     if kusto_failed "$resp"; then
