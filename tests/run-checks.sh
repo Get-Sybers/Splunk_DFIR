@@ -331,7 +331,11 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
 
     # Databases in 00-databases.kql must match what the CAR functions reference.
     if [[ -f kusto/schema/00-databases.kql ]]; then
-        declared=$(grep -oE '^\.create database [A-Za-z_][A-Za-z0-9_]*' kusto/schema/00-databases.kql | awk '{print $3}' | sort -u)
+        # Names are bracket-quoted (`["network"]`) because `network` is a
+        # reserved engine keyword; strip the brackets/quotes back to the plain
+        # name. The optional-bracket regex still accepts the legacy bare form.
+        declared=$(grep -oE '^\.create database +\[?"?[A-Za-z_][A-Za-z0-9_]*"?\]?' kusto/schema/00-databases.kql \
+            | sed -E 's/^\.create database +//; s/^\["?//; s/"?\]$//' | sort -u)
         referenced=$(grep -hoE 'database\("[a-z]+"\)' kusto/schema/[1-9]*.kql 2>/dev/null | sed 's/database("\(.*\)")/\1/' | sort -u)
         missing=""
         for r in $referenced; do
