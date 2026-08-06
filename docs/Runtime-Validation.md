@@ -18,6 +18,11 @@ have caught.
 > | **Zeek → `network.ZeekConn`** | ⚠️ format-accurate `conn.log` fixture¹ | ✅ verified live |
 > | **EvtxECmd → `host.EvtxEcmdJson`** | ⚠️ format-accurate JSON fixture¹ | ✅ verified live |
 > | **Volatility 3 → `memory.VolatilityJson`** | ◐ real `banners.Banners` on a real 511 MB dump + fixtures for symbol-blocked plugins² | ✅ verified live |
+> | **Velociraptor → `host.VelociraptorJson`** | ⚠️ format-accurate RECmd fixture³ | ✅ verified live |
+>
+> ³ Velociraptor offline collectors run on the endpoint (not here), so a
+> format-accurate RECmd result set stood in; the loader + `CarRegistry()` are
+> real. It re-sources the `registry` CAR object.
 >
 > ² Volatility 3 (`pip install volatility3`) ran for real on a 511 MB memory
 > image and its `banners.Banners` output — the ntoskrnl PDB GUID — is ingested.
@@ -53,13 +58,13 @@ flow              4     <- Zeek conn.log fixture
 user_session      1     <- EvtxECmd 4624 fixture
 service           1     <- EvtxECmd 7045 fixture
 process           1     <- EvtxECmd 4688 fixture
-registry          0     <- unsourced (awaits Velociraptor/EZ-Tools)
+registry          3     <- Velociraptor/RECmd fixture
 driver            0     <- unsourced (needs Sysmon/live agent)
 module            0     <- unsourced
 thread            0     <- unsourced
 ```
 
-Five of nine CAR objects now carry data end-to-end; the four zeros are the
+Six of nine CAR objects now carry data end-to-end; the three zeros are the
 honest, documented gaps, not failures. The README's "envisioned endstate"
 query returns a real row now:
 
@@ -260,6 +265,35 @@ milliseconds and macOS Cocoa `visit_time` both resolve to the right instant).
 > (`FILE`/`File stat`) still flows to `CarFile()` as for any filesystem row.
 > Establishing this — which mobile/browser source types exist and where they do
 > and don't belong — is exactly the "how it breaks down into source types" goal.
+
+### Velociraptor — `host.VelociraptorJson` → `CarRegistry()` (registry re-sourced)
+
+The `registry` CAR object lost its only source when the KAPE path was removed.
+It is sourced again by **Velociraptor offline collectors running the EZ Tools**
+(RECmd / Registry Explorer). Velociraptor runs on the endpoint, so a
+format-accurate RECmd result set drove the validation; the loader and CAR
+function are real.
+
+- **Loader — same constant-column injection as Volatility.** `Artefact` and
+  `SourceFile` are per-file constants `.ingest` can't set, so
+  `velociraptor_prepare` wraps each RECmd record as `{Artefact, SourceFile,
+  Record}` JSON Lines. `VelociraptorArtefacts()` then shows
+  `Windows.Registry.RECmd` populated.
+- **`CarRegistry()`** projects the CAR registry object from the dynamic
+  `Record`, coalescing the EZ-tool field names (`KeyPath`/`ValueName`/
+  `ValueData`/`ValueType`/`HivePath`, `LastWriteTimestamp`):
+
+  ```
+  Timestamp             action  key                                              value    data
+  2025-01-01T09:00:00Z  modify  SOFTWARE\…\CurrentVersion\Run                     Updater  C:\Temp\evil.exe
+  2025-01-01T09:03:12Z  modify  SYSTEM\…\Services\EvilSvc                         ImagePath C:\Windows\Temp\evil.exe
+  2025-01-01T09:05:40Z  modify  SOFTWARE\…\Winlogon                              Shell    explorer.exe,C:\Temp\backdoor.exe
+  ```
+  `hostname` is derived from the per-host collection directory in the path
+  (`velociraptor/<host>/…`), since RECmd output carries none. `action` is
+  `modify`: a hive records a key's *last* write, so a row means created-or-
+  changed, and dead-box can't split the two — the weaker claim is the honest one.
+  `CarCoverage()` now reports `registry` populated → **6 of 9**.
 
 ---
 

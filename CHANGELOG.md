@@ -10,6 +10,27 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Added — Velociraptor loader; `registry` CAR object sourced again (6/9)
+
+- **The `velociraptor` source is implemented**, no longer "NOT IMPLEMENTED".
+  `ingest-kusto.sh` gained a `velociraptor_prepare` hook that wraps each
+  collector record as `{Artefact, SourceFile, Record}` JSON Lines (the same
+  constant-column injection the Volatility loader uses), landing it in
+  `host.VelociraptorJson`. `VelociraptorJsonMapping` now reads all three
+  columns, and a `VelociraptorArtefacts()` view was added.
+- **`CarRegistry()` re-sources the `registry` CAR object** from Velociraptor
+  offline collectors running the EZ Tools (RECmd / Registry Explorer). MITRE CAR
+  coverage goes from **5 of 9 to 6 of 9**; `CarCoverage()` now counts real
+  registry rows instead of the hardcoded 0, leaving only driver/module/thread
+  pinned. The `run-checks.sh` CAR pin was updated to the six-object contract.
+- **`scripts/process-velociraptor.sh`** unpacks an offline-collection ZIP and
+  lays its per-artefact JSON out for ingestion.
+- Verified against the live emulator with a format-accurate Velociraptor/RECmd
+  fixture (Run-key / service / Winlogon-Shell persistence): `CarRegistry()`
+  projects key/value/data/hive with hostname derived from the collection path,
+  and `CarCoverage()` reports `registry` populated. Details in
+  [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+
 ### Added — memory processing lane (Volatility 3)
 
 - **Memory is processed with [Volatility 3](https://github.com/volatilityfoundation/volatility3)

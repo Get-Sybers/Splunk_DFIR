@@ -350,25 +350,26 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
 
     # CAR coverage, PINNED. Swapping which CAR object has a source is
     # structurally legal KQL, so it would regress silently. The contract: these
-    # five objects are sourced (registry/driver/module/thread are declared
-    # unsourced in CarCoverage — registry's source left with the KAPE path),
-    # each has its Car<Object>() function in 40-mitre.kql, and every pinned
-    # name exists in MITRE's own car_data_model.json — so the model file stays
-    # load-bearing, not decorative. Change the set deliberately, updating
-    # docs/Kusto-Port.md coverage with it.
+    # six objects are sourced (driver/module/thread are declared unsourced in
+    # CarCoverage — nothing dead-box produces them; registry is sourced again
+    # via the Velociraptor/EZ-Tools path), each has its Car<Object>() function
+    # in 40-mitre.kql, and every pinned name exists in MITRE's own
+    # car_data_model.json — so the model file stays load-bearing, not
+    # decorative. Change the set deliberately, updating docs/Kusto-Port.md
+    # coverage with it.
     _car_missing=$(python3 - <<'PY' 2>/dev/null
 import json
 objs = {o['name'][0] for o in json.load(open('car_data_model.json'))['objects']}
-pinned = {'flow', 'user_session', 'process', 'service', 'file'}
+pinned = {'flow', 'user_session', 'process', 'service', 'file', 'registry'}
 print(' '.join(sorted(pinned - objs)))
 PY
 )
     if [[ -z "$_car_missing" ]]; then
-        pass "all five sourced CAR objects exist in MITRE's model"
+        pass "all six sourced CAR objects exist in MITRE's model"
     else
         fail "pinned CAR object(s) not in car_data_model.json:$_car_missing"
     fi
-    for _fn in CarFlow CarUserSession CarProcess CarService CarFile CarCoverage; do
+    for _fn in CarFlow CarUserSession CarProcess CarService CarFile CarRegistry CarCoverage; do
         if grep -q "^${_fn}()" kusto/schema/40-mitre.kql 2>/dev/null; then
             pass "40-mitre.kql defines ${_fn}()"
         else
