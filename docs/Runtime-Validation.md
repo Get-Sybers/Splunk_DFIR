@@ -17,6 +17,14 @@ have caught.
 > | **Plaso → `host.L2tCsv`** | ✅ real `psteal` on three real `.E01` images | ✅ verified live |
 > | **Zeek → `network.ZeekConn`** | ⚠️ format-accurate `conn.log` fixture¹ | ✅ verified live |
 > | **EvtxECmd → `host.EvtxEcmdJson`** | ⚠️ format-accurate JSON fixture¹ | ✅ verified live |
+> | **Volatility 3 → `memory.VolatilityJson`** | ◐ real `banners.Banners` on a real 511 MB dump + fixtures for symbol-blocked plugins² | ✅ verified live |
+>
+> ² Volatility 3 (`pip install volatility3`) ran for real on a 511 MB memory
+> image and its `banners.Banners` output — the ntoskrnl PDB GUID — is ingested.
+> Its Windows *symbol tables* download from the Volatility / Microsoft symbol
+> servers, both `403`/unreachable through the egress proxy, so the
+> symbol-dependent plugins (`pslist`, `netscan`, …) can't resolve here; those
+> were validated with format-accurate `vol -r json` fixtures.
 >
 > ¹ The Zeek image (`zeek/zeek`) and the OpenSUSE OBS Zeek packages are both
 > refused at the network egress proxy (`403` on CONNECT), and there is no
@@ -175,6 +183,43 @@ seconds (`2025-01-01T10:14:29.1234567+00:00`).
 - **`CarService`** — a 7045 became `action="create"`, `name="EvilSvc"`,
   `module_path="C:\Windows\Temp\evil.exe"`.
 
+### Volatility 3 — `memory.VolatilityJson` (real tool, mixed data)
+
+Rekall's upstream is archived, so memory is now processed with **Volatility 3**
+(`process-volatility.sh`). Its `-r json` renderer emits one JSON *array* of row
+objects per plugin, with tree-plugin descendants nested under `__children`.
+
+- **Real:** Volatility 3 ran on the 511 MB `pat-2009-12-05.winddramimage` and
+  `banners.Banners` returned the kernel banner
+  `ntoskrnl.pdb|1B2D0DFE2FB942758D615C901BE04692|2` — ingested and queryable.
+  The **Windows symbol tables** needed by `pslist`/`netscan`/etc. download from
+  the Volatility and Microsoft symbol servers, both blocked here, so those
+  plugins error offline (`symbol table requirement was not fulfilled`) and were
+  driven by fixtures.
+- **Loader — constant-column injection.** `Plugin` and `SourceFile` are per-file
+  constants and `.ingest` cannot inject a constant column — the exact reason the
+  Velociraptor/Rekall loaders were "NOT IMPLEMENTED." `ingest-kusto.sh`'s
+  `volatility_prepare` hook wraps each row as `{Plugin, SourceFile, Record}`
+  JSON Lines, so `VolatilityJson` lands with `Plugin`/`SourceFile` populated and
+  the plugin-specific fields reachable as `Record.Field`:
+
+  ```
+  VolatilityPslist()   ->  Timestamp             pid   ppid  name
+                           2009-12-05T11:58:02Z   4     0     System
+                           2009-12-05T11:58:05Z   624   4     smss.exe
+                           2009-12-05T11:59:10Z   1180  624   explorer.exe
+                           2009-12-05T12:03:44Z   1740  1180  outlook.exe
+  ```
+  `CreateTime` parses as `datetime`; `netscan` rows correlate to `pslist` by PID
+  (`outlook.exe` 1740 → `74.125.19.104:80`). This is the same wrapper the
+  Velociraptor (`Artefact`) and Rekall (`Plugin`) loaders need — proven here.
+
+> Memory is deliberately **not** a CAR object: MITRE CAR's dead-box objects are
+> file/flow/process/user_session/service/registry/driver/module/thread, and
+> live process/registry/driver/module/thread state from RAM is a different
+> fidelity than dead-box artefacts. `memory.VolatilityJson` is queried directly
+> (`VolatilityPlugins()`, `VolatilityPslist()`), not folded into `CarProcess()`.
+
 ---
 
 ## Reproducing this
@@ -187,10 +232,16 @@ python3 -m venv /tmp/plaso-venv && . /tmp/plaso-venv/bin/activate && pip install
 #    process-log2timeline-Dynamic.sh (the script itself uses the Docker image,
 #    which is blocked here; native psteal takes the same arguments).
 
+# 1b. Memory (real tool) — Volatility 3 also installs from PyPI
+pip install volatility3
+#    fetch a small memory image (e.g. drives-nps-2009-patents *dramimage) into
+#    data_store/raw/memory/, then: ./scripts/process-volatility.sh
+#    (Windows plugins need symbol-server egress; banners works offline.)
+
 # 2. Backend (real)
 ./scripts/deploy-kusto.sh -y
 ./scripts/apply-kusto-schema.sh
-./scripts/ingest-kusto.sh            # l2t + zeek + evtx
+./scripts/ingest-kusto.sh            # l2t + zeek + evtx + volatility
 
 # 3. Check
 #    CarCoverage() in the mitre database
