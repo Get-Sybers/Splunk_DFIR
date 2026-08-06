@@ -23,18 +23,20 @@
 // database("<name>").<Table>. That is why the databases are separate at all —
 // they mirror the data domains, as intended.
 //
-// COVERAGE — 5 of 9 objects
+// COVERAGE — 6 of 9 objects
 //
 //   CarFlow         Zeek conn
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
 //   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts
 //   CarService      EvtxECmd 7045/4697
 //   CarFile         Plaso filesystem rows
+//   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //
-//   registry — NO SOURCE right now. Its only source was the removed KAPE
-//   path; the planned replacement is Velociraptor offline collectors running
-//   the EZ Tools (same Zimmerman field names, so the old KapeJson mapping in
-//   git history is the starting point when that lands).
+//   registry is SOURCED AGAIN. It lost its only source when the KAPE path was
+//   removed; the replacement — Velociraptor offline collectors running the EZ
+//   Tools (RECmd / Registry Explorer) — is now wired through host.VelociraptorJson
+//   and read by CarRegistry(). Same Zimmerman field names the old KapeJson
+//   mapping used.
 //
 //   driver, module, thread — NO SOURCE. Nothing dead-box produces driver
 //   loads, image loads or thread creation; those need Sysmon (events 6/7/8) or
@@ -273,16 +275,56 @@ CarFile() {
 }
 
 //=============================================================================
+// CarRegistry — registry key/value activity
+//
+// Source: Velociraptor offline collectors running the EZ Tools (RECmd /
+// Registry Explorer), landed in host.VelociraptorJson. RECmd's per-value output
+// carries KeyPath / ValueName / ValueData / ValueType / HivePath and the key's
+// LastWriteTimestamp — the same Zimmerman field names the retired KapeJson
+// mapping used, so this is a projection, not a translation.
+//
+// The Artefact filter is broad (recmd|registry|regexplorer) so any of the
+// EZ-tool registry artefact names a collector might emit are picked up. action
+// is "modify": a registry hive records a key's LAST write, so a present row
+// means the key was created or changed — dead-box cannot distinguish the two,
+// and defaulting to the weaker claim is the honest choice.
+//
+// hostname is derived from the per-host collection directory in SourceFile
+// (velociraptor/<host>/...), since RECmd output itself carries no hostname.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'registry' object", folder = "CAR")
+CarRegistry() {
+    database("host").VelociraptorJson
+    | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
+    | extend
+        Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
+        action     = "modify",
+        key        = tostring(coalesce(Record.KeyPath, Record.Key)),
+        value      = tostring(coalesce(Record.ValueName, Record.Value)),
+        data       = tostring(coalesce(Record.ValueData, Record.Data)),
+        type       = tostring(coalesce(Record.ValueType, Record.Type)),
+        hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
+        image_path = tostring(Record.ImagePath),
+        pid        = tolong(Record.PID),
+        user       = tostring(Record.User),
+        hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+        fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+    | project Timestamp, action, key, value, data, type, hive, image_path, pid,
+              user, hostname, fqdn, Artefact, SourceFile
+}
+
+//=============================================================================
 // CarCoverage — which objects actually have data.
 //
 // The equivalent of `| tstats count FROM datamodel=MITRE_CAR BY nodename` on
 // the Splunk era. Run this first after ingesting: an object that should be
 // populated and is not means the mapping is wrong, not that the model is.
 //
-// registry, driver, module and thread are listed with 0 deliberately — they
-// have no source (registry's went with the KAPE path; Velociraptor offline
-// collectors running the EZ Tools are the planned replacement), and showing
-// them absent is the point.
+// driver, module and thread are listed with 0 deliberately — they have no
+// source (nothing dead-box produces driver/image loads or thread creation),
+// and showing them absent is the point. registry is now sourced from
+// Velociraptor (CarRegistry), so it counts real rows like the others.
 //=============================================================================
 .create-or-alter function
 with (docstring = "Row counts per CAR object; the three unsourced objects show 0", folder = "CAR")
@@ -293,11 +335,11 @@ CarCoverage() {
         (CarProcess()     | summarize Rows = count() | extend Object = "process"),
         (CarService()     | summarize Rows = count() | extend Object = "service"),
         (CarFile()        | summarize Rows = count() | extend Object = "file"),
+        (CarRegistry()    | summarize Rows = count() | extend Object = "registry"),
         // long(0), not 0L: the emulator's parser rejects the typed-literal
         // suffix form (`0L`) with a semantic error, though it is valid in the
         // cloud grammar. long(0) is accepted by both and keeps these branches'
         // Rows column a long, matching the count() branches above.
-        (print Object = "registry", Rows = long(0)),
         (print Object = "driver", Rows = long(0)),
         (print Object = "module", Rows = long(0)),
         (print Object = "thread", Rows = long(0))

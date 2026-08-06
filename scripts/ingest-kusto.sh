@@ -308,6 +308,48 @@ PY
     printf '%s\n' "$staged"
 }
 
+# prepare hook: Velociraptor offline collectors (running the EZ Tools) emit one
+# result file per artefact — either a JSON array or JSON Lines, depending on the
+# VQL. host.VelociraptorJson wants one row per record with Artefact and
+# SourceFile alongside, both per-file constants .ingest cannot inject. Each file
+# is rewritten to {Artefact, SourceFile, Record} JSON Lines. Artefact is the
+# filename (Windows.Registry.RECmd.json -> "Windows.Registry.RECmd"), which is
+# what CarRegistry() filters on; SourceFile is the path relative to processed/,
+# so the collecting host's directory stays recoverable. rc 1 skips an empty or
+# unparseable file.
+velociraptor_prepare() {
+    local f="$1" staged artefact rel
+    artefact="$(basename "$f" .json)"
+    rel="${f#"$PROCESSED_DIR"/}"
+    staged="$STAGING_DIR/$(staged_name "$f")"
+    if [[ $DRY_RUN -eq 0 ]]; then
+        python3 - "$f" "$artefact" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
+import json, sys
+path, artefact, rel = sys.argv[1], sys.argv[2], sys.argv[3]
+raw = open(path, encoding="utf-8", errors="replace").read()
+recs = []
+try:
+    data = json.loads(raw)                       # a single array or object
+    recs = data if isinstance(data, list) else [data]
+except Exception:
+    for line in raw.splitlines():                # or JSON Lines
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            recs.append(json.loads(line))
+        except Exception:
+            continue
+if not recs:
+    sys.exit(1)
+for rec in recs:
+    sys.stdout.write(json.dumps({"Artefact": artefact, "SourceFile": rel, "Record": rec}) + "\n")
+PY
+        [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
+    fi
+    printf '%s\n' "$staged"
+}
+
 # post hook: runs after the source's ingest, with every found file as args.
 zeek_post() {
     local non_conn
@@ -331,20 +373,21 @@ zeek_post() {
 #   prepare fn   per file: prints the host path to stage (a rewritten copy is
 #                fine), prints nothing/rc 1 to skip, rc 2 to refuse (counted
 #                as a failure)
-#   db '-'       NOT IMPLEMENTED: announced honestly, nothing ingested. Their
-#                tables and mappings exist, but Artefact/Plugin must be derived
-#                from the source path per file and .ingest cannot inject a
-#                constant column — doing it properly needs an ingest-time
-#                property or a post-ingest update, and guessing at that without
-#                a running emulator to test against is how the --internal bug
-#                happened. See docs/Kusto-Port.md, 'What is not done'.
+#   db '-'       NOT IMPLEMENTED: announced honestly, nothing ingested. The
+#                constant-column problem (.ingest cannot inject Artefact/Plugin,
+#                which must be derived from the source path per file) is now
+#                solved for the JSON sources by a prepare hook that wraps each
+#                record as {Constant..., Record} JSON Lines — see
+#                volatility_prepare / velociraptor_prepare. Only rekall stays
+#                unimplemented (its historical output is unlikely to recur; the
+#                same wrapper would suit it if it does).
 # ------------------------------------------------------------------------------
 SOURCES=(
     "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
     "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.json|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
-    "velociraptor|velociraptor — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
+    "velociraptor|Velociraptor collectors (-> host.VelociraptorJson)|velociraptor|*.json|host|VelociraptorJson|VelociraptorJsonMapping|multijson|0|velociraptor_prepare|-"
     "rekall|rekall — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
 )
 
