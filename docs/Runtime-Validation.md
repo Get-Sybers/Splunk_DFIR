@@ -295,6 +295,38 @@ function are real.
   changed, and dead-box can't split the two — the weaker claim is the honest one.
   `CarCoverage()` now reports `registry` populated → **6 of 9**.
 
+### Linux — `host.L2tCsv` → cross-platform `CarUserSession()` (real logs)
+
+Real Linux logs (a CentOS 7 DNS server's `/var/log` from
+`scenarios-2020-linux-threat-analysis`, fetched from the manifest URLs) through
+Plaso — **155,446 events**:
+
+| `source` | `source_long` | Rows | What |
+|:--|:--|--:|:--|
+| `LOG` | `Log File` | 149,817 | syslog (cron, secure, maillog, journal) |
+| `LOG` | `Audit Log` | 5,423 | Linux auditd |
+| `LOG` | `UTMP session` | 31 | logins (wtmp/utmp) |
+| `FILE` | `File stat` | 174 | file metadata |
+
+Timestamps parse to sub-second precision (auditd `…334Z`, utmp `…572529Z`).
+
+**`CarUserSession()` is now cross-platform.** The UTMP-session rows are Linux
+logins — the same CAR object as Windows 4624. `CarUserSession()` unions the two:
+the Windows branch parses the EvtxECmd payload, the Linux branch parses Plaso's
+rendered UTMP message with `extract()` (`Status:` → action, `User:`, `Terminal:`,
+`IP Address:`). A `platform` column distinguishes them; `EventId`/`LogonType`
+are null for Linux (Windows concepts) rather than faked.
+
+```
+platform  action   user   src_hostname  hostname
+linux     login    root   tty1          localhost     (USER_PROCESS)
+linux     logout   …      …             …             (DEAD_PROCESS)
+linux     boot     …      …             …             (BOOT_TIME)
+```
+
+`auditd` (execve → process) and the `secure` SSH lane are richer `CarProcess` /
+`CarUserSession` sources still on the table; UTMP is the clean first cut.
+
 ---
 
 ## Reproducing this
