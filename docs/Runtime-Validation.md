@@ -324,8 +324,24 @@ linux     logout   …      …             …             (DEAD_PROCESS)
 linux     boot     …      …             …             (BOOT_TIME)
 ```
 
-`auditd` (execve → process) and the `secure` SSH lane are richer `CarProcess` /
-`CarUserSession` sources still on the table; UTMP is the clean first cut.
+**Deeper Linux CAR — three objects enriched from the same audit/syslog data:**
+
+- **`CarProcess` ← cron.** syslog `CROND` lines record command executions;
+  `Origin = "linux:cron"` carries the command line, invoking user and crond pid
+  (ppid/parent null, like the Plaso artefacts). +428 rows. This host had **no
+  `execve` audit rule** (`syscall=59` count: 0), so cron is the process
+  evidence that is actually present — a host auditing execve would add a
+  richer branch.
+- **`CarService` ← systemd (auditd).** `SERVICE_START`/`SERVICE_STOP` →
+  create/stop, unit name → `name`, systemd exe → `module_path`. 250 create /
+  167 stop. `CarService()` is now **cross-platform** (Windows 7045 + Linux).
+- **`CarUserSession` ← auditd PAM.** `USER_START`→login, `USER_END`→logout,
+  carrying `acct`/`addr`/`hostname`/session-id — richer than utmp, and unioned
+  with it (independent evidence for the same sessions, split by `SourceFile`).
+  login 463 / logout 444.
+
+No SSH logins were in this DNS-server sample (`sshd` accepted/failed: 0); the
+PAM session events are the auth evidence that is present.
 
 ---
 
