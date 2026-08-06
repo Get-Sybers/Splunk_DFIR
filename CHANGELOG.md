@@ -10,6 +10,26 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Added — memory processing lane (Volatility 3)
+
+- **Memory is processed with [Volatility 3](https://github.com/volatilityfoundation/volatility3)
+  now**, replacing the archived Rekall as the forward path. New
+  `scripts/process-volatility.sh` runs a plugin set (`pslist`, `pstree`,
+  `netscan`, `cmdline`, `malfind`, …) per image and writes one `-r json` file
+  per plugin. A `VolatilityJson` table + `VolatilityPlugins()`/`VolatilityPslist()`
+  views were added to `kusto/schema/30-memory.kql`, and a `volatility` loader to
+  `ingest-kusto.sh`.
+- **The loader injects the `Plugin`/`SourceFile` constant columns that `.ingest`
+  cannot** — a `volatility_prepare` hook wraps each row as `{Plugin, SourceFile,
+  Record}` JSON Lines. This is the same wrapper the Velociraptor (`Artefact`)
+  and Rekall (`Plugin`) loaders were blocked on, so it unblocks that pattern.
+- Verified against the live emulator: real `banners.Banners` output from a
+  511 MB dump plus `pslist`/`netscan` fixtures (Windows symbols aren't
+  reachable through the egress proxy here). Details in
+  [docs/Runtime-Validation.md](/docs/Runtime-Validation.md). Tracks #16.
+- Rekall's `RekallJson` table/mapping are kept for historical data; only the
+  forward path changed.
+
 ### Fixed — first run against a live Kusto emulator
 
 - **The Kusto backend has now been run end-to-end against the real
