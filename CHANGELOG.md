@@ -10,6 +10,36 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Fixed — first run against a live Kusto emulator
+
+- **The Kusto backend has now been run end-to-end against the real
+  `kustainer-linux` engine** (deploy → apply → ingest → `CarCoverage()`), with
+  data processed from the Digital Corpora sample URLs. It surfaced four defects
+  that were invisible until first contact, all fixed:
+  - `network` is a **reserved word** in the engine grammar, so
+    `.create database network volatile` failed with `General_BadRequest`.
+    Database names in `00-databases.kql` are now bracket-quoted
+    (`.create database ["network"] volatile`), and the two places that parse
+    names back out (`apply-kusto-schema.sh`, `tests/run-checks.sh`) strip the
+    brackets.
+  - `CarCoverage()` used the `0L` typed-integer-literal suffix, which this
+    emulator build rejects (`SEM0100`). Replaced with `long(0)`.
+  - `CarFile()` left 260 of 1240 real Plaso rows with an empty `action`: its
+    `modify` regex matched only `content modification`, but a real NTFS image
+    emits `Metadata Modification Time` and `File Last Modification Time` too.
+    Broadened to `(?i)modification|mtime`; all rows now classify.
+- **`pid` hex conversion verified** ([issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14)
+  item 6): `tolong()` accepts a `0x`-prefixed string at run time, so
+  `CarProcess.pid` is populated. Comment in `40-mitre.kql` updated from
+  "unverified" to the confirmed behaviour.
+- **Processed three real `.E01` images with Plaso** and validated the `L2tCsv`
+  schema/mapping, `datetime` parsing, header handling, and the
+  `source_long → CAR-object` routing. Zeek `conn` and EvtxECmd ingest paths
+  (and `CarFlow`/`CarProcess`/`CarUserSession`/`CarService`) were validated
+  against the live engine with format-accurate fixtures, since the Zeek image
+  and standalone `.evtx` are blocked by egress policy here. Full field and
+  source-type breakdown: [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+
 ### Removed — the Splunk stack. The SIEM is the Data Explorer emulator now.
 
 - **The project pivoted: the Kusto emulator is the analysis backend, and the

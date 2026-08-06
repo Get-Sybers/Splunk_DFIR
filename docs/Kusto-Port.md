@@ -1,9 +1,18 @@
 # 🧊 The Kusto emulator — the analysis backend
 
-> **Status: built, unverified.** Stages 1-5 are implemented; three sources are
-> not wired up — see [What is not done](#what-is-not-done). Nothing has run
-> against a real emulator, because there is no Docker in the environment this
-> was written in.
+> **Status: run against a live emulator.** Stages 1-3 (deploy, apply, ingest)
+> and the five sourced CAR objects have now been exercised end-to-end on the
+> real `kustainer-linux` engine — see
+> [docs/Runtime-Validation.md](/docs/Runtime-Validation.md). That run fixed four
+> "parsed in review, failed on first contact" defects (reserved-word `network`
+> database name, the `0L` literal in `CarCoverage`, the two name parsers, and an
+> unmapped-`action` gap in `CarFile`) and resolved the `pid` hex-conversion
+> unknown ([issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) item 6).
+> Plaso was run for real on three `.E01` images; the Zeek and EvtxECmd **engines**
+> remain unrun here (egress policy blocks the `zeek/zeek` image and there is no
+> standalone `.evtx` in the corpus), so their ingest/mapping/CAR paths were
+> proven with format-accurate fixtures. Three sources are still not wired up —
+> see [What is not done](#what-is-not-done).
 >
 > **This began as a port alongside Splunk and is now the SIEM.** The Splunk
 > stack was retired; the emulator is the only analysis backend. The
@@ -178,9 +187,13 @@ Stated plainly so it is not mistaken for working:
   alongside driver/module/thread.
 - **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
   `car_flow` needs. The generic `Zeek` table exists for the rest.
-- **Nothing has been run against a real emulator.** No Docker here. The full
-  list of unverified assumptions, ranked by blast radius, is
-  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+- **Deploy/apply/ingest and five CAR objects have now run against a real
+  emulator** — see [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+  What is *still* unverified: the Zeek and EvtxECmd **engines** producing that
+  input (fixtures stood in for them), a Windows disk image through Plaso (only
+  filesystem test images were run, so `CarProcess`-from-Plaso is unexercised),
+  and the two unimplemented loaders below. The remaining list, ranked by blast
+  radius, is [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
   An earlier version of this document claimed the scripts were "verified"
   against a fake HTTP endpoint. That was an overclaim: the fake returned
@@ -195,9 +208,11 @@ Stated plainly so it is not mistaken for working:
   `.execute database script`; and the Zeek column-order guard run against three
   fixtures (correct, swapped, headerless). Everything else remains unverified.
 
-- **`pid` conversion is unverified.** Windows writes PIDs as hex strings and
-  KQL has no base-16 string parser. `pid_hex` is always correct; `pid` relies on
-  `tolong()` accepting a `0x` prefix, which is untested. See the note in
+- **`pid` conversion is now verified.** `tolong()` accepts a `0x`-prefixed
+  string at run time on the live emulator (`tolong("0x1a4")` = 420), so `pid` is
+  populated for EvtxECmd 4688/4689 rows. `pid_hex` stays as the always-correct
+  raw form because the un-prefixed form (`tolong("1a4")`) is null. See
+  [docs/Runtime-Validation.md](/docs/Runtime-Validation.md) and the note in
   `40-mitre.kql`.
 
 ### Stage 1 detail
