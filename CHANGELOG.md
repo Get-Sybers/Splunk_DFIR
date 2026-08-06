@@ -10,6 +10,19 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Added — Linux log processing; cross-platform `CarUserSession()`
+
+- **Linux logs are processed with Plaso** (syslog, auditd, utmp). Real CentOS
+  `/var/log` from the `scenarios-2020-linux-threat-analysis` sample produced
+  155k events across `Log File` (syslog), `Audit Log` (auditd) and `UTMP
+  session` source types, ingested into `host.L2tCsv` with sub-second timestamps.
+- **`CarUserSession()` is now cross-platform.** It unions Windows EvtxECmd
+  logons with Linux UTMP-session rows: `USER_PROCESS`→login, `DEAD_PROCESS`→
+  logout, `BOOT_TIME`→boot, parsed from Plaso's rendered message with
+  `extract()`. A `platform` column distinguishes the two; `EventId`/`LogonType`
+  are null for Linux rather than faked. Verified live. Details in
+  [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+
 ### Added — Velociraptor loader; `registry` CAR object sourced again (6/9)
 
 - **The `velociraptor` source is implemented**, no longer "NOT IMPLEMENTED".

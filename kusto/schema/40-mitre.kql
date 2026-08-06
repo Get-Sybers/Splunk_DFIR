@@ -26,7 +26,8 @@
 // COVERAGE — 6 of 9 objects
 //
 //   CarFlow         Zeek conn
-//   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
+//   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
+//                   + Plaso UTMP-session rows (Linux wtmp/utmp)
 //   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts
 //   CarService      EvtxECmd 7045/4697
 //   CarFile         Plaso filesystem rows
@@ -96,40 +97,77 @@ CarFlow() {
 // 10 RemoteInteractive (RDP). 4624's IpAddress is "-" for a local logon rather
 // than absent, so those are nulled out instead of being stored as "-".
 //=============================================================================
+// Two sources, unioned — the object is cross-platform:
+//   Windows  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
+//   Linux    Plaso UTMP-session rows (wtmp/utmp). Status USER_PROCESS is a
+//            login, DEAD_PROCESS a logout, BOOT_TIME a boot. The fields are
+//            parsed out of Plaso's rendered message with extract(), the same
+//            way the EvtxECmd payload fields are — Plaso does not give them
+//            typed columns. EventId/LogonType are null for Linux (they are
+//            Windows concepts), which is the honest shape rather than a faked 0.
 .create-or-alter function
-with (docstring = "MITRE CAR 'user_session' object", folder = "CAR")
+with (docstring = "MITRE CAR 'user_session' object (Windows logons + Linux utmp)", folder = "CAR")
 CarUserSession() {
-    database("host").EvtxEcmdJson
-    | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
-    | extend
-        TargetUserName = EvtxPayload(Payload, "TargetUserName"),
-        TargetLogonId  = EvtxPayload(Payload, "TargetLogonId"),
-        SubjectUserSid = EvtxPayload(Payload, "SubjectUserSid"),
-        LogonType      = toint(EvtxPayload(Payload, "LogonType")),
-        IpAddress      = EvtxPayload(Payload, "IpAddress"),
-        IpPort         = EvtxPayload(Payload, "IpPort"),
-        Workstation    = EvtxPayload(Payload, "WorkstationName")
-    | extend
-        action = case(EventId in (4634, 4647), "logout",
-                      EventId == 4778, "reconnect",
-                      EventId == 4779, "remote",
-                      EventId == 4624 and LogonType == 10, "rdp",
-                      EventId == 4624 and LogonType == 7,  "unlock",
-                      EventId == 4624 and LogonType == 2,  "interactive",
-                      EventId == 4624 and LogonType == 3,  "remote",
-                      EventId in (4624, 4625), "login",
-                      ""),
-        user         = iff(isempty(TargetUserName), UserName, TargetUserName),
-        sid          = iff(isempty(UserId), SubjectUserSid, UserId),
-        logon_id     = TargetLogonId,
-        hostname     = Computer,
-        fqdn         = Computer,
-        src_ip       = iff(IpAddress in ("-", "::1", "127.0.0.1", ""), "", IpAddress),
-        src_port     = iff(IpPort in ("-", "0", ""), int(null), toint(IpPort)),
-        src_hostname = iff(Workstation == "-", "", Workstation)
-    | project Timestamp = TimeCreated, action, user, sid, logon_id, hostname,
-              fqdn, src_ip, src_port, src_hostname, EventId, LogonType,
-              SourceFile
+    let FromEvtx =
+        database("host").EvtxEcmdJson
+        | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+        | extend
+            TargetUserName = EvtxPayload(Payload, "TargetUserName"),
+            TargetLogonId  = EvtxPayload(Payload, "TargetLogonId"),
+            SubjectUserSid = EvtxPayload(Payload, "SubjectUserSid"),
+            LogonType      = toint(EvtxPayload(Payload, "LogonType")),
+            IpAddress      = EvtxPayload(Payload, "IpAddress"),
+            IpPort         = EvtxPayload(Payload, "IpPort"),
+            Workstation    = EvtxPayload(Payload, "WorkstationName")
+        | extend
+            action = case(EventId in (4634, 4647), "logout",
+                          EventId == 4778, "reconnect",
+                          EventId == 4779, "remote",
+                          EventId == 4624 and LogonType == 10, "rdp",
+                          EventId == 4624 and LogonType == 7,  "unlock",
+                          EventId == 4624 and LogonType == 2,  "interactive",
+                          EventId == 4624 and LogonType == 3,  "remote",
+                          EventId in (4624, 4625), "login",
+                          ""),
+            user         = iff(isempty(TargetUserName), UserName, TargetUserName),
+            sid          = iff(isempty(UserId), SubjectUserSid, UserId),
+            logon_id     = TargetLogonId,
+            hostname     = Computer,
+            fqdn         = Computer,
+            src_ip       = iff(IpAddress in ("-", "::1", "127.0.0.1", ""), "", IpAddress),
+            src_port     = iff(IpPort in ("-", "0", ""), int(null), toint(IpPort)),
+            src_hostname = iff(Workstation == "-", "", Workstation),
+            platform     = "windows"
+        | project Timestamp = TimeCreated, action, user, sid, logon_id, hostname,
+                  fqdn, src_ip, src_port, src_hostname, EventId, LogonType,
+                  platform, SourceFile;
+    let FromUtmp =
+        database("host").L2tCsv
+        | where SourceLong == "UTMP session"
+        | extend
+            status = extract(@"Status:\s*(\w+)", 1, Message),
+            ip     = extract(@"IP Address:\s*(\S+)", 1, Message)
+        | extend
+            action       = case(status == "USER_PROCESS", "login",
+                                status == "DEAD_PROCESS",  "logout",
+                                status == "LOGIN_PROCESS", "login",
+                                status == "BOOT_TIME",     "boot",
+                                ""),
+            user         = extract(@"User:\s*(\S+)", 1, Message),
+            sid          = "",
+            logon_id     = "",
+            hostname     = Hostname,
+            fqdn         = "",
+            src_ip       = iff(ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", ip),
+            src_port     = int(null),
+            src_hostname = extract(@"Terminal:\s*(\S+)", 1, Message),
+            EventId      = int(null),
+            LogonType    = int(null),
+            platform     = "linux"
+        | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
+                  src_ip, src_port, src_hostname, EventId, LogonType, platform,
+                  SourceFile = DisplayName;
+    union FromEvtx, FromUtmp
 }
 
 //=============================================================================
