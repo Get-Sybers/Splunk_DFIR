@@ -10,6 +10,25 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+### Added — deeper Linux CAR coverage (process / service / user_session)
+
+- **`CarProcess()` gains a Linux branch** from syslog cron `CMD` executions
+  (`Origin = "linux:cron"`): command line, invoking user and the crond worker
+  pid, with ppid/parent null — the same fidelity as the Plaso execution
+  artefacts. (The sample host had no `execve` audit rule, so cron is the
+  process-execution evidence present; a host auditing `execve` would add a
+  richer branch.)
+- **`CarService()` is now cross-platform** — it unions Windows 7045/4697 with
+  Linux systemd `SERVICE_START`/`SERVICE_STOP` from auditd (unit name → `name`,
+  systemd exe → `module_path`, START→create / STOP→stop).
+- **`CarUserSession()` gains an auditd-PAM branch** (`USER_START`→login,
+  `USER_END`→logout) alongside the utmp branch — richer, carrying `acct`,
+  `addr`, `hostname` and the session id. utmp and auditd are independent
+  evidence for the same sessions, distinguished by `SourceFile`.
+- Verified live on the real CentOS audit/syslog data: `process` +428 (cron),
+  `service` 250 create / 167 stop, `user_session` login 463 / logout 444.
+  Details in [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+
 ### Added — Linux log processing; cross-platform `CarUserSession()`
 
 - **Linux logs are processed with Plaso** (syslog, auditd, utmp). Real CentOS
