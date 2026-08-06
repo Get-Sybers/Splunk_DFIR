@@ -36,7 +36,8 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ❌ planned — replaces the removed KAPE path | json | ❌ | ❌ |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ❌ loader not implemented | ❌ |
-| [Rekall](https://github.com/google/rekall)                    | ⚠️            | json            | ❌ loader not implemented | ❌ |
+| [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
+| [Rekall](https://github.com/google/rekall)                    | ⚠️ superseded by Volatility 3 | json | ◑ table kept, loader on Volatility | ❌ |
 | Linux Logs                                                    |               |                 |              |               |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |              |               |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |

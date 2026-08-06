@@ -1,11 +1,22 @@
-// Database: memory — Rekall
+// Database: memory — Volatility 3 (and legacy Rekall)
 //
-// Rekall output is per-plugin and wildly inconsistent: pslist, netscan, malfind
-// and the rest share almost no columns. The Splunk era never completed field
-// extraction for it either (project-progress.md marks it ⚠️ with extraction ❌).
+// Memory-plugin output is per-plugin and wildly inconsistent: pslist, netscan,
+// malfind and the rest share almost no columns. The Splunk era never completed
+// field extraction for it either (project-progress.md marks it ⚠️, extraction ❌).
 //
 // Semi-structured is the honest representation here rather than a guess at a
-// common schema. Rekall upstream is archived, so this is unlikely to grow.
+// common schema — a `dynamic` Record column per row, accessed as Record.Field.
+//
+// TWO SOURCES, one shape:
+//   VolatilityJson  the forward path. Rekall's upstream is archived, so memory
+//                   is processed with Volatility 3 (process-volatility.sh),
+//                   whose `-r json` renderer emits an array of row objects per
+//                   plugin. ingest-kusto.sh wraps each row as
+//                   {Plugin, SourceFile, Record} — Plugin/SourceFile are
+//                   per-file constants .ingest cannot inject, so the loader
+//                   derives them from the source path, exactly as the
+//                   Velociraptor path will.
+//   RekallJson      kept for historical Rekall output; loader unchanged.
 
 .create-merge table RekallJson (
     Plugin:     string,
@@ -24,4 +35,45 @@ RekallPlugins() {
     RekallJson
     | summarize Rows = count() by Plugin
     | order by Rows desc
+}
+
+//=============================================================================
+// VolatilityJson — Volatility 3, one row per plugin-output row.
+//
+// process-volatility.sh runs `vol -r json` per plugin; ingest-kusto.sh wraps
+// each row object as {Plugin, SourceFile, Record}. Volatility's json renderer
+// nests tree-plugin descendants under a "__children" array inside each Record,
+// which survives fine in a dynamic column (Record.__children[0].PID ...).
+//=============================================================================
+.create-merge table VolatilityJson (
+    Plugin:     string,
+    SourceFile: string,
+    Record:     dynamic
+)
+
+.create-or-alter table VolatilityJson ingestion json mapping "VolatilityJsonMapping"
+```[
+  {"Column":"Plugin",     "Properties":{"Path":"$.Plugin"}},
+  {"Column":"SourceFile", "Properties":{"Path":"$.SourceFile"}},
+  {"Column":"Record",     "Properties":{"Path":"$.Record"}}
+]```
+
+.create-or-alter function
+with (docstring = "Distinct Volatility 3 plugins present, with row counts", folder = "Views")
+VolatilityPlugins() {
+    VolatilityJson
+    | summarize Rows = count() by Plugin
+    | order by Rows desc
+}
+
+.create-or-alter function
+with (docstring = "Volatility windows.pslist rows projected to common process fields", folder = "Views")
+VolatilityPslist() {
+    VolatilityJson
+    | where Plugin == "windows.pslist"
+    | project Timestamp = todatetime(Record.CreateTime),
+              pid   = tolong(Record.PID),
+              ppid  = tolong(Record.PPID),
+              name  = tostring(Record.ImageFileName),
+              SourceFile
 }
