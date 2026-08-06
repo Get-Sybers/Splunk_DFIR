@@ -165,35 +165,35 @@ later stage is needed to get value from an earlier one.
 |:--|:---|:---|
 | **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
-| **3** | ◑ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd and Zeek conn wired; Velociraptor and Rekall are not | 2 |
-| **4** | ✅ `kusto/schema/40-mitre.kql` — 5 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
+| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek conn, Volatility 3 and Velociraptor wired; only Rekall is not | 2 |
+| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
 
 Stated plainly so it is not mistaken for working:
 
-- **Velociraptor and Rekall are not ingested.** Their tables exist with
-  ingestion mappings, but the loader populates neither. Each needs an
-  `Artefact`/`Plugin` column derived from the source path, and `.ingest into`
-  cannot inject a constant column — that needs either an ingest-time property
-  or a post-ingest update, and picking one without a running emulator to test
-  against is exactly how the `--internal` bug happened.
-- **The `registry` CAR object is unsourced.** Its only source was the removed
-  KAPE path. The planned replacement is **Velociraptor offline collectors
-  running the EZ Tools** — the same Zimmerman parsers with the same field
-  names, so the retired `KapeJson` mapping in git history is the starting
-  point when that lands. Until then `CarCoverage()` pins registry at 0
-  alongside driver/module/thread.
+- **Rekall is not ingested.** Its table exists with an ingestion mapping, but
+  the loader does not populate it. The constant-column problem (`.ingest into`
+  cannot inject the per-file `Plugin`) is now solved for the other JSON sources
+  by a prepare hook that wraps each record as `{Plugin/Artefact…, Record}` JSON
+  Lines — the same wrapper would suit Rekall if its archived output recurs.
+- **`registry` is sourced again.** **Velociraptor offline collectors running the
+  EZ Tools** (RECmd / Registry Explorer) land in `host.VelociraptorJson` via the
+  `velociraptor` loader, and `CarRegistry()` reads the registry artefacts from
+  it — the same Zimmerman field names the retired `KapeJson` mapping used. That
+  takes CAR coverage to **6 of 9**; `CarCoverage()` now counts real registry
+  rows, leaving only driver/module/thread pinned at 0.
 - **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
   `car_flow` needs. The generic `Zeek` table exists for the rest.
-- **Deploy/apply/ingest and five CAR objects have now run against a real
+- **Deploy/apply/ingest and six CAR objects have now run against a real
   emulator** — see [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
-  What is *still* unverified: the Zeek and EvtxECmd **engines** producing that
-  input (fixtures stood in for them), a Windows disk image through Plaso (only
-  filesystem test images were run, so `CarProcess`-from-Plaso is unexercised),
-  and the two unimplemented loaders below. The remaining list, ranked by blast
-  radius, is [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+  What is *still* unverified: the Zeek/EvtxECmd/Volatility-Windows/Velociraptor
+  **engines** producing that input (deterministic fixtures stood in for the
+  parts egress policy blocks), and a Windows disk image through Plaso (only
+  filesystem test images were run, so `CarProcess`-from-Plaso is unexercised).
+  The remaining list, ranked by blast radius, is
+  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
   An earlier version of this document claimed the scripts were "verified"
   against a fake HTTP endpoint. That was an overclaim: the fake returned

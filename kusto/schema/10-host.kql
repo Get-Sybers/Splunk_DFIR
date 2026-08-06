@@ -143,14 +143,19 @@
 // better than inventing a lowest-common-denominator schema that silently
 // drops columns. Access is Record.FieldName in KQL.
 //
-// Artefact is derived from the source path at ingest time.
+// Artefact and SourceFile are per-file constants .ingest cannot inject, so
+// ingest-kusto.sh's velociraptor_prepare hook wraps each collected record as
+// {Artefact, SourceFile, Record} (Artefact from the filename, SourceFile from
+// the path) and the mapping below reads all three — the same shape the
+// Volatility loader uses. Artefact is what CarRegistry() filters on.
 //
 // (A KapeJson twin of this table existed until the KAPE path was removed in
 // favour of Velociraptor offline collectors running the same EZ Tools. One
 // lesson from it survives: a CSV ingestion mapping maps ordinals to columns
 // and CANNOT build a `dynamic` object — so if the collectors emit EZ-tool
 // CSV rather than JSON, the answer is typed per-artefact tables or a
-// JSON-conversion step, never a dynamic-column CSV table.)
+// JSON-conversion step, never a dynamic-column CSV table. The wrapper keeps
+// everything JSON, so this stays a dynamic-column table.)
 //=============================================================================
 
 .create-merge table VelociraptorJson (
@@ -161,8 +166,18 @@
 
 .create-or-alter table VelociraptorJson ingestion json mapping "VelociraptorJsonMapping"
 ```[
-  {"Column":"Record", "Properties":{"Path":"$"}}
+  {"Column":"Artefact",   "Properties":{"Path":"$.Artefact"}},
+  {"Column":"SourceFile", "Properties":{"Path":"$.SourceFile"}},
+  {"Column":"Record",     "Properties":{"Path":"$.Record"}}
 ]```
+
+.create-or-alter function
+with (docstring = "Distinct Velociraptor artefacts present, with row counts", folder = "Views")
+VelociraptorArtefacts() {
+    VelociraptorJson
+    | summarize Rows = count() by Artefact
+    | order by Rows desc
+}
 
 //=============================================================================
 // Convenience views.

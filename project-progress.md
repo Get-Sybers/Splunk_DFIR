@@ -34,8 +34,8 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅ (`conn` only) | ✅ (`flow`) |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
-| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ❌ planned — replaces the removed KAPE path | json | ❌ | ❌ |
-| [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ❌ loader not implemented | ❌ |
+| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
+| [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
 | [Rekall](https://github.com/google/rekall)                    | ⚠️ superseded by Volatility 3 | json | ◑ table kept, loader on Volatility | ❌ |
 | Linux Logs                                                    |               |                 |              |               |
@@ -47,15 +47,15 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 
 **The CAR column has now run against a live emulator.** The MITRE CAR data
 model is expressed as KQL functions in the `mitre` database — `CarFlow()`,
-`CarUserSession()`, `CarProcess()`, `CarService()`, `CarFile()`, with
-`CarCoverage()` reporting what has data. All five sourced objects returned real
-rows on the live engine (`file`=1240 from three real `.E01` images, plus
-`flow`/`process`/`user_session`/`service`) — see
-[docs/Runtime-Validation.md](/docs/Runtime-Validation.md). `registry` lost its
-only source when the KAPE path was removed and awaits the Velociraptor/EZ-Tools
-collectors; `driver`, `module` and `thread` have none, because nothing
-dead-box produces driver loads, image loads or thread creation — those need
-Sysmon or a live agent.
+`CarUserSession()`, `CarProcess()`, `CarService()`, `CarFile()`, `CarRegistry()`,
+with `CarCoverage()` reporting what has data. All **six** sourced objects
+returned real rows on the live engine (`file`=1240 from three real `.E01`
+images, plus `flow`/`process`/`user_session`/`service`, and `registry` from
+Velociraptor/RECmd output) — see
+[docs/Runtime-Validation.md](/docs/Runtime-Validation.md). `registry` is sourced
+again via the Velociraptor offline-collector/EZ-Tools path; `driver`, `module`
+and `thread` still have none, because nothing dead-box produces driver loads,
+image loads or thread creation — those need Sysmon or a live agent.
 
 **What the live run still does not cover.** Plaso was run for real, but only on
 filesystem test images — a Windows image (for `CarProcess`-from-Plaso via
