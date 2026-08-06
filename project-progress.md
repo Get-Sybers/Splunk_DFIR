@@ -31,9 +31,9 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Kusto Ingest | CAR Functions |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ◑            |     ◑        |
-| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ◑ (`conn` only) | ◑         |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ◑            |     ◑        |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅           |     ✅ (`file`) |
+| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅ (`conn` only) | ✅ (`flow`) |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ❌ planned — replaces the removed KAPE path | json | ❌ | ❌ |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ❌ loader not implemented | ❌ |
 | [Rekall](https://github.com/google/rekall)                    | ⚠️            | json            | ❌ loader not implemented | ❌ |
@@ -44,20 +44,25 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |              |               |
 | [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |              |               |
 
-**The CAR column is ◑, not ✅.** The MITRE CAR data model is expressed as KQL
-functions in the `mitre` database — `CarFlow()`, `CarUserSession()`,
-`CarProcess()`, `CarService()`, `CarFile()`, with `CarCoverage()` reporting
-what has data. Five of the nine CAR objects have a source. `registry` lost its
+**The CAR column has now run against a live emulator.** The MITRE CAR data
+model is expressed as KQL functions in the `mitre` database — `CarFlow()`,
+`CarUserSession()`, `CarProcess()`, `CarService()`, `CarFile()`, with
+`CarCoverage()` reporting what has data. All five sourced objects returned real
+rows on the live engine (`file`=1240 from three real `.E01` images, plus
+`flow`/`process`/`user_session`/`service`) — see
+[docs/Runtime-Validation.md](/docs/Runtime-Validation.md). `registry` lost its
 only source when the KAPE path was removed and awaits the Velociraptor/EZ-Tools
 collectors; `driver`, `module` and `thread` have none, because nothing
 dead-box produces driver loads, image loads or thread creation — those need
 Sysmon or a live agent.
 
-**None of it has been run against a live emulator.** ◑ means built and
-internally consistent, not working. Turning those into ✅ is what stands
-between this and `1.0.0`, and it needs a real deploy, not more code. The
-runtime checklist is
-[issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+**What the live run still does not cover.** Plaso was run for real, but only on
+filesystem test images — a Windows image (for `CarProcess`-from-Plaso via
+Prefetch/Amcache) has not been run. The Zeek and EvtxECmd **engines** could not
+run here (egress policy blocks the `zeek/zeek` image and there is no standalone
+`.evtx` in the corpus), so their ingest/mapping/CAR paths were proven with
+format-accurate fixtures rather than live tool output. The remaining runtime
+checklist is [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
 ---
 
@@ -138,6 +143,30 @@ Things that are broken or unsafe right now.
 ---
 
 ## ✅ Done
+
+### 🔹 **First run against a live Kusto emulator** — *the blocker, broken*
+✅ Deploy → apply → ingest → `CarCoverage()` executed end-to-end on the real
+`kustainer-linux` engine, with data processed from the Digital Corpora sample
+URLs. Five of nine CAR objects returned real rows. Full write-up, including the
+field/source-type breakdown, in
+[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+✅ Processed three real `.E01` images with Plaso (`psteal --output-format
+dynamic`) — 1240 filesystem events. Confirmed the 23-field CSV header order
+matches the `L2tCsvMapping` ordinals, the `datetime` field parses with zero
+nulls, and `ignoreFirstRecord` drops the header cleanly.
+✅ Fixed four defects the live run surfaced, each invisible until first contact:
+`network` is a **reserved database name** (bracket-quoted now); the `0L` long
+literal in `CarCoverage()` is rejected by this build (`long(0)` now); the two
+database-name parsers updated to match; and `CarFile()` left 260/1240 real rows
+with an empty `action` because its `modify` regex missed `Metadata`/`File Last`
+modification times (broadened now — all rows classify).
+✅ Resolved [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) item 6:
+`tolong()` **does** parse a `0x` hex string at run time, so `CarProcess.pid` is
+populated (`0x1a4` → 420).
+✅ Validated the Zeek `conn` and EvtxECmd ingest/mapping/CAR paths (including
+`CarProcess`/`CarUserSession`/`CarService` and the Payload-XML extraction)
+against the live engine with format-accurate fixtures — the tool engines
+themselves are blocked by egress policy here.
 
 ### 🔹 **The pivot: Splunk → Data Explorer emulator**
 ✅ Ported the SIEM layer to the Kusto emulator — 5 databases, typed tables and
