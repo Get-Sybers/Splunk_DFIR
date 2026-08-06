@@ -38,7 +38,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
 | [Rekall](https://github.com/google/rekall)                    | ⚠️ superseded by Volatility 3 | json | ◑ table kept, loader on Volatility | ❌ |
-| Linux Logs (syslog / auditd / utmp, via Plaso)                | ✅            | csv             | ✅ `host.L2tCsv` | ✅ (`user_session` via utmp) |
+| Linux Logs (syslog / auditd / utmp, via Plaso)                | ✅            | csv             | ✅ `host.L2tCsv` | ✅ (`user_session` utmp+PAM, `process` cron, `service` systemd) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |              |               |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |              |               |

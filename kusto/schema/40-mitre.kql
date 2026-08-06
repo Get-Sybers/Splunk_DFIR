@@ -28,8 +28,8 @@
 //   CarFlow         Zeek conn
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso UTMP-session rows (Linux wtmp/utmp)
-//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts
-//   CarService      EvtxECmd 7045/4697
+//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts, Linux cron
+//   CarService      EvtxECmd 7045/4697 (Windows) + Linux systemd (auditd)
 //   CarFile         Plaso filesystem rows
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //
@@ -167,7 +167,41 @@ CarUserSession() {
         | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
                   src_ip, src_port, src_hostname, EventId, LogonType, platform,
                   SourceFile = DisplayName;
-    union FromEvtx, FromUtmp
+    // Linux auditd PAM events — richer than utmp (they carry acct, addr,
+    // hostname and the res=success/failed outcome). USER_START is a session
+    // open, USER_END a close. utmp and auditd are INDEPENDENT evidence for the
+    // same sessions, so both appear, distinguished by SourceFile — the same way
+    // CarProcess unions EvtxECmd and Plaso for one execution.
+    let FromLinuxAudit =
+        database("host").L2tCsv
+        | where SourceLong == "Audit Log"
+              and Message matches regex @"audit_type:\s*(USER_START|USER_END|USER_LOGIN)"
+        | extend
+            atype = extract(@"audit_type:\s*(\w+)", 1, Message),
+            acct  = extract(@'acct=""?([^""\s]+)', 1, Message),
+            addr  = extract(@"addr=(\S+)", 1, Message),
+            hn    = extract(@"hostname=(\S+)", 1, Message),
+            ses   = extract(@"\bses=(\d+)", 1, Message)
+        | extend
+            action       = case(atype == "USER_START", "login",
+                                atype == "USER_END",   "logout",
+                                atype == "USER_LOGIN", "login",
+                                ""),
+            user         = acct,
+            sid          = "",
+            logon_id     = ses,
+            hostname     = Hostname,
+            fqdn         = "",
+            src_ip       = iff(addr in ("?", "", "0.0.0.0", "::1", "127.0.0.1"), "", addr),
+            src_port     = int(null),
+            src_hostname = iff(hn in ("?", ""), "", hn),
+            EventId      = int(null),
+            LogonType    = int(null),
+            platform     = "linux"
+        | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
+                  src_ip, src_port, src_hostname, EventId, LogonType, platform,
+                  SourceFile = DisplayName;
+    union FromEvtx, FromUtmp, FromLinuxAudit
 }
 
 //=============================================================================
@@ -253,25 +287,77 @@ CarProcess() {
         | project Timestamp, action, exe, image_path, parent_exe,
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
                   user, hostname, Origin, SourceFile = DisplayName;
-    union FromEvtx, FromPlaso
+    // Linux: cron command execution. syslog CROND lines record THAT a command
+    // ran with its command line and the crond worker's pid — but not ppid or a
+    // parent image, the same shape as the Plaso execution artefacts above.
+    // (This host's auditd had no execve rule, so there are no SYSCALL execve
+    // records; cron is the process-execution evidence that IS present. A host
+    // auditing execve would add a richer branch here with pid/ppid/exe.)
+    let FromLinuxCron =
+        database("host").L2tCsv
+        | where SourceLong == "Log File" and Message matches regex @"CMD \("
+        | extend
+            command_line      = extract(@"CMD \((.*)\)\s*$", 1, Message),
+            cron_user         = extract(@"\(([\w.-]+)\) CMD", 1, Message),
+            cron_pid          = extract(@"pid:\s*(\d+)", 1, Message)
+        | extend
+            action            = "create",
+            exe               = extract(@"^(\S+)", 1, command_line),
+            image_path        = extract(@"^(\S+)", 1, command_line),
+            parent_exe        = "",
+            parent_image_path = "",
+            pid               = tolong(cron_pid),
+            ppid              = long(null),
+            pid_hex           = "",
+            ppid_hex          = "",
+            user              = cron_user,
+            hostname          = Hostname,
+            Origin            = "linux:cron"
+        | project Timestamp, action, exe, image_path, parent_exe,
+                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
+                  user, hostname, Origin, SourceFile = DisplayName;
+    union FromEvtx, FromPlaso, FromLinuxCron
 }
 
 //=============================================================================
 // CarService — service installation
 //=============================================================================
+// Two sources, unioned — cross-platform:
+//   Windows  EvtxECmd 7045 (service installed) / 4697 (service installed, Security)
+//   Linux    Plaso Audit-Log rows for systemd SERVICE_START/SERVICE_STOP. The
+//            unit name and the systemd exe are parsed out of the audit message.
 .create-or-alter function
-with (docstring = "MITRE CAR 'service' object", folder = "CAR")
+with (docstring = "MITRE CAR 'service' object (Windows 7045/4697 + Linux systemd)", folder = "CAR")
 CarService() {
-    database("host").EvtxEcmdJson
-    | where EventId in (7045, 4697)
-    | extend
-        name        = EvtxPayload(Payload, "ServiceName"),
-        module_path = EvtxPayload(Payload, "ImagePath"),
-        user        = UserName,
-        hostname    = Computer,
-        action      = "create"
-    | project Timestamp = TimeCreated, action, name, module_path, user,
-              hostname, EventId, SourceFile
+    let FromEvtx =
+        database("host").EvtxEcmdJson
+        | where EventId in (7045, 4697)
+        | extend
+            name        = EvtxPayload(Payload, "ServiceName"),
+            module_path = EvtxPayload(Payload, "ImagePath"),
+            user        = UserName,
+            hostname    = Computer,
+            action      = "create",
+            platform    = "windows"
+        | project Timestamp = TimeCreated, action, name, module_path, user,
+                  hostname, EventId, platform, SourceFile;
+    let FromLinux =
+        database("host").L2tCsv
+        | where SourceLong == "Audit Log"
+              and Message matches regex @"audit_type:\s*SERVICE_(START|STOP)"
+        | extend
+            atype = extract(@"audit_type:\s*SERVICE_(\w+)", 1, Message),
+            name  = extract(@"unit=(\S+)", 1, Message),
+            exe   = extract(@'exe=""?([^""\s]+)', 1, Message)
+        | extend
+            action      = iff(atype == "START", "create", "stop"),
+            module_path = exe,
+            user        = UserName,
+            hostname    = Hostname,
+            platform    = "linux"
+        | project Timestamp, action, name, module_path, user, hostname,
+                  EventId = int(null), platform, SourceFile = DisplayName;
+    union FromEvtx, FromLinux
 }
 
 //=============================================================================
