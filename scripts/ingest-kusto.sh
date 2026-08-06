@@ -37,7 +37,7 @@ Loads data_store/processed into the Kusto emulator. Run after processing
 evidence, and again after any redeploy — the database is ephemeral by default.
 
   --only SOURCE    Ingest one source only:
-                   l2t | zeek | evtx | velociraptor | rekall
+                   l2t | zeek | evtx | volatility | velociraptor | rekall
   --dry-run        List what would be ingested; contact nothing.
   -h, --help       Show this and exit.
 
@@ -65,8 +65,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$ONLY" in
-    ""|l2t|zeek|evtx|velociraptor|rekall) ;;
-    *) echo "❌ --only must be one of: l2t zeek evtx velociraptor rekall"; exit 1 ;;
+    ""|l2t|zeek|evtx|volatility|velociraptor|rekall) ;;
+    *) echo "❌ --only must be one of: l2t zeek evtx volatility velociraptor rekall"; exit 1 ;;
 esac
 
 want() { [[ -z "$ONLY" || "$ONLY" == "$1" ]]; }
@@ -271,6 +271,43 @@ zeek_prepare() {
     printf '%s\n' "$staged"
 }
 
+# ------------------------------------------------------------------------------
+# Volatility hook — inject the two constant columns .ingest cannot.
+# ------------------------------------------------------------------------------
+
+# prepare hook: Volatility 3's `-r json` renderer writes ONE JSON ARRAY of row
+# objects per plugin. The memory.VolatilityJson table wants one row per element
+# with Plugin and SourceFile alongside — both per-file constants that
+# `.ingest into` cannot inject. So each array is rewritten to {Plugin,
+# SourceFile, Record} JSON Lines here, and staged as multijson. Plugin is the
+# filename (windows.pslist.json -> "windows.pslist"); SourceFile is the path
+# relative to processed/, so which image and plugin produced a row stays
+# recoverable. rc 1 skips a file that is empty or not the array vol3 emits.
+volatility_prepare() {
+    local f="$1" staged plugin rel
+    plugin="$(basename "$f" .json)"
+    rel="${f#"$PROCESSED_DIR"/}"
+    staged="$STAGING_DIR/$(staged_name "$f")"
+    if [[ $DRY_RUN -eq 0 ]]; then
+        python3 - "$f" "$plugin" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
+import json, sys
+path, plugin, rel = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    data = json.load(open(path))
+except Exception:
+    sys.exit(1)
+if isinstance(data, dict):
+    data = [data]
+if not isinstance(data, list):
+    sys.exit(1)
+for rec in data:
+    sys.stdout.write(json.dumps({"Plugin": plugin, "SourceFile": rel, "Record": rec}) + "\n")
+PY
+        [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
+    fi
+    printf '%s\n' "$staged"
+}
+
 # post hook: runs after the source's ingest, with every found file as args.
 zeek_post() {
     local non_conn
@@ -306,6 +343,7 @@ SOURCES=(
     "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
+    "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.json|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
     "velociraptor|velociraptor — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
     "rekall|rekall — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
 )
