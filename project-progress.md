@@ -168,6 +168,19 @@ populated (`0x1a4` → 420).
 `CarProcess`/`CarUserSession`/`CarService` and the Payload-XML extraction)
 against the live engine with format-accurate fixtures — the tool engines
 themselves are blocked by egress policy here.
+✅ **Memory** processed with Volatility 3 (Rekall is archived) → `memory.VolatilityJson`,
+proving the constant-column injection the Velociraptor/Rekall loaders need
+([#16](https://github.com/Get-Sybers/DX_DFIR/issues/16)).
+✅ **Android and macOS** artefacts processed with real Plaso parsers into
+`host.L2tCsv`: Android `LOG`/"Android SMS messages"·"Android Call History"
+([#17](https://github.com/Get-Sybers/DX_DFIR/issues/17)), macOS `WEBHIST`/"Safari
+History Database" and the real `fseventsd` `MacOS File System Events`
+([#18](https://github.com/Get-Sybers/DX_DFIR/issues/18)). These mobile/browser
+source types correctly do **not** map to a CAR object (CAR's objects are
+host dead-box: file/process/flow/…); they're queried directly by `SourceLong`.
+Full Android/macOS *disk images* (5–48 GB) exceed the working disk here; the
+real artefact formats were parsed instead. See
+[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
 
 ### 🔹 **The pivot: Splunk → Data Explorer emulator**
 ✅ Ported the SIEM layer to the Kusto emulator — 5 databases, typed tables and

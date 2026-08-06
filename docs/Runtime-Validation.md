@@ -220,6 +220,47 @@ objects per plugin, with tree-plugin descendants nested under `__children`.
 > fidelity than dead-box artefacts. `memory.VolatilityJson` is queried directly
 > (`VolatilityPlugins()`, `VolatilityPslist()`), not folded into `CarProcess()`.
 
+### Mobile (Android) and macOS — `host.L2tCsv` (real Plaso parsers)
+
+Plaso's parsers are platform-spanning, so Android and macOS artefacts flow into
+the same `L2tCsv` table as Windows evidence — the source type is what tells them
+apart. All of the below is **real Plaso output** (the parsers ran); where a full
+disk image didn't fit the working disk, individual artefact files in their real
+on-disk format were parsed instead.
+
+**Android.** The smallest Android sample (`mobile-android_10`, a Pixel 3
+Cellebrite extraction) is a **split/Zip64 archive whose companion parts are not
+in the corpus** — its central directory references data past the single file's
+end, so neither `unzip` nor Python can extract it, and the complete images are
+5–16 GB (over disk). Its file listing does confirm the real artefact databases
+are present (`mmssms.db`, `contacts2.db`, `bugle_db`, Chrome `History`, …). To
+exercise the parsers, schema-accurate `mmssms.db` and `contacts2.db` were built
+to Plaso's exact `REQUIRED_STRUCTURE` and parsed:
+
+| `source` | `source_long` | Example message |
+|:--|:--|:--|
+| `LOG` | `Android SMS messages` | `Type: RECEIVED Address: +1555… Message: …` |
+| `LOG` | `Android Call History` | `OUTGOING Number: +1555… Duration: 73 seconds` |
+
+**macOS.** The only full Mac disk set (`scenarios-2019-tuck`, ~48 GB) exceeds the
+working disk, but two real Mac source types are in ADX:
+
+| `source` | `source_long` | Origin |
+|:--|:--|:--|
+| `FILE` | `MacOS File System Events Disk Log Stream` | **real** — `fseventsd` store on `exfat1.E01` |
+| `WEBHIST` | `Safari History Database` | real Plaso `safari_historydb` on a schema-accurate `History.db` (Cocoa timestamps) |
+
+Both land in `host.L2tCsv` with correct datetime parsing (Android `date`
+milliseconds and macOS Cocoa `visit_time` both resolve to the right instant).
+
+> **These do not map to a CAR object, and that is correct.** MITRE CAR's
+> dead-box objects are file/flow/process/user_session/service/registry/driver/
+> module/thread. SMS, call logs and browser history are neither — they stay in
+> `L2tCsv` and are queried directly by `SourceLong`. The db-file *metadata*
+> (`FILE`/`File stat`) still flows to `CarFile()` as for any filesystem row.
+> Establishing this — which mobile/browser source types exist and where they do
+> and don't belong — is exactly the "how it breaks down into source types" goal.
+
 ---
 
 ## Reproducing this
