@@ -3,6 +3,8 @@
 #launch.json folder
 .vscode/
 .code-workspace
+.claude
+CLAUDE.md
 
 # Zone Identifier
 # Windows
