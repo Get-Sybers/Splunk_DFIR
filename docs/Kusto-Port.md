@@ -165,30 +165,33 @@ later stage is needed to get value from an earlier one.
 |:--|:---|:---|
 | **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
-| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek conn, Volatility 3 and Velociraptor wired | 2 |
-| **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
+| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek (conn typed + all other logs generic), Volatility 3 and Velociraptor wired | 2 |
+| **4** | ✅ `kusto/schema/40-mitre.kql` — **all 9** CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
 ## What is not done
 
 Stated plainly so it is not mistaken for working:
 
-- **`registry` is sourced again.** **Velociraptor offline collectors running the
-  EZ Tools** (RECmd / Registry Explorer) land in `host.VelociraptorJson` via the
-  `velociraptor` loader, and `CarRegistry()` reads the registry artefacts from
-  it — the same Zimmerman field names the retired `KapeJson` mapping used. That
-  takes CAR coverage to **6 of 9**; `CarCoverage()` now counts real registry
-  rows, leaving only driver/module/thread pinned at 0.
-- **Only `conn.log` of Zeek's 69 log types is ingested.** It is the one
-  `car_flow` needs. The generic `Zeek` table exists for the rest.
-- **Deploy/apply/ingest and six CAR objects have now run against a real
+- **CAR coverage is 9 of 9.** `driver`, `module` and `thread` — long empty
+  because nothing *dead-box* produces driver loads, image loads or thread
+  creation — are now sourced from **Sysmon** (Microsoft-Windows-Sysmon/
+  Operational events 6/7/8), which rides the EvtxECmd path into
+  `host.EvtxEcmdJson`. Sysmon also enriches `process` (1/5), `flow` (3),
+  `registry` (12/13/14) and `file` (11/23). `registry` additionally keeps its
+  Velociraptor/RECmd source. `CarCoverage()` returned real rows for all nine on
+  the live engine.
+- **All ~69 Zeek log types are ingested.** `conn` is typed into `ZeekConn` by
+  JSON path (the processor emits `use_json=T`), every other log lands in the
+  generic `Zeek` dynamic table via a `{LogType, SourceFile, Record}` wrapper.
+- **Deploy/apply/ingest and all nine CAR objects have run against a real
   emulator** — see [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
-  What is *still* unverified: the Zeek/EvtxECmd/Volatility-Windows/Velociraptor
-  **engines** producing that input (deterministic fixtures stood in for the
-  parts egress policy blocks), and a Windows disk image through Plaso (only
-  filesystem test images were run, so `CarProcess`-from-Plaso is unexercised).
-  The remaining list, ranked by blast radius, is
-  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+  What is *still* unverified: the Zeek/EvtxECmd/Sysmon/Volatility-Windows/
+  Velociraptor **engines** producing that input (deterministic fixtures stood in
+  for the parts egress policy blocks or the corpus lacks), and a Windows disk
+  image through Plaso (only filesystem test images were run, so
+  `CarProcess`-from-Plaso is unexercised). The remaining list, ranked by blast
+  radius, is [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
   An earlier version of this document claimed the scripts were "verified"
   against a fake HTTP endpoint. That was an overclaim: the fake returned
@@ -200,8 +203,11 @@ Stated plainly so it is not mistaken for working:
 
   What IS now tested, behaviourally, in `tests/run-checks.sh`: `kusto_failed`
   against five real response shapes including a partially-failed
-  `.execute database script`; and the Zeek column-order guard run against three
-  fixtures (correct, swapped, headerless). Everything else remains unverified.
+  `.execute database script`; and Zeek routing run against JSON fixtures
+  (conn.json to the typed table, other logs to the generic table, no
+  double-load). The TSV column-order guard it replaced is gone with the TSV
+  path — a JSON path mapping cannot shift columns. Everything else remains
+  unverified.
 
 - **`pid` conversion is now verified.** `tolong()` accepts a `0x`-prefixed
   string at run time on the live emulator (`tolong("0x1a4")` = 420), so `pid` is
