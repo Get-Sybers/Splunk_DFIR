@@ -37,7 +37,7 @@ Loads data_store/processed into the Kusto emulator. Run after processing
 evidence, and again after any redeploy — the database is ephemeral by default.
 
   --only SOURCE    Ingest one source only:
-                   l2t | zeek | evtx | volatility | velociraptor | rekall
+                   l2t | zeek | evtx | volatility | velociraptor
   --dry-run        List what would be ingested; contact nothing.
   -h, --help       Show this and exit.
 
@@ -65,8 +65,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$ONLY" in
-    ""|l2t|zeek|evtx|volatility|velociraptor|rekall) ;;
-    *) echo "❌ --only must be one of: l2t zeek evtx volatility velociraptor rekall"; exit 1 ;;
+    ""|l2t|zeek|evtx|volatility|velociraptor) ;;
+    *) echo "❌ --only must be one of: l2t zeek evtx volatility velociraptor"; exit 1 ;;
 esac
 
 want() { [[ -z "$ONLY" || "$ONLY" == "$1" ]]; }
@@ -378,9 +378,7 @@ zeek_post() {
 #                which must be derived from the source path per file) is now
 #                solved for the JSON sources by a prepare hook that wraps each
 #                record as {Constant..., Record} JSON Lines — see
-#                volatility_prepare / velociraptor_prepare. Only rekall stays
-#                unimplemented (its historical output is unlikely to recur; the
-#                same wrapper would suit it if it does).
+#                volatility_prepare / velociraptor_prepare.
 # ------------------------------------------------------------------------------
 SOURCES=(
     "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
@@ -388,7 +386,6 @@ SOURCES=(
     "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
     "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.json|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
     "velociraptor|Velociraptor collectors (-> host.VelociraptorJson)|velociraptor|*.json|host|VelociraptorJson|VelociraptorJsonMapping|multijson|0|velociraptor_prepare|-"
-    "rekall|rekall — NOT IMPLEMENTED|-|-|-|-|-|-|-|-|-"
 )
 
 # hdr=1 sets ignoreFirstRecord for the ingest. psteal writes a header row;
