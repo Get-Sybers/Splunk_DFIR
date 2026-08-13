@@ -165,7 +165,7 @@ later stage is needed to get value from an earlier one.
 |:--|:---|:---|
 | **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
-| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek conn, Volatility 3 and Velociraptor wired; only Rekall is not | 2 |
+| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek conn, Volatility 3 and Velociraptor wired | 2 |
 | **4** | ✅ `kusto/schema/40-mitre.kql` — 6 of 9 CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
@@ -173,11 +173,6 @@ later stage is needed to get value from an earlier one.
 
 Stated plainly so it is not mistaken for working:
 
-- **Rekall is not ingested.** Its table exists with an ingestion mapping, but
-  the loader does not populate it. The constant-column problem (`.ingest into`
-  cannot inject the per-file `Plugin`) is now solved for the other JSON sources
-  by a prepare hook that wraps each record as `{Plugin/Artefact…, Record}` JSON
-  Lines — the same wrapper would suit Rekall if its archived output recurs.
 - **`registry` is sourced again.** **Velociraptor offline collectors running the
   EZ Tools** (RECmd / Registry Explorer) land in `host.VelociraptorJson` via the
   `velociraptor` loader, and `CarRegistry()` reads the registry artefacts from

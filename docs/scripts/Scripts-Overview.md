@@ -17,10 +17,9 @@ Supported scripts — these live in `scripts/` and resolve paths correctly:
 | `process-log2timeline-Dynamic.sh`  | Linux    | Processes **E01 disk images and VMware VM exports** through Plaso, emitting dynamic CSV.             |
 | `process-zeek-ALL.sh`              | Linux    | Processes **all PCAPs** in the dataset using Zeek, preserving ISO8601 timestamps.                    |
 | `process-evtx-EvtxECmd.sh`         | Linux    | Parses raw **Windows Event Logs** (`.evtx`) with EvtxECmd into JSON. ⚠️ Requires operator-supplied EvtxECmd; not runtime-tested. |
-| `process-rekall-json.sh`           | Linux    | Normalises Rekall JSON memory-analysis output. ⚠️ No Kusto loader yet.                               |
 | `deploy-kusto.sh`                  | Linux    | Deploys the **Kusto emulator** — the analysis backend. Localhost-only by default (the emulator has **no auth**), isolated network, ephemeral database by default. ⚠️ Sets `ACCEPT_EULA=Y` on your behalf. `--help` for all flags. |
 | `apply-kusto-schema.sh`            | Linux    | Creates the Kusto databases, tables, ingestion mappings and MITRE CAR functions. Idempotent — safe to re-run. |
-| `ingest-kusto.sh`                  | Linux    | Loads `data_store/processed` into the emulator. Plaso, EvtxECmd and Zeek `conn` only; Velociraptor/Rekall loaders are not implemented yet. |
+| `ingest-kusto.sh`                  | Linux    | Loads `data_store/processed` into the emulator. Plaso, EvtxECmd and Zeek `conn` only; the Velociraptor loader is not implemented yet. |
 
 Shared libraries live in `scripts/lib/`: `docker-lifecycle.sh` (container
 replace policy, isolated network, readiness, egress verification, honest

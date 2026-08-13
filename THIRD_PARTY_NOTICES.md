@@ -112,7 +112,6 @@ repository.**
 | [Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview) | `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` container — **the analysis backend** | **Proprietary** — Microsoft Software License Terms | See below |
 | [EvtxECmd](https://github.com/EricZimmerman/evtx) | `scripts/process-evtx-EvtxECmd.sh` runs operator-supplied `EvtxECmd.dll` in a .NET container | **MIT** | None — no commercial-use restriction |
 | [Velociraptor](https://github.com/Velocidex/velociraptor) | JSON output normalised by `dev-scripts/`; Kusto loader not yet implemented | AGPL-3.0 | None — output ingestion does not trigger AGPL |
-| [Rekall](https://github.com/google/rekall) | JSON output normalised by `scripts/process-rekall-json.sh`; Kusto loader not yet implemented | Apache-2.0 | None. Upstream is archived/unmaintained |
 
 No tool binaries are vendored in this repository — every tool above is either
 pulled as a container image or supplied by the operator.

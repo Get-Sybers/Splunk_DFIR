@@ -37,7 +37,6 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
-| [Rekall](https://github.com/google/rekall)                    | ⚠️ superseded by Volatility 3 | json | ◑ table kept, loader on Volatility | ❌ |
 | Linux Logs (syslog / auditd / utmp, via Plaso)                | ✅            | csv             | ✅ `host.L2tCsv` | ✅ (`user_session` utmp+PAM, `process` cron, `service` systemd) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |              |               |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |
@@ -97,8 +96,7 @@ Things that are broken or unsafe right now.
   below and is worth more than any further code —
   [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
   checklist.
-- ⬜ Velociraptor and Rekall ingestion. Tables exist; the loader populates
-  neither.
+- ⬜ Velociraptor ingestion. The table exists; the loader does not populate it.
 - ⬜ 68 of Zeek's 69 log types. Only `conn.log` is typed and ingested — it is
   the one `car_flow` needs.
 - ⬜ Verify the `pid` hex conversion. `pid_hex` is always right; `pid` depends
@@ -168,8 +166,8 @@ populated (`0x1a4` → 420).
 `CarProcess`/`CarUserSession`/`CarService` and the Payload-XML extraction)
 against the live engine with format-accurate fixtures — the tool engines
 themselves are blocked by egress policy here.
-✅ **Memory** processed with Volatility 3 (Rekall is archived) → `memory.VolatilityJson`,
-proving the constant-column injection the Velociraptor/Rekall loaders need
+✅ **Memory** processed with Volatility 3 → `memory.VolatilityJson`,
+proving the constant-column injection the Velociraptor loader needs
 ([#16](https://github.com/Get-Sybers/DX_DFIR/issues/16)).
 ✅ **Android and macOS** artefacts processed with real Plaso parsers into
 `host.L2tCsv`: Android `LOG`/"Android SMS messages"·"Android Call History"

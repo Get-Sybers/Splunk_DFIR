@@ -575,7 +575,11 @@ root = pathlib.Path(".").resolve()
 lr = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
 bad = []
 for md in sorted(root.rglob("*.md")):
-    if ".git/" in str(md): continue
+    rel = str(md.relative_to(root))
+    # Skip VCS internals and evidence corpora — data_store/ holds raw and
+    # processed forensic samples (whole disk images, vendored OS docs), whose
+    # internal links are not this project's documentation to validate.
+    if ".git/" in str(md) or rel.startswith("data_store/"): continue
     for m in lr.finditer(md.read_text(errors="ignore")):
         t = m.group(1).split("#")[0].strip()
         if not t or t.startswith(("http://", "https://", "mailto:")): continue
