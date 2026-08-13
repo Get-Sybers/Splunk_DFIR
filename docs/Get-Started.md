@@ -118,8 +118,8 @@ DX_DFIR/scripts/ingest-kusto.sh
 ```
 - Loads `data_store/processed/` into the emulator: Plaso CSV → `host.L2tCsv`,
   EvtxECmd JSON → `host.EvtxEcmdJson`, Zeek `conn.log` → `network.ZeekConn`.
-- Velociraptor / Rekall loaders are **not implemented yet** — the tables
-  exist, the loaders do not. The script says so rather than pretending.
+- The Velociraptor loader is **not implemented yet** — the table
+  exists, the loader does not. The script says so rather than pretending.
   (Artefact collection is planned via Velociraptor offline collectors running
   the EZ Tools; the KAPE path was removed.)
 - Ingestion is additive with no fishbucket: re-running duplicates rows. To

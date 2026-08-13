@@ -2,11 +2,11 @@
 # ==============================================================================
 # Process memory images with Volatility 3 into ingestable per-plugin JSON.
 #
-# Rekall (the project's original memory tool) is archived upstream, so the
-# forward path is Volatility 3. Its `-r json` renderer writes ONE JSON ARRAY of
-# row objects per plugin; ingest-kusto.sh wraps each row as
-# {Plugin, SourceFile, Record} and loads it into memory.VolatilityJson, where
-# the plugin-specific fields are reachable as Record.FieldName in KQL.
+# Volatility 3 is the memory-forensics tool for this pipeline. Its `-r json`
+# renderer writes ONE JSON ARRAY of row objects per plugin; ingest-kusto.sh
+# wraps each row as {Plugin, SourceFile, Record} and loads it into
+# memory.VolatilityJson, where the plugin-specific fields are reachable as
+# Record.FieldName in KQL.
 #
 #   data_store/raw/memory/<image>              memory dump (raw/dd/lime/…)
 #   data_store/processed/volatility/<image>/<plugin>.json   one file per plugin

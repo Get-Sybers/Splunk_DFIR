@@ -29,52 +29,76 @@ echo ""
 # Debugging Output (Check Paths)
 echo "📂 PCAP Directory: $PCAP_DIR"
 echo "📂 Zeek Logs Directory: $ZEEK_LOGS_DIR"
-# Check if PCAP files exist
-shopt -s nullglob nocaseglob
-pcap_files=("$PCAP_DIR"/*.pcap "$PCAP_DIR"/*.pcapng)
+shopt -s nullglob
+
+# Is this file a packet capture? Content-first (magic bytes), extension as a
+# fallback — so a misnamed or extension-less capture is still found. Covers
+# classic pcap (µs and ns, both byte orders) and pcapng.
+is_pcap() { # file -> 0 if it looks like a capture
+    local h
+    h="$(LC_ALL=C dd if="$1" bs=1 count=4 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+    case "$h" in
+        a1b2c3d4|d4c3b2a1|a1b23c4d|4d3cb2a1|0a0d0d0a) return 0 ;;
+    esac
+    case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+        *.pcap|*.pcapng|*.cap) return 0 ;;
+    esac
+    return 1
+}
+
+# Output-folder name derived from the path RELATIVE to the pcap dir, so two
+# captures that share a basename in different subfolders keep distinct output.
+clean_name() { # relpath -> provenance name
+    local rel="$1"
+    rel="${rel//\//_}"; rel="${rel// /_}"
+    [[ "$rel" == *.* ]] && rel="${rel%.*}_${rel##*.}"
+    echo "$rel"
+}
+
+# Discover captures anywhere under the pcap tree. Users drop their own data into
+# data_store/raw/pcaps/ and the sample collector sources into per-corpus
+# subfolders, so we recurse dynamically — no layout is hardcoded.
+pcap_files=()
+while IFS= read -r -d '' f; do
+    is_pcap "$f" && pcap_files+=("$f")
+done < <(find "$PCAP_DIR" -type f -print0 | sort -z)
+
 if [ ${#pcap_files[@]} -eq 0 ]; then
-  echo "⚠️ No PCAP files found in $PCAP_DIR. Exiting."
+  echo "⚠️ No PCAP files found under $PCAP_DIR. Exiting."
   exit 1
 fi
-# Process each PCAP file
+
+# Process each capture: one output folder per capture, holding its Zeek logs.
 for pcap_file in "${pcap_files[@]}"; do
-  # Extract filename without extension
-  pcap_basename=$(basename "$pcap_file" .pcap)
-  pcap_basename=$(basename "$pcap_basename" .pcapng) # Handle .pcapng too
-  
-  # Create a temporary directory for initial Zeek output
+  rel="${pcap_file#"$PCAP_DIR"/}"          # path inside the mounted /pcap tree
+  name="$(clean_name "$rel")"              # unique, provenance-preserving
+
+  # Temporary directory for Zeek's raw output, then convert into the final dir.
   temp_dir=$(mktemp -d)
-  # Define final Zeek output directory for this PCAP
-  output_dir="$ZEEK_LOGS_DIR/$pcap_basename"
+  output_dir="$ZEEK_LOGS_DIR/$name"
   mkdir -p "$output_dir"
-  
-  echo "🚀 Processing: $pcap_basename"
-  # Run Zeek container to generate logs in temporary directory
-  docker run --name "zeek_$pcap_basename" \
+
+  echo "🚀 Processing: $rel"
+  # Zeek writes JSON directly (LogAscii::use_json=T) with ISO-8601 timestamps
+  # (json_timestamps=JSON::TS_ISO8601) — typed values, produced entirely inside
+  # the container with no post-processing. Mount the whole pcap tree so nested
+  # captures resolve, and read the file by rel path.
+  docker run --rm \
     -v "$PCAP_DIR":/pcap:ro \
     -v "$temp_dir":/logs \
-    zeek/zeek sh -c \
-    "cd /logs && zeek -C -r /pcap/$(basename "$pcap_file")"
-  echo "✅ Finished processing: $pcap_basename"
-  
-  # Process log files with zeek-cut to convert timestamps to ISO8601
-  echo "🕒 Converting timestamps to ISO8601 format..."
+    zeek/zeek sh -c "cd /logs && zeek -C -r '/pcap/$rel' LogAscii::use_json=T 'LogAscii::json_timestamps=JSON::TS_ISO8601'"
+  echo "✅ Finished processing: $rel"
+
+  # Zeek keeps the .log extension even for JSON content; move each into the
+  # output folder as .json so the format is obvious on disk.
   for log_file in "$temp_dir"/*.log; do
-    if [ -f "$log_file" ]; then
-      # Get just the filename
-      log_filename=$(basename "$log_file")
-      # Process with zeek-cut and write directly to final destination
-      docker run --rm -i -v "$temp_dir":/logs zeek/zeek bash -c "cat /logs/$log_filename | zeek-cut -C -U \"%Y-%m-%dT%H:%M:%S%z\"" > "$output_dir/$log_filename"
-      echo "   ✓ Converted timestamps in $log_filename"
-    fi
+    [ -f "$log_file" ] || continue
+    base="$(basename "$log_file")"                  # e.g. conn.log
+    mv "$log_file" "$output_dir/${base%.log}.json"  # -> conn.json
+    echo "   ✓ ${base} -> ${base%.log}.json"
   done
-  
-  # Clean up temporary directory
+
   rm -rf "$temp_dir"
-  
-  # Clean up container
-  docker rm -f "zeek_$pcap_basename" > /dev/null 2>&1
-  
-  echo "💾 Logs saved in: $output_dir"
+  echo "💾 JSON logs saved in: $output_dir"
 done
 echo "✅ All PCAPs processed with ISO8601 timestamps."

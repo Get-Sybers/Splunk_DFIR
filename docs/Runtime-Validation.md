@@ -190,7 +190,7 @@ seconds (`2025-01-01T10:14:29.1234567+00:00`).
 
 ### Volatility 3 — `memory.VolatilityJson` (real tool, mixed data)
 
-Rekall's upstream is archived, so memory is now processed with **Volatility 3**
+Memory is processed with **Volatility 3**
 (`process-volatility.sh`). Its `-r json` renderer emits one JSON *array* of row
 objects per plugin, with tree-plugin descendants nested under `__children`.
 
@@ -203,7 +203,7 @@ objects per plugin, with tree-plugin descendants nested under `__children`.
   driven by fixtures.
 - **Loader — constant-column injection.** `Plugin` and `SourceFile` are per-file
   constants and `.ingest` cannot inject a constant column — the exact reason the
-  Velociraptor/Rekall loaders were "NOT IMPLEMENTED." `ingest-kusto.sh`'s
+  Velociraptor loader was "NOT IMPLEMENTED." `ingest-kusto.sh`'s
   `volatility_prepare` hook wraps each row as `{Plugin, SourceFile, Record}`
   JSON Lines, so `VolatilityJson` lands with `Plugin`/`SourceFile` populated and
   the plugin-specific fields reachable as `Record.Field`:
@@ -217,7 +217,7 @@ objects per plugin, with tree-plugin descendants nested under `__children`.
   ```
   `CreateTime` parses as `datetime`; `netscan` rows correlate to `pslist` by PID
   (`outlook.exe` 1740 → `74.125.19.104:80`). This is the same wrapper the
-  Velociraptor (`Artefact`) and Rekall (`Plugin`) loaders need — proven here.
+  Velociraptor (`Artefact`) loader needs — proven here.
 
 > Memory is deliberately **not** a CAR object: MITRE CAR's dead-box objects are
 > file/flow/process/user_session/service/registry/driver/module/thread, and
