@@ -32,37 +32,38 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Kusto Ingest | CAR Functions |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅           |     ✅ (`file`) |
-| [Zeek](https://zeek.org/)                                     | ✅            | tsv             | ✅ (`conn` only) | ✅ (`flow`) |
+| [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
 | Linux Logs (syslog / auditd / utmp, via Plaso)                | ✅            | csv             | ✅ `host.L2tCsv` | ✅ (`user_session` utmp+PAM, `process` cron, `service` systemd) |
-| [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) |    |                 |              |               |
+| [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |              |               |
 | [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |              |               |
 | [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |              |               |
 
-**The CAR column has now run against a live emulator.** The MITRE CAR data
+**All nine CAR objects now run against a live emulator.** The MITRE CAR data
 model is expressed as KQL functions in the `mitre` database — `CarFlow()`,
 `CarUserSession()`, `CarProcess()`, `CarService()`, `CarFile()`, `CarRegistry()`,
-with `CarCoverage()` reporting what has data. All **six** sourced objects
-returned real rows on the live engine (`file`=1240 from three real `.E01`
-images, plus `flow`/`process`/`user_session`/`service`, and `registry` from
-Velociraptor/RECmd output) — see
-[docs/Runtime-Validation.md](/docs/Runtime-Validation.md). `registry` is sourced
-again via the Velociraptor offline-collector/EZ-Tools path; `driver`, `module`
-and `thread` still have none, because nothing dead-box produces driver loads,
-image loads or thread creation — those need Sysmon or a live agent.
+`CarDriver()`, `CarModule()`, `CarThread()`, with `CarCoverage()` reporting what
+has data. The three that were empty for so long — `driver`, `module`, `thread` —
+are now sourced from **Sysmon** (Microsoft-Windows-Sysmon/Operational events
+6/7/8), which lands in `host.EvtxEcmdJson` through the same EvtxECmd path as the
+Security log. Sysmon also strengthens `process` (event 1/5, full pid/ppid/command
+line), `flow` (3), `registry` (12/13/14) and `file` (11/23). On the live engine
+`CarCoverage()` returned real rows for **all nine** objects — see
+[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
 
 **What the live run still does not cover.** Plaso was run for real, but only on
 filesystem test images — a Windows image (for `CarProcess`-from-Plaso via
-Prefetch/Amcache) has not been run. The Zeek and EvtxECmd **engines** could not
-run here (egress policy blocks the `zeek/zeek` image and there is no standalone
-`.evtx` in the corpus), so their ingest/mapping/CAR paths were proven with
-format-accurate fixtures rather than live tool output. The remaining runtime
-checklist is [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+Prefetch/Amcache) has not been run. The Zeek, EvtxECmd and Sysmon **engines**
+could not run here (egress policy blocks the `zeek/zeek` image and there is no
+standalone `.evtx`/Sysmon log in the corpus), so their ingest/mapping/CAR paths
+were proven with format-accurate fixtures against the live engine rather than
+live tool output. The remaining runtime checklist is
+[issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
 
 ---
 
@@ -97,11 +98,6 @@ Things that are broken or unsafe right now.
   [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
   checklist.
 - ⬜ Velociraptor ingestion. The table exists; the loader does not populate it.
-- ⬜ 68 of Zeek's 69 log types. Only `conn.log` is typed and ingested — it is
-  the one `car_flow` needs.
-- ⬜ Verify the `pid` hex conversion. `pid_hex` is always right; `pid` depends
-  on `tolong()` accepting a `0x` prefix, which is untested
-  ([issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14), item 6).
 
 ### 🔹 **Data Models & MITRE CAR Mapping**
 - Validate the CAR field mappings against real Windows event logs, Zeek logs,
@@ -142,6 +138,27 @@ Things that are broken or unsafe right now.
 ---
 
 ## ✅ Done
+
+### 🔹 **CAR to 9/9 objects (Sysmon) + Zeek all-log JSON pipeline**
+✅ **All nine CAR objects sourced and validated live.** Added `CarDriver()`
+(Sysmon 6), `CarModule()` (Sysmon 7) and `CarThread()` (Sysmon 8) — the three
+that had no dead-box source — and strengthened `CarProcess` (1/5), `CarFlow`
+(3), `CarRegistry` (12/13/14) and `CarFile` (11/23) with Sysmon branches. Sysmon
+rides the existing EvtxECmd path into `host.EvtxEcmdJson`, told apart by
+`Provider`. `CarCoverage()` returned real rows for all nine on the live engine.
+✅ A defect the live run surfaced: KQL `has` is whole-term, so the Sysmon
+registry `action` (`case(EventType has "Create"...)`) fell through to "modify"
+for every event — `CreateKey`/`RenameKey` now classify correctly via `contains`.
+✅ Confirmed the two Windows PID encodings decode correctly side by side —
+Security 4688 hex (`0x11b8`→4536) and Sysmon decimal (`4536`→4536).
+✅ **Zeek pipeline reconciled to JSON, all ~69 log types ingested.** The
+processor already emitted JSON (`LogAscii::use_json=T`) but the loader still
+expected TSV — they had drifted and could not run end-to-end. `conn.json` is now
+typed into `ZeekConn` by **JSON path** mapping (immune to Zeek field reordering,
+so the old ordinal column-order guard is gone), native numeric/boolean types,
+and every other log lands in the generic `Zeek` dynamic table via a
+`{LogType, SourceFile, Record}` wrapper — `dns`/`http`/`ssl`/… all queryable,
+with `ZeekLog()`/`ZeekDns()`/`ZeekHttp()`/`ZeekSsl()` views. Validated live.
 
 ### 🔹 **First run against a live Kusto emulator** — *the blocker, broken*
 ✅ Deploy → apply → ingest → `CarCoverage()` executed end-to-end on the real

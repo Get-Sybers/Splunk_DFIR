@@ -64,9 +64,11 @@ module            0     <- unsourced
 thread            0     <- unsourced
 ```
 
-Six of nine CAR objects now carry data end-to-end; the three zeros are the
-honest, documented gaps, not failures. The README's "envisioned endstate"
-query returns a real row now:
+Six of nine CAR objects carried data on that first run; the three zeros were the
+honest, documented gaps. A later run closed them — see **[Follow-up run: 9/9
+objects via Sysmon + Zeek all-log JSON](#follow-up-run-99-objects-via-sysmon--zeek-all-log-json)**
+below, where `driver`/`module`/`thread` return real rows. The README's
+"envisioned endstate" query returns a real row now:
 
 ```kusto
 CarProcess() | where isnotempty(command_line)
@@ -98,6 +100,68 @@ And one **unknown resolved rather than a bug** — [issue #14, item 6](https://g
 > `pid_hex="0x1a4"`). Note `tolong("1a4")` *without* the prefix → `null`, so the
 > `pid_hex` raw fallback is still worth keeping — but EvtxECmd always emits the
 > `0x` form, so `pid` is populated.
+
+---
+
+## Follow-up run: 9/9 objects via Sysmon + Zeek all-log JSON
+
+A second live run closed the three empty CAR objects and reconciled the Zeek
+lane to JSON. `CarCoverage()` from a clean container, fixtures ingested:
+
+```
+Object         Rows   Source
+file              4    Sysmon 11/23 + Plaso NTFS
+process           4    Sysmon 1/5 + Security 4688 + Plaso cron
+registry          4    Sysmon 12/13/14 + Velociraptor/RECmd
+service           2    Security 7045 + Linux systemd audit
+flow              2    Zeek conn + Sysmon 3
+user_session      2    Security 4624 + Linux UTMP
+driver            1    Sysmon 6   <- was 0
+module            1    Sysmon 7   <- was 0
+thread            1    Sysmon 8   <- was 0
+```
+
+All nine objects return rows. `driver`, `module` and `thread` — the objects
+nothing *dead-box* can produce — are sourced from **Sysmon** (Microsoft-Windows-
+Sysmon/Operational events 6/7/8), which rides the existing EvtxECmd path into
+`host.EvtxEcmdJson` and is told apart from the Security log by `Provider`.
+
+Two encodings of the Windows PID were confirmed to decode correctly **side by
+side** in `CarProcess()`, the distinction that makes the Sysmon branch separate
+from the Security one:
+
+| Origin | EventData ProcessId | `pid` | `pid_hex` |
+|:--|:--|:--|:--|
+| `evtx:4688` (Security) | `0x11b8` (hex) | `4536` | `0x11b8` |
+| `sysmon:1` (Sysmon) | `4536` (decimal) | `4536` | *(empty)* |
+
+**Lane provenance** — same honesty distinction as the first run:
+
+| Lane | Input produced by | ADX ingest + mapping + CAR |
+|:---|:---|:---|
+| **Sysmon → `host.EvtxEcmdJson`** | ⚠️ format-accurate EvtxECmd JSON fixture (no Sysmon log in the corpus, and EvtxECmd's egress is blocked) | ✅ verified live |
+| **Zeek → `network.ZeekConn` (JSON, typed)** | ⚠️ format-accurate `conn.json` fixture¹ | ✅ verified live |
+| **Zeek → `network.Zeek` (JSON, generic)** | ⚠️ format-accurate `dns`/`http`/`ssl` fixtures¹ | ✅ verified live |
+
+### Defect this run surfaced (fixed)
+
+| # | File | Symptom on the live emulator | Fix |
+|:--|:--|:--|:--|
+| 5 | `kusto/schema/40-mitre.kql` — `CarRegistry()` | Every Sysmon registry row got `action = "modify"`, including `CreateKey` (12) and `RenameKey` (14). `case(EventType has "Create", …)` — but KQL `has` matches whole **terms**, and `"CreateKey"` is a single camelCase token, so `has "Create"` is false and every branch fell through to the `"modify"` default. Parsed fine; wrong the moment it ran. | Use `contains` (substring), not `has`. `CreateKey → create`, `RenameKey → rename`, `SetValue → modify`. |
+
+### The Zeek JSON reconciliation
+
+`process-zeek-ALL.sh` emits JSON (`LogAscii::use_json=T`), but the loader still
+expected TSV with `#fields` headers — the two stages had drifted and could not
+run end to end. Fixed by mapping `conn.json` into the typed `ZeekConn` table by
+**JSON path** (`$['id.orig_h']`, immune to Zeek field reordering — so the old
+TSV column-order guard is gone, the risk it guarded no longer exists), with
+native numeric/boolean types; every other log type is wrapped
+`{LogType, SourceFile, Record}` into the generic `Zeek` dynamic table. On the
+live engine: `ZeekConn` types `SrcPort=52345` (int), `Duration=1.25` (real),
+`LocalOrig=true` (bool); the generic table holds `dns`/`http`/`ssl`, queryable
+through `ZeekDns()`/`ZeekHttp()`/`ZeekSsl()`; and `CarFlow()` unions the Zeek
+and Sysmon branches (one row each).
 
 ---
 

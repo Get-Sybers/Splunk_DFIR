@@ -92,14 +92,16 @@ discovered.
 |:---|:---|:---|
 | E01 → Plaso timeline CSV | ✅ Works | `process-log2timeline-Dynamic.sh`; `psteal` dynamic CSV, job logs kept |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
-| PCAP → Zeek logs | ✅ Works | ISO8601 timestamps preserved |
+| PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
+| Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
 | Raw EVTX → EvtxECmd JSON | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh`; operator-supplied EvtxECmd (MIT). **Never run against a real event log** |
+| Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
 | Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
-| **Kusto emulator deploy** | ◑ Built, unverified | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check. **Never run against a live emulator** |
-| **Schema + ingestion** | ◑ Built, unverified | 5 databases; typed tables + ingestion mappings for Plaso CSV, EvtxECmd JSON, Zeek `conn`; the Velociraptor loader is **not implemented** |
-| **MITRE CAR field mapping (KQL)** | ◑ **Built, unverified** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, plus `CarCoverage()`. **5 of 9 CAR objects have a source**; `registry` (awaiting the Velociraptor/EZ-Tools path), `driver`, `module`, `thread` have none. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
-| Linux logs, Sysmon, Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
+| **Kusto emulator deploy** | ✅ Runs | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
+| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso CSV, EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor; the live Velociraptor *collection* loader is still the planned piece |
+| **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
+| Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
 
 ### Known limitations
 

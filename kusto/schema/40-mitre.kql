@@ -23,29 +23,51 @@
 // database("<name>").<Table>. That is why the databases are separate at all —
 // they mirror the data domains, as intended.
 //
-// COVERAGE — 6 of 9 objects
+// COVERAGE — 9 of 9 objects
 //
-//   CarFlow         Zeek conn
+//   CarFlow         Zeek conn + Sysmon 3 (network connect)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
-//                   + Plaso UTMP-session rows (Linux wtmp/utmp)
-//   CarProcess      EvtxECmd 4688/4689, Plaso execution artefacts, Linux cron
+//                   + Plaso UTMP-session rows (Linux wtmp/utmp) + auditd PAM
+//   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso execution
+//                   artefacts, Linux cron
 //   CarService      EvtxECmd 7045/4697 (Windows) + Linux systemd (auditd)
-//   CarFile         Plaso filesystem rows
+//   CarFile         Plaso filesystem rows + Sysmon 11/23 (create/delete)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
+//                   + Sysmon 12/13/14 (key/value add, set, rename)
+//   CarDriver       Sysmon 6 (driver loaded)
+//   CarModule       Sysmon 7 (image loaded)
+//   CarThread       Sysmon 8 (CreateRemoteThread)
 //
-//   registry is SOURCED AGAIN. It lost its only source when the KAPE path was
-//   removed; the replacement — Velociraptor offline collectors running the EZ
-//   Tools (RECmd / Registry Explorer) — is now wired through host.VelociraptorJson
-//   and read by CarRegistry(). Same Zimmerman field names the old KapeJson
-//   mapping used.
+//   registry lost its only source when the KAPE path was removed; the
+//   replacement — Velociraptor offline collectors running the EZ Tools (RECmd /
+//   Registry Explorer) — is wired through host.VelociraptorJson and read by
+//   CarRegistry(). Same Zimmerman field names the old KapeJson mapping used.
 //
-//   driver, module, thread — NO SOURCE. Nothing dead-box produces driver
-//   loads, image loads or thread creation; those need Sysmon (events 6/7/8) or
-//   a live agent. Deliberately absent rather than approximated.
+//   driver, module, thread — SOURCED via Sysmon. Nothing *dead-box* produces
+//   driver loads, image loads or thread creation, which is why they were empty
+//   for so long; Sysmon (Microsoft-Windows-Sysmon/Operational, events 6/7/8) is
+//   the endpoint telemetry that does, and it lands in host.EvtxEcmdJson through
+//   the same EvtxECmd path as the Windows Security log. See the SYSMON note
+//   below for why the PID handling differs from the Security channel.
 //
 // NULLS ARE PRESERVED. Where a source cannot supply a CAR field it stays null
 // rather than being defaulted. A visible gap is worth more than an object that
 // looks fully populated.
+//
+// SYSMON — a second Windows source in the SAME table.
+//
+// Sysmon writes to Microsoft-Windows-Sysmon/Operational, which EvtxECmd parses
+// into host.EvtxEcmdJson exactly like the Security log — so Sysmon rows are told
+// apart by Provider ("Microsoft-Windows-Sysmon"), not by table. The CAR
+// functions below filter Sysmon branches with `Provider matches regex sysmon`
+// AND the Sysmon EventId, so a stray EventId 6/7/8 from another provider (those
+// numbers are reused across channels) can never leak into a Sysmon object.
+//
+// PID ENCODING DIFFERS. The Security channel writes ProcessId as a hex string
+// ("0x1a4"); Sysmon writes it as a DECIMAL string ("420"). So Sysmon branches
+// use tolong() directly and do NOT carry a pid_hex — the hex dance only the
+// Security 4688 path needs. Getting this wrong would silently misparse every
+// Sysmon PID, so it is called out at each Sysmon branch.
 
 //=============================================================================
 // Helper — pull a value out of an EvtxECmd Payload XML fragment by Name.
@@ -67,27 +89,51 @@ EvtxPayload(payload:string, key:string) {
 // EndTime is derived: conn.log has ts and duration, not an end timestamp.
 //=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'flow' object", folder = "CAR")
+with (docstring = "MITRE CAR 'flow' object (Zeek conn + Sysmon network connect)", folder = "CAR")
 CarFlow() {
-    database("network").ZeekTyped()
-    | extend
-        action        = case(ConnState == "SF",   "end",
-                             ConnState == "S0",   "start",
-                             ConnState == "REJ",  "end",
-                             ConnState in ("RSTO", "RSTR"), "end",
-                             isnotempty(ConnState), "message",
-                             ""),
-        src_ip        = SrcIp,
-        src_port      = SrcPort,
-        dest_ip       = DestIp,
-        dest_port     = DestPort,
-        protocol      = Proto,
-        start_time    = Ts,
-        end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
-        packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
-        hostname      = ""
-    | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
-              protocol, start_time, end_time, packet_count, hostname, Uid
+    let FromZeek =
+        database("network").ZeekTyped()
+        | extend
+            action        = case(ConnState == "SF",   "end",
+                                 ConnState == "S0",   "start",
+                                 ConnState == "REJ",  "end",
+                                 ConnState in ("RSTO", "RSTR"), "end",
+                                 isnotempty(ConnState), "message",
+                                 ""),
+            src_ip        = SrcIp,
+            src_port      = SrcPort,
+            dest_ip       = DestIp,
+            dest_port     = DestPort,
+            protocol      = Proto,
+            start_time    = Ts,
+            end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
+            packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
+            hostname      = ""
+        | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
+                  protocol, start_time, end_time, packet_count, hostname, Uid;
+    // Sysmon 3 (NetworkConnect) records a single connection AS IT IS MADE, with
+    // no duration, byte or packet counts — so end_time/packet_count are null,
+    // unlike Zeek conn. action is "start": the event marks initiation, not
+    // completion. Uid is empty (Sysmon has no Zeek connection uid).
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId == 3
+        | extend
+            src_ip       = EvtxPayload(Payload, "SourceIp"),
+            src_port     = toint(EvtxPayload(Payload, "SourcePort")),
+            dest_ip      = EvtxPayload(Payload, "DestinationIp"),
+            dest_port    = toint(EvtxPayload(Payload, "DestinationPort")),
+            protocol     = EvtxPayload(Payload, "Protocol")
+        | project
+            Timestamp    = TimeCreated,
+            action       = "start",
+            src_ip, src_port, dest_ip, dest_port, protocol,
+            start_time   = TimeCreated,
+            end_time     = datetime(null),
+            packet_count = long(0),
+            hostname     = Computer,
+            Uid          = "";
+    union FromZeek, FromSysmon
 }
 
 //=============================================================================
@@ -316,7 +362,40 @@ CarProcess() {
         | project Timestamp, action, exe, image_path, parent_exe,
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
                   user, hostname, Origin, SourceFile = DisplayName;
-    union FromEvtx, FromPlaso, FromLinuxCron
+    // Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest process
+    // source of the lot: full pid, ppid, parent image and command line, all in
+    // one event. Sysmon writes ProcessId/ParentProcessId as DECIMAL strings
+    // (not the hex the Security channel uses), so tolong() is applied directly
+    // and pid_hex/ppid_hex are empty — the hex form is meaningless here. Event 5
+    // carries only Image + ProcessId, so ppid/parent/command_line are null on a
+    // terminate, which is the honest shape.
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId in (1, 5)
+        | extend
+            SysImage        = EvtxPayload(Payload, "Image"),
+            SysCmdLine      = EvtxPayload(Payload, "CommandLine"),
+            SysPid          = EvtxPayload(Payload, "ProcessId"),
+            SysPpid         = EvtxPayload(Payload, "ParentProcessId"),
+            SysParentImage  = EvtxPayload(Payload, "ParentImage"),
+            SysUser         = EvtxPayload(Payload, "User")
+        | project
+            Timestamp         = TimeCreated,
+            action            = iff(EventId == 1, "create", "terminate"),
+            exe               = SysImage,
+            image_path        = SysImage,
+            parent_exe        = SysParentImage,
+            parent_image_path = SysParentImage,
+            command_line      = SysCmdLine,
+            pid               = tolong(SysPid),
+            ppid              = tolong(SysPpid),
+            pid_hex           = "",
+            ppid_hex          = "",
+            user              = SysUser,
+            hostname          = Computer,
+            Origin            = strcat("sysmon:", tostring(EventId)),
+            SourceFile;
+    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon
 }
 
 //=============================================================================
@@ -395,7 +474,29 @@ CarFile() {
         | extend creation_time = iff(action == "create", Timestamp, datetime(null))
         | project Timestamp, action, file_name, file_path, hostname, user,
                   creation_time, Origin = "plaso", SourceFile = DisplayName;
-    FromPlaso
+    // Sysmon 11 (FileCreate) / 23 (FileDelete) — endpoint file activity with the
+    // creating image and user, which the Plaso filesystem view (a MACB timeline,
+    // no process context) cannot supply. TargetFilename is the path; file_name is
+    // its leaf. 26 (FileDeleteDetected) is deliberately not included: it is the
+    // logged-only variant Sysmon emits when archival is off, and mixing it in
+    // would double-count deletions on hosts that archive.
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId in (11, 23)
+        | extend
+            target   = EvtxPayload(Payload, "TargetFilename"),
+            sys_user = EvtxPayload(Payload, "User")
+        | project
+            Timestamp     = TimeCreated,
+            action        = iff(EventId == 11, "create", "delete"),
+            file_name     = replace_regex(target, @"^.*[\\/]", ""),
+            file_path     = target,
+            hostname      = Computer,
+            user          = sys_user,
+            creation_time = iff(EventId == 11, TimeCreated, datetime(null)),
+            Origin        = strcat("sysmon:", tostring(EventId)),
+            SourceFile;
+    union FromPlaso, FromSysmon
 }
 
 //=============================================================================
@@ -417,25 +518,155 @@ CarFile() {
 // (velociraptor/<host>/...), since RECmd output itself carries no hostname.
 //=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'registry' object", folder = "CAR")
+with (docstring = "MITRE CAR 'registry' object (Velociraptor RECmd + Sysmon 12/13/14)", folder = "CAR")
 CarRegistry() {
-    database("host").VelociraptorJson
-    | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
+    let FromVelociraptor =
+        database("host").VelociraptorJson
+        | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
+        | extend
+            Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
+            action     = "modify",
+            key        = tostring(coalesce(Record.KeyPath, Record.Key)),
+            value      = tostring(coalesce(Record.ValueName, Record.Value)),
+            data       = tostring(coalesce(Record.ValueData, Record.Data)),
+            type       = tostring(coalesce(Record.ValueType, Record.Type)),
+            hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
+            image_path = tostring(Record.ImagePath),
+            pid        = tolong(Record.PID),
+            user       = tostring(Record.User),
+            hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+            fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+        | project Timestamp, action, key, value, data, type, hive, image_path, pid,
+                  user, hostname, fqdn, Artefact, SourceFile;
+    // Sysmon 12 (key create/delete), 13 (value set), 14 (key/value rename).
+    // Unlike the RECmd hive snapshot — which shows a key's LAST state — Sysmon
+    // records the CHANGE as it happens, so action comes from EventType rather
+    // than defaulting to "modify". TargetObject is the full path; for a value
+    // set (13) its leaf is the value name and Details is the data written. pid
+    // is decimal (Sysmon), so tolong() directly. type/hive/fqdn have no Sysmon
+    // equivalent and stay empty rather than being faked.
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId in (12, 13, 14)
+        | extend
+            etype  = EvtxPayload(Payload, "EventType"),
+            target = EvtxPayload(Payload, "TargetObject"),
+            det    = EvtxPayload(Payload, "Details")
+        | project
+            Timestamp  = TimeCreated,
+            // contains (substring), NOT has: `has` matches whole terms, and
+            // Sysmon's EventType is a single camelCase token ("CreateKey"), so
+            // `has "Create"` is false and every action fell through to "modify".
+            action     = case(etype contains "Delete", "delete",
+                              etype contains "Create", "create",
+                              etype contains "Set",    "modify",
+                              etype contains "Rename", "rename",
+                              "modify"),
+            key        = target,
+            value      = iff(EventId == 13, replace_regex(target, @"^.*\\", ""), ""),
+            data       = det,
+            type       = "",
+            hive       = "",
+            image_path = EvtxPayload(Payload, "Image"),
+            pid        = tolong(EvtxPayload(Payload, "ProcessId")),
+            user       = EvtxPayload(Payload, "User"),
+            hostname   = Computer,
+            fqdn       = "",
+            Artefact   = strcat("sysmon:", tostring(EventId)),
+            SourceFile;
+    union FromVelociraptor, FromSysmon
+}
+
+//=============================================================================
+// CarModule — image (DLL) loaded into a process.
+//
+// Source: Sysmon 7 (Image loaded). ImageLoaded is the module; Image is the
+// process that loaded it. Sysmon's Hashes is a single "SHA1=...,MD5=..." string;
+// it is kept whole rather than split into guessed columns. Signed/Signature/
+// SignatureStatus are present only when the operator shipped the Sysmon config
+// that computes them, so they stay null otherwise. High volume by nature — this
+// is per-DLL-load — which is exactly why nothing dead-box can approximate it.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'module' object (Sysmon 7 image load)", folder = "CAR")
+CarModule() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 7
     | extend
-        Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
-        action     = "modify",
-        key        = tostring(coalesce(Record.KeyPath, Record.Key)),
-        value      = tostring(coalesce(Record.ValueName, Record.Value)),
-        data       = tostring(coalesce(Record.ValueData, Record.Data)),
-        type       = tostring(coalesce(Record.ValueType, Record.Type)),
-        hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
-        image_path = tostring(Record.ImagePath),
-        pid        = tolong(Record.PID),
-        user       = tostring(Record.User),
-        hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-        fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
-    | project Timestamp, action, key, value, data, type, hive, image_path, pid,
-              user, hostname, fqdn, Artefact, SourceFile
+        module_path     = EvtxPayload(Payload, "ImageLoaded"),
+        image_path      = EvtxPayload(Payload, "Image"),
+        pid             = tolong(EvtxPayload(Payload, "ProcessId")),
+        hashes          = EvtxPayload(Payload, "Hashes"),
+        signed          = EvtxPayload(Payload, "Signed"),
+        signature       = EvtxPayload(Payload, "Signature"),
+        signature_status= EvtxPayload(Payload, "SignatureStatus")
+    | project
+        Timestamp   = TimeCreated,
+        action      = "load",
+        module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
+        module_path, image_path, pid, hashes, signed, signature,
+        signature_status,
+        hostname    = Computer,
+        SourceFile
+}
+
+//=============================================================================
+// CarDriver — kernel driver loaded.
+//
+// Source: Sysmon 6 (Driver loaded). A driver loads into the kernel, not a
+// user process, so there is no pid or loading image — ImageLoaded is the driver
+// binary itself. The signature fields are the point of this event: an unsigned
+// or self-signed driver load is a classic rootkit / BYOVD tell, so Signed /
+// Signature / SignatureStatus are carried even though they are often null on
+// hosts whose Sysmon config does not compute them.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'driver' object (Sysmon 6 driver load)", folder = "CAR")
+CarDriver() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 6
+    | extend
+        module_path      = EvtxPayload(Payload, "ImageLoaded"),
+        hashes           = EvtxPayload(Payload, "Hashes"),
+        signed           = EvtxPayload(Payload, "Signed"),
+        signature        = EvtxPayload(Payload, "Signature"),
+        signature_status = EvtxPayload(Payload, "SignatureStatus")
+    | project
+        Timestamp   = TimeCreated,
+        action      = "load",
+        module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
+        module_path, hashes, signed, signature, signature_status,
+        hostname    = Computer,
+        SourceFile
+}
+
+//=============================================================================
+// CarThread — remote thread created in another process.
+//
+// Source: Sysmon 8 (CreateRemoteThread). This is the cross-process injection
+// primitive: a Source process creating a thread inside a Target process.
+// StartAddress / StartModule / StartFunction describe where the new thread
+// begins — a start address with no backing module is the shellcode-injection
+// signature. Both PIDs are decimal (Sysmon), so tolong() directly.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'thread' object (Sysmon 8 CreateRemoteThread)", folder = "CAR")
+CarThread() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 8
+    | project
+        Timestamp      = TimeCreated,
+        action         = "create",
+        src_pid        = tolong(EvtxPayload(Payload, "SourceProcessId")),
+        src_image      = EvtxPayload(Payload, "SourceImage"),
+        target_pid     = tolong(EvtxPayload(Payload, "TargetProcessId")),
+        target_image   = EvtxPayload(Payload, "TargetImage"),
+        new_tid        = tolong(EvtxPayload(Payload, "NewThreadId")),
+        start_address  = EvtxPayload(Payload, "StartAddress"),
+        start_module   = EvtxPayload(Payload, "StartModule"),
+        start_function = EvtxPayload(Payload, "StartFunction"),
+        hostname       = Computer,
+        SourceFile
 }
 
 //=============================================================================
@@ -445,13 +676,14 @@ CarRegistry() {
 // the Splunk era. Run this first after ingesting: an object that should be
 // populated and is not means the mapping is wrong, not that the model is.
 //
-// driver, module and thread are listed with 0 deliberately — they have no
-// source (nothing dead-box produces driver/image loads or thread creation),
-// and showing them absent is the point. registry is now sourced from
-// Velociraptor (CarRegistry), so it counts real rows like the others.
+// All nine objects now have a source and count real rows: driver, module and
+// thread from Sysmon (events 6/7/8), the other six as before. An object that
+// should be populated and shows 0 means the mapping is wrong (or that source
+// was not ingested), not that the model is — e.g. driver/module/thread show 0
+// on a host with no Sysmon, which is expected, not a defect.
 //=============================================================================
 .create-or-alter function
-with (docstring = "Row counts per CAR object; the three unsourced objects show 0", folder = "CAR")
+with (docstring = "Row counts per CAR object (all nine are sourced)", folder = "CAR")
 CarCoverage() {
     union
         (CarFlow()        | summarize Rows = count() | extend Object = "flow"),
@@ -460,13 +692,9 @@ CarCoverage() {
         (CarService()     | summarize Rows = count() | extend Object = "service"),
         (CarFile()        | summarize Rows = count() | extend Object = "file"),
         (CarRegistry()    | summarize Rows = count() | extend Object = "registry"),
-        // long(0), not 0L: the emulator's parser rejects the typed-literal
-        // suffix form (`0L`) with a semantic error, though it is valid in the
-        // cloud grammar. long(0) is accepted by both and keeps these branches'
-        // Rows column a long, matching the count() branches above.
-        (print Object = "driver", Rows = long(0)),
-        (print Object = "module", Rows = long(0)),
-        (print Object = "thread", Rows = long(0))
+        (CarDriver()      | summarize Rows = count() | extend Object = "driver"),
+        (CarModule()      | summarize Rows = count() | extend Object = "module"),
+        (CarThread()      | summarize Rows = count() | extend Object = "thread")
     | project Object, Rows
     | order by Rows desc
 }

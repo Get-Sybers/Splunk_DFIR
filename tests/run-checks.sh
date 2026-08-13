@@ -313,18 +313,27 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     fi
     # A table column that no ingestion mapping covers can never be populated,
     # and an always-empty column is indistinguishable from "captured nothing".
-    # ZeekConn shipped a SourceFile column its 21-ordinal mapping could not
-    # reach, and CarFlow() projected it.
+    # ZeekConn once shipped a SourceFile column its 21-ordinal mapping could not
+    # reach, and CarFlow() projected it. Counts columns against mapping entries
+    # for both the CSV (Ordinal) and JSON (Path) tables — ZeekConn is JSON-mapped
+    # now, so a csv-only check would have gone blind to exactly this table.
+    # Explicit table:mapping pairs — the mapping name is not always <table>Mapping
+    # (the generic Zeek table's is ZeekJsonMapping), and "Zeek" is a prefix of
+    # "ZeekConn", so deriving one from the other would mis-pair them. The column
+    # regex allows digits ([A-Za-z_][A-Za-z0-9_]*) so PayloadData1..6 count.
     _phantom=""
-    for _tbl in ZeekConn L2tCsv; do
+    for _pair in "ZeekConn:ZeekConnMapping" "Zeek:ZeekJsonMapping" \
+                 "L2tCsv:L2tCsvMapping" "EvtxEcmdJson:EvtxEcmdJsonMapping" \
+                 "VelociraptorJson:VelociraptorJsonMapping"; do
+        _tbl=${_pair%%:*}; _map=${_pair##*:}
         _f=$(grep -l "create-merge table $_tbl " kusto/schema/*.kql 2>/dev/null | head -1)
         [[ -n "$_f" ]] || continue
-        _ncol=$(sed -n "/create-merge table $_tbl (/,/^)/p" "$_f" | grep -cE '^[[:space:]]+[A-Za-z_]+:')
-        _nmap=$(sed -n "/ingestion csv mapping \"${_tbl}Mapping\"/,/\]\`\`\`/p" "$_f" | grep -c '"Ordinal"')
+        _ncol=$(sed -n "/create-merge table $_tbl (/,/^)/p" "$_f" | grep -cE '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*:')
+        _nmap=$(sed -n "/ingestion .* mapping \"$_map\"/,/\]\`\`\`/p" "$_f" | grep -cE '"Ordinal"|"Path"')
         [[ "$_ncol" -eq "$_nmap" ]] || _phantom="$_phantom $_tbl($_ncol cols/$_nmap mapped)"
     done
     if [[ -z "$_phantom" ]]; then
-        pass "no CSV table has columns its mapping cannot populate"
+        pass "no table has columns its ingestion mapping cannot populate"
     else
         fail "column(s) no mapping can fill:$_phantom"
     fi
@@ -349,27 +358,27 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     fi
 
     # CAR coverage, PINNED. Swapping which CAR object has a source is
-    # structurally legal KQL, so it would regress silently. The contract: these
-    # six objects are sourced (driver/module/thread are declared unsourced in
-    # CarCoverage — nothing dead-box produces them; registry is sourced again
-    # via the Velociraptor/EZ-Tools path), each has its Car<Object>() function
-    # in 40-mitre.kql, and every pinned name exists in MITRE's own
-    # car_data_model.json — so the model file stays load-bearing, not
-    # decorative. Change the set deliberately, updating docs/Kusto-Port.md
-    # coverage with it.
+    # structurally legal KQL, so it would regress silently. The contract: all
+    # nine objects are sourced now — the six dead-box/agent objects plus
+    # driver/module/thread from Sysmon (events 6/7/8) — each has its Car<Object>()
+    # function in 40-mitre.kql, and every pinned name exists in MITRE's own
+    # car_data_model.json, so the model file stays load-bearing, not decorative.
+    # Change the set deliberately, updating docs/Kusto-Port.md coverage with it.
     _car_missing=$(python3 - <<'PY' 2>/dev/null
 import json
 objs = {o['name'][0] for o in json.load(open('car_data_model.json'))['objects']}
-pinned = {'flow', 'user_session', 'process', 'service', 'file', 'registry'}
+pinned = {'flow', 'user_session', 'process', 'service', 'file', 'registry',
+          'driver', 'module', 'thread'}
 print(' '.join(sorted(pinned - objs)))
 PY
 )
     if [[ -z "$_car_missing" ]]; then
-        pass "all six sourced CAR objects exist in MITRE's model"
+        pass "all nine sourced CAR objects exist in MITRE's model"
     else
         fail "pinned CAR object(s) not in car_data_model.json:$_car_missing"
     fi
-    for _fn in CarFlow CarUserSession CarProcess CarService CarFile CarRegistry CarCoverage; do
+    for _fn in CarFlow CarUserSession CarProcess CarService CarFile CarRegistry \
+               CarDriver CarModule CarThread CarCoverage; do
         if grep -q "^${_fn}()" kusto/schema/40-mitre.kql 2>/dev/null; then
             pass "40-mitre.kql defines ${_fn}()"
         else
@@ -378,47 +387,41 @@ PY
     done
 fi
 if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is missing"; else
-    # Zeek is mapped by ordinal. Without the header guard, a reordered conn.log
-    # silently loads destination addresses into the source columns.
-    # BEHAVIOURAL. Run the real script against fixtures and assert it refuses a
-    # conn.log whose columns are not in the order ZeekConnMapping assumes.
-    #
-    # Two earlier versions of this check were string-matching and both were
-    # wrong: the first grepped for a constant's name and passed after the guard
-    # was broken; the second used a fixed grep -A8 window and failed on a
-    # legitimate refactor. Mapping Zeek by ordinal against a reordered file puts
-    # destination addresses in the source column, so this is worth testing for
-    # real rather than spelling-checking.
+    # Zeek is JSON now (process-zeek-ALL.sh: LogAscii::use_json=T). BEHAVIOURAL:
+    # run the real loader against fixtures and assert the ROUTING — conn.json to
+    # the typed ZeekConn table, every other log to the generic Zeek table, and
+    # conn.json NOT double-loaded into the generic table. Routing is the contract
+    # the JSON cutover has to keep; a path mapping needs no column-order guard
+    # (that risk was TSV-ordinal only), so what is worth testing changed with it.
     _zt=$(mktemp -d)
     mkdir -p "$_zt/zeek/case"
-    _hdr_ok=$'#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto'
-    _hdr_bad=$'#fields\tts\tuid\tid.resp_h\tid.resp_p\tid.orig_h\tid.orig_p\tproto'
-    _row=$'2025-01-01T00:00:00+0000\tC1\t10.0.0.1\t1\t10.0.0.2\t2\ttcp'
-    _guard_ok=1
-    # Output is captured, not piped: `grep -q` exits on first match, which
-    # SIGPIPEs the script upstream, and `set -o pipefail` then reports the whole
-    # pipeline as failed. That made this check fail against a working guard.
+    _conn='{"ts":"2025-01-01T00:00:00Z","uid":"C1","id.orig_h":"10.0.0.1","id.orig_p":1,"id.resp_h":"10.0.0.2","id.resp_p":2,"proto":"tcp","conn_state":"SF"}'
+    _dns='{"ts":"2025-01-01T00:00:01Z","uid":"C2","id.orig_h":"10.0.0.1","id.resp_h":"10.0.0.2","query":"evil.example","qtype_name":"A"}'
+    _route_ok=1
     _zrun() { PROCESSED_DIR="$_zt" ./scripts/ingest-kusto.sh --only zeek --dry-run 2>&1; }
-    printf '%s\n%s\n' "$_hdr_ok" "$_row" > "$_zt/zeek/case/conn.log"
+    printf '%s\n' "$_conn" > "$_zt/zeek/case/conn.json"
+    printf '%s\n' "$_dns"  > "$_zt/zeek/case/dns.json"
     _out=$(_zrun)
-    [[ "$_out" == *"would ingest"* ]] || _guard_ok=0        # correct order must ingest
-    printf '%s\n%s\n' "$_hdr_bad" "$_row" > "$_zt/zeek/case/conn.log"
-    _out=$(_zrun)
-    [[ "$_out" == *"Refusing to ingest"* ]] || _guard_ok=0  # swapped order must refuse
-    printf '%s\n' "$_row" > "$_zt/zeek/case/conn.log"
-    _out=$(_zrun)
-    [[ "$_out" == *"Refusing to ingest"* ]] || _guard_ok=0  # no header must FAIL CLOSED
+    # Count the "would ingest" lines only — the "📄" label lines also name the
+    # target table, so matching those would double-count. conn.json ingests once
+    # into ZeekConn; the generic Zeek table gets exactly the one non-conn log.
+    _nconn=$(printf '%s\n' "$_out" | grep -c 'would ingest.*network\.ZeekConn')
+    _ngen=$(printf '%s\n'  "$_out" | grep -c 'would ingest.*network\.Zeek$')
+    [[ "$_nconn" -eq 1 ]] || _route_ok=0        # conn -> ZeekConn, once
+    [[ "$_ngen"  -eq 1 ]] || _route_ok=0        # dns  -> generic Zeek, not double-loaded
     rm -rf "$_zt"
-    if [[ $_guard_ok -eq 1 ]]; then
-        pass "Zeek column-order guard ingests correct order, refuses swapped and headerless"
+    if [[ $_route_ok -eq 1 ]]; then
+        pass "Zeek routing: conn.json -> ZeekConn, other logs -> generic Zeek, no double-load"
     else
-        fail "Zeek column-order guard does not behave correctly — see tests for the three cases"
+        fail "Zeek routing is wrong — see the conn/other JSON fixtures in this check"
     fi
-    # Zeek '#' header lines would otherwise be ingested as data rows.
-    if grep -q "grep -v '\^#'" scripts/ingest-kusto.sh 2>/dev/null; then
-        pass "ingest strips Zeek '#' header lines"
+    # The JSON cutover: ZeekConn must map by PATH (immune to Zeek field reorder),
+    # including Zeek's dotted id keys. A leftover ordinal mapping would silently
+    # reintroduce the column-shift risk the TSV path had.
+    if grep -q "\$\['id.orig_h'\]" kusto/schema/20-network.kql 2>/dev/null; then
+        pass "ZeekConn maps by JSON path, dotted id keys included"
     else
-        fail "ingest does not strip Zeek header lines — they would become rows"
+        fail "ZeekConn no longer maps the dotted id.* JSON paths — check ZeekConnMapping"
     fi
     # psteal writes a header row; without this it is ingested as data.
     if grep -q 'ignoreFirstRecord=true' scripts/ingest-kusto.sh 2>/dev/null; then
@@ -505,7 +508,7 @@ fi
 # after the real count passed 160. The harness prints the number; documents
 # point at the harness.
 _counts=$(grep -rnE '[0-9]{2,4} (static )?checks' --include='*.md' . 2>/dev/null \
-          | grep -v '^./.git/' || true)
+          | grep -vE '^\./(\.git|data_store)/' || true)
 if [[ -z "$_counts" ]]; then
     pass "no document hardcodes the check count"
 else
