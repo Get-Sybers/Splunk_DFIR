@@ -28,8 +28,16 @@ echo ""
 echo "$REPO_ROOT_DIR"
 echo ""
 
-# Ensure the host output directories exist and set permissions
-sudo mkdir -p "$HOST_OUTPUT_DIR"
+# psteal --output-format dynamic writes a "|"-free CSV whose COLUMN ORDER is
+# fixed by this --fields list. It is load-bearing: host.L2tCsv maps by ORDINAL,
+# so these 23 fields, in this order, must match kusto/schema/10-host.kql's
+# L2tCsvMapping exactly. Do not reorder without changing the schema in lockstep.
+L2T_FIELDS="date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone"
+
+# Ensure the host output directories exist and set permissions. The csv/ and
+# logs/ subdirs are where each image's timeline and its log land — ingest-kusto.sh
+# globs data_store/processed/log2timeline/csv/*.csv.
+sudo mkdir -p "$HOST_OUTPUT_DIR"/csv "$HOST_OUTPUT_DIR"/logs
 sudo mkdir -p "$INPUT_DIR" "$VM_INPUT_DIR"
 sudo chown -R "$(whoami):docker" "$HOST_OUTPUT_DIR" "$INPUT_DIR"
 sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR"
@@ -277,32 +285,34 @@ for INPUT_FILE in "${PROCESSED_FILES[@]}"; do
     echo "Processing: $REL"
     echo "Output name: $FILENAME"
 
-    # Each image gets its own output folder — data_store/processed/log2timeline/
-    # <image>/ — holding that image's JSON Lines timeline and its log, and
-    # nothing deeper. Create it host-side so it exists inside the mounted /output.
-    OUT_DIR="$HOST_OUTPUT_DIR/$FILENAME"
-    mkdir -p "$OUT_DIR"
+    # Each image's timeline is one CSV under csv/, its log under logs/ — the flat
+    # layout ingest-kusto.sh globs (log2timeline/csv/*.csv). The output base name
+    # is collision-free (get_clean_filename), so per-source images never clash.
+    CSV_OUT="$HOST_OUTPUT_DIR/csv/$FILENAME.csv"
+    LOG_OUT="$HOST_OUTPUT_DIR/logs/$FILENAME.log"
 
     # Mount the whole input tree so a multi-segment set or a VMDK descriptor's
     # sibling extents resolve, and point psteal at the file by its relative path.
+    # --output-format dynamic + --fields = the 23-column CSV host.L2tCsv expects.
     docker run --rm -v "$INPUT_DIR":/data:ro \
     -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
     psteal --source /data/"$REL" \
-    --output-format json_line \
+    --output-format dynamic \
+    --fields "$L2T_FIELDS" \
     --timezone UTC \
     --vss-stores all \
     --partitions all \
     --quiet \
-    -w /output/"$FILENAME"/l2t_output.json 2> "$OUT_DIR/l2t_output.log"
+    -w /output/csv/"$FILENAME".csv 2> "$LOG_OUT"
 
-    # Check if json output was created
-    if [[ ! -f "$OUT_DIR/l2t_output.json" ]]; then
-        echo "Error: psteal failed to produce json output for $FILENAME" | tee -a "$OUT_DIR/l2t_output.log"
+    # Check if csv output was created
+    if [[ ! -f "$CSV_OUT" ]]; then
+        echo "Error: psteal failed to produce csv output for $FILENAME" | tee -a "$LOG_OUT"
         continue
     fi
 
-    echo "✅ Saved json output to: $OUT_DIR/l2t_output.json" | tee -a "$OUT_DIR/l2t_output.log"
-    echo "📋 Saved logs to: $OUT_DIR/l2t_output.log" | tee -a "$OUT_DIR/l2t_output.log"
+    echo "✅ Saved csv output to: $CSV_OUT" | tee -a "$LOG_OUT"
+    echo "📋 Saved logs to: $LOG_OUT" | tee -a "$LOG_OUT"
     echo ""
 done
 
@@ -354,29 +364,30 @@ else
         echo "  Descriptor : $DESCRIPTOR_NAME"
         echo "  Output name: $FILENAME"
 
-        # Per-VM output folder, same layout as the image loop above.
-        OUT_DIR="$HOST_OUTPUT_DIR/$FILENAME"
-        mkdir -p "$OUT_DIR"
+        # Per-VM output: same flat csv/ + logs/ layout as the image loop above.
+        CSV_OUT="$HOST_OUTPUT_DIR/csv/$FILENAME.csv"
+        LOG_OUT="$HOST_OUTPUT_DIR/logs/$FILENAME.log"
 
         # Mount the VM folder as /data so descriptor's relative references to
         # -flat / -delta files resolve inside the container.
         docker run --rm -v "$VM_DIR":/data:ro \
         -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
         psteal --source /data/"$DESCRIPTOR_NAME" \
-        --output-format json_line \
+        --output-format dynamic \
+        --fields "$L2T_FIELDS" \
         --timezone UTC \
         --vss-stores all \
         --partitions all \
         --quiet \
-        -w /output/"$FILENAME"/l2t_output.json 2> "$OUT_DIR/l2t_output.log"
+        -w /output/csv/"$FILENAME".csv 2> "$LOG_OUT"
 
-        if [[ ! -f "$OUT_DIR/l2t_output.json" ]]; then
-            echo "Error: psteal failed to produce json output for VM $FILENAME" | tee -a "$OUT_DIR/l2t_output.log"
+        if [[ ! -f "$CSV_OUT" ]]; then
+            echo "Error: psteal failed to produce csv output for VM $FILENAME" | tee -a "$LOG_OUT"
             continue
         fi
 
-        echo "✅ Saved json output to: $OUT_DIR/l2t_output.json" | tee -a "$OUT_DIR/l2t_output.log"
-        echo "📋 Saved logs to: $OUT_DIR/l2t_output.log" | tee -a "$OUT_DIR/l2t_output.log"
+        echo "✅ Saved csv output to: $CSV_OUT" | tee -a "$LOG_OUT"
+        echo "📋 Saved logs to: $LOG_OUT" | tee -a "$LOG_OUT"
         echo ""
         VM_PROCESSED_COUNT=$((VM_PROCESSED_COUNT + 1))
     done
