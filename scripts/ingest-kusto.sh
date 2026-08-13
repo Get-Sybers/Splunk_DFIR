@@ -11,11 +11,13 @@
 # database rather than persisting one — see docs/Kusto-Port.md.
 #
 # ⚠️ ZEEK STAGING
-#    zeek-cut emits TSV with '#'-prefixed header lines (#separator, #fields,
-#    #types ...). Kusto's CSV/TSV ingestion has no property to skip them, so
-#    they would land as junk rows. Each Zeek log is therefore staged through a
-#    temp copy with those lines stripped. The '#fields' line is read first to
-#    verify the column order matches the ordinal mapping, then discarded.
+#    process-zeek-ALL.sh writes JSON Lines (Zeek's LogAscii::use_json=T), so
+#    conn.json is ingested as-is by JSON path mapping — no header stripping, no
+#    ordinal guard, immune to Zeek field reordering. Every OTHER log type is
+#    wrapped {LogType, SourceFile, Record} by zeek_generic_prepare and loaded
+#    into the generic network.Zeek table, so all ~69 log types land, not just
+#    conn — the same constant-injection pattern the Volatility/Velociraptor
+#    loaders use.
 
 set -o pipefail
 
@@ -214,58 +216,49 @@ if [[ $DRY_RUN -eq 0 ]]; then
 fi
 
 # ------------------------------------------------------------------------------
-# Zeek hooks — the one source whose files cannot be staged as-is.
+# Zeek generic hook — wrap every non-conn log with its constant columns.
 # ------------------------------------------------------------------------------
 
-# ZeekConnMapping maps by ORDINAL, so it is only correct if conn.log's columns
-# are in the order the mapping assumes. Zeek's field order is stable in
-# practice, but a different version or a site script can change it — and a
-# silent shift would load destination IPs into the source column. On forensic
-# data that is not a cosmetic bug, so the '#fields' header is checked before
-# anything is ingested.
-ZEEK_CONN_EXPECTED="ts uid id.orig_h id.orig_p id.resp_h id.resp_p proto"
-# FAILS CLOSED. Originally `|| return 0` — no header meant "verified", which is
-# backwards: a file with no #fields is exactly the case where the ordinal
-# mapping cannot be checked, so ingesting it is the risk the guard exists to
-# prevent.
-zeek_fields_ok() {
-    local log="$1" line actual
-    line=$(grep -m1 '^#fields' "$log" 2>/dev/null)
-    [[ -n "$line" ]] || return 1
-    # First 7 fields are the ones CAR depends on; the tail varies more.
-    actual=$(printf '%s' "$line" | cut -f2-8 | tr '\t' ' ')
-    [[ "$actual" == "$ZEEK_CONN_EXPECTED" ]]
-}
-
-# prepare hook: stdout is the HOST PATH to stage (captured by the driver), so
-# all diagnostics go to stderr. Return 1 to skip the file quietly, 2 to refuse
-# it (the driver counts that as a failure).
-zeek_prepare() {
-    local f="$1" staged
-    # Only conn.log is typed and ingested. Staging the other 68 log types read
-    # and rewrote every byte of them for nothing — on a large capture that is
-    # tens of GB of pointless I/O and transient disk.
-    [[ "$(basename "$f" .log)" == "conn" ]] || return 1
-    if ! zeek_fields_ok "$f"; then
-        {
-            echo "      ❌ $f"
-            echo "         conn.log column order does not match ZeekConnMapping."
-            echo "         Expected first 7: $ZEEK_CONN_EXPECTED"
-            if grep -q '^#fields' "$f" 2>/dev/null; then
-                echo "         Found:            $(grep -m1 '^#fields' "$f" | cut -f2-8 | tr '\t' ' ')"
-            else
-                echo "         Found:            (no #fields header — cannot verify)"
-            fi
-            echo "         Refusing to ingest — an ordinal mapping against a"
-            echo "         reordered file would put addresses in the wrong columns."
-        } >&2
-        return 2
-    fi
+# prepare hook: process-zeek-ALL.sh emits JSON Lines per log type. conn.json is
+# handled by the typed ZeekConn source and is SKIPPED here (rc 1) so it is not
+# double-loaded. Every other log is wrapped {LogType, SourceFile, Record} JSON
+# Lines — LogType from the filename (dns.json -> "dns"), SourceFile from the path
+# relative to processed/, Record the whole Zeek object — and staged as multijson
+# into the generic network.Zeek table. rc 1 skips conn.json, an empty file, or a
+# file that is not the JSON Lines Zeek emits.
+#
+# stdout is the HOST PATH to stage (captured by the driver); diagnostics, if any,
+# go to stderr.
+zeek_generic_prepare() {
+    local f="$1" staged logtype rel
+    logtype="$(basename "$f" .json)"
+    # conn is the typed table's job; skip it here so it lands once, in ZeekConn.
+    [[ "$logtype" == "conn" ]] && return 1
+    rel="${f#"$PROCESSED_DIR"/}"
     staged="$STAGING_DIR/$(staged_name "$f")"
     if [[ $DRY_RUN -eq 0 ]]; then
-        # Strip Zeek's '#' header lines. Kusto cannot skip them and they would
-        # otherwise be ingested as data rows.
-        grep -v '^#' "$f" > "$staged" 2>/dev/null || true
+        python3 - "$f" "$logtype" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
+import json, sys
+path, logtype, rel = sys.argv[1], sys.argv[2], sys.argv[3]
+raw = open(path, encoding="utf-8", errors="replace").read()
+recs = []
+try:
+    data = json.loads(raw)                       # a single array or object
+    recs = data if isinstance(data, list) else [data]
+except Exception:
+    for line in raw.splitlines():                # or JSON Lines (Zeek's default)
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            recs.append(json.loads(line))
+        except Exception:
+            continue
+if not recs:
+    sys.exit(1)
+for rec in recs:
+    sys.stdout.write(json.dumps({"LogType": logtype, "SourceFile": rel, "Record": rec}) + "\n")
+PY
         [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
     fi
     printf '%s\n' "$staged"
@@ -350,18 +343,6 @@ PY
     printf '%s\n' "$staged"
 }
 
-# post hook: runs after the source's ingest, with every found file as args.
-zeek_post() {
-    local non_conn
-    non_conn=$(printf '%s\n' "$@" | grep -cv '/conn\.log$' || true)
-    if [[ "${non_conn:-0}" -gt 0 ]]; then
-        echo "      ℹ️  ${non_conn} non-conn Zeek log(s) not ingested."
-        echo "         Only conn.log is typed — it is the one CAR needs."
-        echo "         The generic Zeek table exists; wiring the other 68"
-        echo "         log types is deliberately left undone."
-    fi
-}
-
 # ------------------------------------------------------------------------------
 # Source table — one row per source, one driver below. The three ingest paths
 # were near-identical blocks that had already drifted in small ways; a new
@@ -383,7 +364,8 @@ zeek_post() {
 SOURCES=(
     "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
-    "zeek|Zeek (-> network.ZeekConn / network.Zeek)|zeek|*.log|network|ZeekConn|ZeekConnMapping|tsv|0|zeek_prepare|zeek_post"
+    "zeek|Zeek conn (conn.json -> network.ZeekConn)|zeek|conn.json|network|ZeekConn|ZeekConnMapping|multijson|0|-|-"
+    "zeek|Zeek other logs (-> network.Zeek)|zeek|*.json|network|Zeek|ZeekJsonMapping|multijson|0|zeek_generic_prepare|-"
     "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.json|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
     "velociraptor|Velociraptor collectors (-> host.VelociraptorJson)|velociraptor|*.json|host|VelociraptorJson|VelociraptorJsonMapping|multijson|0|velociraptor_prepare|-"
 )
