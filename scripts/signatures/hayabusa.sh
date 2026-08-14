@@ -4,13 +4,13 @@
 #
 # Sigma-based Windows event-log detection -> native JSONL. EVTX come from:
 #   1. loose *.evtx under data_store/raw
-#   2. disk images (E01/raw/img) MOUNTED read-only and scanned IN PLACE — Hayabusa
-#      reads <mount>\Windows\System32\winevt\Logs\*.evtx directly, nothing copied.
-#      (Mount = ewfmount + ntfs-3g via FUSE; see lib/disk-image.sh. Needs /dev/fuse
-#      — blocked in this LXC until the host allows it; the lane skips disk images
-#      with a fix message until then. We never EXTRACT EVTX from images: if you
-#      can't mount, provide the .evtx files directly. Hayabusa's -J JSON input is
-#      not a substitute — it yields 0 detections on Plaso/evtx_dump JSON, #1324.)
+#   2. disk images (E01/raw/img). Preferred: MOUNT read-only and scan winevt\Logs
+#      in place (ewfmount + ntfs-3g via FUSE — needs /dev/fuse, blocked in this LXC
+#      until the host allows it, nothing copied). Otherwise: a TARGETED triage
+#      extraction pulls ONLY the event logs with image_export --artifact_filters
+#      WindowsEventLogs (dfVFS, E01-capable), scans, and discards. Only the event
+#      logs are ever pulled (Hayabusa needs real .evtx; its -J JSON input yields 0
+#      detections on Plaso/evtx_dump JSON vs 792 natively, #1324).
 #
 # Output: data_store/processed/signatures/hayabusa/timeline.jsonl (tool:"hayabusa").
 # Native Rust binary (no official image); --fetch downloads the pinned release.
@@ -89,12 +89,20 @@ if [[ "$HAYABUSA_DISK" == "1" && -d "$DISK_DIR" ]]; then
             fi
         done
     else
-        # No mounting here (needs host /dev/fuse). We do NOT extract EVTX from
-        # images — if the user wants those logs scanned, they mount-enable the host
-        # or drop the .evtx files in directly. (Hayabusa's -J JSON input can't stand
-        # in either: it produces 0 detections on Plaso/evtx_dump JSON vs 792 on the
-        # same events natively — Hayabusa issue #1324.)
-        sig_fuse_help
+        # No mount here (needs host /dev/fuse) — pull ONLY the event logs out with a
+        # triage-style artefact extraction (image_export --artifact_filters
+        # WindowsEventLogs), scan, and discard. Scoped to Hayabusa: nothing else is
+        # extracted, and the YARA lane never does this. (Hayabusa's -J JSON input
+        # can't substitute — 0 detections on Plaso/evtx_dump JSON vs 792 natively,
+        # #1324.)
+        echo "   ↪ no mount — extracting event logs (WindowsEventLogs), transient"
+        for img in "${images[@]}"; do
+            ex="$(mktemp -d)"
+            if sig_extract_artifacts "$img" "$ex" --artifact_filters WindowsEventLogs 2>/dev/null; then
+                echo "   ✓ ${img##*/} — $(find "$ex" -iname '*.evtx' | wc -l) EVTX"; run_hayabusa "$ex"
+            fi
+            rm -rf "$ex"
+        done
     fi
 fi
 

@@ -1,20 +1,26 @@
 #!/bin/bash
 # ==============================================================================
-# Shared disk-image access for the signature lanes — MOUNT ONLY, never extract.
+# Shared disk-image access for the signature lanes.
 #
-# Disk images are mounted READ-ONLY and tools scan them in place (nothing is
-# copied out of the image). Mounting uses FUSE (ewfmount for E01 -> raw, ntfs-3g
-# for the NTFS volume — no loop device needed), so it requires /dev/fuse.
-#
-# In this LXC /dev/fuse is blocked by the device cgroup (even a privileged Docker
-# container can't get it), so mounting only works once the HOST allows it:
+# PREFERRED: MOUNT the image read-only and scan it in place (nothing copied out).
+#   ewfmount (E01 -> raw, FUSE) + ntfs-3g (NTFS via FUSE, no loop). Needs /dev/fuse
+#   — blocked in this LXC by the device cgroup (even privileged Docker can't get
+#   it), so mounting only works once the HOST allows it:
 #     lxc.cgroup2.devices.allow: c 10:229 rwm
 #     lxc.mount.entry: /dev/fuse dev/fuse none bind,create=file
-# Until then the lanes skip disk images — the user can drop loose .evtx / files in
-# instead. We deliberately do NOT extract files out of images.
 #
-# Provides: sig_list_images, sig_have_fuse, sig_mount_image, sig_unmount_image.
+# TARGETED EXTRACTION (Hayabusa lane only): when mounting isn't possible, pull just
+#   the named artefact set out of the image with Plaso's image_export.py (dfVFS,
+#   userspace, E01-capable) — e.g. `--artifact_filters WindowsEventLogs` copies ONLY
+#   winevt\Logs\*.evtx, a triage-style collection, not the whole filesystem. This
+#   is deliberately scoped to Hayabusa (Hayabusa needs real .evtx and its -J JSON
+#   input doesn't detect); the YARA lane stays mount-only and never extracts.
+#
+# Provides: sig_list_images, sig_have_fuse, sig_mount_image, sig_unmount_image,
+#           sig_extract_artifacts.
 # ==============================================================================
+PLASO_IMAGE="${PLASO_IMAGE:-log2timeline/plaso}"
+SIG_VSS="${SIG_VSS:-0}"
 
 sig_list_images() {
     find "$1" -type f \( \
@@ -69,4 +75,18 @@ sig_unmount_image() {
         [[ "$kind" == "ewf" ]] && rm -rf "$path"
     done
     rm -f "$mnt.state"; rmdir "$mnt" 2>/dev/null || true
+}
+
+# Targeted, triage-style extraction of named artefacts from an image into <out>,
+# via the log2timeline container's image_export.py (dfVFS; handles E01). Extra args
+# pass through — e.g. `--artifact_filters WindowsEventLogs` or `-x evtx`. Returns 0
+# if anything was extracted. Used only by the Hayabusa lane (evtx); NOT for YARA.
+sig_extract_artifacts() {
+    local image out; image="$(realpath -m "$1")"; out="$(realpath -m "$2")"; shift 2
+    mkdir -p "$out"; chmod 777 "$out" 2>/dev/null || true
+    local vss=(--vss_stores none); [[ "$SIG_VSS" == "1" ]] && vss=(--vss_stores all)
+    docker run --rm -v "$(dirname "$image")":/data:ro -v "$out":/out \
+        "$PLASO_IMAGE" image_export.py -q --partitions all "${vss[@]}" \
+        "$@" -w /out "/data/$(basename "$image")" >/dev/null 2>&1
+    find "$out" -type f 2>/dev/null | grep -q .
 }
