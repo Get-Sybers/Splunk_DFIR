@@ -323,7 +323,7 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     # regex allows digits ([A-Za-z_][A-Za-z0-9_]*) so PayloadData1..6 count.
     _phantom=""
     for _pair in "ZeekConn:ZeekConnMapping" "Zeek:ZeekJsonMapping" \
-                 "L2tCsv:L2tCsvMapping" "EvtxEcmdJson:EvtxEcmdJsonMapping" \
+                 "L2tJson:L2tJsonMapping" "EvtxEcmdJson:EvtxEcmdJsonMapping" \
                  "VelociraptorJson:VelociraptorJsonMapping"; do
         _tbl=${_pair%%:*}; _map=${_pair##*:}
         _f=$(grep -l "create-merge table $_tbl " kusto/schema/*.kql 2>/dev/null | head -1)
