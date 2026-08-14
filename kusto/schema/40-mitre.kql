@@ -28,21 +28,25 @@
 //   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
+//                   + Volatility sessions (memory — user + logon time)
 //   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
 //                   artefacts (prefetch/amcache/appcompat), Linux cron,
 //                   + Volatility pslist(+cmdline) (memory — live process tree)
 //   CarService      EvtxECmd 7045/4697 (Windows only — see the function note)
 //   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
+//                   + Volatility filescan (memory-resident files)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
 //   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
 //   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
 //   CarThread       Sysmon 8 (CreateRemoteThread)
 //
-//   MEMORY fills the CAR data model where dead-box cannot: Volatility 3 plugins
-//   (memory.VolatilityJson) source the LIVE process tree (pslist -> process),
-//   loaded modules (dlllist -> module), kernel drivers (modules -> driver) and
-//   connections (netscan/netstat -> flow). module/driver had only Sysmon before.
+//   MEMORY fills SIX CAR objects where dead-box cannot: Volatility 3 plugins
+//   (memory.VolatilityJson) source the live process tree (dfir_processes ->
+//   process, with full path/parent/cmdline/DLLs), loaded modules (dlllist ->
+//   module), kernel drivers (modules -> driver), connections (netscan/netstat ->
+//   flow), logon sessions (sessions -> user_session, user + logon time) and
+//   memory-resident files (filescan -> file). module/driver had only Sysmon before.
 //
 //   registry lost its only source when the KAPE path was removed; the
 //   replacement — Velociraptor offline collectors running the EZ Tools (RECmd /
@@ -269,7 +273,29 @@ CarUserSession() {
         | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
                   src_ip, src_port, src_hostname, EventId, LogonType, platform,
                   SourceFile = SourceImage;
-    union FromEvtx, FromUtmp, FromSsh
+    // Memory: Volatility windows.sessions — the logon sessions live in the image
+    // with the user, session id, session type and the session Create Time (the
+    // logon time). action "login": the session is present/active in memory.
+    // System sessions (no user) are kept honestly rather than dropped.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.sessions"
+        | project
+            Timestamp    = todatetime(Record.["Create Time"]),
+            action       = "login",
+            user         = tostring(Record.["User Name"]),
+            sid          = "",
+            logon_id     = tostring(Record.["Session ID"]),
+            hostname     = "",
+            fqdn         = "",
+            src_ip       = "",
+            src_port     = int(null),
+            src_hostname = "",
+            EventId      = int(null),
+            LogonType    = int(null),
+            platform     = "windows",
+            SourceFile;
+    union FromEvtx, FromUtmp, FromSsh, FromMemory
 }
 
 //=============================================================================
@@ -534,7 +560,27 @@ CarFile() {
             creation_time = iff(EventId == 11, TimeCreated, datetime(null)),
             Origin        = strcat("sysmon:", tostring(EventId)),
             SourceFile;
-    union FromPlaso, FromSysmon
+    // Memory: Volatility windows.filescan — FILE_OBJECTs resident in the image,
+    // i.e. files that were open/mapped/cached at capture (including files deleted
+    // from disk but still in RAM). action "open" (a file object was present); no
+    // MACB timestamps or process context in a raw filescan, so those stay null —
+    // weaker than the Plaso fs:* MACB events, but it surfaces memory-only files.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.filescan"
+        | extend fp = tostring(Record.Name)
+        | where isnotempty(fp)
+        | project
+            Timestamp     = datetime(null),
+            action        = "open",
+            file_name     = replace_regex(fp, @"^.*[\\/]", ""),
+            file_path     = fp,
+            hostname      = "",
+            user          = "",
+            creation_time = datetime(null),
+            Origin        = "volatility:filescan",
+            SourceFile;
+    union FromPlaso, FromSysmon, FromMemory
 }
 
 //=============================================================================
