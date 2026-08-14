@@ -26,7 +26,8 @@
 // COVERAGE — 9 of 9 objects
 //
 //   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
-//                   + SRUM Network Usage (SrumECmd — app+user network bytes)
+//                   + SRUM Network Usage (SrumECmd — app+user attribution; bytes
+//                     are not a CAR flow field, so they stay in raw VelociraptorJson)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
 //                   + Volatility sessions (memory — user + logon time)
@@ -125,10 +126,10 @@ CarFlow() {
             end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
             packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
             hostname      = ""
-        | extend image_path = "", user = "", bytes_sent = long(null), bytes_recv = long(null)
+        | extend image_path = "", user = ""
         | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
                   protocol, start_time, end_time, packet_count, hostname, Uid,
-                  image_path, user, bytes_sent, bytes_recv;
+                  image_path, user;
     // Sysmon 3 (NetworkConnect) records a single connection AS IT IS MADE, with
     // no duration, byte or packet counts — so end_time/packet_count are null,
     // unlike Zeek conn. action is "start": the event marks initiation, not
@@ -153,9 +154,7 @@ CarFlow() {
             Uid          = "",
             // Sysmon 3 names the initiating process, so image_path/user are real.
             image_path   = EvtxPayload(Payload, "Image"),
-            user         = EvtxPayload(Payload, "User"),
-            bytes_sent   = long(null),
-            bytes_recv   = long(null);
+            user         = EvtxPayload(Payload, "User");
     // Memory: Volatility windows.netscan / netstat — the connections live in the
     // memory image (local/foreign addr:port, owning pid, state, creation time).
     // action "message": a connection observed in memory, not a start/end event.
@@ -178,19 +177,19 @@ CarFlow() {
             hostname     = "",
             Uid          = "",
             image_path   = tostring(Record.Owner),  // netscan names the owning process
-            user         = "",
-            bytes_sent   = long(null),
-            bytes_recv   = long(null);
+            user         = "";
     // SRUM (System Resource Usage Monitor) — SRUDB.dat, parsed on disk by the EZ
     // tool SrumECmd and delivered through Velociraptor (host.VelociraptorJson).
-    // The Network Usage table attributes network BYTES to an application and user
-    // over time — no 5-tuple (SRUM aggregates per app/interface/hour), so
-    // ip/port/protocol stay null; what it uniquely adds is bytes_sent/bytes_recv
-    // per image_path per user, historical network activity no live capture holds.
-    // action "message": a usage sample, not a connection start/end. Rows are the
-    // ones carrying byte counters (the App Resource Usage table has none and goes
-    // to CarProcess instead). Field names cover SrumECmd (ExeInfo/UserName/Sid/
-    // BytesSent/BytesReceived) and Velociraptor's native SRUM columns.
+    // The Network Usage table attributes network activity to an application and
+    // user over time. It has NO 5-tuple (SRUM aggregates per app/interface), so
+    // ip/port/protocol stay null and action is "message" — the existence of the
+    // activity is observed, not a connection start/end. image_path (ExeInfo) and
+    // user are canonical CAR flow fields; that app+user attribution is all CAR
+    // flow can hold. SRUM's distinctive datum — bytes transferred per app — is
+    // NOT a CAR flow field (flow has no byte counter), so it is deliberately left
+    // in the raw host.VelociraptorJson (Record.BytesSent/BytesReceived) rather
+    // than invented into this object. Rows are the Network Usage table, told from
+    // App Resource Usage (-> CarProcess) by the presence of byte counters.
     let FromSrum =
         database("host").VelociraptorJson
         | where Artefact matches regex @"(?i)srum"
@@ -209,12 +208,10 @@ CarFlow() {
             hostname     = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
             Uid          = "",
             image_path   = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-            user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
-            bytes_sent   = tolong(coalesce(Record.BytesSent, Record.["Bytes Sent"], Record.SentBytes)),
-            bytes_recv   = tolong(coalesce(Record.BytesReceived, Record.["Bytes Received"], Record.ReceivedBytes))
+            user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId))
         | project Timestamp, action, src_ip, src_port, dest_ip, dest_port, protocol,
                   start_time, end_time, packet_count, hostname, Uid,
-                  image_path, user, bytes_sent, bytes_recv;
+                  image_path, user;
     union FromZeek, FromSysmon, FromMemory, FromSrum
 }
 
