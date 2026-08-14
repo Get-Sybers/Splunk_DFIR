@@ -565,389 +565,347 @@ CarProcess() {
 }
 
 //=============================================================================
-// CarService — service installation
+// service — per-artefact (car_data_model.json: command_line, exe, fqdn, hostname,
+// image_path, name, pid, ppid, user). Note: the service binary is image_path
+// (NOT module_path — that is a module/driver-only field).
 //=============================================================================
-// Two sources, unioned — cross-platform:
-//   Windows  EvtxECmd 7045 (service installed) / 4697 (service installed, Security)
-//   Linux    Plaso Audit-Log rows for systemd SERVICE_START/SERVICE_STOP. The
-//            unit name and the systemd exe are parsed out of the audit message.
+
+// Windows 7045 (System) / 4697 (Security) — service installed. ServiceName->name,
+// ImagePath->image_path, service account->user.
 .create-or-alter function
-with (docstring = "MITRE CAR 'service' object (Windows 7045/4697 + Linux systemd)", folder = "CAR")
-CarService() {
-    let FromEvtx =
-        database("host").EvtxEcmdJson
-        | where EventId in (7045, 4697)
-        | extend
-            name        = EvtxPayload(Payload, "ServiceName"),
-            module_path = EvtxPayload(Payload, "ImagePath"),
-            user        = UserName,
-            hostname    = Computer,
-            action      = "create",
-            platform    = "windows"
-        | project Timestamp = TimeCreated, action, name, module_path, user,
-                  hostname, EventId, platform, SourceFile;
-    // Memory: Volatility windows.svcscan — every service registered in the image
-    // with its binary path (Binary, or the hosting Dll for svchost services),
-    // richer than a single 7045 install event. No install time in svcscan, so
-    // Timestamp is null. Linux still has no dead-box "service installed" event
-    // equivalent (see the note in git history).
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.svcscan"
-        | project
-            Timestamp   = datetime(null),
-            action      = "create",
-            name        = tostring(Record.Name),
-            module_path = iff(isnotempty(tostring(Record.Binary)), tostring(Record.Binary), tostring(Record.Dll)),
-            user        = "",
-            hostname    = "",
-            EventId     = int(null),
-            platform    = "windows",
-            SourceFile;
-    union FromEvtx, FromMemory
+with (docstring = "CAR 'service' from Windows 7045/4697 (native fields + CAR fields)", folder = "CAR/service")
+CarService_Evtx() {
+    database("host").EvtxEcmdJson
+    | where EventId in (7045, 4697)
+    | extend
+        Timestamp  = TimeCreated,
+        action     = "create",
+        name       = EvtxPayload(Payload, "ServiceName"),
+        image_path = EvtxPayload(Payload, "ImagePath"),
+        exe        = EvtxPayload(Payload, "ImagePath"),
+        user       = iff(isnotempty(EvtxPayload(Payload, "AccountName")), EvtxPayload(Payload, "AccountName"), UserName),
+        hostname   = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn       = iff(Computer contains ".", Computer, "")
 }
 
-//=============================================================================
-// CarFile — filesystem activity
-//
-// Plaso's timestamp_desc says WHICH timestamp a row represents, which is what
-// makes the CAR action derivable at all.
-//=============================================================================
+// Volatility windows.svcscan (memory) — every registered service with its binary
+// (Binary, or hosting Dll for svchost) and owning PID. State/Start/Type stay native.
 .create-or-alter function
-with (docstring = "MITRE CAR 'file' object", folder = "CAR")
-CarFile() {
-    let FromPlaso =
-        union database("host").L2tFilestat, database("host").L2tMft, database("host").L2tUsnjrnl
-        | extend
-            td = tostring(Record.timestamp_desc),
-            fn = tostring(Record.filename),
-            dn = tostring(Record.display_name)
-        | extend
-            // MACB -> CAR action from Plaso's per-event timestamp_desc. modify
-            // matches "modification" broadly: a real NTFS image emits Content,
-            // Metadata and File Last modification descriptions, all of which are
-            // file modifications for CAR. create is tested first, so any overlap
-            // resolves in its favour.
-            action = case(td matches regex @"(?i)creation|crtime|birth", "create",
-                          td matches regex @"(?i)modification|mtime", "modify",
-                          td matches regex @"(?i)last access|atime", "read",
-                          td matches regex @"(?i)deletion|deleted", "delete",
-                          ""),
-            // Plaso gives a clean `filename` on fs events; fall back to stripping
-            // the "NTFS:"/"TSK:" volume prefix off display_name when it is absent.
-            file_path = iff(isnotempty(fn), fn, replace_regex(dn, @"^[A-Z0-9]+:", "")),
-            hostname  = tostring(Record.image_hostname),
-            user      = tostring(Record.username)
-        | extend
-            file_name     = replace_regex(file_path, @"^.*[\\/]", ""),
-            creation_time = iff(action == "create", Timestamp, datetime(null))
-        | project Timestamp, action, file_name, file_path, hostname, user,
-                  creation_time, Origin = "plaso", SourceFile = SourceImage;
-    // Sysmon 11 (FileCreate) / 23 (FileDelete) — endpoint file activity with the
-    // creating image and user, which the Plaso filesystem view (a MACB timeline,
-    // no process context) cannot supply. TargetFilename is the path; file_name is
-    // its leaf. 26 (FileDeleteDetected) is deliberately not included: it is the
-    // logged-only variant Sysmon emits when archival is off, and mixing it in
-    // would double-count deletions on hosts that archive.
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId in (11, 23)
-        | extend
-            target   = EvtxPayload(Payload, "TargetFilename"),
-            sys_user = EvtxPayload(Payload, "User")
-        | project
-            Timestamp     = TimeCreated,
-            action        = iff(EventId == 11, "create", "delete"),
-            file_name     = replace_regex(target, @"^.*[\\/]", ""),
-            file_path     = target,
-            hostname      = Computer,
-            user          = sys_user,
-            creation_time = iff(EventId == 11, TimeCreated, datetime(null)),
-            Origin        = strcat("sysmon:", tostring(EventId)),
-            SourceFile;
-    // Memory: Volatility windows.filescan — FILE_OBJECTs resident in the image,
-    // i.e. files that were open/mapped/cached at capture (including files deleted
-    // from disk but still in RAM). action "open" (a file object was present); no
-    // MACB timestamps or process context in a raw filescan, so those stay null —
-    // weaker than the Plaso fs:* MACB events, but it surfaces memory-only files.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.filescan"
-        | extend fp = tostring(Record.Name)
-        | where isnotempty(fp)
-        | project
-            Timestamp     = datetime(null),
-            action        = "open",
-            file_name     = replace_regex(fp, @"^.*[\\/]", ""),
-            file_path     = fp,
-            hostname      = "",
-            user          = "",
-            creation_time = datetime(null),
-            Origin        = "volatility:filescan",
-            SourceFile;
-    union FromPlaso, FromSysmon, FromMemory
+with (docstring = "CAR 'service' from Volatility svcscan (memory) (native fields + CAR fields)", folder = "CAR/service")
+CarService_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.svcscan"
+    | extend
+        action     = "create",
+        name       = tostring(Record.Name),
+        image_path = iff(isnotempty(tostring(Record.Binary)), tostring(Record.Binary), tostring(Record.Dll)),
+        pid        = tolong(Record.PID)
 }
 
-//=============================================================================
-// CarRegistry — registry key/value activity
-//
-// Source: Velociraptor offline collectors running the EZ Tools (RECmd /
-// Registry Explorer), landed in host.VelociraptorJson. RECmd's per-value output
-// carries KeyPath / ValueName / ValueData / ValueType / HivePath and the key's
-// LastWriteTimestamp — the same Zimmerman field names the retired KapeJson
-// mapping used, so this is a projection, not a translation.
-//
-// The Artefact filter is broad (recmd|registry|regexplorer) so any of the
-// EZ-tool registry artefact names a collector might emit are picked up. action
-// is "modify": a registry hive records a key's LAST write, so a present row
-// means the key was created or changed — dead-box cannot distinguish the two,
-// and defaulting to the weaker claim is the honest choice.
-//
-// hostname is derived from the per-host collection directory in SourceFile
-// (velociraptor/<host>/...), since RECmd output itself carries no hostname.
-//=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'registry' object (Velociraptor RECmd + Sysmon 12/13/14 + Volatility dfir_registry)", folder = "CAR")
-CarRegistry() {
-    let FromVelociraptor =
-        database("host").VelociraptorJson
-        | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
-        | extend
-            Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
-            action     = "modify",
-            key        = tostring(coalesce(Record.KeyPath, Record.Key)),
-            value      = tostring(coalesce(Record.ValueName, Record.Value)),
-            data       = tostring(coalesce(Record.ValueData, Record.Data)),
-            type       = tostring(coalesce(Record.ValueType, Record.Type)),
-            hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
-            image_path = tostring(Record.ImagePath),
-            pid        = tolong(Record.PID),
-            user       = tostring(Record.User),
-            hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-            fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
-        | project Timestamp, action, key, value, data, type, hive, image_path, pid,
-                  user, hostname, fqdn, Artefact, SourceFile;
-    // Sysmon 12 (key create/delete), 13 (value set), 14 (key/value rename).
-    // Unlike the RECmd hive snapshot — which shows a key's LAST state — Sysmon
-    // records the CHANGE as it happens, so action comes from EventType rather
-    // than defaulting to "modify". TargetObject is the full path; for a value
-    // set (13) its leaf is the value name and Details is the data written. pid
-    // is decimal (Sysmon), so tolong() directly. type/hive/fqdn have no Sysmon
-    // equivalent and stay empty rather than being faked.
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId in (12, 13, 14)
-        | extend
-            etype  = EvtxPayload(Payload, "EventType"),
-            target = EvtxPayload(Payload, "TargetObject"),
-            det    = EvtxPayload(Payload, "Details")
-        | project
-            Timestamp  = TimeCreated,
-            // contains (substring), NOT has: `has` matches whole terms, and
-            // Sysmon's EventType is a single camelCase token ("CreateKey"), so
-            // `has "Create"` is false and every action fell through to "modify".
-            action     = case(etype contains "Delete", "delete",
-                              etype contains "Create", "create",
-                              etype contains "Set",    "modify",
-                              etype contains "Rename", "rename",
-                              "modify"),
-            key        = target,
-            value      = iff(EventId == 13, replace_regex(target, @"^.*\\", ""), ""),
-            data       = det,
-            type       = "",
-            hive       = "",
-            image_path = EvtxPayload(Payload, "Image"),
-            pid        = tolong(EvtxPayload(Payload, "ProcessId")),
-            user       = EvtxPayload(Payload, "User"),
-            hostname   = Computer,
-            fqdn       = "",
-            Artefact   = strcat("sysmon:", tostring(EventId)),
-            SourceFile;
-    // MEMORY — dfir_registry (Volatility): the SAME RECmd-style target-key list,
-    // read out of the registry hives resident in RAM. One row per value, so this
-    // is the last CAR object memory can source. Like the RECmd hive snapshot it
-    // shows the key's LAST write, so action is "modify" (create vs modify is not
-    // distinguishable from a snapshot). user is recovered from the owning hive
-    // path for per-user hives (…\<user>\NTUSER.DAT / UsrClass.dat) — a CAR field
-    // no disk-registry snapshot fills either. No pid/host in a hive, so null.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "dfir_registry.DfirRegistry"
-        | extend
-            Timestamp  = todatetime(Record.LastWrite),
-            action     = "modify",
-            key        = tostring(Record.Key),
-            value      = tostring(Record.ValueName),
-            data       = tostring(Record.ValueData),
-            type       = tostring(Record.ValueType),
-            hive       = tostring(Record.Hive),
-            image_path = "",
-            pid        = long(null),
-            user       = extract(@"(?i)(?:Documents and Settings|Users)\\([^\\]+)\\", 1, tostring(Record.Hive)),
-            hostname   = "",
-            fqdn       = "",
-            Artefact   = "volatility:dfir_registry"
-        | project Timestamp, action, key, value, data, type, hive, image_path, pid,
-                  user, hostname, fqdn, Artefact, SourceFile;
-    union FromVelociraptor, FromSysmon, FromMemory
-}
+with (docstring = "MITRE CAR 'service' object — roll-up of the per-artefact views", folder = "CAR")
+CarService() { union isfuzzy=true CarService_Evtx, CarService_Memory }
 
 //=============================================================================
-// CarModule — image (DLL) loaded into a process.
-//
-// Source: Sysmon 7 (Image loaded). ImageLoaded is the module; Image is the
-// process that loaded it. Sysmon's Hashes is a single "SHA1=...,MD5=..." string;
-// it is kept whole rather than split into guessed columns. Signed/Signature/
-// SignatureStatus are present only when the operator shipped the Sysmon config
-// that computes them, so they stay null otherwise. High volume by nature — this
-// is per-DLL-load — which is exactly why nothing dead-box can approximate it.
+// file — per-artefact (car_data_model.json: company, creation_time, file_name,
+// file_path, fqdn, hostname, image_path, md5_hash, pid, ppid, previous_creation_time,
+// sha1_hash, sha256_hash, signer, user). actions: timestomp/create/delete/modify/
+// read/write.
 //=============================================================================
+
+// Plaso filesystem (filestat/MFT/UsnJrnl) — MACB timeline. action from Plaso's
+// per-event timestamp_desc; create is tested first so overlaps resolve to it.
 .create-or-alter function
-with (docstring = "MITRE CAR 'module' object (Sysmon 7 image load)", folder = "CAR")
-CarModule() {
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId == 7
-        | extend
-            module_path     = EvtxPayload(Payload, "ImageLoaded"),
-            image_path      = EvtxPayload(Payload, "Image"),
-            pid             = tolong(EvtxPayload(Payload, "ProcessId")),
-            hashes          = EvtxPayload(Payload, "Hashes"),
-            signed          = EvtxPayload(Payload, "Signed"),
-            signature       = EvtxPayload(Payload, "Signature"),
-            signature_status= EvtxPayload(Payload, "SignatureStatus")
-        | project
-            Timestamp   = TimeCreated,
-            action      = "load",
-            module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
-            module_path, image_path, pid, hashes, signed, signature,
-            signature_status,
-            hostname    = Computer,
-            SourceFile;
-    // Memory: Volatility windows.dlllist — every module mapped into each live
-    // process (Path), which process it is loaded in (Process), and the load time.
-    // The live-memory view dead-box cannot give. Signature/hash are Sysmon-only,
-    // so they stay empty rather than faked.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.dlllist"
-        | project
-            Timestamp        = todatetime(Record.LoadTime),
-            action           = "load",
-            module_name      = tostring(Record.Name),
-            module_path      = tostring(Record.Path),
-            image_path       = tostring(Record.Process),
-            pid              = tolong(Record.PID),
-            hashes           = "",
-            signed           = "",
-            signature        = "",
-            signature_status = "",
-            hostname         = "",
-            SourceFile;
-    union FromSysmon, FromMemory
+with (docstring = "CAR 'file' from Plaso filesystem (native fields + CAR fields)", folder = "CAR/file")
+CarFile_Plaso() {
+    union database("host").L2tFilestat, database("host").L2tMft, database("host").L2tUsnjrnl
+    | extend _td = tostring(Record.timestamp_desc), _fn = tostring(Record.filename), _dn = tostring(Record.display_name)
+    | extend
+        action    = case(_td matches regex @"(?i)creation|crtime|birth", "create",
+                         _td matches regex @"(?i)modification|mtime", "modify",
+                         _td matches regex @"(?i)last access|atime", "read",
+                         _td matches regex @"(?i)deletion|deleted", "delete", ""),
+        file_path = iff(isnotempty(_fn), _fn, replace_regex(_dn, @"^[A-Z0-9]+:", "")),
+        hostname  = tostring(Record.image_hostname),
+        user      = tostring(Record.username)
+    | extend
+        file_name     = replace_regex(file_path, @"^.*[\\/]", ""),
+        creation_time = iff(action == "create", Timestamp, datetime(null))
+    | project-away _td, _fn, _dn
 }
 
-//=============================================================================
-// CarDriver — kernel driver loaded.
-//
-// Source: Sysmon 6 (Driver loaded). A driver loads into the kernel, not a
-// user process, so there is no pid or loading image — ImageLoaded is the driver
-// binary itself. The signature fields are the point of this event: an unsigned
-// or self-signed driver load is a classic rootkit / BYOVD tell, so Signed /
-// Signature / SignatureStatus are carried even though they are often null on
-// hosts whose Sysmon config does not compute them.
-//=============================================================================
+// Sysmon 11 (FileCreate) / 23 (FileDelete) — file activity with the creating
+// process image and user. TargetFilename->file_path, Image->image_path, ProcessId->pid.
 .create-or-alter function
-with (docstring = "MITRE CAR 'driver' object (Sysmon 6 driver load)", folder = "CAR")
-CarDriver() {
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId == 6
-        | extend
-            module_path      = EvtxPayload(Payload, "ImageLoaded"),
-            hashes           = EvtxPayload(Payload, "Hashes"),
-            signed           = EvtxPayload(Payload, "Signed"),
-            signature        = EvtxPayload(Payload, "Signature"),
-            signature_status = EvtxPayload(Payload, "SignatureStatus")
-        | project
-            Timestamp   = TimeCreated,
-            action      = "load",
-            module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
-            module_path, hashes, signed, signature, signature_status,
-            hostname    = Computer,
-            SourceFile;
-    // Memory: Volatility windows.modules — the loaded kernel modules/drivers from
-    // the live driver list, which dead-box cannot enumerate. Signature/hash are
-    // Sysmon-only, left empty. No load time in the module list, so Timestamp null.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.modules"
-        | project
-            Timestamp        = datetime(null),
-            action           = "load",
-            module_name      = tostring(Record.Name),
-            module_path      = tostring(Record.Path),
-            hashes           = "",
-            signed           = "",
-            signature        = "",
-            signature_status = "",
-            hostname         = "",
-            SourceFile;
-    union FromSysmon, FromMemory
+with (docstring = "CAR 'file' from Sysmon 11/23 (native fields + CAR fields)", folder = "CAR/file")
+CarFile_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId in (11, 23)
+    | extend _target = EvtxPayload(Payload, "TargetFilename")
+    | extend
+        Timestamp     = TimeCreated,
+        action        = iff(EventId == 11, "create", "delete"),
+        file_name     = replace_regex(_target, @"^.*[\\/]", ""),
+        file_path     = _target,
+        image_path    = EvtxPayload(Payload, "Image"),
+        pid           = tolong(EvtxPayload(Payload, "ProcessId")),
+        user          = EvtxPayload(Payload, "User"),
+        hostname      = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn          = iff(Computer contains ".", Computer, ""),
+        creation_time = iff(EventId == 11, TimeCreated, datetime(null))
+    | project-away _target
 }
 
-//=============================================================================
-// CarThread — remote thread created in another process.
-//
-// Source: Sysmon 8 (CreateRemoteThread). This is the cross-process injection
-// primitive: a Source process creating a thread inside a Target process.
-// StartAddress / StartModule / StartFunction describe where the new thread
-// begins — a start address with no backing module is the shellcode-injection
-// signature. Both PIDs are decimal (Sysmon), so tolong() directly.
-//=============================================================================
+// Volatility windows.filescan (memory) — FILE_OBJECTs resident at capture (incl.
+// files deleted from disk but still in RAM). No MACB/process context and no
+// canonical action fits "was resident", so action is empty — the row is a file
+// OBSERVATION (path/name). Name stays native.
 .create-or-alter function
-with (docstring = "MITRE CAR 'thread' object (Sysmon 8 CreateRemoteThread)", folder = "CAR")
-CarThread() {
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId == 8
-        | project
-            Timestamp      = TimeCreated,
-            action         = "create",
-            src_pid        = tolong(EvtxPayload(Payload, "SourceProcessId")),
-            src_image      = EvtxPayload(Payload, "SourceImage"),
-            target_pid     = tolong(EvtxPayload(Payload, "TargetProcessId")),
-            target_image   = EvtxPayload(Payload, "TargetImage"),
-            new_tid        = tolong(EvtxPayload(Payload, "NewThreadId")),
-            start_address  = EvtxPayload(Payload, "StartAddress"),
-            start_module   = EvtxPayload(Payload, "StartModule"),
-            start_function = EvtxPayload(Payload, "StartFunction"),
-            hostname       = Computer,
-            SourceFile;
-    // Memory: Volatility windows.thrdscan — every thread in the image with its
-    // owning process (PID), TID, create time and start address. Unlike Sysmon 8
-    // (which records the injector -> target relationship), thrdscan sees the
-    // thread's OWNER, so src_* is empty; a Win32 start address with no backing
-    // module (Win32StartPath) is the shellcode/injection tell. Threads with an
-    // ExitTime are already dead — still evidence they ran.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.thrdscan"
-        | project
-            Timestamp      = todatetime(Record.CreateTime),
-            action         = "create",
-            src_pid        = long(null),
-            src_image      = "",
-            target_pid     = tolong(Record.PID),
-            target_image   = "",
-            new_tid        = tolong(Record.TID),
-            start_address  = tostring(Record.Win32StartAddress),
-            start_module   = tostring(Record.Win32StartPath),
-            start_function = "",
-            hostname       = "",
-            SourceFile;
-    union FromSysmon, FromMemory
+with (docstring = "CAR 'file' from Volatility filescan (memory) (native fields + CAR fields)", folder = "CAR/file")
+CarFile_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.filescan"
+    | extend _fp = tostring(Record.Name)
+    | where isnotempty(_fp)
+    | extend
+        action    = "",
+        file_path = _fp,
+        file_name = replace_regex(_fp, @"^.*[\\/]", "")
+    | project-away _fp
 }
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'file' object — roll-up of the per-artefact views", folder = "CAR")
+CarFile() { union isfuzzy=true CarFile_Plaso, CarFile_Sysmon, CarFile_Memory }
+
+//=============================================================================
+// registry — per-artefact (car_data_model.json: data, fqdn, hive, hostname,
+// image_path, key, pid, type, user, value). actions: add/edit/remove.
+//=============================================================================
+
+// Velociraptor RECmd (disk hive snapshot). A hive records a key's LAST write, so
+// action is "edit" (add vs edit indistinguishable from a snapshot). hostname from
+// the per-host collection dir.
+.create-or-alter function
+with (docstring = "CAR 'registry' from Velociraptor RECmd (native fields + CAR fields)", folder = "CAR/registry")
+CarRegistry_Recmd() {
+    database("host").VelociraptorJson
+    | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
+    | extend
+        Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
+        action     = "edit",
+        key        = tostring(coalesce(Record.KeyPath, Record.Key)),
+        value      = tostring(coalesce(Record.ValueName, Record.Value)),
+        data       = tostring(coalesce(Record.ValueData, Record.Data)),
+        type       = tostring(coalesce(Record.ValueType, Record.Type)),
+        hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
+        image_path = tostring(Record.ImagePath),
+        pid        = tolong(Record.PID),
+        user       = tostring(Record.User),
+        hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+        fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+}
+
+// Sysmon 12 (key add/delete), 13 (value set), 14 (rename) — the CHANGE as it
+// happens, so action is canonical from EventType (add/remove/edit).
+.create-or-alter function
+with (docstring = "CAR 'registry' from Sysmon 12/13/14 (native fields + CAR fields)", folder = "CAR/registry")
+CarRegistry_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId in (12, 13, 14)
+    | extend _etype = EvtxPayload(Payload, "EventType"), _target = EvtxPayload(Payload, "TargetObject")
+    | extend
+        Timestamp  = TimeCreated,
+        action     = case(_etype contains "Delete", "remove", _etype contains "Create", "add",
+                         _etype contains "Set", "edit", _etype contains "Rename", "edit", "edit"),
+        key        = _target,
+        value      = iff(EventId == 13, replace_regex(_target, @"^.*\\", ""), ""),
+        data       = EvtxPayload(Payload, "Details"),
+        type       = "",
+        hive       = "",
+        image_path = EvtxPayload(Payload, "Image"),
+        pid        = tolong(EvtxPayload(Payload, "ProcessId")),
+        user       = EvtxPayload(Payload, "User"),
+        hostname   = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn       = iff(Computer contains ".", Computer, "")
+    | project-away _etype, _target
+}
+
+// Volatility dfir_registry (memory) — the same RECmd-style target keys read from
+// the hives resident in RAM. Snapshot -> action "edit". user recovered from the
+// per-user hive path.
+.create-or-alter function
+with (docstring = "CAR 'registry' from Volatility dfir_registry (memory) (native fields + CAR fields)", folder = "CAR/registry")
+CarRegistry_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "dfir_registry.DfirRegistry"
+    | extend
+        Timestamp  = todatetime(Record.LastWrite),
+        action     = "edit",
+        key        = tostring(Record.Key),
+        value      = tostring(Record.ValueName),
+        data       = tostring(Record.ValueData),
+        type       = tostring(Record.ValueType),
+        hive       = tostring(Record.Hive),
+        user       = extract(@"(?i)(?:Documents and Settings|Users)\\([^\\]+)\\", 1, tostring(Record.Hive))
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'registry' object — roll-up of the per-artefact views", folder = "CAR")
+CarRegistry() { union isfuzzy=true CarRegistry_Recmd, CarRegistry_Sysmon, CarRegistry_Memory }
+
+//=============================================================================
+// module — per-artefact (car_data_model.json: base_address, fqdn, hostname,
+// image_path, md5_hash, module_name, module_path, pid, sha1_hash, sha256_hash,
+// signer, tid). actions: load/unload.
+//=============================================================================
+
+// Sysmon 7 (Image loaded) — ImageLoaded is the module (module_path), Image is the
+// loading process (image_path). Hashes split into md5/sha1/sha256_hash; Signature
+// -> signer. Signed/SignatureStatus stay native in Payload.
+.create-or-alter function
+with (docstring = "CAR 'module' from Sysmon 7 (native fields + CAR fields)", folder = "CAR/module")
+CarModule_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 7
+    | extend _loaded = EvtxPayload(Payload, "ImageLoaded"), _hashes = EvtxPayload(Payload, "Hashes")
+    | extend
+        Timestamp   = TimeCreated,
+        action      = "load",
+        module_path = _loaded,
+        module_name = replace_regex(_loaded, @"^.*[\\/]", ""),
+        image_path  = EvtxPayload(Payload, "Image"),
+        pid         = tolong(EvtxPayload(Payload, "ProcessId")),
+        md5_hash    = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
+        sha1_hash   = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
+        sha256_hash = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
+        signer      = EvtxPayload(Payload, "Signature"),
+        hostname    = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn        = iff(Computer contains ".", Computer, "")
+    | project-away _loaded, _hashes
+}
+
+// Volatility windows.dlllist (memory) — every module mapped into each live process
+// with its base address and load time. Path->module_path, Process->image_path.
+.create-or-alter function
+with (docstring = "CAR 'module' from Volatility dlllist (memory) (native fields + CAR fields)", folder = "CAR/module")
+CarModule_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.dlllist"
+    | extend
+        Timestamp    = todatetime(Record.LoadTime),
+        action       = "load",
+        module_name  = tostring(Record.Name),
+        module_path  = tostring(Record.Path),
+        image_path   = tostring(Record.Process),
+        pid          = tolong(Record.PID),
+        base_address = tostring(Record.Base)
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'module' object — roll-up of the per-artefact views", folder = "CAR")
+CarModule() { union isfuzzy=true CarModule_Sysmon, CarModule_Memory }
+
+//=============================================================================
+// driver — per-artefact (car_data_model.json: base_address, fqdn, hostname,
+// image_path, md5_hash, module_name, sha1_hash, sha256_hash, signer). A driver
+// loads into the kernel, so ImageLoaded IS image_path (driver has no module_path).
+//=============================================================================
+
+// Sysmon 6 (Driver loaded) — the signature fields are the point (unsigned driver =
+// BYOVD tell). ImageLoaded->image_path, Hashes split, Signature->signer.
+.create-or-alter function
+with (docstring = "CAR 'driver' from Sysmon 6 (native fields + CAR fields)", folder = "CAR/driver")
+CarDriver_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 6
+    | extend _loaded = EvtxPayload(Payload, "ImageLoaded"), _hashes = EvtxPayload(Payload, "Hashes")
+    | extend
+        Timestamp   = TimeCreated,
+        action      = "load",
+        module_name = replace_regex(_loaded, @"^.*[\\/]", ""),
+        image_path  = _loaded,
+        md5_hash    = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
+        sha1_hash   = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
+        sha256_hash = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
+        signer      = EvtxPayload(Payload, "Signature"),
+        hostname    = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn        = iff(Computer contains ".", Computer, "")
+    | project-away _loaded, _hashes
+}
+
+// Volatility windows.modules (memory) — loaded kernel modules/drivers with base
+// address. Path->image_path (the driver binary), no load time in the module list.
+.create-or-alter function
+with (docstring = "CAR 'driver' from Volatility modules (memory) (native fields + CAR fields)", folder = "CAR/driver")
+CarDriver_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.modules"
+    | extend
+        action       = "load",
+        module_name  = tostring(Record.Name),
+        image_path   = tostring(Record.Path),
+        base_address = tostring(Record.Base)
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'driver' object — roll-up of the per-artefact views", folder = "CAR")
+CarDriver() { union isfuzzy=true CarDriver_Sysmon, CarDriver_Memory }
+
+//=============================================================================
+// thread — per-artefact (car_data_model.json: hostname, src_pid, src_tid,
+// stack_base, stack_limit, start_address, start_function, start_module,
+// start_module_name, subprocess_tag, tgt_pid, tgt_tid, user, user_stack_base,
+// user_stack_limit). actions: create/suspend/terminate/remote_create.
+//=============================================================================
+
+// Sysmon 8 (CreateRemoteThread) — cross-process injection: Source creates a thread
+// in Target. action "remote_create". Source/TargetImage are not CAR thread fields
+// (thread has no image), so they stay native in Payload; the CAR mapping is the
+// src/tgt pids, the new tid and the start address/module.
+.create-or-alter function
+with (docstring = "CAR 'thread' from Sysmon 8 (native fields + CAR fields)", folder = "CAR/thread")
+CarThread_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 8
+    | extend _sm = EvtxPayload(Payload, "StartModule")
+    | extend
+        Timestamp         = TimeCreated,
+        action            = "remote_create",
+        src_pid           = tolong(EvtxPayload(Payload, "SourceProcessId")),
+        tgt_pid           = tolong(EvtxPayload(Payload, "TargetProcessId")),
+        tgt_tid           = tolong(EvtxPayload(Payload, "NewThreadId")),
+        start_address     = EvtxPayload(Payload, "StartAddress"),
+        start_module      = _sm,
+        start_module_name = replace_regex(_sm, @"^.*[\\/]", ""),
+        start_function    = EvtxPayload(Payload, "StartFunction"),
+        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer)
+    | project-away _sm
+}
+
+// Volatility windows.thrdscan (memory) — every thread with its owning process (PID
+// -> tgt_pid), TID, create time and Win32 start address/path. Owner view, so src_*
+// is empty; a start address with no backing Win32StartPath is the injection tell.
+.create-or-alter function
+with (docstring = "CAR 'thread' from Volatility thrdscan (memory) (native fields + CAR fields)", folder = "CAR/thread")
+CarThread_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.thrdscan"
+    | extend _sm = tostring(Record.Win32StartPath)
+    | extend
+        Timestamp         = todatetime(Record.CreateTime),
+        action            = "create",
+        tgt_pid           = tolong(Record.PID),
+        tgt_tid           = tolong(Record.TID),
+        start_address     = tostring(Record.Win32StartAddress),
+        start_module      = _sm,
+        start_module_name = replace_regex(_sm, @"^.*[\\/]", "")
+    | project-away _sm
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'thread' object — roll-up of the per-artefact views", folder = "CAR")
+CarThread() { union isfuzzy=true CarThread_Sysmon, CarThread_Memory }
 
 //=============================================================================
 // CarCoverage — which objects actually have data.
