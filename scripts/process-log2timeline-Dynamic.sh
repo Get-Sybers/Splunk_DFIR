@@ -28,16 +28,12 @@ echo ""
 echo "$REPO_ROOT_DIR"
 echo ""
 
-# psteal --output-format dynamic writes a "|"-free CSV whose COLUMN ORDER is
-# fixed by this --fields list. It is load-bearing: host.L2tCsv maps by ORDINAL,
-# so these 23 fields, in this order, must match kusto/schema/10-host.kql's
-# L2tCsvMapping exactly. Do not reorder without changing the schema in lockstep.
-L2T_FIELDS="date,datetime,description,description_short,display_name,filename,host,hostname,inode,macb,message,message_short,source,sourcetype,source_long,tag,time,timestamp_desc,timezone,type,user,username,zone"
-
-# Ensure the host output directories exist and set permissions. The csv/ and
-# logs/ subdirs are where each image's timeline and its log land — ingest-kusto.sh
-# globs data_store/processed/log2timeline/csv/*.csv.
-sudo mkdir -p "$HOST_OUTPUT_DIR"/csv "$HOST_OUTPUT_DIR"/logs
+# Output layout (ingest-kusto.sh globs data_store/processed/log2timeline/jsonl/*.jsonl):
+#   jsonl/<hostname>.jsonl   enriched Plaso json_line, one per image, named by host
+#   plaso/<name>.plaso       the durable Plaso storage db (reprocess without
+#                            re-parsing the image), plus <name>.pinfo.json
+#   logs/<name>.log          the per-image processing log
+sudo mkdir -p "$HOST_OUTPUT_DIR"/jsonl "$HOST_OUTPUT_DIR"/plaso "$HOST_OUTPUT_DIR"/logs
 sudo mkdir -p "$INPUT_DIR" "$VM_INPUT_DIR"
 sudo chown -R "$(whoami):docker" "$HOST_OUTPUT_DIR" "$INPUT_DIR"
 sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR"
@@ -47,6 +43,70 @@ sudo chmod -R 777 "$HOST_OUTPUT_DIR" "$INPUT_DIR"
 # bind-mounted into the Plaso container read-only, so it only needs to be
 # readable. Just make sure the top-level directory itself is traversable.
 sudo chmod a+rx "$VM_INPUT_DIR" 2>/dev/null || true
+
+# ------------------------------------------------------------------------------
+# run_plaso <mount_dir> <source_rel> <output_name>
+#
+# Plaso two-step, with our DFIR json_line output module doing the enrichment
+# natively FROM THE DB (no second pass over the logs):
+#   1. log2timeline.py    parse the image into a .plaso storage db (kept — it
+#                         lets an analyst re-run psort later without re-parsing).
+#   2. psort.py -o        render the db to json_line with dev-scripts/plaso/
+#      l2t_json_dfir       l2t_json_dfir.py, which adds image_hostname (from the
+#                         db's system_configuration), username, disk_id and
+#                         volume_id (from each event's path spec) to EVERY event.
+#                         --output_fallback_hostname enables the mediator's
+#                         host/user resolution. The module is loaded via a small
+#                         import wrapper; the two paths are passed as argv so the
+#                         output name never has to be spliced into Python source.
+#   3. rename             name the output by the image_hostname the module put on
+#                         the events (the box's own name), not the image filename.
+#
+# The raw output is written without a .jsonl extension so the ingest glob
+# (*.jsonl) never picks up a half-finished file; only the final <host>.jsonl matches.
+PLASO_OUTPUT_MODULE="$REPO_ROOT_DIR/dev-scripts/plaso/l2t_json_dfir.py"
+run_plaso() {
+    local mount_dir="$1" src_rel="$2" name="$3"
+    local plaso_db="$HOST_OUTPUT_DIR/plaso/$name.plaso"
+    local raw="$HOST_OUTPUT_DIR/jsonl/.$name.raw"
+    local log="$HOST_OUTPUT_DIR/logs/$name.log"
+    local host_name final
+
+    docker run --rm -v "$mount_dir":/data:ro -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
+        log2timeline.py --status_view none --partitions all --vss-stores all \
+        --storage-file /output/plaso/"$name".plaso /data/"$src_rel" > "$log" 2>&1
+    if [[ ! -s "$plaso_db" ]]; then
+        echo "Error: log2timeline produced no .plaso for $name" | tee -a "$log"; return 1
+    fi
+
+    docker run --rm -v "$HOST_OUTPUT_DIR":/output -v "$PLASO_OUTPUT_MODULE":/opt/l2t_json_dfir.py:ro \
+        --entrypoint python3 log2timeline/plaso -c '
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("l2t_json_dfir", "/opt/l2t_json_dfir.py")
+mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+from plaso.scripts.psort import Main
+sys.argv = ["psort.py", "--status_view", "none", "-o", "l2t_json_dfir",
+            "--output_fallback_hostname", "-w", sys.argv[1], sys.argv[2]]
+sys.exit(Main())
+' "/output/jsonl/.$name.raw" "/output/plaso/$name.plaso" >> "$log" 2>&1
+    if [[ ! -s "$raw" ]]; then
+        echo "Error: psort produced no json_line for $name (0 events?)" | tee -a "$log"
+        rm -f "$raw"; return 1
+    fi
+
+    # Name by the image_hostname the module resolved (constant across the file).
+    host_name=$(head -1 "$raw" | python3 -c 'import sys,json
+try: print((json.loads(sys.stdin.readline()).get("image_hostname") or "").strip())
+except Exception: print("")' 2>/dev/null)
+    host_name=$(printf '%s' "$host_name" | tr -c 'A-Za-z0-9._-' '_' | sed 's/^_*//; s/_*$//')
+    [[ -n "$host_name" ]] || host_name="$name"
+    final="$HOST_OUTPUT_DIR/jsonl/${host_name}.jsonl"
+    # Two images resolving to the same hostname keep distinct output.
+    [[ -e "$final" ]] && final="$HOST_OUTPUT_DIR/jsonl/${host_name}_${name}.jsonl"
+    mv -f "$raw" "$final"
+    echo "✅ $src_rel -> jsonl/$(basename "$final") (host=$host_name, $(wc -l < "$final") events)" | tee -a "$log"
+    return 0
+}
 
 # Enable case-insensitive globbing
 shopt -s nocaseglob
@@ -285,34 +345,9 @@ for INPUT_FILE in "${PROCESSED_FILES[@]}"; do
     echo "Processing: $REL"
     echo "Output name: $FILENAME"
 
-    # Each image's timeline is one CSV under csv/, its log under logs/ — the flat
-    # layout ingest-kusto.sh globs (log2timeline/csv/*.csv). The output base name
-    # is collision-free (get_clean_filename), so per-source images never clash.
-    CSV_OUT="$HOST_OUTPUT_DIR/csv/$FILENAME.csv"
-    LOG_OUT="$HOST_OUTPUT_DIR/logs/$FILENAME.log"
-
     # Mount the whole input tree so a multi-segment set or a VMDK descriptor's
-    # sibling extents resolve, and point psteal at the file by its relative path.
-    # --output-format dynamic + --fields = the 23-column CSV host.L2tCsv expects.
-    docker run --rm -v "$INPUT_DIR":/data:ro \
-    -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
-    psteal --source /data/"$REL" \
-    --output-format dynamic \
-    --fields "$L2T_FIELDS" \
-    --timezone UTC \
-    --vss-stores all \
-    --partitions all \
-    --quiet \
-    -w /output/csv/"$FILENAME".csv 2> "$LOG_OUT"
-
-    # Check if csv output was created
-    if [[ ! -f "$CSV_OUT" ]]; then
-        echo "Error: psteal failed to produce csv output for $FILENAME" | tee -a "$LOG_OUT"
-        continue
-    fi
-
-    echo "✅ Saved csv output to: $CSV_OUT" | tee -a "$LOG_OUT"
-    echo "📋 Saved logs to: $LOG_OUT" | tee -a "$LOG_OUT"
+    # sibling extents resolve, and point Plaso at the file by its relative path.
+    run_plaso "$INPUT_DIR" "$REL" "$FILENAME" || continue
     echo ""
 done
 
@@ -364,30 +399,9 @@ else
         echo "  Descriptor : $DESCRIPTOR_NAME"
         echo "  Output name: $FILENAME"
 
-        # Per-VM output: same flat csv/ + logs/ layout as the image loop above.
-        CSV_OUT="$HOST_OUTPUT_DIR/csv/$FILENAME.csv"
-        LOG_OUT="$HOST_OUTPUT_DIR/logs/$FILENAME.log"
-
-        # Mount the VM folder as /data so descriptor's relative references to
+        # Mount the VM folder as /data so the descriptor's relative references to
         # -flat / -delta files resolve inside the container.
-        docker run --rm -v "$VM_DIR":/data:ro \
-        -v "$HOST_OUTPUT_DIR":/output log2timeline/plaso \
-        psteal --source /data/"$DESCRIPTOR_NAME" \
-        --output-format dynamic \
-        --fields "$L2T_FIELDS" \
-        --timezone UTC \
-        --vss-stores all \
-        --partitions all \
-        --quiet \
-        -w /output/csv/"$FILENAME".csv 2> "$LOG_OUT"
-
-        if [[ ! -f "$CSV_OUT" ]]; then
-            echo "Error: psteal failed to produce csv output for VM $FILENAME" | tee -a "$LOG_OUT"
-            continue
-        fi
-
-        echo "✅ Saved csv output to: $CSV_OUT" | tee -a "$LOG_OUT"
-        echo "📋 Saved logs to: $LOG_OUT" | tee -a "$LOG_OUT"
+        run_plaso "$VM_DIR" "$DESCRIPTOR_NAME" "$FILENAME" || continue
         echo ""
         VM_PROCESSED_COUNT=$((VM_PROCESSED_COUNT + 1))
     done
