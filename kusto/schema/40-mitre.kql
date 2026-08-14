@@ -377,173 +377,222 @@ CarUserSession() {
 // whatever WROTE the record, which for Security-channel events is the same
 // value on every row and would give every process the same bogus parent.
 //=============================================================================
+//=============================================================================
+// process — ONE VIEW PER ARTEFACT (CarProcess_<Artefact>). Each fills every
+// canonical process field it can supply (car_data_model.json: command_line, exe,
+// fqdn, hostname, image_path, md5_hash, parent_exe, parent_image_path, pid, ppid,
+// sha1_hash, sha256_hash, sid, signer, user). See docs/CAR-Extraction-Rules.md.
+// The base views NEVER combine sources; CarProcess() at the end is the downstream
+// roll-up (rule 4). Splitting by artefact retires the old Origin / pid_hex columns
+// — the view name is the provenance. All views share one column set so they union.
+//=============================================================================
+
+// Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest single source:
+// image, command line, parent image, pid/ppid (DECIMAL -> tolong directly) and the
+// file Hashes, split into md5/sha1/sha256_hash. Event 1 carries no SID or
+// Authenticode signer (those are other events), so sid/signer stay empty. hostname/
+// fqdn are split from Computer.
 .create-or-alter function
-with (docstring = "MITRE CAR 'process' object (EvtxECmd/Sysmon/Plaso/Volatility + SRUM app resource usage)", folder = "CAR")
+with (docstring = "CAR 'process' from Sysmon 1/5", folder = "CAR/process")
+CarProcess_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId in (1, 5)
+    | extend Hashes = EvtxPayload(Payload, "Hashes")
+    | project
+        Timestamp         = TimeCreated,
+        action            = iff(EventId == 1, "create", "terminate"),
+        exe               = EvtxPayload(Payload, "Image"),
+        image_path        = EvtxPayload(Payload, "Image"),
+        parent_exe        = EvtxPayload(Payload, "ParentImage"),
+        parent_image_path = EvtxPayload(Payload, "ParentImage"),
+        command_line      = EvtxPayload(Payload, "CommandLine"),
+        pid               = tolong(EvtxPayload(Payload, "ProcessId")),
+        ppid              = tolong(EvtxPayload(Payload, "ParentProcessId")),
+        user              = EvtxPayload(Payload, "User"),
+        sid               = "",
+        md5_hash          = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, Hashes),
+        sha1_hash         = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, Hashes),
+        sha256_hash       = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, Hashes),
+        signer            = "",
+        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn              = iff(Computer contains ".", Computer, ""),
+        SourceFile
+}
+
+// Security 4688 (create) / 4689 (terminate). Unlike Sysmon this channel carries
+// SubjectUserSid, so sid is filled; it has no file hashes. pid/ppid are HEX strings
+// ("0x1a4") — tolong parses the 0x form. ppid is EventData's ProcessId (the
+// creator), NOT the row's Execution ProcessID. 4689 carries only the terminating
+// ProcessName/ProcessId, so parent/command_line are empty there.
+.create-or-alter function
+with (docstring = "CAR 'process' from Security 4688/4689", folder = "CAR/process")
+CarProcess_Security() {
+    database("host").EvtxEcmdJson
+    | where EventId in (4688, 4689)
+    | extend
+        NewProcessName = EvtxPayload(Payload, "NewProcessName"),
+        ProcName4689   = EvtxPayload(Payload, "ProcessName"),
+        NewProcessId   = EvtxPayload(Payload, "NewProcessId"),
+        EvProcessId    = EvtxPayload(Payload, "ProcessId"),
+        SubjName       = EvtxPayload(Payload, "SubjectUserName"),
+        SubjDomain     = EvtxPayload(Payload, "SubjectDomainName")
+    | project
+        Timestamp         = TimeCreated,
+        action            = iff(EventId == 4688, "create", "terminate"),
+        exe               = iff(EventId == 4688, NewProcessName, ProcName4689),
+        image_path        = iff(EventId == 4688, NewProcessName, ProcName4689),
+        parent_exe        = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
+        parent_image_path = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
+        command_line      = iff(EventId == 4688, EvtxPayload(Payload, "CommandLine"), ""),
+        pid               = iff(EventId == 4688, tolong(NewProcessId), tolong(EvProcessId)),
+        ppid              = iff(EventId == 4688, tolong(EvProcessId), long(null)),
+        user              = iff(isempty(SubjName), UserName,
+                                iff(isempty(SubjDomain), SubjName, strcat(SubjDomain, @"\", SubjName))),
+        sid               = EvtxPayload(Payload, "SubjectUserSid"),
+        md5_hash          = "",
+        sha1_hash         = "",
+        sha256_hash       = "",
+        signer            = "",
+        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn              = iff(Computer contains ".", Computer, ""),
+        SourceFile
+}
+
+// Volatility dfir_processes (psscan — unlinked processes found). Full image path
+// and parent path from each process's rebuilt address space, command line, pid,
+// ppid, create time. Memory carries no user/SID natively (getsids would add it) and
+// no hostname without the registry ComputerName, so those are honest gaps. The
+// psscan-only "Hidden" tell is not a CAR field and stays in Record.Hidden.
+.create-or-alter function
+with (docstring = "CAR 'process' from Volatility psscan (memory)", folder = "CAR/process")
+CarProcess_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "dfir_processes.DfirProcesses"
+    | extend full = tostring(Record.Path), short = tostring(Record.ImageFileName)
+    | project
+        Timestamp         = todatetime(Record.CreateTime),
+        action            = "create",
+        exe               = iff(isnotempty(full), full, short),
+        image_path        = iff(isnotempty(full), full, short),
+        parent_exe        = tostring(Record.ParentPath),
+        parent_image_path = tostring(Record.ParentPath),
+        command_line      = tostring(Record.CommandLine),
+        pid               = tolong(Record.PID),
+        ppid              = tolong(Record.PPID),
+        user              = "",
+        sid               = "",
+        md5_hash          = "",
+        sha1_hash         = "",
+        sha256_hash       = "",
+        signer            = "",
+        hostname          = "",
+        fqdn              = "",
+        SourceFile
+}
+
+// Plaso Windows execution artefacts (prefetch, amcache, appcompatcache, userassist,
+// bam) — evidence a program ran, with the image hostname and user Plaso enrichment
+// supplies. No pid/parent/command line. amcache carries the file SHA1, so sha1_hash
+// is filled when present (rule 1 — extract every field the artefact has).
+.create-or-alter function
+with (docstring = "CAR 'process' from Plaso execution artefacts", folder = "CAR/process")
+CarProcess_Plaso() {
+    union
+        (database("host").L2tPrefetch),
+        (database("host").L2tWinreg
+         | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam")
+    | project
+        Timestamp         = Timestamp,
+        action            = "create",
+        exe               = tostring(coalesce(Record.executable, Record.path, Record.filename, Record.display_name)),
+        image_path        = tostring(Record.display_name),
+        parent_exe        = "",
+        parent_image_path = "",
+        command_line      = "",
+        pid               = long(null),
+        ppid              = long(null),
+        user              = tostring(Record.username),
+        sid               = "",
+        md5_hash          = "",
+        sha1_hash         = tostring(coalesce(Record.sha1_hash, Record.sha1)),
+        sha256_hash       = "",
+        signer            = "",
+        hostname          = tostring(Record.image_hostname),
+        fqdn              = "",
+        SourceFile        = SourceImage
+}
+
+// Plaso Linux cron (syslog:cron:task_run) — the command line, crond worker pid and
+// user as typed fields. Records THAT a command ran, no ppid/parent image.
+.create-or-alter function
+with (docstring = "CAR 'process' from Plaso Linux cron", folder = "CAR/process")
+CarProcess_Cron() {
+    database("host").L2tText
+    | where tostring(Record.data_type) == "syslog:cron:task_run"
+    | extend cmd = tostring(Record.command)
+    | project
+        Timestamp         = Timestamp,
+        action            = "create",
+        exe               = extract(@"^(\S+)", 1, cmd),
+        image_path        = extract(@"^(\S+)", 1, cmd),
+        parent_exe        = "",
+        parent_image_path = "",
+        command_line      = cmd,
+        pid               = tolong(Record.pid),
+        ppid              = long(null),
+        user              = tostring(Record.username),
+        sid               = "",
+        md5_hash          = "",
+        sha1_hash         = "",
+        sha256_hash       = "",
+        signer            = "",
+        hostname          = tostring(Record.image_hostname),
+        fqdn              = "",
+        SourceFile        = SourceImage
+}
+
+// SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor) — historical
+// proof an application executed, attributed to a user AND a SID (rule 1: fill both).
+// Rows are the App Resource Usage table (Foreground/Background byte counters; the
+// Network Usage table goes to CarFlow). No pid/parent/command line.
+.create-or-alter function
+with (docstring = "CAR 'process' from SRUM App Resource Usage", folder = "CAR/process")
+CarProcess_Srum() {
+    database("host").VelociraptorJson
+    | where Artefact matches regex @"(?i)srum"
+    | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
+    | project
+        Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+        action            = "create",
+        exe               = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+        image_path        = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+        parent_exe        = "",
+        parent_image_path = "",
+        command_line      = "",
+        pid               = long(null),
+        ppid              = long(null),
+        user              = tostring(coalesce(Record.UserName, Record.User)),
+        sid               = tostring(Record.Sid),
+        md5_hash          = "",
+        sha1_hash         = "",
+        sha256_hash       = "",
+        signer            = "",
+        hostname          = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+        fqdn              = "",
+        SourceFile
+}
+
+//=============================================================================
+// process roll-up — the downstream COMBINATION stage (rule 4). A plain union of
+// every process observation across artefacts; deeper correlation (tying the same
+// real process seen by different artefacts via host+pid+time) is a later analytic,
+// done only where a shared identity key allows it.
+//=============================================================================
+.create-or-alter function
+with (docstring = "MITRE CAR 'process' object — roll-up of the per-artefact views", folder = "CAR")
 CarProcess() {
-    let FromEvtx =
-        database("host").EvtxEcmdJson
-        | where EventId in (4688, 4689)
-        | extend
-            NewProcessName    = EvtxPayload(Payload, "NewProcessName"),
-            NewProcessId      = EvtxPayload(Payload, "NewProcessId"),
-            CreatorProcessId  = EvtxPayload(Payload, "ProcessId"),
-            ParentProcessName = EvtxPayload(Payload, "ParentProcessName"),
-            CommandLine       = EvtxPayload(Payload, "CommandLine"),
-            SubjectUserName   = EvtxPayload(Payload, "SubjectUserName")
-        | extend
-            Timestamp         = TimeCreated,
-            action            = iff(EventId == 4688, "create", "terminate"),
-            exe               = NewProcessName,
-            image_path        = NewProcessName,
-            parent_exe        = ParentProcessName,
-            parent_image_path = ParentProcessName,
-            command_line      = CommandLine,
-            pid_hex           = NewProcessId,
-            ppid_hex          = CreatorProcessId,
-            pid               = tolong(NewProcessId),
-            ppid              = tolong(CreatorProcessId),
-            user              = iff(isempty(SubjectUserName), UserName, SubjectUserName),
-            hostname          = Computer,
-            Origin            = "evtx:4688"
-        | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile;
-    let FromPlaso =
-        union
-            (database("host").L2tPrefetch),
-            (database("host").L2tWinreg
-             | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam")
-        | extend
-            action            = "create",
-            exe               = tostring(coalesce(Record.executable, Record.path, Record.filename, Record.display_name)),
-            image_path        = tostring(Record.display_name),
-            parent_exe        = "",
-            parent_image_path = "",
-            command_line      = "",
-            pid               = long(null),
-            ppid              = long(null),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = tostring(Record.username),
-            hostname          = tostring(Record.image_hostname),
-            Origin            = strcat("plaso:", tostring(Record.data_type))
-        | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile = SourceImage;
-    // Linux: cron command execution. Plaso's cron parser (syslog:cron:task_run)
-    // gives the command line, the crond worker's pid and the user as TYPED fields
-    // (Record.command / Record.pid / Record.username) — no message regex, unlike
-    // the CSV path. It records THAT a command ran but not ppid or a parent image,
-    // the same shape as the Plaso execution artefacts above. A host auditing
-    // execve would add a richer branch with pid/ppid/exe.
-    let FromLinuxCron =
-        database("host").L2tText
-        | where tostring(Record.data_type) == "syslog:cron:task_run"
-        | extend command_line = tostring(Record.command)
-        | extend
-            action            = "create",
-            exe               = extract(@"^(\S+)", 1, command_line),
-            image_path        = extract(@"^(\S+)", 1, command_line),
-            parent_exe        = "",
-            parent_image_path = "",
-            pid               = tolong(Record.pid),
-            ppid              = long(null),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = tostring(Record.username),
-            hostname          = tostring(Record.image_hostname),
-            Origin            = "linux:cron"
-        | project Timestamp, action, exe, image_path, parent_exe,
-                  parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile = SourceImage;
-    // Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest process
-    // source of the lot: full pid, ppid, parent image and command line, all in
-    // one event. Sysmon writes ProcessId/ParentProcessId as DECIMAL strings
-    // (not the hex the Security channel uses), so tolong() is applied directly
-    // and pid_hex/ppid_hex are empty — the hex form is meaningless here. Event 5
-    // carries only Image + ProcessId, so ppid/parent/command_line are null on a
-    // terminate, which is the honest shape.
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId in (1, 5)
-        | extend
-            SysImage        = EvtxPayload(Payload, "Image"),
-            SysCmdLine      = EvtxPayload(Payload, "CommandLine"),
-            SysPid          = EvtxPayload(Payload, "ProcessId"),
-            SysPpid         = EvtxPayload(Payload, "ParentProcessId"),
-            SysParentImage  = EvtxPayload(Payload, "ParentImage"),
-            SysUser         = EvtxPayload(Payload, "User")
-        | project
-            Timestamp         = TimeCreated,
-            action            = iff(EventId == 1, "create", "terminate"),
-            exe               = SysImage,
-            image_path        = SysImage,
-            parent_exe        = SysParentImage,
-            parent_image_path = SysParentImage,
-            command_line      = SysCmdLine,
-            pid               = tolong(SysPid),
-            ppid              = tolong(SysPpid),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = SysUser,
-            hostname          = Computer,
-            Origin            = strcat("sysmon:", tostring(EventId)),
-            SourceFile;
-    // Memory: our dfir_processes plugin (psscan, so UNLINKED processes are found)
-    // gives the full CarProcess shape from the live image — the full image path
-    // and the parent's full path (Path/ParentPath, from each process's rebuilt
-    // address space), command line and CreateTime. This is the running-process
-    // view dead-box execution artefacts (prefetch/amcache) only hint at. exe
-    // falls back to the 15-char EPROCESS name when the PEB path is paged out.
-    // Origin flags a psscan-only (Hidden/unlinked) process — a rootkit tell.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "dfir_processes.DfirProcesses"
-        | extend full = tostring(Record.Path), short = tostring(Record.ImageFileName)
-        | project
-            Timestamp         = todatetime(Record.CreateTime),
-            action            = "create",
-            exe               = iff(isnotempty(full), full, short),
-            image_path        = iff(isnotempty(full), full, short),
-            parent_exe        = tostring(Record.ParentPath),
-            parent_image_path = tostring(Record.ParentPath),
-            command_line      = tostring(Record.CommandLine),
-            pid               = tolong(Record.PID),
-            ppid              = tolong(Record.PPID),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = "",
-            hostname          = "",
-            Origin            = iff(tobool(Record.Hidden), "volatility:psscan:hidden", "volatility:psscan"),
-            SourceFile;
-    // SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor): historical
-    // proof an application EXECUTED, attributed to a user at a time — the same
-    // kind of execution evidence as the Plaso prefetch/amcache branch, and with
-    // no pid/parent/command line for the same reason. Rows are the App Resource
-    // Usage table (identified by its Foreground/Background byte counters — the
-    // Network Usage table goes to CarFlow instead). exe is the app path (ExeInfo/
-    // AppId), user the resolved account or SID.
-    let FromSrum =
-        database("host").VelociraptorJson
-        | where Artefact matches regex @"(?i)srum"
-        | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
-        | project
-            Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-            action            = "create",
-            exe               = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-            image_path        = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-            parent_exe        = "",
-            parent_image_path = "",
-            command_line      = "",
-            pid               = long(null),
-            ppid              = long(null),
-            pid_hex           = "",
-            ppid_hex          = "",
-            user              = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
-            hostname          = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-            Origin            = "srum:app_resource_usage",
-            SourceFile;
-    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon, FromMemory, FromSrum
+    union CarProcess_Sysmon, CarProcess_Security, CarProcess_Memory,
+          CarProcess_Plaso, CarProcess_Cron, CarProcess_Srum
 }
 
 //=============================================================================
