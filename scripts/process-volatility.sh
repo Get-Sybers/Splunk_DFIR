@@ -48,16 +48,25 @@ VOLATILITY_SYMBOLS="${VOLATILITY_SYMBOLS:-$REPO_ROOT_DIR/data_store/dependencies
 # import wrapper, the same pattern as the Plaso l2t_json_dfir output module.
 VOLATILITY_RENDERER="${VOLATILITY_RENDERER:-$REPO_ROOT_DIR/dev-scripts/volatility/jsonl_dfir_renderer.py}"
 
+# Custom plugin directory (loaded with `-p`). dfir_processes.DfirProcesses emits
+# the CarProcess-shaped record: psscan process list (so unlinked processes are
+# found) with the full image path, parent path and loaded DLLs resolved from each
+# process's rebuilt address space.
+VOLATILITY_PLUGINS="${VOLATILITY_PLUGINS:-$REPO_ROOT_DIR/dev-scripts/volatility/plugins}"
+
 # The plugins run per image. Kept to the ones the analysis backend has a use for
 # (process tree, network, command lines, injected code); extend as needed.
 PLUGINS=(
     "banners.Banners"
     "windows.info"
-    "windows.pslist"
+    "dfir_processes.DfirProcesses"  # -> CarProcess (psscan; full path, parent
+                                    #    path, command line, loaded DLLs, Hidden)
+    "windows.pslist"        # process list (active) — kept for cross-check
     "windows.pstree"
-    "windows.cmdline"
-    "windows.netscan"
-    "windows.netstat"
+    "windows.dlllist"       # -> CarModule  (loaded DLLs per process)
+    "windows.modules"       # -> CarDriver  (kernel modules/drivers)
+    "windows.netscan"       # -> CarFlow    (connections; Win7+ pool scan)
+    "windows.netstat"       # -> CarFlow    (connections)
     "windows.malfind"
 )
 
@@ -126,26 +135,29 @@ clean_name() {
 # --entrypoint python3 wrapper; the file and plugin are passed as argv so no path
 # is spliced into the Python source. Native runs put the renderer's dir on
 # PYTHONPATH and import it the same way.
+# argv to the wrapper: renderer_path, plugins_dir, symbols_dir, memory_file, plugin
 _VOL_WRAPPER='
 import importlib.util, sys
 spec = importlib.util.spec_from_file_location("jsonl_dfir_renderer", sys.argv[1])
 mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
 from volatility3.cli import CommandLine
-sys.argv = ["vol", "-q", "-s", sys.argv[2], "-r", "jsonl_dfir", "-f", sys.argv[3], sys.argv[4]]
+sys.argv = ["vol", "-q", "-p", sys.argv[2], "-s", sys.argv[3],
+            "-r", "jsonl_dfir", "-f", sys.argv[4], sys.argv[5]]
 CommandLine().run()
 '
 run_vol() {
     local img="$1" plugin="$2" out="$3"
     if [[ -n "$VOL_NATIVE" ]]; then
         VOLATILITY3_SYMBOL_DIRECTORIES="$VOLATILITY_SYMBOLS" \
-            python3 -c "$_VOL_WRAPPER" "$VOLATILITY_RENDERER" "$VOLATILITY_SYMBOLS" "$img" "$plugin" > "$out" 2>/dev/null
+            python3 -c "$_VOL_WRAPPER" "$VOLATILITY_RENDERER" "$VOLATILITY_PLUGINS" "$VOLATILITY_SYMBOLS" "$img" "$plugin" > "$out" 2>/dev/null
     else
         docker run --rm \
             -v "$(dirname "$img")":/mem:ro \
             -v "$VOLATILITY_SYMBOLS":/symbols \
             -v "$VOLATILITY_RENDERER":/opt/jsonl_dfir_renderer.py:ro \
+            -v "$VOLATILITY_PLUGINS":/plugins:ro \
             --entrypoint python3 "$VOLATILITY_IMAGE" \
-            -c "$_VOL_WRAPPER" /opt/jsonl_dfir_renderer.py /symbols "/mem/$(basename "$img")" "$plugin" > "$out" 2>/dev/null
+            -c "$_VOL_WRAPPER" /opt/jsonl_dfir_renderer.py /plugins /symbols "/mem/$(basename "$img")" "$plugin" > "$out" 2>/dev/null
     fi
 }
 
