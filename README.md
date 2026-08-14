@@ -90,7 +90,7 @@ discovered.
 
 | Capability | State | Notes |
 |:---|:---|:---|
-| Disk images → Plaso timeline JSON | ✅ Works | `process-log2timeline-Dynamic.sh`; `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → `host.L2tJson` |
+| Disk images → Plaso timeline JSON | ✅ Works | `process-log2timeline-Dynamic.sh`; `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → per-parser `host.L2t<Parser>` tables (routed by top-level Plaso parser; `L2tAll()` unions them) |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
