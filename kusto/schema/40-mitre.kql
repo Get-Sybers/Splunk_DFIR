@@ -26,12 +26,14 @@
 // COVERAGE — 9 of 9 objects
 //
 //   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
+//                   + SRUM Network Usage (SrumECmd — app+user network bytes)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
 //                   + Volatility sessions (memory — user + logon time)
 //   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
 //                   artefacts (prefetch/amcache/appcompat), Linux cron,
 //                   + Volatility pslist(+cmdline) (memory — live process tree)
+//                   + SRUM App Resource Usage (SrumECmd — execution evidence)
 //   CarService      EvtxECmd 7045/4697 + Volatility svcscan (memory — services)
 //   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
 //                   + Volatility filescan (memory-resident files)
@@ -103,7 +105,7 @@ EvtxPayload(payload:string, key:string) {
 // EndTime is derived: conn.log has ts and duration, not an end timestamp.
 //=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'flow' object (Zeek conn + Sysmon network connect)", folder = "CAR")
+with (docstring = "MITRE CAR 'flow' object (Zeek conn + Sysmon 3 + Volatility netscan + SRUM network usage)", folder = "CAR")
 CarFlow() {
     let FromZeek =
         database("network").ZeekTyped()
@@ -123,8 +125,10 @@ CarFlow() {
             end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
             packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
             hostname      = ""
+        | extend image_path = "", user = "", bytes_sent = long(null), bytes_recv = long(null)
         | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
-                  protocol, start_time, end_time, packet_count, hostname, Uid;
+                  protocol, start_time, end_time, packet_count, hostname, Uid,
+                  image_path, user, bytes_sent, bytes_recv;
     // Sysmon 3 (NetworkConnect) records a single connection AS IT IS MADE, with
     // no duration, byte or packet counts — so end_time/packet_count are null,
     // unlike Zeek conn. action is "start": the event marks initiation, not
@@ -146,7 +150,12 @@ CarFlow() {
             end_time     = datetime(null),
             packet_count = long(0),
             hostname     = Computer,
-            Uid          = "";
+            Uid          = "",
+            // Sysmon 3 names the initiating process, so image_path/user are real.
+            image_path   = EvtxPayload(Payload, "Image"),
+            user         = EvtxPayload(Payload, "User"),
+            bytes_sent   = long(null),
+            bytes_recv   = long(null);
     // Memory: Volatility windows.netscan / netstat — the connections live in the
     // memory image (local/foreign addr:port, owning pid, state, creation time).
     // action "message": a connection observed in memory, not a start/end event.
@@ -167,8 +176,46 @@ CarFlow() {
             end_time     = datetime(null),
             packet_count = long(null),
             hostname     = "",
-            Uid          = "";
-    union FromZeek, FromSysmon, FromMemory
+            Uid          = "",
+            image_path   = tostring(Record.Owner),  // netscan names the owning process
+            user         = "",
+            bytes_sent   = long(null),
+            bytes_recv   = long(null);
+    // SRUM (System Resource Usage Monitor) — SRUDB.dat, parsed on disk by the EZ
+    // tool SrumECmd and delivered through Velociraptor (host.VelociraptorJson).
+    // The Network Usage table attributes network BYTES to an application and user
+    // over time — no 5-tuple (SRUM aggregates per app/interface/hour), so
+    // ip/port/protocol stay null; what it uniquely adds is bytes_sent/bytes_recv
+    // per image_path per user, historical network activity no live capture holds.
+    // action "message": a usage sample, not a connection start/end. Rows are the
+    // ones carrying byte counters (the App Resource Usage table has none and goes
+    // to CarProcess instead). Field names cover SrumECmd (ExeInfo/UserName/Sid/
+    // BytesSent/BytesReceived) and Velociraptor's native SRUM columns.
+    let FromSrum =
+        database("host").VelociraptorJson
+        | where Artefact matches regex @"(?i)srum"
+        | where isnotempty(tostring(coalesce(Record.BytesSent, Record.BytesReceived, Record.["Bytes Sent"], Record.["Bytes Received"])))
+        | extend
+            Timestamp    = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+            action       = "message",
+            src_ip       = "",
+            src_port     = int(null),
+            dest_ip      = "",
+            dest_port    = int(null),
+            protocol     = "",
+            start_time   = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+            end_time     = datetime(null),
+            packet_count = long(null),
+            hostname     = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+            Uid          = "",
+            image_path   = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+            user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
+            bytes_sent   = tolong(coalesce(Record.BytesSent, Record.["Bytes Sent"], Record.SentBytes)),
+            bytes_recv   = tolong(coalesce(Record.BytesReceived, Record.["Bytes Received"], Record.ReceivedBytes))
+        | project Timestamp, action, src_ip, src_port, dest_ip, dest_port, protocol,
+                  start_time, end_time, packet_count, hostname, Uid,
+                  image_path, user, bytes_sent, bytes_recv;
+    union FromZeek, FromSysmon, FromMemory, FromSrum
 }
 
 //=============================================================================
@@ -334,7 +381,7 @@ CarUserSession() {
 // value on every row and would give every process the same bogus parent.
 //=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'process' object", folder = "CAR")
+with (docstring = "MITRE CAR 'process' object (EvtxECmd/Sysmon/Plaso/Volatility + SRUM app resource usage)", folder = "CAR")
 CarProcess() {
     let FromEvtx =
         database("host").EvtxEcmdJson
@@ -472,7 +519,34 @@ CarProcess() {
             hostname          = "",
             Origin            = iff(tobool(Record.Hidden), "volatility:psscan:hidden", "volatility:psscan"),
             SourceFile;
-    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon, FromMemory
+    // SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor): historical
+    // proof an application EXECUTED, attributed to a user at a time — the same
+    // kind of execution evidence as the Plaso prefetch/amcache branch, and with
+    // no pid/parent/command line for the same reason. Rows are the App Resource
+    // Usage table (identified by its Foreground/Background byte counters — the
+    // Network Usage table goes to CarFlow instead). exe is the app path (ExeInfo/
+    // AppId), user the resolved account or SID.
+    let FromSrum =
+        database("host").VelociraptorJson
+        | where Artefact matches regex @"(?i)srum"
+        | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
+        | project
+            Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+            action            = "create",
+            exe               = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+            image_path        = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+            parent_exe        = "",
+            parent_image_path = "",
+            command_line      = "",
+            pid               = long(null),
+            ppid              = long(null),
+            pid_hex           = "",
+            ppid_hex          = "",
+            user              = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
+            hostname          = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
+            Origin            = "srum:app_resource_usage",
+            SourceFile;
+    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon, FromMemory, FromSrum
 }
 
 //=============================================================================
