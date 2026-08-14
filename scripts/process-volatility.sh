@@ -71,6 +71,8 @@ PLUGINS=(
     "windows.filescan"      # -> CarFile    (files resident in memory)
     "windows.svcscan"       # -> CarService (services: name/binary/start/state)
     "windows.thrdscan"      # -> CarThread  (threads: tid/pid/create/startaddr)
+    "dfir_registry.DfirRegistry"  # -> CarRegistry (RECmd-style target keys read
+                                  #    from the hives resident in memory)
     "windows.malfind"
 )
 
