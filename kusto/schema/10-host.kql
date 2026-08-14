@@ -10,63 +10,46 @@
 // column literally called "datetime", which collides with a Kusto type keyword.
 
 //=============================================================================
-// L2tCsv — Plaso psteal --output-format dynamic
+// L2tJson — Plaso, JSON Lines (log2timeline.py -> .plaso -> psort.py -o json_line)
 //
-// The 23 columns and their order are fixed by the --fields argument in
-// scripts/process-log2timeline-Dynamic.sh. If that list changes, this schema
-// and the mapping below must change with it, in the same order.
+// Plaso emits one JSON object per event. Its fields VARY per parser: an fs:stat
+// event carries inode/file_size, a pe_coff:file event carries imphash/sha256,
+// a linux:utmp:event carries the terminal and address — a flat CSV forced all of
+// that into 23 lowest-common-denominator columns and dropped the rest. Semi-
+// structured is the honest representation, the same shape memory.VolatilityJson
+// and host.VelociraptorJson use: a `dynamic` Record per event, accessed as
+// Record.field (Record.data_type, Record.timestamp_desc, Record.display_name…).
+//
+// TWO ENRICHMENTS the raw psort output does NOT provide, added by
+// process-log2timeline-Dynamic.sh before ingest and present on EVERY record:
+//   Record.hostname  the host the image belongs to, read from the .plaso via
+//                    pinfo.py (Plaso preprocessing resolves it from the registry
+//                    ComputerName / /etc/hostname). psort's json_line omits it.
+//   Record.volume    the source image/volume identifier, so an event's drive of
+//                    origin is recoverable. psort's json_line omits it too.
+// The output file is also named by hostname (from pinfo), not the image filename.
+//
+// Timestamp is LIFTED to a real datetime column. Plaso's json_line `timestamp`
+// is an integer of MICROSECONDS since epoch; the ingest prepare hook converts it
+// once (ingestion mappings cannot call unixtime_microseconds_todatetime), so the
+// table is time-filterable without reaching into Record.
+//
+// SourceImage / Timestamp are per-file/per-record constants .ingest cannot
+// inject, so ingest-kusto.sh's l2t_prepare hook wraps each line as
+// {SourceImage, Timestamp, Record} — the same constant-injection pattern the
+// Volatility/Velociraptor/Zeek loaders use.
 //=============================================================================
-.create-merge table L2tCsv (
-    Date:            string,
-    Timestamp:       datetime,
-    Description:     string,
-    DescriptionShort:string,
-    DisplayName:     string,
-    FileName:        string,
-    Host:            string,
-    Hostname:        string,
-    Inode:           string,
-    Macb:            string,
-    Message:         string,
-    MessageShort:    string,
-    Source:          string,
-    SourceType:      string,
-    SourceLong:      string,
-    Tag:             string,
-    Time:            string,
-    TimestampDesc:   string,
-    Timezone:        string,
-    Type:            string,
-    User:            string,
-    UserName:        string,
-    Zone:            string
+.create-merge table L2tJson (
+    SourceImage: string,
+    Timestamp:   datetime,
+    Record:      dynamic
 )
 
-.create-or-alter table L2tCsv ingestion csv mapping "L2tCsvMapping"
+.create-or-alter table L2tJson ingestion json mapping "L2tJsonMapping"
 ```[
-  {"Column":"Date",            "Properties":{"Ordinal":"0"}},
-  {"Column":"Timestamp",       "Properties":{"Ordinal":"1"}},
-  {"Column":"Description",     "Properties":{"Ordinal":"2"}},
-  {"Column":"DescriptionShort","Properties":{"Ordinal":"3"}},
-  {"Column":"DisplayName",     "Properties":{"Ordinal":"4"}},
-  {"Column":"FileName",        "Properties":{"Ordinal":"5"}},
-  {"Column":"Host",            "Properties":{"Ordinal":"6"}},
-  {"Column":"Hostname",        "Properties":{"Ordinal":"7"}},
-  {"Column":"Inode",           "Properties":{"Ordinal":"8"}},
-  {"Column":"Macb",            "Properties":{"Ordinal":"9"}},
-  {"Column":"Message",         "Properties":{"Ordinal":"10"}},
-  {"Column":"MessageShort",    "Properties":{"Ordinal":"11"}},
-  {"Column":"Source",          "Properties":{"Ordinal":"12"}},
-  {"Column":"SourceType",      "Properties":{"Ordinal":"13"}},
-  {"Column":"SourceLong",      "Properties":{"Ordinal":"14"}},
-  {"Column":"Tag",             "Properties":{"Ordinal":"15"}},
-  {"Column":"Time",            "Properties":{"Ordinal":"16"}},
-  {"Column":"TimestampDesc",   "Properties":{"Ordinal":"17"}},
-  {"Column":"Timezone",        "Properties":{"Ordinal":"18"}},
-  {"Column":"Type",            "Properties":{"Ordinal":"19"}},
-  {"Column":"User",            "Properties":{"Ordinal":"20"}},
-  {"Column":"UserName",        "Properties":{"Ordinal":"21"}},
-  {"Column":"Zone",            "Properties":{"Ordinal":"22"}}
+  {"Column":"SourceImage", "Properties":{"Path":"$.SourceImage"}},
+  {"Column":"Timestamp",   "Properties":{"Path":"$.Timestamp"}},
+  {"Column":"Record",      "Properties":{"Path":"$.Record"}}
 ]```
 
 //=============================================================================
@@ -182,14 +165,32 @@ VelociraptorArtefacts() {
 //=============================================================================
 // Convenience views.
 //
-// L2t rows carry a timestamp_desc saying WHICH timestamp the row represents.
+// L2t events carry a timestamp_desc saying WHICH timestamp the event represents.
 // Filtering to creation events is the common case and easy to get wrong.
 //=============================================================================
 .create-or-alter function
-with (docstring = "Plaso rows whose timestamp is a creation time", folder = "Views")
+with (docstring = "Plaso events whose timestamp is a creation time", folder = "Views")
 L2tCreations() {
-    L2tCsv
-    | where TimestampDesc matches regex @"(?i)creation|crtime|birth"
+    L2tJson
+    | where tostring(Record.timestamp_desc) matches regex @"(?i)creation|crtime|birth"
+}
+
+// The common Plaso fields surfaced as named columns out of the dynamic Record,
+// so downstream queries and the CAR functions are not littered with tostring().
+// Everything else stays in Record (Record.imphash, Record.inode, …).
+.create-or-alter function
+with (docstring = "Plaso events with the common fields projected out of Record", folder = "Views")
+L2tEvents() {
+    L2tJson
+    | extend
+        DataType      = tostring(Record.data_type),
+        TimestampDesc = tostring(Record.timestamp_desc),
+        DisplayName   = tostring(Record.display_name),
+        Message       = tostring(Record.message),
+        FileName       = tostring(Record.filename),
+        Parser        = tostring(Record.parser),
+        Hostname      = tostring(Record.hostname),
+        Volume        = tostring(Record.volume)
 }
 
 .create-or-alter function

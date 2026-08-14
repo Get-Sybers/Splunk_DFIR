@@ -27,11 +27,11 @@
 //
 //   CarFlow         Zeek conn + Sysmon 3 (network connect)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
-//                   + Plaso UTMP-session rows (Linux wtmp/utmp) + auditd PAM
-//   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso execution
-//                   artefacts, Linux cron
-//   CarService      EvtxECmd 7045/4697 (Windows) + Linux systemd (auditd)
-//   CarFile         Plaso filesystem rows + Sysmon 11/23 (create/delete)
+//                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
+//   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
+//                   artefacts (prefetch/amcache/appcompat), Linux cron
+//   CarService      EvtxECmd 7045/4697 (Windows only — see the function note)
+//   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
 //   CarDriver       Sysmon 6 (driver loaded)
@@ -187,67 +187,63 @@ CarUserSession() {
         | project Timestamp = TimeCreated, action, user, sid, logon_id, hostname,
                   fqdn, src_ip, src_port, src_hostname, EventId, LogonType,
                   platform, SourceFile;
+    // Linux utmp (wtmp/utmp). Plaso's utmp parser gives TYPED fields — no message
+    // regex needed as the CSV path required. `login_type` is the utmp ut_type
+    // (2 boot, 6 login process, 7 user process, 8 dead process); `hostname` is
+    // the login SOURCE host (not the box's name), so it maps to src_hostname,
+    // while the box itself is the enriched Record.image_hostname.
     let FromUtmp =
-        database("host").L2tCsv
-        | where SourceLong == "UTMP session"
+        database("host").L2tJson
+        | where tostring(Record.data_type) == "linux:utmp:event"
         | extend
-            status = extract(@"Status:\s*(\w+)", 1, Message),
-            ip     = extract(@"IP Address:\s*(\S+)", 1, Message)
+            lt    = toint(Record.login_type),
+            ip    = tostring(Record.ip_address),
+            srchn = tostring(Record.hostname)
         | extend
-            action       = case(status == "USER_PROCESS", "login",
-                                status == "DEAD_PROCESS",  "logout",
-                                status == "LOGIN_PROCESS", "login",
-                                status == "BOOT_TIME",     "boot",
-                                ""),
-            user         = extract(@"User:\s*(\S+)", 1, Message),
+            action       = case(lt == 7, "login", lt == 6, "login",
+                                lt == 8, "logout", lt == 2, "boot", ""),
+            user         = tostring(Record.username),
             sid          = "",
             logon_id     = "",
-            hostname     = Hostname,
+            hostname     = tostring(Record.image_hostname),
             fqdn         = "",
             src_ip       = iff(ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", ip),
             src_port     = int(null),
-            src_hostname = extract(@"Terminal:\s*(\S+)", 1, Message),
+            src_hostname = iff(srchn in ("localhost", "", "::1", "127.0.0.1"), "", srchn),
             EventId      = int(null),
             LogonType    = int(null),
             platform     = "linux"
         | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
                   src_ip, src_port, src_hostname, EventId, LogonType, platform,
-                  SourceFile = DisplayName;
-    // Linux auditd PAM events — richer than utmp (they carry acct, addr,
-    // hostname and the res=success/failed outcome). USER_START is a session
-    // open, USER_END a close. utmp and auditd are INDEPENDENT evidence for the
-    // same sessions, so both appear, distinguished by SourceFile — the same way
-    // CarProcess unions EvtxECmd and Plaso for one execution.
-    let FromLinuxAudit =
-        database("host").L2tCsv
-        | where SourceLong == "Audit Log"
-              and Message matches regex @"audit_type:\s*(USER_START|USER_END|USER_LOGIN)"
+                  SourceFile = SourceImage;
+    // Linux SSH logins — a real, typed source the CSV path never surfaced.
+    // Plaso's ssh:login parser (sshd "Accepted/Failed <method> for <user> from
+    // <ip>") gives username, ip_address, port and authentication_method as
+    // fields. (This replaces the former auditd PAM branch, which was fixture-only
+    // — no standard Plaso parser emits the "audit_type: USER_START" shape it
+    // parsed. An auditd-enabled image would add a real PAM branch; see the
+    // Runtime-Validation note.)
+    let FromSsh =
+        database("host").L2tJson
+        | where tostring(Record.data_type) == "syslog:ssh:login"
+        | extend ip = tostring(Record.ip_address)
         | extend
-            atype = extract(@"audit_type:\s*(\w+)", 1, Message),
-            acct  = extract(@'acct=""?([^""\s]+)', 1, Message),
-            addr  = extract(@"addr=(\S+)", 1, Message),
-            hn    = extract(@"hostname=(\S+)", 1, Message),
-            ses   = extract(@"\bses=(\d+)", 1, Message)
-        | extend
-            action       = case(atype == "USER_START", "login",
-                                atype == "USER_END",   "logout",
-                                atype == "USER_LOGIN", "login",
-                                ""),
-            user         = acct,
+            action       = "login",
+            user         = tostring(Record.username),
             sid          = "",
-            logon_id     = ses,
-            hostname     = Hostname,
+            logon_id     = "",
+            hostname     = tostring(Record.image_hostname),
             fqdn         = "",
-            src_ip       = iff(addr in ("?", "", "0.0.0.0", "::1", "127.0.0.1"), "", addr),
-            src_port     = int(null),
-            src_hostname = iff(hn in ("?", ""), "", hn),
+            src_ip       = iff(ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", ip),
+            src_port     = toint(Record.port),
+            src_hostname = "",
             EventId      = int(null),
             LogonType    = int(null),
             platform     = "linux"
         | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
                   src_ip, src_port, src_hostname, EventId, LogonType, platform,
-                  SourceFile = DisplayName;
-    union FromEvtx, FromUtmp, FromLinuxAudit
+                  SourceFile = SourceImage;
+    union FromEvtx, FromUtmp, FromSsh
 }
 
 //=============================================================================
@@ -313,13 +309,12 @@ CarProcess() {
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
                   user, hostname, Origin, SourceFile;
     let FromPlaso =
-        database("host").L2tCsv
-        | where SourceLong matches regex @"(?i)prefetch|amcache|appcompat"
+        database("host").L2tJson
+        | where tostring(Record.data_type) matches regex @"(?i)prefetch|amcache|appcompatcache"
         | extend
-            Timestamp         = Timestamp,
             action            = "create",
-            exe               = FileName,
-            image_path        = DisplayName,
+            exe               = tostring(coalesce(Record.executable, Record.filename, Record.display_name)),
+            image_path        = tostring(Record.display_name),
             parent_exe        = "",
             parent_image_path = "",
             command_line      = "",
@@ -327,41 +322,38 @@ CarProcess() {
             ppid              = long(null),
             pid_hex           = "",
             ppid_hex          = "",
-            user              = UserName,
-            hostname          = Hostname,
-            Origin            = strcat("plaso:", SourceLong)
+            user              = tostring(Record.username),
+            hostname          = tostring(Record.image_hostname),
+            Origin            = strcat("plaso:", tostring(Record.data_type))
         | project Timestamp, action, exe, image_path, parent_exe,
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile = DisplayName;
-    // Linux: cron command execution. syslog CROND lines record THAT a command
-    // ran with its command line and the crond worker's pid — but not ppid or a
-    // parent image, the same shape as the Plaso execution artefacts above.
-    // (This host's auditd had no execve rule, so there are no SYSCALL execve
-    // records; cron is the process-execution evidence that IS present. A host
-    // auditing execve would add a richer branch here with pid/ppid/exe.)
+                  user, hostname, Origin, SourceFile = SourceImage;
+    // Linux: cron command execution. Plaso's cron parser (syslog:cron:task_run)
+    // gives the command line, the crond worker's pid and the user as TYPED fields
+    // (Record.command / Record.pid / Record.username) — no message regex, unlike
+    // the CSV path. It records THAT a command ran but not ppid or a parent image,
+    // the same shape as the Plaso execution artefacts above. A host auditing
+    // execve would add a richer branch with pid/ppid/exe.
     let FromLinuxCron =
-        database("host").L2tCsv
-        | where SourceLong == "Log File" and Message matches regex @"CMD \("
-        | extend
-            command_line      = extract(@"CMD \((.*)\)\s*$", 1, Message),
-            cron_user         = extract(@"\(([\w.-]+)\) CMD", 1, Message),
-            cron_pid          = extract(@"pid:\s*(\d+)", 1, Message)
+        database("host").L2tJson
+        | where tostring(Record.data_type) == "syslog:cron:task_run"
+        | extend command_line = tostring(Record.command)
         | extend
             action            = "create",
             exe               = extract(@"^(\S+)", 1, command_line),
             image_path        = extract(@"^(\S+)", 1, command_line),
             parent_exe        = "",
             parent_image_path = "",
-            pid               = tolong(cron_pid),
+            pid               = tolong(Record.pid),
             ppid              = long(null),
             pid_hex           = "",
             ppid_hex          = "",
-            user              = cron_user,
-            hostname          = Hostname,
+            user              = tostring(Record.username),
+            hostname          = tostring(Record.image_hostname),
             Origin            = "linux:cron"
         | project Timestamp, action, exe, image_path, parent_exe,
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
-                  user, hostname, Origin, SourceFile = DisplayName;
+                  user, hostname, Origin, SourceFile = SourceImage;
     // Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest process
     // source of the lot: full pid, ppid, parent image and command line, all in
     // one event. Sysmon writes ProcessId/ParentProcessId as DECIMAL strings
@@ -420,23 +412,13 @@ CarService() {
             platform    = "windows"
         | project Timestamp = TimeCreated, action, name, module_path, user,
                   hostname, EventId, platform, SourceFile;
-    let FromLinux =
-        database("host").L2tCsv
-        | where SourceLong == "Audit Log"
-              and Message matches regex @"audit_type:\s*SERVICE_(START|STOP)"
-        | extend
-            atype = extract(@"audit_type:\s*SERVICE_(\w+)", 1, Message),
-            name  = extract(@"unit=(\S+)", 1, Message),
-            exe   = extract(@'exe=""?([^""\s]+)', 1, Message)
-        | extend
-            action      = iff(atype == "START", "create", "stop"),
-            module_path = exe,
-            user        = UserName,
-            hostname    = Hostname,
-            platform    = "linux"
-        | project Timestamp, action, name, module_path, user, hostname,
-                  EventId = int(null), platform, SourceFile = DisplayName;
-    union FromEvtx, FromLinux
+    // Windows only. Linux has no dead-box "service installed" event equivalent to
+    // 7045: with Plaso, systemd activity surfaces as syslog:line (reporter=systemd)
+    // RUNTIME messages, not installs, and the former auditd SERVICE_START/STOP
+    // branch was fixture-only — no standard Plaso parser emits that shape. An
+    // auditd-enabled image (or a journald service-install signal) would add a real
+    // Linux branch; see the Runtime-Validation note.
+    FromEvtx
 }
 
 //=============================================================================
@@ -449,31 +431,33 @@ CarService() {
 with (docstring = "MITRE CAR 'file' object", folder = "CAR")
 CarFile() {
     let FromPlaso =
-        database("host").L2tCsv
-        | where SourceLong matches regex @"(?i)\bfs\b|ntfs|file"
+        database("host").L2tJson
+        | where tostring(Record.data_type) startswith "fs:"
         | extend
-            // MACB -> CAR action. The modify branch matches "modification"
-            // broadly, not just "content modification": against real Plaso
-            // output an NTFS image emits THREE modification descriptions —
-            // "Content Modification Time" (mtime, the M), "Metadata
-            // Modification Time" (the MFT metadata-change time, the C in MACB)
-            // and "File Last Modification Time". The original regex caught only
-            // the first, leaving 260 of 1240 rows on real images with an empty
-            // action. Metadata change (permissions/MFT record) is still a file
-            // modification for CAR's purposes, so all three map to "modify".
-            // create is tested first, so any overlap resolves in its favour.
-            action = case(TimestampDesc matches regex @"(?i)creation|crtime|birth", "create",
-                          TimestampDesc matches regex @"(?i)modification|mtime", "modify",
-                          TimestampDesc matches regex @"(?i)last access|atime", "read",
-                          TimestampDesc matches regex @"(?i)deletion|deleted", "delete",
+            td = tostring(Record.timestamp_desc),
+            fn = tostring(Record.filename),
+            dn = tostring(Record.display_name)
+        | extend
+            // MACB -> CAR action from Plaso's per-event timestamp_desc. modify
+            // matches "modification" broadly: a real NTFS image emits Content,
+            // Metadata and File Last modification descriptions, all of which are
+            // file modifications for CAR. create is tested first, so any overlap
+            // resolves in its favour.
+            action = case(td matches regex @"(?i)creation|crtime|birth", "create",
+                          td matches regex @"(?i)modification|mtime", "modify",
+                          td matches regex @"(?i)last access|atime", "read",
+                          td matches regex @"(?i)deletion|deleted", "delete",
                           ""),
-            file_path     = replace_regex(DisplayName, @"^[A-Z0-9]+:", ""),
-            file_name     = replace_regex(replace_regex(DisplayName, @"^[A-Z0-9]+:", ""), @"^.*[\\/]", ""),
-            hostname      = Hostname,
-            user          = UserName
-        | extend creation_time = iff(action == "create", Timestamp, datetime(null))
+            // Plaso gives a clean `filename` on fs events; fall back to stripping
+            // the "NTFS:"/"TSK:" volume prefix off display_name when it is absent.
+            file_path = iff(isnotempty(fn), fn, replace_regex(dn, @"^[A-Z0-9]+:", "")),
+            hostname  = tostring(Record.image_hostname),
+            user      = tostring(Record.username)
+        | extend
+            file_name     = replace_regex(file_path, @"^.*[\\/]", ""),
+            creation_time = iff(action == "create", Timestamp, datetime(null))
         | project Timestamp, action, file_name, file_path, hostname, user,
-                  creation_time, Origin = "plaso", SourceFile = DisplayName;
+                  creation_time, Origin = "plaso", SourceFile = SourceImage;
     // Sysmon 11 (FileCreate) / 23 (FileDelete) — endpoint file activity with the
     // creating image and user, which the Plaso filesystem view (a MACB timeline,
     // no process context) cannot supply. TargetFilename is the path; file_name is

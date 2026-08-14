@@ -343,6 +343,51 @@ PY
     printf '%s\n' "$staged"
 }
 
+# prepare hook: Plaso's psort -o json_line writes one JSON event per line, but
+# host.L2tJson wants each wrapped {SourceImage, Timestamp, Record}. Two things
+# .ingest cannot do are done here:
+#   Timestamp  Plaso's `timestamp` is an integer of MICROSECONDS since epoch; a
+#              JSON ingestion mapping cannot call a conversion function, so it is
+#              turned into an ISO-8601 datetime string once, here. Events with a
+#              zero/absent/out-of-range timestamp get no Timestamp (stays null)
+#              rather than a bogus 1970 value.
+#   SourceImage  the per-file provenance constant.
+# (hostname/volume are already injected into each Record by
+# process-log2timeline-Dynamic.sh from pinfo, so they are not added here.)
+l2t_prepare() {
+    local f="$1" staged rel
+    rel="${f#"$PROCESSED_DIR"/}"
+    staged="$STAGING_DIR/$(staged_name "$f")"
+    if [[ $DRY_RUN -eq 0 ]]; then
+        python3 - "$f" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
+import json, sys, datetime
+path, rel = sys.argv[1], sys.argv[2]
+n = 0
+for line in open(path, encoding="utf-8", errors="replace"):
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        rec = json.loads(line)
+    except Exception:
+        continue
+    out = {"SourceImage": rel, "Record": rec}
+    ts = rec.get("timestamp")
+    if isinstance(ts, (int, float)) and ts > 0:
+        try:
+            out["Timestamp"] = datetime.datetime.fromtimestamp(
+                ts / 1_000_000, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        except (OverflowError, OSError, ValueError):
+            pass
+    sys.stdout.write(json.dumps(out) + "\n")
+    n += 1
+sys.exit(0 if n else 1)
+PY
+        [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
+    fi
+    printf '%s\n' "$staged"
+}
+
 # ------------------------------------------------------------------------------
 # Source table — one row per source, one driver below. The three ingest paths
 # were near-identical blocks that had already drifted in small ways; a new
@@ -362,7 +407,7 @@ PY
 #                volatility_prepare / velociraptor_prepare.
 # ------------------------------------------------------------------------------
 SOURCES=(
-    "l2t|Plaso (l2t:csv -> host.L2tCsv)|log2timeline/csv|*.csv|host|L2tCsv|L2tCsvMapping|csv|1|-|-"
+    "l2t|Plaso (l2t:json_line -> host.L2tJson)|log2timeline/jsonl|*.jsonl|host|L2tJson|L2tJsonMapping|multijson|0|l2t_prepare|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek conn (conn.json -> network.ZeekConn)|zeek|conn.json|network|ZeekConn|ZeekConnMapping|multijson|0|-|-"
     "zeek|Zeek other logs (-> network.Zeek)|zeek|*.json|network|Zeek|ZeekJsonMapping|multijson|0|zeek_generic_prepare|-"

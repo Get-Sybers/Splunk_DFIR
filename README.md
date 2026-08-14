@@ -90,7 +90,7 @@ discovered.
 
 | Capability | State | Notes |
 |:---|:---|:---|
-| E01 → Plaso timeline CSV | ✅ Works | `process-log2timeline-Dynamic.sh`; `psteal` dynamic CSV, job logs kept |
+| Disk images → Plaso timeline JSON | ✅ Works | `process-log2timeline-Dynamic.sh`; `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → `host.L2tJson` |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |

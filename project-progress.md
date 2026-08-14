@@ -37,7 +37,8 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
-| Linux Logs (syslog / auditd / utmp, via Plaso)                | ✅            | csv             | ✅ `host.L2tCsv` | ✅ (`user_session` utmp+PAM, `process` cron, `service` systemd) |
+| [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ `process-log2timeline-Dynamic.sh` | json_line (+ `.plaso` db) | ✅ `host.L2tJson` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
+| Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tJson` | ✅ (`user_session` utmp+ssh, `process` cron) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
 | [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |
 | [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |              |               |
@@ -138,6 +139,28 @@ Things that are broken or unsafe right now.
 ---
 
 ## ✅ Done
+
+### 🔹 **Plaso pipeline migrated CSV → JSON (json_line), with a Plaso output module**
+✅ **Plaso now outputs `json_line`, not the flat 23-column CSV** — the CSV forced
+every parser's event into a lowest-common-denominator schema and dropped the rest
+(imphash, sha256, pe_type, pathspec, the typed utmp/cron/ssh fields…). New
+`host.L2tJson` table: a `dynamic Record` per event (same shape as
+`VolatilityJson`/`VelociraptorJson`), Timestamp lifted from Plaso's microsecond
+`timestamp` in the ingest prepare hook. The 4 Plaso-fed CAR functions
+(`CarFile`/`CarProcess`/`CarUserSession`/`CarService`) were rewritten to read
+`Record.data_type` + typed fields instead of the CSV's `SourceLong`/message
+regexes — cleaner and validated on **real** json output (dfrws Raspberry Pi,
+host `octopi`): `CarFile` 265k fs events, `CarProcess` cron (typed
+command/pid/user), `CarUserSession` utmp login/logout/boot **+ real SSH logins**.
+✅ **`dev-scripts/plaso/l2t_json_dfir.py` — a Plaso output module** that adds, from
+the `.plaso` db, on every event: `image_hostname` (the box's own name from
+system_configuration — consistent, unlike per-event GetHostname), `username`,
+`disk_id`, `volume_id`, `volume_offset`. The processor runs the two-step
+(`log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir`), naming output by
+hostname. The hostname/username half is upstreamed as
+[log2timeline/plaso#5194](https://github.com/log2timeline/plaso/pull/5194) (#41).
+✅ Fixed a critical regression first: the processor had been left emitting
+`json_line` at a path/format the CSV ingest couldn't read (#38).
 
 ### 🔹 **CAR to 9/9 objects (Sysmon) + Zeek all-log JSON pipeline**
 ✅ **All nine CAR objects sourced and validated live.** Added `CarDriver()`
