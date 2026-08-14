@@ -247,7 +247,7 @@ done
 # from the schema, not hardcoded: a literal threshold silently stops matching
 # the moment an object is added, and the original `-ge 6` passed with only 6 of
 # the 7 Car* functions present.
-expected_car=$(grep -cE '^Car[A-Za-z]+\(\)' "$SCHEMA_DIR/40-mitre.kql" 2>/dev/null || echo 0)
+expected_car=$(grep -cE '^Car[A-Za-z0-9_]+\(\)' "$SCHEMA_DIR/40-mitre.kql" 2>/dev/null || echo 0)
 car=$(kusto_scalar "mitre" ".show functions | where Name startswith 'Car' | count")
 if ! [[ "${car:-x}" =~ ^[0-9]+$ ]]; then
     echo "   ❌ Could not read the CAR function count from 'mitre'."
