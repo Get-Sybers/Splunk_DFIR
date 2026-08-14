@@ -10,47 +10,59 @@
 // column literally called "datetime", which collides with a Kusto type keyword.
 
 //=============================================================================
-// L2tJson — Plaso, JSON Lines (log2timeline.py -> .plaso -> psort.py -o json_line)
+// L2t* — Plaso json_line, ONE TABLE PER TOP-LEVEL PARSER
 //
-// Plaso emits one JSON object per event. Its fields VARY per parser: an fs:stat
-// event carries inode/file_size, a pe_coff:file event carries imphash/sha256,
-// a linux:utmp:event carries the terminal and address — a flat CSV forced all of
-// that into 23 lowest-common-denominator columns and dropped the rest. Semi-
-// structured is the honest representation, the same shape memory.VolatilityJson
-// and host.VelociraptorJson use: a `dynamic` Record per event, accessed as
-// Record.field (Record.data_type, Record.timestamp_desc, Record.display_name…).
+// (log2timeline.py -> .plaso -> psort.py -o l2t_json_dfir -> per-parser tables)
 //
-// TWO ENRICHMENTS the raw psort output does NOT provide, added by
-// process-log2timeline-Dynamic.sh before ingest and present on EVERY record:
-//   Record.hostname  the host the image belongs to, read from the .plaso via
-//                    pinfo.py (Plaso preprocessing resolves it from the registry
-//                    ComputerName / /etc/hostname). psort's json_line omits it.
-//   Record.volume    the source image/volume identifier, so an event's drive of
-//                    origin is recoverable. psort's json_line omits it too.
-// The output file is also named by hostname (from pinfo), not the image filename.
+// Plaso emits one JSON object per event, and its fields vary PER PARSER: an
+// fs:stat event carries inode/file_size, a prefetch event run_count/executable,
+// a utmp event terminal/ip_address — 42 distinct field signatures across the 59
+// parsers. Rather than one table scanned by every query, or ~59 typed tables,
+// events are split by TOP-LEVEL parser (winreg, filestat, usnjrnl, text, …) into
+// L2t<Parser> tables, each a `dynamic` Record (the honest shape for a per-parser
+// schema, as memory.VolatilityJson / host.VelociraptorJson use). Each CAR
+// function then scans only the tables it needs, not the whole timeline.
 //
-// Timestamp is LIFTED to a real datetime column. Plaso's json_line `timestamp`
-// is an integer of MICROSECONDS since epoch; the ingest prepare hook converts it
-// once (ingestion mappings cannot call unixtime_microseconds_todatetime), so the
-// table is time-filterable without reaching into Record.
+// Every table has the SAME shape:
+//   SourceImage  per-file provenance constant (.ingest cannot inject it)
+//   Timestamp    LIFTED datetime — Plaso's json_line `timestamp` is an integer of
+//                MICROSECONDS since epoch, converted once by the ingest (a JSON
+//                ingestion mapping cannot call unixtime_microseconds_todatetime)
+//   Parser       the FULL parser string (e.g. "winreg/appcompatcache"), so the
+//                plugin stays distinguishable WITHIN a top-level-parser table
+//   Record       the whole Plaso event, incl. the process-log2timeline-Dynamic.sh
+//                enrichments (Record.image_hostname / disk_id / volume_id / …)
 //
-// SourceImage / Timestamp are per-file/per-record constants .ingest cannot
-// inject, so ingest-kusto.sh's l2t_prepare hook wraps each line as
-// {SourceImage, Timestamp, Record} — the same constant-injection pattern the
-// Volatility/Velociraptor/Zeek loaders use.
+// ingest-kusto.sh splits each json_line by top-level parser, wraps each event
+// {SourceImage, Timestamp, Parser, Record}, and CREATES L2t<Parser> + its mapping
+// on demand — so a parser not pre-declared here (a mac/android/browser parser on
+// some image) still lands in its own table. Only the CAR-referenced tables are
+// pre-declared below, so the CAR functions resolve on an empty deploy; the shared
+// L2tMapping is applied to every table (all have identical shape).
 //=============================================================================
-.create-merge table L2tJson (
-    SourceImage: string,
-    Timestamp:   datetime,
-    Record:      dynamic
-)
+.create-merge table L2tFilestat (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tMft      (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tUsnjrnl  (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tPrefetch (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tWinreg   (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tText     (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tUtmp     (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
+.create-merge table L2tUtmpx    (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)
 
-.create-or-alter table L2tJson ingestion json mapping "L2tJsonMapping"
-```[
-  {"Column":"SourceImage", "Properties":{"Path":"$.SourceImage"}},
-  {"Column":"Timestamp",   "Properties":{"Path":"$.Timestamp"}},
-  {"Column":"Record",      "Properties":{"Path":"$.Record"}}
-]```
+// The "L2tMapping" JSON ingestion mapping (SourceImage/Timestamp/Parser/Record
+// paths, identical for every L2t table) is created on demand by
+// ingest-kusto.sh's run_l2t, alongside each L2t<Parser> table — so the same
+// definition covers both the tables above and any parser-table created at
+// ingest time, and there is no per-table mapping to keep in lockstep here.
+
+// All Plaso events across every parser table — the cross-parser timeline. The
+// wildcard picks up on-demand tables too, so a new parser is visible here with
+// no schema change.
+.create-or-alter function
+with (docstring = "All Plaso events across every L2t parser table", folder = "Views")
+L2tAll() {
+    union withsource = L2tTable isfuzzy=true L2t*
+}
 
 //=============================================================================
 // EvtxEcmdJson — EvtxECmd --json, one object per line
@@ -171,26 +183,28 @@ VelociraptorArtefacts() {
 .create-or-alter function
 with (docstring = "Plaso events whose timestamp is a creation time", folder = "Views")
 L2tCreations() {
-    L2tJson
+    L2tAll()
     | where tostring(Record.timestamp_desc) matches regex @"(?i)creation|crtime|birth"
 }
 
 // The common Plaso fields surfaced as named columns out of the dynamic Record,
 // so downstream queries and the CAR functions are not littered with tostring().
-// Everything else stays in Record (Record.imphash, Record.inode, …).
+// Everything else stays in Record (Record.imphash, Record.inode, …). Spans all
+// parser tables; filter on Parser/DataType to scope, or query the L2t<Parser>
+// table directly.
 .create-or-alter function
-with (docstring = "Plaso events with the common fields projected out of Record", folder = "Views")
+with (docstring = "Plaso events (all parsers) with common fields projected out of Record", folder = "Views")
 L2tEvents() {
-    L2tJson
+    L2tAll()
     | extend
         DataType      = tostring(Record.data_type),
         TimestampDesc = tostring(Record.timestamp_desc),
         DisplayName   = tostring(Record.display_name),
         Message       = tostring(Record.message),
-        FileName       = tostring(Record.filename),
-        Parser        = tostring(Record.parser),
-        Hostname      = tostring(Record.hostname),
-        Volume        = tostring(Record.volume)
+        FileName      = tostring(Record.filename),
+        Hostname      = tostring(Record.image_hostname),
+        DiskId        = tostring(Record.disk_id),
+        VolumeId      = tostring(Record.volume_id)
 }
 
 .create-or-alter function

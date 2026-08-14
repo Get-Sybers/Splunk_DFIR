@@ -343,49 +343,49 @@ PY
     printf '%s\n' "$staged"
 }
 
-# prepare hook: Plaso's psort -o json_line writes one JSON event per line, but
-# host.L2tJson wants each wrapped {SourceImage, Timestamp, Record}. Two things
-# .ingest cannot do are done here:
-#   Timestamp  Plaso's `timestamp` is an integer of MICROSECONDS since epoch; a
-#              JSON ingestion mapping cannot call a conversion function, so it is
-#              turned into an ISO-8601 datetime string once, here. Events with a
-#              zero/absent/out-of-range timestamp get no Timestamp (stays null)
-#              rather than a bogus 1970 value.
-#   SourceImage  the per-file provenance constant.
-# (hostname/volume are already injected into each Record by
-# process-log2timeline-Dynamic.sh from pinfo, so they are not added here.)
-l2t_prepare() {
-    local f="$1" staged rel
-    rel="${f#"$PROCESSED_DIR"/}"
-    staged="$STAGING_DIR/$(staged_name "$f")"
-    if [[ $DRY_RUN -eq 0 ]]; then
-        python3 - "$f" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
-import json, sys, datetime
-path, rel = sys.argv[1], sys.argv[2]
-n = 0
-for line in open(path, encoding="utf-8", errors="replace"):
-    line = line.strip()
-    if not line:
-        continue
-    try:
-        rec = json.loads(line)
-    except Exception:
-        continue
-    out = {"SourceImage": rel, "Record": rec}
-    ts = rec.get("timestamp")
-    if isinstance(ts, (int, float)) and ts > 0:
-        try:
-            out["Timestamp"] = datetime.datetime.fromtimestamp(
-                ts / 1_000_000, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        except (OverflowError, OSError, ValueError):
-            pass
-    sys.stdout.write(json.dumps(out) + "\n")
-    n += 1
-sys.exit(0 if n else 1)
-PY
-        [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
-    fi
-    printf '%s\n' "$staged"
+# Plaso l2t has its OWN driver (run_l2t, below), not a SOURCES row: each event is
+# routed to a table by its TOP-LEVEL parser, so one json_line file fans out into
+# several L2t<Parser> tables. scripts/lib/l2t-split.py does the split + the
+# {SourceImage, Timestamp, Parser, Record} wrapping; run_l2t creates each table on
+# demand and ingests. Every L2t* table shares this mapping shape.
+L2T_MAPPING_JSON='[{"Column":"SourceImage","Properties":{"Path":"$.SourceImage"}},{"Column":"Timestamp","Properties":{"Path":"$.Timestamp"}},{"Column":"Parser","Properties":{"Path":"$.Parser"}},{"Column":"Record","Properties":{"Path":"$.Record"}}]'
+
+run_l2t() {
+    want l2t || return 0
+    echo "📄 Plaso (l2t:json_line -> host.L2t<Parser>, one table per top-level parser)"
+    local files=()
+    mapfile -t files < <(find "$PROCESSED_DIR/log2timeline/jsonl" -name '*.jsonl' -type f 2>/dev/null | sort)
+    if [[ ${#files[@]} -eq 0 ]]; then echo "      (none)"; return 0; fi
+    [[ $DRY_RUN -eq 0 ]] && mkdir -p "$STAGING_DIR"
+
+    local -A ensured=()
+    local f rel prefix table hostpath r
+    for f in "${files[@]}"; do
+        rel="${f#"$PROCESSED_DIR"/}"
+        prefix="$(staged_name "$f")"
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "      would split + ingest per parser: $rel"
+            TOTAL_FILES=$((TOTAL_FILES + 1)); continue
+        fi
+        # l2t-split.py prints "<TableName><TAB><staged_path>" per top-level parser.
+        while IFS=$'\t' read -r table hostpath; do
+            [[ -n "$table" && -f "$hostpath" ]] || continue
+            # Create the per-parser table + its mapping on demand (idempotent), so
+            # a parser not pre-declared in the schema still gets its own table.
+            if [[ -z "${ensured[$table]:-}" ]]; then
+                kusto_mgmt host ".create-merge table $table (SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)" >/dev/null 2>&1
+                kusto_mgmt host ".create-or-alter table $table ingestion json mapping \"L2tMapping\" \`\`\`${L2T_MAPPING_JSON}\`\`\`" >/dev/null 2>&1
+                ensured[$table]=1
+            fi
+            r="$CONTAINER_STAGE/$(basename "$hostpath")"
+            if push_to_container "$hostpath" "$r"; then
+                ingest_files host "$table" "L2tMapping" multijson 0 "$r"
+            else
+                echo "      ❌ could not copy into the container: $hostpath"
+                TOTAL_FAILED=$((TOTAL_FAILED + 1))
+            fi
+        done < <(python3 "$SCRIPT_DIR/lib/l2t-split.py" "$f" "$rel" "$STAGING_DIR" "$prefix" 2>/dev/null)
+    done
 }
 
 # ------------------------------------------------------------------------------
@@ -407,7 +407,6 @@ PY
 #                volatility_prepare / velociraptor_prepare.
 # ------------------------------------------------------------------------------
 SOURCES=(
-    "l2t|Plaso (l2t:json_line -> host.L2tJson)|log2timeline/jsonl|*.jsonl|host|L2tJson|L2tJsonMapping|multijson|0|l2t_prepare|-"
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek conn (conn.json -> network.ZeekConn)|zeek|conn.json|network|ZeekConn|ZeekConnMapping|multijson|0|-|-"
     "zeek|Zeek other logs (-> network.Zeek)|zeek|*.json|network|Zeek|ZeekJsonMapping|multijson|0|zeek_generic_prepare|-"
@@ -473,6 +472,10 @@ run_source() {
 for _row in "${SOURCES[@]}"; do
     run_source "$_row"
 done
+
+# Plaso l2t is not a SOURCES row — it fans one json_line file out into several
+# L2t<Parser> tables, so it has its own driver.
+run_l2t
 
 echo ""
 echo "─────────────────────────────────────────────────────────────"

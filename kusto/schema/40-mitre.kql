@@ -193,8 +193,7 @@ CarUserSession() {
     // the login SOURCE host (not the box's name), so it maps to src_hostname,
     // while the box itself is the enriched Record.image_hostname.
     let FromUtmp =
-        database("host").L2tJson
-        | where tostring(Record.data_type) == "linux:utmp:event"
+        union database("host").L2tUtmp, database("host").L2tUtmpx
         | extend
             lt    = toint(Record.login_type),
             ip    = tostring(Record.ip_address),
@@ -224,7 +223,7 @@ CarUserSession() {
     // parsed. An auditd-enabled image would add a real PAM branch; see the
     // Runtime-Validation note.)
     let FromSsh =
-        database("host").L2tJson
+        database("host").L2tText
         | where tostring(Record.data_type) == "syslog:ssh:login"
         | extend ip = tostring(Record.ip_address)
         | extend
@@ -309,11 +308,13 @@ CarProcess() {
                   parent_image_path, command_line, pid, ppid, pid_hex, ppid_hex,
                   user, hostname, Origin, SourceFile;
     let FromPlaso =
-        database("host").L2tJson
-        | where tostring(Record.data_type) matches regex @"(?i)prefetch|amcache|appcompatcache"
+        union
+            (database("host").L2tPrefetch),
+            (database("host").L2tWinreg
+             | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam")
         | extend
             action            = "create",
-            exe               = tostring(coalesce(Record.executable, Record.filename, Record.display_name)),
+            exe               = tostring(coalesce(Record.executable, Record.path, Record.filename, Record.display_name)),
             image_path        = tostring(Record.display_name),
             parent_exe        = "",
             parent_image_path = "",
@@ -335,7 +336,7 @@ CarProcess() {
     // the same shape as the Plaso execution artefacts above. A host auditing
     // execve would add a richer branch with pid/ppid/exe.
     let FromLinuxCron =
-        database("host").L2tJson
+        database("host").L2tText
         | where tostring(Record.data_type) == "syslog:cron:task_run"
         | extend command_line = tostring(Record.command)
         | extend
@@ -431,8 +432,7 @@ CarService() {
 with (docstring = "MITRE CAR 'file' object", folder = "CAR")
 CarFile() {
     let FromPlaso =
-        database("host").L2tJson
-        | where tostring(Record.data_type) startswith "fs:"
+        union database("host").L2tFilestat, database("host").L2tMft, database("host").L2tUsnjrnl
         | extend
             td = tostring(Record.timestamp_desc),
             fn = tostring(Record.filename),
