@@ -3,8 +3,9 @@
 # YARA signature lane of process-signatures. Scans THREE sources with a ruleset:
 #
 #   files   loose files (default other_raw_data)      -> matches.jsonl
-#   disk    files pulled OUT of disk images (E01/raw)  -> disk.jsonl
-#           via Plaso image_export.py (mount-free — this LXC can't mount images)
+#   disk    disk images MOUNTED read-only, scanned in  -> disk.jsonl
+#           place (ewfmount+ntfs-3g via FUSE; needs /dev/fuse — see lib/disk-image.sh).
+#           Never extracts files out of images; skips if the host can't mount.
 #   memory  process memory, THROUGH Volatility 3       -> memory.jsonl
 #           (windows.vadyarascan — matches carry PID/process context)
 #
@@ -23,7 +24,7 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR/lib/image-export.sh"
+source "$SCRIPT_DIR/lib/disk-image.sh"
 
 YARA_SOURCES="${YARA_SOURCES:-files disk memory}"
 YARA_RULES="$(realpath -m "${YARA_RULES:-$REPO_ROOT_DIR/data_store/dependencies/yara-rules}")"
@@ -34,9 +35,6 @@ YARA_DISK_DIR="$(realpath -m "${YARA_DISK_DIR:-$REPO_ROOT_DIR/data_store/raw/dis
 YARA_MEMORY_DIR="$(realpath -m "${YARA_MEMORY_DIR:-$REPO_ROOT_DIR/data_store/raw/memory}")"   # memory source
 YARA_DISK_SUBPATH="${YARA_DISK_SUBPATH:-}"   # narrow the mounted scan, e.g. "Users" or "Windows/Temp"
 MNT_BASE="${SIG_MOUNT_BASE:-/mnt/dfir-sig}"
-SIG_ALLOW_EXTRACT="${SIG_ALLOW_EXTRACT:-0}"
-# only used by the opt-in extraction fallback (FUSE-less hosts)
-YARA_DISK_EXTS="${YARA_DISK_EXTS:-exe,dll,sys,scr,com,ocx,cpl,ps1,psm1,vbs,vbe,js,jse,wsf,hta,bat,cmd,jar,lnk,doc,docx,xls,xlsx,ppt,pptx,pdf,rtf,zip,rar,7z}"
 
 YARA_IMAGE="${YARA_IMAGE:-blacktop/yara:latest}"
 YARA_NATIVE="${YARA_NATIVE:-}"
@@ -150,17 +148,9 @@ if [[ " $YARA_SOURCES " == *" disk "* ]]; then
         done
         echo "   💽 disk: $total match(es) -> disk.jsonl"
     else
-        # No FUSE mount here (needs host /dev/fuse) — extract the targeted file
-        # types mount-free with the log2timeline container (image_export), scan,
-        # then discard the temp copies.
-        echo "   ↪ no FUSE mount — extracting {$YARA_DISK_EXTS} via image_export (transient)"
-        for img in "${images[@]}"; do
-            ex="$(mktemp -d)"; chmod 777 "$ex"
-            sig_image_export "$img" "$ex" -x "$YARA_DISK_EXTS" 2>/dev/null && \
-                total=$((total + $(scan_dir "$ex" "$out" "disk" "${img##*/}") ))
-            rm -rf "$ex"
-        done
-        echo "   💽 disk: $total match(es) -> disk.jsonl"
+        # No mounting here (needs host /dev/fuse). We do NOT extract files from
+        # images — mount-enable the host, or point YARA_TARGET at files directly.
+        sig_fuse_help
     fi
 fi
 
