@@ -67,6 +67,8 @@ PLUGINS=(
     "windows.modules"       # -> CarDriver  (kernel modules/drivers)
     "windows.netscan"       # -> CarFlow    (connections; Win7+ pool scan)
     "windows.netstat"       # -> CarFlow    (connections)
+    "windows.sessions"      # -> CarUserSession (user, session, logon time)
+    "windows.filescan"      # -> CarFile    (files resident in memory)
     "windows.malfind"
 )
 
