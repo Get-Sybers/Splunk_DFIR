@@ -278,22 +278,30 @@ PY
 # recoverable. rc 1 skips a file that is empty or not the array vol3 emits.
 volatility_prepare() {
     local f="$1" staged plugin rel
-    plugin="$(basename "$f" .json)"
+    plugin="$(basename "$f" .jsonl)"; plugin="${plugin%.json}"
     rel="${f#"$PROCESSED_DIR"/}"
     staged="$STAGING_DIR/$(staged_name "$f")"
     if [[ $DRY_RUN -eq 0 ]]; then
         python3 - "$f" "$plugin" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
 import json, sys
 path, plugin, rel = sys.argv[1], sys.argv[2], sys.argv[3]
+raw = open(path, encoding="utf-8", errors="replace").read()
+recs = []
 try:
-    data = json.load(open(path))
+    data = json.loads(raw)                       # legacy `-r json`: one array/object
+    recs = data if isinstance(data, list) else [data]
 except Exception:
+    for line in raw.splitlines():                # our `-r jsonl_dfir`: JSON Lines
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            recs.append(json.loads(line))
+        except Exception:
+            continue
+if not recs:
     sys.exit(1)
-if isinstance(data, dict):
-    data = [data]
-if not isinstance(data, list):
-    sys.exit(1)
-for rec in data:
+for rec in recs:
     sys.stdout.write(json.dumps({"Plugin": plugin, "SourceFile": rel, "Record": rec}) + "\n")
 PY
         [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
@@ -410,7 +418,7 @@ SOURCES=(
     "evtx|EvtxECmd (evtxecmd:json -> host.EvtxEcmdJson)|windows_logs|*_EvtxECmd_Output.json|host|EvtxEcmdJson|EvtxEcmdJsonMapping|multijson|0|-|-"
     "zeek|Zeek conn (conn.json -> network.ZeekConn)|zeek|conn.json|network|ZeekConn|ZeekConnMapping|multijson|0|-|-"
     "zeek|Zeek other logs (-> network.Zeek)|zeek|*.json|network|Zeek|ZeekJsonMapping|multijson|0|zeek_generic_prepare|-"
-    "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.json|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
+    "volatility|Volatility 3 (-> memory.VolatilityJson)|volatility|*.jsonl|memory|VolatilityJson|VolatilityJsonMapping|multijson|0|volatility_prepare|-"
     "velociraptor|Velociraptor collectors (-> host.VelociraptorJson)|velociraptor|*.json|host|VelociraptorJson|VelociraptorJsonMapping|multijson|0|velociraptor_prepare|-"
 )
 

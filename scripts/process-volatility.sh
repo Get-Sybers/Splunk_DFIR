@@ -2,14 +2,15 @@
 # ==============================================================================
 # Process memory images with Volatility 3 into ingestable per-plugin JSON.
 #
-# Volatility 3 is the memory-forensics tool for this pipeline. Its `-r json`
-# renderer writes ONE JSON ARRAY of row objects per plugin; ingest-kusto.sh
-# wraps each row as {Plugin, SourceFile, Record} and loads it into
-# memory.VolatilityJson, where the plugin-specific fields are reachable as
-# Record.FieldName in KQL.
+# Volatility 3 is the memory-forensics tool for this pipeline. Our custom
+# renderer (`-r jsonl_dfir`, dev-scripts/volatility/jsonl_dfir_renderer.py) writes
+# JSON LINES — one flat object per TreeGrid node (one process/connection/artefact
+# per line); ingest-kusto.sh wraps each line as {Plugin, SourceFile, Record} and
+# loads it into memory.VolatilityJson, where the plugin-specific fields are
+# reachable as Record.FieldName in KQL.
 #
 #   data_store/raw/memory/<image>              memory dump (raw/dd/lime/…)
-#   data_store/processed/volatility/<image>/<plugin>.json   one file per plugin
+#   data_store/processed/volatility/<image>/<plugin>.jsonl  one file per plugin (JSON Lines)
 #
 # ⚠️ SYMBOLS. Volatility 3's Windows plugins resolve the kernel against symbol
 #    tables (ISF) it fetches from the Volatility symbol server / Microsoft's
@@ -38,6 +39,14 @@ OUTPUT_DIR="$REPO_ROOT_DIR/data_store/processed/volatility"
 VOLATILITY_IMAGE="${VOLATILITY_IMAGE:-sk4la/volatility3:latest}"
 VOL_NATIVE="${VOL_NATIVE:-}"
 VOLATILITY_SYMBOLS="${VOLATILITY_SYMBOLS:-$REPO_ROOT_DIR/data_store/dependencies/volatility3-symbols}"
+
+# Output is JSON Lines via our custom renderer (dev-scripts/volatility/
+# jsonl_dfir_renderer.py, `-r jsonl_dfir`): one flat JSON object per TreeGrid node
+# — one process/connection/artefact per line, ingest-ready — instead of the
+# built-in `-r json`'s single nested array. The renderer is auto-registered by
+# importing it (Volatility 3 discovers CLIRenderer subclasses), loaded via a small
+# import wrapper, the same pattern as the Plaso l2t_json_dfir output module.
+VOLATILITY_RENDERER="${VOLATILITY_RENDERER:-$REPO_ROOT_DIR/dev-scripts/volatility/jsonl_dfir_renderer.py}"
 
 # The plugins run per image. Kept to the ones the analysis backend has a use for
 # (process tree, network, command lines, injected code); extend as needed.
@@ -79,56 +88,84 @@ fi
 echo ""
 
 mkdir -p "$MEMORY_DIR" "$OUTPUT_DIR" "$VOLATILITY_SYMBOLS"
+# The container runs as a non-root UID and caches downloaded kernel symbol tables
+# into the mounted symbol dir; make it writable so the cache persists across runs
+# (otherwise every run re-resolves symbols and warns it "cannot write").
+chmod 777 "$VOLATILITY_SYMBOLS" 2>/dev/null || sudo chmod 777 "$VOLATILITY_SYMBOLS" 2>/dev/null || true
 
-shopt -s nullglob nocaseglob
-# Memory dumps have no single canonical extension; take common ones plus
-# extensionless raw dumps in a memory/ directory the operator curated.
-images=()
-for pat in "$MEMORY_DIR"/*.raw "$MEMORY_DIR"/*.mem "$MEMORY_DIR"/*.dmp "$MEMORY_DIR"/*.lime \
-           "$MEMORY_DIR"/*.vmem "$MEMORY_DIR"/*dramimage "$MEMORY_DIR"/*.bin; do
-    [[ -f "$pat" ]] && images+=("$pat")
-done
+# Discover memory images anywhere UNDER the memory tree — users drop their own
+# dumps in and the sample collector nests them per corpus
+# (memory/<corpus>/<name>.mddramimage/…), so a flat glob of $MEMORY_DIR/* missed
+# every one. Memory dumps have no reliable magic bytes, so match by the common
+# extensions plus the M57 corpus's *dramimage naming; recurse to any depth.
+mapfile -t images < <(find "$MEMORY_DIR" -type f \( \
+        -iname '*.raw'  -o -iname '*.mem'   -o -iname '*.dmp'  -o -iname '*.lime' \
+     -o -iname '*.vmem' -o -iname '*dramimage' -o -iname '*.bin' -o -iname '*.dump' \
+     -o -iname '*.vmsn' -o -iname '*.crash' \) 2>/dev/null | sort)
 if [ ${#images[@]} -eq 0 ]; then
-    echo "⚠️  No memory images found in $MEMORY_DIR"
-    echo "    Supported: *.raw *.mem *.dmp *.lime *.vmem *dramimage *.bin"
+    echo "⚠️  No memory images found under $MEMORY_DIR"
+    echo "    Supported: *.raw *.mem *.dmp *.lime *.vmem *dramimage *.bin *.dump *.vmsn *.crash"
     exit 1
 fi
 echo "🗂️  Found ${#images[@]} memory image(s)"
 echo ""
 
+# Output-folder name from the path RELATIVE to the memory dir, so two corpora
+# that share a basename (e.g. lonewolf/memdump.mem and magnet/…/memdump.mem)
+# keep distinct output instead of overwriting each other.
+clean_name() {
+    local rel="${1#"$MEMORY_DIR"/}"
+    rel="${rel//\//_}"; rel="${rel// /_}"
+    echo "$rel"
+}
+
 # run_vol <image-abs-path> <plugin> <out-json>
 # stdout of the tool (the JSON array) is captured to the out file; stderr shows.
+# The renderer is not built in, so it is imported before the CLI runs (which is
+# when Volatility discovers renderers). For the container that means an
+# --entrypoint python3 wrapper; the file and plugin are passed as argv so no path
+# is spliced into the Python source. Native runs put the renderer's dir on
+# PYTHONPATH and import it the same way.
+_VOL_WRAPPER='
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("jsonl_dfir_renderer", sys.argv[1])
+mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+from volatility3.cli import CommandLine
+sys.argv = ["vol", "-q", "-s", sys.argv[2], "-r", "jsonl_dfir", "-f", sys.argv[3], sys.argv[4]]
+CommandLine().run()
+'
 run_vol() {
     local img="$1" plugin="$2" out="$3"
     if [[ -n "$VOL_NATIVE" ]]; then
         VOLATILITY3_SYMBOL_DIRECTORIES="$VOLATILITY_SYMBOLS" \
-            "$VOL_NATIVE" -q -r json -f "$img" "$plugin" > "$out" 2>/dev/null
+            python3 -c "$_VOL_WRAPPER" "$VOLATILITY_RENDERER" "$VOLATILITY_SYMBOLS" "$img" "$plugin" > "$out" 2>/dev/null
     else
         docker run --rm \
             -v "$(dirname "$img")":/mem:ro \
             -v "$VOLATILITY_SYMBOLS":/symbols \
-            "$VOLATILITY_IMAGE" \
-            -q -r json -s /symbols -f "/mem/$(basename "$img")" "$plugin" > "$out" 2>/dev/null
+            -v "$VOLATILITY_RENDERER":/opt/jsonl_dfir_renderer.py:ro \
+            --entrypoint python3 "$VOLATILITY_IMAGE" \
+            -c "$_VOL_WRAPPER" /opt/jsonl_dfir_renderer.py /symbols "/mem/$(basename "$img")" "$plugin" > "$out" 2>/dev/null
     fi
 }
 
 processed=0
 failed=0
 for img in "${images[@]}"; do
-    name="$(basename "$img")"
+    name="$(clean_name "$img")"
     dest="$OUTPUT_DIR/$name"
     mkdir -p "$dest"
-    echo "🚀 $name"
+    echo "🚀 ${img#"$MEMORY_DIR"/}"
     for plugin in "${PLUGINS[@]}"; do
-        out="$dest/$plugin.json"
-        # Idempotency: a non-empty JSON array already there is left alone.
-        if [[ -s "$out" ]] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if isinstance(d,list) and d else 1)' "$out" 2>/dev/null; then
+        out="$dest/$plugin.jsonl"
+        # Idempotency: a non-empty JSON Lines file whose first line parses is done.
+        if [[ -s "$out" ]] && head -1 "$out" | python3 -c 'import json,sys; json.loads(sys.stdin.readline())' 2>/dev/null; then
             echo "   ⏭️  $plugin (already parsed)"
             continue
         fi
         run_vol "$img" "$plugin" "$out"
-        if [[ -s "$out" ]] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if isinstance(d,list) else 1)' "$out" 2>/dev/null; then
-            n=$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' "$out")
+        if [[ -s "$out" ]] && head -1 "$out" | python3 -c 'import json,sys; json.loads(sys.stdin.readline())' 2>/dev/null; then
+            n=$(wc -l < "$out")
             echo "   ✓ $plugin — $n row(s)"
             processed=$((processed+1))
         else
