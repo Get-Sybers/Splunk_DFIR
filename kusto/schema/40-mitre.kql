@@ -378,32 +378,31 @@ CarUserSession() {
 // value on every row and would give every process the same bogus parent.
 //=============================================================================
 //=============================================================================
-// process — ONE VIEW PER ARTEFACT (CarProcess_<Artefact>). Each fills every
-// canonical process field it can supply (car_data_model.json: command_line, exe,
-// fqdn, hostname, image_path, md5_hash, parent_exe, parent_image_path, pid, ppid,
-// sha1_hash, sha256_hash, sid, signer, user). See docs/CAR-Extraction-Rules.md.
+// process — ONE VIEW PER ARTEFACT (CarProcess_<Artefact>). Each view is just the
+// source table with its NORMAL FIELDS KEPT, plus the canonical CAR process fields
+// added on top (car_data_model.json: command_line, exe, fqdn, hostname, image_path,
+// md5_hash, parent_exe, parent_image_path, pid, ppid, sha1_hash, sha256_hash, sid,
+// signer, user). See docs/CAR-Extraction-Rules.md.
 //
 // FILLING THE CAR OBJECT IS THE GOAL, NOT A STRIPPING RULE. The mapping is
-// ADDITIVE: every view carries `Raw` (pack_all() of the source row) alongside the
-// canonical fields, so nothing is lost and every native field stays queryable as
-// Raw.FieldName — the CAR fields never replace the raw output. The base views
-// never combine sources; CarProcess() at the end is the downstream roll-up
-// (rule 4). The view name is the provenance (no Origin/pid_hex columns needed).
+// ADDITIVE — nothing is removed, every native field stays a queryable named column
+// (Hidden, Payload, BytesSent, …), the CAR fields sit alongside them. The base
+// views never combine sources; CarProcess() at the end is the downstream roll-up
+// (rule 4), a union isfuzzy so it carries the CAR fields for every source plus
+// whatever native columns each one brings.
 //=============================================================================
 
-// Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest single source:
-// image, command line, parent image, pid/ppid (DECIMAL -> tolong directly) and the
-// file Hashes, split into md5/sha1/sha256_hash. Event 1 carries no SID or
-// Authenticode signer (other events do), so sid/signer stay empty. hostname/fqdn
-// are split from Computer. Raw keeps the full event (Payload, IntegrityLevel, etc).
+// Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest single source.
+// pid/ppid are DECIMAL -> tolong directly; the Hashes string splits into
+// md5/sha1/sha256_hash; hostname/fqdn split from Computer. Event 1 has no SID or
+// signer, so those stay empty. All EvtxECmd columns (Payload, Provider, …) remain.
 .create-or-alter function
-with (docstring = "CAR 'process' from Sysmon 1/5 (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from Sysmon 1/5 (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Sysmon() {
     database("host").EvtxEcmdJson
     | where Provider matches regex @"(?i)sysmon" and EventId in (1, 5)
-    | extend Raw = pack_all()
-    | extend Hashes = EvtxPayload(Payload, "Hashes")
-    | project
+    | extend _Hashes = EvtxPayload(Payload, "Hashes")
+    | extend
         Timestamp         = TimeCreated,
         action            = iff(EventId == 1, "create", "terminate"),
         exe               = EvtxPayload(Payload, "Image"),
@@ -415,74 +414,68 @@ CarProcess_Sysmon() {
         ppid              = tolong(EvtxPayload(Payload, "ParentProcessId")),
         user              = EvtxPayload(Payload, "User"),
         sid               = "",
-        md5_hash          = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, Hashes),
-        sha1_hash         = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, Hashes),
-        sha256_hash       = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, Hashes),
+        md5_hash          = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _Hashes),
+        sha1_hash         = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _Hashes),
+        sha256_hash       = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _Hashes),
         signer            = "",
         hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn              = iff(Computer contains ".", Computer, ""),
-        SourceFile,
-        Raw
+        fqdn              = iff(Computer contains ".", Computer, "")
+    | project-away _Hashes
 }
 
-// Security 4688 (create) / 4689 (terminate). Unlike Sysmon this channel carries
-// SubjectUserSid, so sid is filled; it has no file hashes. pid/ppid are HEX strings
-// ("0x1a4") — tolong parses the 0x form. ppid is EventData's ProcessId (the
-// creator), NOT the row's Execution ProcessID. 4689 carries only the terminating
-// ProcessName/ProcessId, so parent/command_line are empty there.
+// Security 4688 (create) / 4689 (terminate). Carries SubjectUserSid -> sid (which
+// Sysmon can't give); no file hashes. pid/ppid are HEX ("0x1a4") — tolong parses
+// the 0x form. ppid is EventData's ProcessId (the creator). 4689 has only the
+// terminating ProcessName/ProcessId, so parent/command_line are empty there.
 .create-or-alter function
-with (docstring = "CAR 'process' from Security 4688/4689 (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from Security 4688/4689 (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Security() {
     database("host").EvtxEcmdJson
     | where EventId in (4688, 4689)
-    | extend Raw = pack_all()
     | extend
-        NewProcessName = EvtxPayload(Payload, "NewProcessName"),
-        ProcName4689   = EvtxPayload(Payload, "ProcessName"),
-        NewProcessId   = EvtxPayload(Payload, "NewProcessId"),
-        EvProcessId    = EvtxPayload(Payload, "ProcessId"),
-        SubjName       = EvtxPayload(Payload, "SubjectUserName"),
-        SubjDomain     = EvtxPayload(Payload, "SubjectDomainName")
-    | project
+        _NewName   = EvtxPayload(Payload, "NewProcessName"),
+        _Name4689  = EvtxPayload(Payload, "ProcessName"),
+        _NewPid    = EvtxPayload(Payload, "NewProcessId"),
+        _EvPid     = EvtxPayload(Payload, "ProcessId"),
+        _SubjName  = EvtxPayload(Payload, "SubjectUserName"),
+        _SubjDom   = EvtxPayload(Payload, "SubjectDomainName")
+    | extend
         Timestamp         = TimeCreated,
         action            = iff(EventId == 4688, "create", "terminate"),
-        exe               = iff(EventId == 4688, NewProcessName, ProcName4689),
-        image_path        = iff(EventId == 4688, NewProcessName, ProcName4689),
+        exe               = iff(EventId == 4688, _NewName, _Name4689),
+        image_path        = iff(EventId == 4688, _NewName, _Name4689),
         parent_exe        = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
         parent_image_path = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
         command_line      = iff(EventId == 4688, EvtxPayload(Payload, "CommandLine"), ""),
-        pid               = iff(EventId == 4688, tolong(NewProcessId), tolong(EvProcessId)),
-        ppid              = iff(EventId == 4688, tolong(EvProcessId), long(null)),
-        user              = iff(isempty(SubjName), UserName,
-                                iff(isempty(SubjDomain), SubjName, strcat(SubjDomain, @"\", SubjName))),
+        pid               = iff(EventId == 4688, tolong(_NewPid), tolong(_EvPid)),
+        ppid              = iff(EventId == 4688, tolong(_EvPid), long(null)),
+        user              = iff(isempty(_SubjName), UserName,
+                                iff(isempty(_SubjDom), _SubjName, strcat(_SubjDom, @"\", _SubjName))),
         sid               = EvtxPayload(Payload, "SubjectUserSid"),
         md5_hash          = "",
         sha1_hash         = "",
         sha256_hash       = "",
         signer            = "",
         hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn              = iff(Computer contains ".", Computer, ""),
-        SourceFile,
-        Raw
+        fqdn              = iff(Computer contains ".", Computer, "")
+    | project-away _NewName, _Name4689, _NewPid, _EvPid, _SubjName, _SubjDom
 }
 
-// Volatility dfir_processes (psscan — unlinked processes found). Full image path
-// and parent path from each process's rebuilt address space, command line, pid,
-// ppid, create time. Memory carries no user/SID natively (getsids would add it) and
-// no hostname without the registry ComputerName, so those are honest gaps. The
-// psscan-only "Hidden" tell is not a CAR field but stays queryable as Raw.Record.Hidden.
+// Volatility dfir_processes (psscan — unlinked processes found). Full image path,
+// parent path, command line, pid, ppid, create time from each process's rebuilt
+// address space. No user/SID or hostname natively (honest gaps). All plugin fields
+// (Record.Hidden, Record.DllCount, …) remain queryable as normal columns.
 .create-or-alter function
-with (docstring = "CAR 'process' from Volatility psscan (memory) (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from Volatility psscan (memory) (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Memory() {
     database("memory").VolatilityJson
     | where Plugin == "dfir_processes.DfirProcesses"
-    | extend Raw = pack_all()
-    | extend full = tostring(Record.Path), short = tostring(Record.ImageFileName)
-    | project
+    | extend _full = tostring(Record.Path), _short = tostring(Record.ImageFileName)
+    | extend
         Timestamp         = todatetime(Record.CreateTime),
         action            = "create",
-        exe               = iff(isnotempty(full), full, short),
-        image_path        = iff(isnotempty(full), full, short),
+        exe               = iff(isnotempty(_full), _full, _short),
+        image_path        = iff(isnotempty(_full), _full, _short),
         parent_exe        = tostring(Record.ParentPath),
         parent_image_path = tostring(Record.ParentPath),
         command_line      = tostring(Record.CommandLine),
@@ -495,25 +488,21 @@ CarProcess_Memory() {
         sha256_hash       = "",
         signer            = "",
         hostname          = "",
-        fqdn              = "",
-        SourceFile,
-        Raw
+        fqdn              = ""
+    | project-away _full, _short
 }
 
 // Plaso Windows execution artefacts (prefetch, amcache, appcompatcache, userassist,
-// bam) — evidence a program ran, with the image hostname and user Plaso enrichment
-// supplies. No pid/parent/command line. amcache carries the file SHA1, so sha1_hash
-// is filled when present. Raw keeps the full Plaso record (Raw.Record.*).
+// bam) — evidence a program ran, with image hostname and user from Plaso enrichment.
+// amcache's file SHA1 -> sha1_hash when present. The full Plaso Record stays.
 .create-or-alter function
-with (docstring = "CAR 'process' from Plaso execution artefacts (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from Plaso execution artefacts (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Plaso() {
     union
         (database("host").L2tPrefetch),
         (database("host").L2tWinreg
          | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam")
-    | extend Raw = pack_all()
-    | project
-        Timestamp         = Timestamp,
+    | extend
         action            = "create",
         exe               = tostring(coalesce(Record.executable, Record.path, Record.filename, Record.display_name)),
         image_path        = tostring(Record.display_name),
@@ -530,27 +519,23 @@ CarProcess_Plaso() {
         signer            = "",
         hostname          = tostring(Record.image_hostname),
         fqdn              = "",
-        SourceFile        = SourceImage,
-        Raw
+        SourceFile        = SourceImage
 }
 
-// Plaso Linux cron (syslog:cron:task_run) — the command line, crond worker pid and
-// user as typed fields. Records THAT a command ran, no ppid/parent image.
+// Plaso Linux cron (syslog:cron:task_run) — command line, crond worker pid, user.
 .create-or-alter function
-with (docstring = "CAR 'process' from Plaso Linux cron (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from Plaso Linux cron (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Cron() {
     database("host").L2tText
     | where tostring(Record.data_type) == "syslog:cron:task_run"
-    | extend Raw = pack_all()
-    | extend cmd = tostring(Record.command)
-    | project
-        Timestamp         = Timestamp,
+    | extend _cmd = tostring(Record.command)
+    | extend
         action            = "create",
-        exe               = extract(@"^(\S+)", 1, cmd),
-        image_path        = extract(@"^(\S+)", 1, cmd),
+        exe               = extract(@"^(\S+)", 1, _cmd),
+        image_path        = extract(@"^(\S+)", 1, _cmd),
         parent_exe        = "",
         parent_image_path = "",
-        command_line      = cmd,
+        command_line      = _cmd,
         pid               = tolong(Record.pid),
         ppid              = long(null),
         user              = tostring(Record.username),
@@ -561,23 +546,20 @@ CarProcess_Cron() {
         signer            = "",
         hostname          = tostring(Record.image_hostname),
         fqdn              = "",
-        SourceFile        = SourceImage,
-        Raw
+        SourceFile        = SourceImage
+    | project-away _cmd
 }
 
-// SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor) — historical
-// proof an application executed, attributed to a user AND a SID (fill both). Rows
-// are the App Resource Usage table (Foreground/Background byte counters; the
-// Network Usage table goes to CarFlow). No pid/parent/command line. The byte
-// counters are not process fields but stay queryable as Raw.ForegroundBytesRead etc.
+// SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor) — proof an app
+// executed, attributed to a user AND a SID. The byte counters are not process
+// fields but remain queryable as their normal columns (Record.ForegroundBytesRead).
 .create-or-alter function
-with (docstring = "CAR 'process' from SRUM App Resource Usage (+ Raw)", folder = "CAR/process")
+with (docstring = "CAR 'process' from SRUM App Resource Usage (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Srum() {
     database("host").VelociraptorJson
     | where Artefact matches regex @"(?i)srum"
     | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
-    | extend Raw = pack_all()
-    | project
+    | extend
         Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
         action            = "create",
         exe               = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
@@ -594,23 +576,22 @@ CarProcess_Srum() {
         sha256_hash       = "",
         signer            = "",
         hostname          = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-        fqdn              = "",
-        SourceFile,
-        Raw
+        fqdn              = ""
 }
 
 //=============================================================================
-// process roll-up — the downstream COMBINATION stage (rule 4). A plain union of
-// every process observation across artefacts; deeper correlation (tying the same
-// real process seen by different artefacts via host+pid+time) is a later analytic,
-// done only where a shared identity key allows it. Raw flows through, so a rolled-
-// up row still exposes its source's native fields as Raw.FieldName.
+// process roll-up — the downstream COMBINATION stage (rule 4). union isfuzzy of
+// the per-artefact views: every row has the canonical CAR process fields, plus
+// whatever native columns its source brought (null for the others). Deeper
+// correlation (same real process across artefacts via host+pid+time) is a later
+// analytic, done only where a shared identity key allows it.
 //=============================================================================
 .create-or-alter function
 with (docstring = "MITRE CAR 'process' object — roll-up of the per-artefact views", folder = "CAR")
 CarProcess() {
-    union CarProcess_Sysmon, CarProcess_Security, CarProcess_Memory,
-          CarProcess_Plaso, CarProcess_Cron, CarProcess_Srum
+    union isfuzzy=true
+        CarProcess_Sysmon, CarProcess_Security, CarProcess_Memory,
+        CarProcess_Plaso, CarProcess_Cron, CarProcess_Srum
 }
 
 //=============================================================================
