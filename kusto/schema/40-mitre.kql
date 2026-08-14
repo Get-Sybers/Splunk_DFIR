@@ -100,250 +100,220 @@ EvtxPayload(payload:string, key:string) {
 }
 
 //=============================================================================
-// CarFlow — network connections
-//
-// Zeek conn.log is already CAR-shaped, so this is mostly a projection.
-// EndTime is derived: conn.log has ts and duration, not an end timestamp.
+// flow — ONE VIEW PER ARTEFACT (CarFlow_<Artefact>): source table with native
+// fields kept, canonical CAR flow fields added (car_data_model.json: content,
+// dest_fqdn, dest_hostname, dest_ip, dest_port, end_time, exe, flags, fqdn,
+// hostname, image_path, packet_count, pid, ppid, proto_info, protocol, src_fqdn,
+// src_hostname, src_ip, src_port, start_time, user). Additive; roll-up is union
+// isfuzzy. See docs/CAR-Extraction-Rules.md.
 //=============================================================================
+
+// Zeek conn — the full network 5-tuple with timing and packet counts. Service is
+// the app-layer protocol (proto_info); History is the connection flags. All Zeek
+// columns (Uid, bytes, IpBytes, …) remain. No host/user identity (network capture).
 .create-or-alter function
-with (docstring = "MITRE CAR 'flow' object (Zeek conn + Sysmon 3 + Volatility netscan + SRUM network usage)", folder = "CAR")
+with (docstring = "CAR 'flow' from Zeek conn (native fields + CAR fields)", folder = "CAR/flow")
+CarFlow_Zeek() {
+    database("network").ZeekTyped()
+    | extend
+        Timestamp    = Ts,
+        action       = case(ConnState == "SF", "end", ConnState == "S0", "start",
+                            ConnState == "REJ", "end", ConnState in ("RSTO", "RSTR"), "end",
+                            isnotempty(ConnState), "message", ""),
+        src_ip       = SrcIp,
+        src_port     = SrcPort,
+        dest_ip      = DestIp,
+        dest_port    = DestPort,
+        protocol     = Proto,
+        proto_info   = Service,
+        ["flags"]    = History,   // `flags` is a KQL reserved word — must be bracket-quoted
+        start_time   = Ts,
+        end_time     = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
+        packet_count = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0)
+}
+
+// Sysmon 3 (NetworkConnect) — the connection AS MADE, with the initiating process
+// and user, so exe/image_path/pid/user fill; SourceHostname/DestinationHostname
+// map to src_hostname/dest_hostname. No duration/packets (single event).
+.create-or-alter function
+with (docstring = "CAR 'flow' from Sysmon 3 (native fields + CAR fields)", folder = "CAR/flow")
+CarFlow_Sysmon() {
+    database("host").EvtxEcmdJson
+    | where Provider matches regex @"(?i)sysmon" and EventId == 3
+    | extend
+        Timestamp     = TimeCreated,
+        action        = "start",
+        src_ip        = EvtxPayload(Payload, "SourceIp"),
+        src_port      = toint(EvtxPayload(Payload, "SourcePort")),
+        src_hostname  = EvtxPayload(Payload, "SourceHostname"),
+        dest_ip       = EvtxPayload(Payload, "DestinationIp"),
+        dest_port     = toint(EvtxPayload(Payload, "DestinationPort")),
+        dest_hostname = EvtxPayload(Payload, "DestinationHostname"),
+        protocol      = EvtxPayload(Payload, "Protocol"),
+        exe           = EvtxPayload(Payload, "Image"),
+        image_path    = EvtxPayload(Payload, "Image"),
+        pid           = tolong(EvtxPayload(Payload, "ProcessId")),
+        user          = EvtxPayload(Payload, "User"),
+        start_time    = TimeCreated,
+        hostname      = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        fqdn          = iff(Computer contains ".", Computer, "")
+}
+
+// Volatility netscan / netstat (memory) — connections resident in the image with
+// the owning process (Owner -> image_path) and pid. action "message": observed in
+// memory, not a start/end. netscan is a Win7+ pool scan (empty on XP).
+.create-or-alter function
+with (docstring = "CAR 'flow' from Volatility netscan/netstat (memory) (native fields + CAR fields)", folder = "CAR/flow")
+CarFlow_Memory() {
+    union (database("memory").VolatilityJson | where Plugin == "windows.netscan"),
+          (database("memory").VolatilityJson | where Plugin == "windows.netstat")
+    | extend
+        Timestamp    = todatetime(Record.Created),
+        action       = "message",
+        src_ip       = tostring(Record.LocalAddr),
+        src_port     = toint(Record.LocalPort),
+        dest_ip      = tostring(Record.ForeignAddr),
+        dest_port    = toint(Record.ForeignPort),
+        protocol     = tostring(Record.Proto),
+        image_path   = tostring(Record.Owner),
+        pid          = tolong(Record.PID),
+        start_time   = todatetime(Record.Created)
+}
+
+// SRUM Network Usage (SrumECmd -> Velociraptor) — network activity attributed to
+// an app+user; no 5-tuple (SRUM aggregates), so action is "message". The per-app
+// byte counters are not CAR flow fields — they remain their own native columns
+// (Record.BytesSent/BytesReceived), never faked into the object.
+.create-or-alter function
+with (docstring = "CAR 'flow' from SRUM Network Usage (native fields + CAR fields)", folder = "CAR/flow")
+CarFlow_Srum() {
+    database("host").VelociraptorJson
+    | where Artefact matches regex @"(?i)srum"
+    | where isnotempty(tostring(coalesce(Record.BytesSent, Record.BytesReceived, Record.["Bytes Sent"], Record.["Bytes Received"])))
+    | extend
+        Timestamp    = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+        action       = "message",
+        image_path   = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+        user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
+        start_time   = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
+        hostname     = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'flow' object — roll-up of the per-artefact views", folder = "CAR")
 CarFlow() {
-    let FromZeek =
-        database("network").ZeekTyped()
-        | extend
-            action        = case(ConnState == "SF",   "end",
-                                 ConnState == "S0",   "start",
-                                 ConnState == "REJ",  "end",
-                                 ConnState in ("RSTO", "RSTR"), "end",
-                                 isnotempty(ConnState), "message",
-                                 ""),
-            src_ip        = SrcIp,
-            src_port      = SrcPort,
-            dest_ip       = DestIp,
-            dest_port     = DestPort,
-            protocol      = Proto,
-            start_time    = Ts,
-            end_time      = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
-            packet_count  = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0),
-            hostname      = ""
-        | extend image_path = "", user = ""
-        | project Timestamp = Ts, action, src_ip, src_port, dest_ip, dest_port,
-                  protocol, start_time, end_time, packet_count, hostname, Uid,
-                  image_path, user;
-    // Sysmon 3 (NetworkConnect) records a single connection AS IT IS MADE, with
-    // no duration, byte or packet counts — so end_time/packet_count are null,
-    // unlike Zeek conn. action is "start": the event marks initiation, not
-    // completion. Uid is empty (Sysmon has no Zeek connection uid).
-    let FromSysmon =
-        database("host").EvtxEcmdJson
-        | where Provider matches regex @"(?i)sysmon" and EventId == 3
-        | extend
-            src_ip       = EvtxPayload(Payload, "SourceIp"),
-            src_port     = toint(EvtxPayload(Payload, "SourcePort")),
-            dest_ip      = EvtxPayload(Payload, "DestinationIp"),
-            dest_port    = toint(EvtxPayload(Payload, "DestinationPort")),
-            protocol     = EvtxPayload(Payload, "Protocol")
-        | project
-            Timestamp    = TimeCreated,
-            action       = "start",
-            src_ip, src_port, dest_ip, dest_port, protocol,
-            start_time   = TimeCreated,
-            end_time     = datetime(null),
-            packet_count = long(0),
-            hostname     = Computer,
-            Uid          = "",
-            // Sysmon 3 names the initiating process, so image_path/user are real.
-            image_path   = EvtxPayload(Payload, "Image"),
-            user         = EvtxPayload(Payload, "User");
-    // Memory: Volatility windows.netscan / netstat — the connections live in the
-    // memory image (local/foreign addr:port, owning pid, state, creation time).
-    // action "message": a connection observed in memory, not a start/end event.
-    // (netscan is a Win7+ pool scan and returns nothing on XP; a Win10 dump
-    // populates it.) No packet/byte counts in memory, so packet_count is null.
-    let FromMemory =
-        union (database("memory").VolatilityJson | where Plugin == "windows.netscan"),
-              (database("memory").VolatilityJson | where Plugin == "windows.netstat")
-        | project
-            Timestamp    = todatetime(Record.Created),
-            action       = "message",
-            src_ip       = tostring(Record.LocalAddr),
-            src_port     = toint(Record.LocalPort),
-            dest_ip      = tostring(Record.ForeignAddr),
-            dest_port    = toint(Record.ForeignPort),
-            protocol     = tostring(Record.Proto),
-            start_time   = todatetime(Record.Created),
-            end_time     = datetime(null),
-            packet_count = long(null),
-            hostname     = "",
-            Uid          = "",
-            image_path   = tostring(Record.Owner),  // netscan names the owning process
-            user         = "";
-    // SRUM (System Resource Usage Monitor) — SRUDB.dat, parsed on disk by the EZ
-    // tool SrumECmd and delivered through Velociraptor (host.VelociraptorJson).
-    // The Network Usage table attributes network activity to an application and
-    // user over time. It has NO 5-tuple (SRUM aggregates per app/interface), so
-    // ip/port/protocol stay null and action is "message" — the existence of the
-    // activity is observed, not a connection start/end. image_path (ExeInfo) and
-    // user are canonical CAR flow fields; that app+user attribution is all CAR
-    // flow can hold. SRUM's distinctive datum — bytes transferred per app — is
-    // NOT a CAR flow field (flow has no byte counter), so it is deliberately left
-    // in the raw host.VelociraptorJson (Record.BytesSent/BytesReceived) rather
-    // than invented into this object. Rows are the Network Usage table, told from
-    // App Resource Usage (-> CarProcess) by the presence of byte counters.
-    let FromSrum =
-        database("host").VelociraptorJson
-        | where Artefact matches regex @"(?i)srum"
-        | where isnotempty(tostring(coalesce(Record.BytesSent, Record.BytesReceived, Record.["Bytes Sent"], Record.["Bytes Received"])))
-        | extend
-            Timestamp    = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-            action       = "message",
-            src_ip       = "",
-            src_port     = int(null),
-            dest_ip      = "",
-            dest_port    = int(null),
-            protocol     = "",
-            start_time   = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-            end_time     = datetime(null),
-            packet_count = long(null),
-            hostname     = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-            Uid          = "",
-            image_path   = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-            user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId))
-        | project Timestamp, action, src_ip, src_port, dest_ip, dest_port, protocol,
-                  start_time, end_time, packet_count, hostname, Uid,
-                  image_path, user;
-    union FromZeek, FromSysmon, FromMemory, FromSrum
+    union isfuzzy=true CarFlow_Zeek, CarFlow_Sysmon, CarFlow_Memory, CarFlow_Srum
 }
 
 //=============================================================================
-// CarUserSession — logon / logoff
-//
-// LogonType is the Windows logon type: 2 interactive, 3 network, 7 unlock,
-// 10 RemoteInteractive (RDP). 4624's IpAddress is "-" for a local logon rather
-// than absent, so those are nulled out instead of being stored as "-".
+// user_session — ONE VIEW PER ARTEFACT (CarUserSession_<Artefact>): native fields
+// kept, canonical CAR user_session fields added (car_data_model.json: dest_ip,
+// dest_port, hostname, logon_id, src_ip, src_port, user). Non-canonical logon
+// detail (LogonType, SID, workstation, session type) is NOT a CAR field and stays
+// in the native columns (Payload / Record). Additive; roll-up is union isfuzzy.
 //=============================================================================
-// Two sources, unioned — the object is cross-platform:
-//   Windows  EvtxECmd 4624/4625/4634/4647/4648/4778/4779
-//   Linux    Plaso UTMP-session rows (wtmp/utmp). Status USER_PROCESS is a
-//            login, DEAD_PROCESS a logout, BOOT_TIME a boot. The fields are
-//            parsed out of Plaso's rendered message with extract(), the same
-//            way the EvtxECmd payload fields are — Plaso does not give them
-//            typed columns. EventId/LogonType are null for Linux (they are
-//            Windows concepts), which is the honest shape rather than a faked 0.
+
+// Windows Security 4624/4625/4634/4647/4648/4778/4779. LogonType drives `action`
+// (canonical: interactive/unlock/rdp/remote/login/logout/reconnect) but is itself
+// not a CAR field, so it is computed internally and dropped; it stays queryable in
+// the native Payload, as do SubjectUserSid and WorkstationName. 4624's IpAddress
+// is "-" for a local logon, nulled rather than stored.
 .create-or-alter function
-with (docstring = "MITRE CAR 'user_session' object (Windows logons + Linux utmp)", folder = "CAR")
+with (docstring = "CAR 'user_session' from Windows Security logons (native fields + CAR fields)", folder = "CAR/user_session")
+CarUserSession_Security() {
+    database("host").EvtxEcmdJson
+    | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+    | extend _lt = toint(EvtxPayload(Payload, "LogonType")),
+             _ip = EvtxPayload(Payload, "IpAddress"),
+             _port = EvtxPayload(Payload, "IpPort"),
+             _tuser = EvtxPayload(Payload, "TargetUserName")
+    | extend
+        Timestamp = TimeCreated,
+        action    = case(EventId in (4634, 4647), "logout",
+                         EventId == 4778, "reconnect",
+                         EventId == 4779, "remote",
+                         EventId == 4624 and _lt == 10, "rdp",
+                         EventId == 4624 and _lt == 7,  "unlock",
+                         EventId == 4624 and _lt == 2,  "interactive",
+                         EventId == 4624 and _lt == 3,  "remote",
+                         EventId in (4624, 4625), "login",
+                         ""),
+        user      = iff(isempty(_tuser), UserName, _tuser),
+        logon_id  = EvtxPayload(Payload, "TargetLogonId"),
+        hostname  = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
+        src_ip    = iff(_ip in ("-", "::1", "127.0.0.1", ""), "", _ip),
+        src_port  = iff(_port in ("-", "0", ""), int(null), toint(_port)),
+        dest_ip   = "",
+        dest_port = int(null)
+    | project-away _lt, _ip, _port, _tuser
+}
+
+// Linux utmp/wtmp (Plaso, typed). login_type: 6/7 -> login, 8 -> logout; BOOT_TIME
+// (2) is not a user session and has no canonical action, so it is excluded (still
+// in the raw L2tUtmp table). Record.hostname is the login SOURCE host — not a CAR
+// user_session field (no src_hostname), so it stays native.
+.create-or-alter function
+with (docstring = "CAR 'user_session' from Plaso Linux utmp (native fields + CAR fields)", folder = "CAR/user_session")
+CarUserSession_Utmp() {
+    union database("host").L2tUtmp, database("host").L2tUtmpx
+    | extend _lt = toint(Record.login_type), _ip = tostring(Record.ip_address)
+    | where _lt in (6, 7, 8)
+    | extend
+        action    = iff(_lt == 8, "logout", "login"),
+        user      = tostring(Record.username),
+        logon_id  = "",
+        hostname  = tostring(Record.image_hostname),
+        src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
+        src_port  = int(null),
+        dest_ip   = "",
+        dest_port = int(null)
+    | project-away _lt, _ip
+}
+
+// Linux SSH logins (Plaso ssh:login, typed): username, ip_address, port. The
+// authentication_method stays native in Record.
+.create-or-alter function
+with (docstring = "CAR 'user_session' from Plaso Linux SSH (native fields + CAR fields)", folder = "CAR/user_session")
+CarUserSession_Ssh() {
+    database("host").L2tText
+    | where tostring(Record.data_type) == "syslog:ssh:login"
+    | extend _ip = tostring(Record.ip_address)
+    | extend
+        action    = "login",
+        user      = tostring(Record.username),
+        logon_id  = "",
+        hostname  = tostring(Record.image_hostname),
+        src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
+        src_port  = toint(Record.port),
+        dest_ip   = "",
+        dest_port = int(null)
+    | project-away _ip
+}
+
+// Volatility windows.sessions (memory) — logon sessions in the image with the user,
+// Session ID (logon_id) and Create Time (logon time). Session Type stays native.
+.create-or-alter function
+with (docstring = "CAR 'user_session' from Volatility sessions (memory) (native fields + CAR fields)", folder = "CAR/user_session")
+CarUserSession_Memory() {
+    database("memory").VolatilityJson
+    | where Plugin == "windows.sessions"
+    | extend
+        Timestamp = todatetime(Record.["Create Time"]),
+        action    = "login",
+        user      = tostring(Record.["User Name"]),
+        logon_id  = tostring(Record.["Session ID"]),
+        hostname  = "",
+        src_ip    = "",
+        src_port  = int(null),
+        dest_ip   = "",
+        dest_port = int(null)
+}
+
+.create-or-alter function
+with (docstring = "MITRE CAR 'user_session' object — roll-up of the per-artefact views", folder = "CAR")
 CarUserSession() {
-    let FromEvtx =
-        database("host").EvtxEcmdJson
-        | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
-        | extend
-            TargetUserName = EvtxPayload(Payload, "TargetUserName"),
-            TargetLogonId  = EvtxPayload(Payload, "TargetLogonId"),
-            SubjectUserSid = EvtxPayload(Payload, "SubjectUserSid"),
-            LogonType      = toint(EvtxPayload(Payload, "LogonType")),
-            IpAddress      = EvtxPayload(Payload, "IpAddress"),
-            IpPort         = EvtxPayload(Payload, "IpPort"),
-            Workstation    = EvtxPayload(Payload, "WorkstationName")
-        | extend
-            action = case(EventId in (4634, 4647), "logout",
-                          EventId == 4778, "reconnect",
-                          EventId == 4779, "remote",
-                          EventId == 4624 and LogonType == 10, "rdp",
-                          EventId == 4624 and LogonType == 7,  "unlock",
-                          EventId == 4624 and LogonType == 2,  "interactive",
-                          EventId == 4624 and LogonType == 3,  "remote",
-                          EventId in (4624, 4625), "login",
-                          ""),
-            user         = iff(isempty(TargetUserName), UserName, TargetUserName),
-            sid          = iff(isempty(UserId), SubjectUserSid, UserId),
-            logon_id     = TargetLogonId,
-            hostname     = Computer,
-            fqdn         = Computer,
-            src_ip       = iff(IpAddress in ("-", "::1", "127.0.0.1", ""), "", IpAddress),
-            src_port     = iff(IpPort in ("-", "0", ""), int(null), toint(IpPort)),
-            src_hostname = iff(Workstation == "-", "", Workstation),
-            platform     = "windows"
-        | project Timestamp = TimeCreated, action, user, sid, logon_id, hostname,
-                  fqdn, src_ip, src_port, src_hostname, EventId, LogonType,
-                  platform, SourceFile;
-    // Linux utmp (wtmp/utmp). Plaso's utmp parser gives TYPED fields — no message
-    // regex needed as the CSV path required. `login_type` is the utmp ut_type
-    // (2 boot, 6 login process, 7 user process, 8 dead process); `hostname` is
-    // the login SOURCE host (not the box's name), so it maps to src_hostname,
-    // while the box itself is the enriched Record.image_hostname.
-    let FromUtmp =
-        union database("host").L2tUtmp, database("host").L2tUtmpx
-        | extend
-            lt    = toint(Record.login_type),
-            ip    = tostring(Record.ip_address),
-            srchn = tostring(Record.hostname)
-        | extend
-            action       = case(lt == 7, "login", lt == 6, "login",
-                                lt == 8, "logout", lt == 2, "boot", ""),
-            user         = tostring(Record.username),
-            sid          = "",
-            logon_id     = "",
-            hostname     = tostring(Record.image_hostname),
-            fqdn         = "",
-            src_ip       = iff(ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", ip),
-            src_port     = int(null),
-            src_hostname = iff(srchn in ("localhost", "", "::1", "127.0.0.1"), "", srchn),
-            EventId      = int(null),
-            LogonType    = int(null),
-            platform     = "linux"
-        | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
-                  src_ip, src_port, src_hostname, EventId, LogonType, platform,
-                  SourceFile = SourceImage;
-    // Linux SSH logins — a real, typed source the CSV path never surfaced.
-    // Plaso's ssh:login parser (sshd "Accepted/Failed <method> for <user> from
-    // <ip>") gives username, ip_address, port and authentication_method as
-    // fields. (This replaces the former auditd PAM branch, which was fixture-only
-    // — no standard Plaso parser emits the "audit_type: USER_START" shape it
-    // parsed. An auditd-enabled image would add a real PAM branch; see the
-    // Runtime-Validation note.)
-    let FromSsh =
-        database("host").L2tText
-        | where tostring(Record.data_type) == "syslog:ssh:login"
-        | extend ip = tostring(Record.ip_address)
-        | extend
-            action       = "login",
-            user         = tostring(Record.username),
-            sid          = "",
-            logon_id     = "",
-            hostname     = tostring(Record.image_hostname),
-            fqdn         = "",
-            src_ip       = iff(ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", ip),
-            src_port     = toint(Record.port),
-            src_hostname = "",
-            EventId      = int(null),
-            LogonType    = int(null),
-            platform     = "linux"
-        | project Timestamp, action, user, sid, logon_id, hostname, fqdn,
-                  src_ip, src_port, src_hostname, EventId, LogonType, platform,
-                  SourceFile = SourceImage;
-    // Memory: Volatility windows.sessions — the logon sessions live in the image
-    // with the user, session id, session type and the session Create Time (the
-    // logon time). action "login": the session is present/active in memory.
-    // System sessions (no user) are kept honestly rather than dropped.
-    let FromMemory =
-        database("memory").VolatilityJson
-        | where Plugin == "windows.sessions"
-        | project
-            Timestamp    = todatetime(Record.["Create Time"]),
-            action       = "login",
-            user         = tostring(Record.["User Name"]),
-            sid          = "",
-            logon_id     = tostring(Record.["Session ID"]),
-            hostname     = "",
-            fqdn         = "",
-            src_ip       = "",
-            src_port     = int(null),
-            src_hostname = "",
-            EventId      = int(null),
-            LogonType    = int(null),
-            platform     = "windows",
-            SourceFile;
-    union FromEvtx, FromUtmp, FromSsh, FromMemory
+    union isfuzzy=true CarUserSession_Security, CarUserSession_Utmp,
+        CarUserSession_Ssh, CarUserSession_Memory
 }
 
 //=============================================================================
