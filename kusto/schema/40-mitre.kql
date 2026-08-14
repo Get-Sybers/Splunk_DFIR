@@ -25,18 +25,24 @@
 //
 // COVERAGE — 9 of 9 objects
 //
-//   CarFlow         Zeek conn + Sysmon 3 (network connect)
+//   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
 //   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
-//                   artefacts (prefetch/amcache/appcompat), Linux cron
+//                   artefacts (prefetch/amcache/appcompat), Linux cron,
+//                   + Volatility pslist(+cmdline) (memory — live process tree)
 //   CarService      EvtxECmd 7045/4697 (Windows only — see the function note)
 //   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
-//   CarDriver       Sysmon 6 (driver loaded)
-//   CarModule       Sysmon 7 (image loaded)
+//   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
+//   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
 //   CarThread       Sysmon 8 (CreateRemoteThread)
+//
+//   MEMORY fills the CAR data model where dead-box cannot: Volatility 3 plugins
+//   (memory.VolatilityJson) source the LIVE process tree (pslist -> process),
+//   loaded modules (dlllist -> module), kernel drivers (modules -> driver) and
+//   connections (netscan/netstat -> flow). module/driver had only Sysmon before.
 //
 //   registry lost its only source when the KAPE path was removed; the
 //   replacement — Velociraptor offline collectors running the EZ Tools (RECmd /
@@ -133,7 +139,28 @@ CarFlow() {
             packet_count = long(0),
             hostname     = Computer,
             Uid          = "";
-    union FromZeek, FromSysmon
+    // Memory: Volatility windows.netscan / netstat — the connections live in the
+    // memory image (local/foreign addr:port, owning pid, state, creation time).
+    // action "message": a connection observed in memory, not a start/end event.
+    // (netscan is a Win7+ pool scan and returns nothing on XP; a Win10 dump
+    // populates it.) No packet/byte counts in memory, so packet_count is null.
+    let FromMemory =
+        union (database("memory").VolatilityJson | where Plugin == "windows.netscan"),
+              (database("memory").VolatilityJson | where Plugin == "windows.netstat")
+        | project
+            Timestamp    = todatetime(Record.Created),
+            action       = "message",
+            src_ip       = tostring(Record.LocalAddr),
+            src_port     = toint(Record.LocalPort),
+            dest_ip      = tostring(Record.ForeignAddr),
+            dest_port    = toint(Record.ForeignPort),
+            protocol     = tostring(Record.Proto),
+            start_time   = todatetime(Record.Created),
+            end_time     = datetime(null),
+            packet_count = long(null),
+            hostname     = "",
+            Uid          = "";
+    union FromZeek, FromSysmon, FromMemory
 }
 
 //=============================================================================
@@ -388,7 +415,34 @@ CarProcess() {
             hostname          = Computer,
             Origin            = strcat("sysmon:", tostring(EventId)),
             SourceFile;
-    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon
+    // Memory: our dfir_processes plugin (psscan, so UNLINKED processes are found)
+    // gives the full CarProcess shape from the live image — the full image path
+    // and the parent's full path (Path/ParentPath, from each process's rebuilt
+    // address space), command line and CreateTime. This is the running-process
+    // view dead-box execution artefacts (prefetch/amcache) only hint at. exe
+    // falls back to the 15-char EPROCESS name when the PEB path is paged out.
+    // Origin flags a psscan-only (Hidden/unlinked) process — a rootkit tell.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "dfir_processes.DfirProcesses"
+        | extend full = tostring(Record.Path), short = tostring(Record.ImageFileName)
+        | project
+            Timestamp         = todatetime(Record.CreateTime),
+            action            = "create",
+            exe               = iff(isnotempty(full), full, short),
+            image_path        = iff(isnotempty(full), full, short),
+            parent_exe        = tostring(Record.ParentPath),
+            parent_image_path = tostring(Record.ParentPath),
+            command_line      = tostring(Record.CommandLine),
+            pid               = tolong(Record.PID),
+            ppid              = tolong(Record.PPID),
+            pid_hex           = "",
+            ppid_hex          = "",
+            user              = "",
+            hostname          = "",
+            Origin            = iff(tobool(Record.Hidden), "volatility:psscan:hidden", "volatility:psscan"),
+            SourceFile;
+    union FromEvtx, FromPlaso, FromLinuxCron, FromSysmon, FromMemory
 }
 
 //=============================================================================
@@ -574,24 +628,46 @@ CarRegistry() {
 .create-or-alter function
 with (docstring = "MITRE CAR 'module' object (Sysmon 7 image load)", folder = "CAR")
 CarModule() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 7
-    | extend
-        module_path     = EvtxPayload(Payload, "ImageLoaded"),
-        image_path      = EvtxPayload(Payload, "Image"),
-        pid             = tolong(EvtxPayload(Payload, "ProcessId")),
-        hashes          = EvtxPayload(Payload, "Hashes"),
-        signed          = EvtxPayload(Payload, "Signed"),
-        signature       = EvtxPayload(Payload, "Signature"),
-        signature_status= EvtxPayload(Payload, "SignatureStatus")
-    | project
-        Timestamp   = TimeCreated,
-        action      = "load",
-        module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
-        module_path, image_path, pid, hashes, signed, signature,
-        signature_status,
-        hostname    = Computer,
-        SourceFile
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId == 7
+        | extend
+            module_path     = EvtxPayload(Payload, "ImageLoaded"),
+            image_path      = EvtxPayload(Payload, "Image"),
+            pid             = tolong(EvtxPayload(Payload, "ProcessId")),
+            hashes          = EvtxPayload(Payload, "Hashes"),
+            signed          = EvtxPayload(Payload, "Signed"),
+            signature       = EvtxPayload(Payload, "Signature"),
+            signature_status= EvtxPayload(Payload, "SignatureStatus")
+        | project
+            Timestamp   = TimeCreated,
+            action      = "load",
+            module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
+            module_path, image_path, pid, hashes, signed, signature,
+            signature_status,
+            hostname    = Computer,
+            SourceFile;
+    // Memory: Volatility windows.dlllist — every module mapped into each live
+    // process (Path), which process it is loaded in (Process), and the load time.
+    // The live-memory view dead-box cannot give. Signature/hash are Sysmon-only,
+    // so they stay empty rather than faked.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.dlllist"
+        | project
+            Timestamp        = todatetime(Record.LoadTime),
+            action           = "load",
+            module_name      = tostring(Record.Name),
+            module_path      = tostring(Record.Path),
+            image_path       = tostring(Record.Process),
+            pid              = tolong(Record.PID),
+            hashes           = "",
+            signed           = "",
+            signature        = "",
+            signature_status = "",
+            hostname         = "",
+            SourceFile;
+    union FromSysmon, FromMemory
 }
 
 //=============================================================================
@@ -607,21 +683,40 @@ CarModule() {
 .create-or-alter function
 with (docstring = "MITRE CAR 'driver' object (Sysmon 6 driver load)", folder = "CAR")
 CarDriver() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 6
-    | extend
-        module_path      = EvtxPayload(Payload, "ImageLoaded"),
-        hashes           = EvtxPayload(Payload, "Hashes"),
-        signed           = EvtxPayload(Payload, "Signed"),
-        signature        = EvtxPayload(Payload, "Signature"),
-        signature_status = EvtxPayload(Payload, "SignatureStatus")
-    | project
-        Timestamp   = TimeCreated,
-        action      = "load",
-        module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
-        module_path, hashes, signed, signature, signature_status,
-        hostname    = Computer,
-        SourceFile
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId == 6
+        | extend
+            module_path      = EvtxPayload(Payload, "ImageLoaded"),
+            hashes           = EvtxPayload(Payload, "Hashes"),
+            signed           = EvtxPayload(Payload, "Signed"),
+            signature        = EvtxPayload(Payload, "Signature"),
+            signature_status = EvtxPayload(Payload, "SignatureStatus")
+        | project
+            Timestamp   = TimeCreated,
+            action      = "load",
+            module_name = replace_regex(EvtxPayload(Payload, "ImageLoaded"), @"^.*[\\/]", ""),
+            module_path, hashes, signed, signature, signature_status,
+            hostname    = Computer,
+            SourceFile;
+    // Memory: Volatility windows.modules — the loaded kernel modules/drivers from
+    // the live driver list, which dead-box cannot enumerate. Signature/hash are
+    // Sysmon-only, left empty. No load time in the module list, so Timestamp null.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.modules"
+        | project
+            Timestamp        = datetime(null),
+            action           = "load",
+            module_name      = tostring(Record.Name),
+            module_path      = tostring(Record.Path),
+            hashes           = "",
+            signed           = "",
+            signature        = "",
+            signature_status = "",
+            hostname         = "",
+            SourceFile;
+    union FromSysmon, FromMemory
 }
 
 //=============================================================================
