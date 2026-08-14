@@ -6,10 +6,11 @@
 #   1. loose *.evtx under data_store/raw
 #   2. disk images (E01/raw/img) MOUNTED read-only and scanned IN PLACE — Hayabusa
 #      reads <mount>\Windows\System32\winevt\Logs\*.evtx directly, nothing copied.
-#      (Mount = ewfmount + ntfs-3g via FUSE; see lib/image-export.sh. Needs
-#      /dev/fuse — blocked in this LXC until the host allows it; the lane skips
-#      disk images with a fix message until then. SIG_ALLOW_EXTRACT=1 falls back to
-#      pulling EVTX out with image_export.)
+#      (Mount = ewfmount + ntfs-3g via FUSE; see lib/disk-image.sh. Needs /dev/fuse
+#      — blocked in this LXC until the host allows it; the lane skips disk images
+#      with a fix message until then. We never EXTRACT EVTX from images: if you
+#      can't mount, provide the .evtx files directly. Hayabusa's -J JSON input is
+#      not a substitute — it yields 0 detections on Plaso/evtx_dump JSON, #1324.)
 #
 # Output: data_store/processed/signatures/hayabusa/timeline.jsonl (tool:"hayabusa").
 # Native Rust binary (no official image); --fetch downloads the pinned release.
@@ -20,7 +21,7 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"
 # shellcheck source=/dev/null
-source "$SCRIPT_DIR/lib/image-export.sh"
+source "$SCRIPT_DIR/lib/disk-image.sh"
 
 LOOSE_DIR="$(realpath -m "${HAYABUSA_INPUT:-$REPO_ROOT_DIR/data_store/raw}")"
 DISK_DIR="$(realpath -m "${HAYABUSA_DISK_DIR:-$REPO_ROOT_DIR/data_store/raw/disk_images}")"
@@ -31,7 +32,6 @@ MNT_BASE="${SIG_MOUNT_BASE:-/mnt/dfir-sig}"
 HAYABUSA_BIN="${HAYABUSA_BIN:-}"
 HAYABUSA_VERSION="${HAYABUSA_VERSION:-3.4.0}"
 HAYABUSA_DISK="${HAYABUSA_DISK:-1}"
-SIG_ALLOW_EXTRACT="${SIG_ALLOW_EXTRACT:-0}"
 FETCH="${FETCH:-0}"
 for arg in "$@"; do [[ "$arg" == "--fetch" ]] && FETCH=1; done
 
@@ -89,19 +89,12 @@ if [[ "$HAYABUSA_DISK" == "1" && -d "$DISK_DIR" ]]; then
             fi
         done
     else
-        # No FUSE mount here (needs host /dev/fuse), and Hayabusa's -J JSON input
-        # does NOT produce detections from evtx_dump/Plaso JSON (verified: 0 hits
-        # vs 792 on the same events natively — Hayabusa issue #1324). So the working
-        # path is real .evtx: extract them mount-free with the log2timeline container
-        # (image_export, dfVFS), scan, and DISCARD the temp copies.
-        echo "   ↪ extracting EVTX via the log2timeline container (image_export), transient"
-        for img in "${images[@]}"; do
-            ex="$(mktemp -d)"
-            if sig_image_export "$img" "$ex" --artifact_filters WindowsEventLogs 2>/dev/null; then
-                echo "   ✓ ${img##*/} — $(find "$ex" -iname '*.evtx' | wc -l) EVTX"; run_hayabusa "$ex"
-            fi
-            rm -rf "$ex"
-        done
+        # No mounting here (needs host /dev/fuse). We do NOT extract EVTX from
+        # images — if the user wants those logs scanned, they mount-enable the host
+        # or drop the .evtx files in directly. (Hayabusa's -J JSON input can't stand
+        # in either: it produces 0 detections on Plaso/evtx_dump JSON vs 792 on the
+        # same events natively — Hayabusa issue #1324.)
+        sig_fuse_help
     fi
 fi
 
