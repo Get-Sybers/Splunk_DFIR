@@ -26,6 +26,12 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 LANES_DIR="$SCRIPT_DIR/signatures"
 
+# Clean up docker layers left dangling when a pulled :latest tag moves (the lanes
+# run yara/suricata/plaso containers), so they don't accumulate across runs. Runs
+# on exit; prunes only untagged, unreferenced images — tools/live containers safe.
+prune_dangling() { command -v docker >/dev/null 2>&1 && docker image prune -f >/dev/null 2>&1 || true; }
+trap prune_dangling EXIT
+
 ALL_LANES=(yara suricata hayabusa)
 want=()
 passthru=()
