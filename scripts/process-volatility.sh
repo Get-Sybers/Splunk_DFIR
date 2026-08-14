@@ -69,6 +69,8 @@ PLUGINS=(
     "windows.netstat"       # -> CarFlow    (connections)
     "windows.sessions"      # -> CarUserSession (user, session, logon time)
     "windows.filescan"      # -> CarFile    (files resident in memory)
+    "windows.svcscan"       # -> CarService (services: name/binary/start/state)
+    "windows.thrdscan"      # -> CarThread  (threads: tid/pid/create/startaddr)
     "windows.malfind"
 )
 
