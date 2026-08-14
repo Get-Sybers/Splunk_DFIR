@@ -25,6 +25,14 @@
 //
 // COVERAGE — 9 of 9 objects
 //
+// STRUCTURE: each object is built as one view per artefact —
+// Car<Object>_<Artefact>() (e.g. CarProcess_Sysmon, CarRegistry_Memory) — which
+// keeps the source table's native fields and ADDS the canonical CAR fields on top
+// (car_data_model.json). The public CarX() is a `union isfuzzy` roll-up of those
+// views. Filling CAR fields is the goal, not a stripping rule: native fields stay
+// queryable by their own name. See docs/CAR-Extraction-Rules.md. The list below is
+// the artefact -> object coverage those views implement.
+//
 //   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
 //                   + SRUM Network Usage (SrumECmd — app+user attribution; bytes
 //                     are not a CAR flow field, so they stay in raw VelociraptorJson)
@@ -316,37 +324,10 @@ CarUserSession() {
         CarUserSession_Ssh, CarUserSession_Memory
 }
 
-//=============================================================================
-// CarProcess — process creation / termination
-//
-// Two sources with genuinely different fidelity, unioned:
-//
-//   EvtxECmd 4688/4689  full: pid, ppid, parent, command line
-//   Plaso execution     Prefetch/Amcache/AppCompatCache — exe only
-//
-// The artefact sources record THAT a binary ran, not the process tree that ran
-// it, so pid/ppid/parent_exe/command_line are null for them. That is the
-// honest shape of dead-box process data, and it is why the project's example
-// search returns a command line only for 4688 rows.
-//
-// PIDs: Windows writes NewProcessId and EventData's ProcessId as hex strings
-// ("0x1a4"). KQL has no base-16 string parser, and toint()/tolong() parse
-// decimal — so toint("1a4") is null and toint("1234") is 1234 when the true
-// value is 4660. Both the raw hex and a best-effort numeric form are exposed:
-// pid_hex is always correct, pid is what CAR asks for.
-//
-// ✅ VERIFIED against the live emulator (issue #14, item 6): tolong() DOES
-//    accept a "0x"-prefixed string at run time, not just a 0x integer literal —
-//    tolong("0x1a4") = 420, tolong("0x1234") = 4660, and pid=420 on the
-//    ingested 4688 row. Note tolong("1a4") without the prefix = null, so pid_hex
-//    stays the always-correct raw form; EvtxECmd emits the "0x" form, so pid is
-//    populated. See docs/Runtime-Validation.md.
-//
-// ppid comes from EventData's ProcessId (the creating process), NOT from the
-// table's top-level ProcessId column — that is the Execution ProcessID of
-// whatever WROTE the record, which for Security-channel events is the same
-// value on every row and would give every process the same bogus parent.
-//=============================================================================
+// Security 4688/4689 PIDs are hex strings ("0x1a4"); tolong() parses the 0x form
+// at run time (tolong("0x1a4") = 420, verified against the emulator, issue #14).
+// ppid comes from EventData's ProcessId (the creator), NOT the row's top-level
+// Execution ProcessID (identical on every Security row → bogus parents).
 //=============================================================================
 // process — ONE VIEW PER ARTEFACT (CarProcess_<Artefact>). Each view is just the
 // source table with its NORMAL FIELDS KEPT, plus the canonical CAR process fields
