@@ -32,21 +32,23 @@
 //   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
 //                   artefacts (prefetch/amcache/appcompat), Linux cron,
 //                   + Volatility pslist(+cmdline) (memory — live process tree)
-//   CarService      EvtxECmd 7045/4697 (Windows only — see the function note)
+//   CarService      EvtxECmd 7045/4697 + Volatility svcscan (memory — services)
 //   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
 //                   + Volatility filescan (memory-resident files)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
 //   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
 //   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
-//   CarThread       Sysmon 8 (CreateRemoteThread)
+//   CarThread       Sysmon 8 + Volatility thrdscan (memory — threads/start addr)
 //
-//   MEMORY fills SIX CAR objects where dead-box cannot: Volatility 3 plugins
-//   (memory.VolatilityJson) source the live process tree (dfir_processes ->
-//   process, with full path/parent/cmdline/DLLs), loaded modules (dlllist ->
-//   module), kernel drivers (modules -> driver), connections (netscan/netstat ->
-//   flow), logon sessions (sessions -> user_session, user + logon time) and
-//   memory-resident files (filescan -> file). module/driver had only Sysmon before.
+//   MEMORY fills EIGHT of the nine CAR objects where dead-box cannot: Volatility 3
+//   (memory.VolatilityJson) sources the live process tree (dfir_processes ->
+//   process, full path/parent/cmdline/DLLs), loaded modules (dlllist -> module),
+//   kernel drivers (modules -> driver), connections (netscan/netstat -> flow),
+//   logon sessions (sessions -> user_session), memory-resident files (filescan ->
+//   file), services (svcscan -> service) and threads (thrdscan -> thread, whose
+//   unbacked start addresses are the injection tell). Only registry is not yet
+//   sourced from memory. module/driver/thread had only Sysmon before.
 //
 //   registry lost its only source when the KAPE path was removed; the
 //   replacement — Velociraptor offline collectors running the EZ Tools (RECmd /
@@ -493,13 +495,25 @@ CarService() {
             platform    = "windows"
         | project Timestamp = TimeCreated, action, name, module_path, user,
                   hostname, EventId, platform, SourceFile;
-    // Windows only. Linux has no dead-box "service installed" event equivalent to
-    // 7045: with Plaso, systemd activity surfaces as syslog:line (reporter=systemd)
-    // RUNTIME messages, not installs, and the former auditd SERVICE_START/STOP
-    // branch was fixture-only — no standard Plaso parser emits that shape. An
-    // auditd-enabled image (or a journald service-install signal) would add a real
-    // Linux branch; see the Runtime-Validation note.
-    FromEvtx
+    // Memory: Volatility windows.svcscan — every service registered in the image
+    // with its binary path (Binary, or the hosting Dll for svchost services),
+    // richer than a single 7045 install event. No install time in svcscan, so
+    // Timestamp is null. Linux still has no dead-box "service installed" event
+    // equivalent (see the note in git history).
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.svcscan"
+        | project
+            Timestamp   = datetime(null),
+            action      = "create",
+            name        = tostring(Record.Name),
+            module_path = iff(isnotempty(tostring(Record.Binary)), tostring(Record.Binary), tostring(Record.Dll)),
+            user        = "",
+            hostname    = "",
+            EventId     = int(null),
+            platform    = "windows",
+            SourceFile;
+    union FromEvtx, FromMemory
 }
 
 //=============================================================================
@@ -777,21 +791,45 @@ CarDriver() {
 .create-or-alter function
 with (docstring = "MITRE CAR 'thread' object (Sysmon 8 CreateRemoteThread)", folder = "CAR")
 CarThread() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 8
-    | project
-        Timestamp      = TimeCreated,
-        action         = "create",
-        src_pid        = tolong(EvtxPayload(Payload, "SourceProcessId")),
-        src_image      = EvtxPayload(Payload, "SourceImage"),
-        target_pid     = tolong(EvtxPayload(Payload, "TargetProcessId")),
-        target_image   = EvtxPayload(Payload, "TargetImage"),
-        new_tid        = tolong(EvtxPayload(Payload, "NewThreadId")),
-        start_address  = EvtxPayload(Payload, "StartAddress"),
-        start_module   = EvtxPayload(Payload, "StartModule"),
-        start_function = EvtxPayload(Payload, "StartFunction"),
-        hostname       = Computer,
-        SourceFile
+    let FromSysmon =
+        database("host").EvtxEcmdJson
+        | where Provider matches regex @"(?i)sysmon" and EventId == 8
+        | project
+            Timestamp      = TimeCreated,
+            action         = "create",
+            src_pid        = tolong(EvtxPayload(Payload, "SourceProcessId")),
+            src_image      = EvtxPayload(Payload, "SourceImage"),
+            target_pid     = tolong(EvtxPayload(Payload, "TargetProcessId")),
+            target_image   = EvtxPayload(Payload, "TargetImage"),
+            new_tid        = tolong(EvtxPayload(Payload, "NewThreadId")),
+            start_address  = EvtxPayload(Payload, "StartAddress"),
+            start_module   = EvtxPayload(Payload, "StartModule"),
+            start_function = EvtxPayload(Payload, "StartFunction"),
+            hostname       = Computer,
+            SourceFile;
+    // Memory: Volatility windows.thrdscan — every thread in the image with its
+    // owning process (PID), TID, create time and start address. Unlike Sysmon 8
+    // (which records the injector -> target relationship), thrdscan sees the
+    // thread's OWNER, so src_* is empty; a Win32 start address with no backing
+    // module (Win32StartPath) is the shellcode/injection tell. Threads with an
+    // ExitTime are already dead — still evidence they ran.
+    let FromMemory =
+        database("memory").VolatilityJson
+        | where Plugin == "windows.thrdscan"
+        | project
+            Timestamp      = todatetime(Record.CreateTime),
+            action         = "create",
+            src_pid        = long(null),
+            src_image      = "",
+            target_pid     = tolong(Record.PID),
+            target_image   = "",
+            new_tid        = tolong(Record.TID),
+            start_address  = tostring(Record.Win32StartAddress),
+            start_module   = tostring(Record.Win32StartPath),
+            start_function = "",
+            hostname       = "",
+            SourceFile;
+    union FromSysmon, FromMemory
 }
 
 //=============================================================================
