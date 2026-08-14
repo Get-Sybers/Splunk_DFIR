@@ -240,24 +240,35 @@ zeek_generic_prepare() {
         python3 - "$f" "$logtype" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
 import json, sys
 path, logtype, rel = sys.argv[1], sys.argv[2], sys.argv[3]
-raw = open(path, encoding="utf-8", errors="replace").read()
-recs = []
-try:
-    data = json.loads(raw)                       # a single array or object
-    recs = data if isinstance(data, list) else [data]
-except Exception:
-    for line in raw.splitlines():                # or JSON Lines (Zeek's default)
-        line = line.strip()
-        if not line:
-            continue
+written = 0
+with open(path, encoding="utf-8", errors="replace") as fh:
+    first = fh.read(1)
+    if first == "[":                             # legacy single JSON array
+        content = first + fh.read()
         try:
-            recs.append(json.loads(line))
+            data = json.loads(content)
+            recs = data if isinstance(data, list) else [data]
         except Exception:
-            continue
-if not recs:
+            recs = []
+        for rec in recs:
+            sys.stdout.write(json.dumps({"LogType": logtype, "SourceFile": rel, "Record": rec}) + "\n")
+            written += 1
+    else:                                        # JSON Lines (Zeek's default)
+        buf = first
+        for line in fh:
+            buf += line
+            stripped = buf.rstrip("\n")
+            buf = ""
+            if not stripped.strip():
+                continue
+            try:
+                rec = json.loads(stripped)
+                sys.stdout.write(json.dumps({"LogType": logtype, "SourceFile": rel, "Record": rec}) + "\n")
+                written += 1
+            except Exception:
+                continue
+if not written:
     sys.exit(1)
-for rec in recs:
-    sys.stdout.write(json.dumps({"LogType": logtype, "SourceFile": rel, "Record": rec}) + "\n")
 PY
         [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
     fi
@@ -285,24 +296,35 @@ volatility_prepare() {
         python3 - "$f" "$plugin" "$rel" > "$staged" <<'PY' || { rm -f "$staged"; return 1; }
 import json, sys
 path, plugin, rel = sys.argv[1], sys.argv[2], sys.argv[3]
-raw = open(path, encoding="utf-8", errors="replace").read()
-recs = []
-try:
-    data = json.loads(raw)                       # legacy `-r json`: one array/object
-    recs = data if isinstance(data, list) else [data]
-except Exception:
-    for line in raw.splitlines():                # our `-r jsonl_dfir`: JSON Lines
-        line = line.strip()
-        if not line:
-            continue
+written = 0
+with open(path, encoding="utf-8", errors="replace") as fh:
+    first = fh.read(1)
+    if first == "[":                             # legacy `-r json`: one array
+        content = first + fh.read()
         try:
-            recs.append(json.loads(line))
+            data = json.loads(content)
+            recs = data if isinstance(data, list) else [data]
         except Exception:
-            continue
-if not recs:
+            recs = []
+        for rec in recs:
+            sys.stdout.write(json.dumps({"Plugin": plugin, "SourceFile": rel, "Record": rec}) + "\n")
+            written += 1
+    else:                                        # `-r jsonl_dfir`: JSON Lines
+        buf = first
+        for line in fh:
+            buf += line
+            stripped = buf.rstrip("\n")
+            buf = ""
+            if not stripped.strip():
+                continue
+            try:
+                rec = json.loads(stripped)
+                sys.stdout.write(json.dumps({"Plugin": plugin, "SourceFile": rel, "Record": rec}) + "\n")
+                written += 1
+            except Exception:
+                continue
+if not written:
     sys.exit(1)
-for rec in recs:
-    sys.stdout.write(json.dumps({"Plugin": plugin, "SourceFile": rel, "Record": rec}) + "\n")
 PY
         [[ -s "$staged" ]] || { rm -f "$staged"; return 1; }
     fi

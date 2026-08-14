@@ -38,10 +38,9 @@ class JsonLinesDfirRenderer(text_renderer.JsonRenderer):
             outfd.write("\n")
 
     def render(self, grid: interfaces.renderers.TreeGrid):
-        rows = []
         ignore_columns = self.ignored_columns(grid)
 
-        def visitor(node, accumulator):
+        def visitor(node, _accumulator):
             row = {"tree_depth": node.path_depth}
             for column_index, column in enumerate(grid.columns):
                 if column in ignore_columns:
@@ -57,14 +56,13 @@ class JsonLinesDfirRenderer(text_renderer.JsonRenderer):
 
             if self.filter and self.filter.filter(
                     [row.get(c.name) for c in grid.columns if c not in ignore_columns]):
-                return accumulator
+                return _accumulator
 
-            accumulator.append(row)
-            return accumulator
+            sys.stdout.write(json.dumps(row, sort_keys=True, default=str))
+            sys.stdout.write("\n")
+            return _accumulator
 
         if not grid.populated:
-            grid.populate(visitor, rows)
+            grid.populate(visitor, None)
         else:
-            grid.visit(node=None, function=visitor, initial_accumulator=rows)
-
-        self.output_result(sys.stdout, rows)
+            grid.visit(node=None, function=visitor, initial_accumulator=None)
