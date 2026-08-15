@@ -192,7 +192,7 @@ def get_vm_descriptor(vm_dir: str) -> tuple[str | None, str]:
             continue
         if not is_vmdk_descriptor(f):
             continue
-        if re.search(r"-[0-9]{6}\.vmdk$", name):
+        if re.search(r"-[0-9]{6}\.vmdk$", low):
             snapshot.append(f)
         else:
             base.append(f)

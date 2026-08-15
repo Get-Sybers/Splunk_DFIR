@@ -19,7 +19,7 @@
 - name: "plaso-sofelk | assert a timeline was produced for the sources present"
   ansible.builtin.assert:
     that:
-      - dfir_plaso_sofelk_verify.matched | int > 0 or ((dfir_plaso_sofelk_run.stdout | from_json).images | int + (dfir_plaso_sofelk_run.stdout | from_json).vms | int) == 0
+      - dfir_plaso_sofelk_verify.matched | int > 0 or ((dfir_plaso_sofelk_run.stdout | from_json).processed | int + (dfir_plaso_sofelk_run.stdout | from_json).skipped | int) == 0
     fail_msg: >-
       plaso produced no JSONL at all though disk images / VM exports were present.
     quiet: true
