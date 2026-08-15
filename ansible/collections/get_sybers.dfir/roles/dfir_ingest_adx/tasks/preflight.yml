@@ -1,0 +1,46 @@
+---
+# FIND FACTS -> check existence AND location + engine reachability -> (then INGEST).
+
+- name: "ingest-adx-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_ingest_adx_docker
+  changed_when: false
+
+- name: "ingest-adx-preflight | stat the processed dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_ingest_adx_processed_dir }}"
+  register: dfir_ingest_adx_proc_stat
+
+- name: "ingest-adx-preflight | processed dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_ingest_adx_proc_stat.stat.exists
+      - dfir_ingest_adx_proc_stat.stat.isdir is defined and dfir_ingest_adx_proc_stat.stat.isdir
+    fail_msg: >-
+      dfir_ingest_adx_processed_dir ({{ dfir_ingest_adx_processed_dir }}) is missing or
+      is not a directory.
+    quiet: true
+
+- name: "ingest-adx-preflight | the get_sybers_dfir.ingest module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.ingest"
+  environment:
+    PYTHONPATH: "{{ dfir_ingest_adx_python_path }}"
+  register: dfir_ingest_adx_import
+  changed_when: false
+
+- name: "ingest-adx-preflight | the ADX emulator engine is reachable"
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -m
+      - get_sybers_dfir.ingest
+      - --ping
+      - --host
+      - "{{ dfir_ingest_adx_kusto_host }}"
+      - --port
+      - "{{ dfir_ingest_adx_kusto_port }}"
+  environment:
+    PYTHONPATH: "{{ dfir_ingest_adx_python_path }}"
+  register: dfir_ingest_adx_reachable
+  changed_when: false
+  failed_when: dfir_ingest_adx_reachable.rc != 0 and not dfir_ingest_adx_dry_run | bool

@@ -134,15 +134,30 @@ def process(
 @app.command()
 def ingest(
     only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility|velociraptor."),
+    force: bool = typer.Option(False, "--force", help="Re-ingest files already in the ledger."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="List what would be loaded; contact nothing."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
 ) -> None:
-    """Load processed output into the ADX (Kusto) emulator (fronts ingest-kusto.sh)."""
-    _need("bash")
+    """Load processed output into the ADX (Kusto) emulator by driving dfir_ingest_adx."""
+    _need("ansible-playbook")
     repo = _repo_root(repo_root)
-    cmd = ["bash", _script(repo, "ingest-kusto.sh")]
+    playbook = repo / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml"
+    if not playbook.is_file():
+        typer.secho(f"ingest playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
     if only:
-        cmd += ["--only", only]
-    _run(cmd, cwd=repo)
+        cmd += ["-e", f"dfir_ingest_adx_only={only}"]
+    if force:
+        cmd += ["-e", "dfir_ingest_adx_force=true"]
+    if dry_run:
+        cmd += ["-e", "dfir_ingest_adx_dry_run=true"]
+    for kv in extra_var or []:
+        cmd += ["-e", kv]
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    typer.secho("ingesting processed → ADX emulator", fg=typer.colors.GREEN)
+    _run(cmd, cwd=repo, env=env)
 
 
 @app.command()

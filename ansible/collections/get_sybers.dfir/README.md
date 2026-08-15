@@ -22,7 +22,9 @@ as a single action. Roles land per source as epic #46 retires the matching
 | `dfir_plaso` | Disk images / VM exports → Plaso JSONL | `get_sybers_dfir.plaso` |
 | `dfir_signatures` | YARA / Suricata / Hayabusa detections | `get_sybers_dfir.signatures` |
 
-Ingest and deploy roles (`dfir_ingest_*`, `dfir_deploy_*`) follow as later slices of #46.
+Loading: **`dfir_ingest_adx`** (processed → ADX emulator, idempotent via an in-DB
+ledger) is in. `dfir_ingest_sofelk` and the `dfir_deploy_*` roles follow as later
+slices of #46.
 
 ## Usage
 The **`dxdfir` CLI** (Python package `get_sybers_dfir`) is the front-end — it drives
