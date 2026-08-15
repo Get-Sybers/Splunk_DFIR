@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "get-sybers-dfir"
+version = "0.1.0"
+description = "DX_DFIR forensic processing package (zeek, plaso, volatility, evtx, signatures) + CLI"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[project.scripts]
+# CLI (Typer) is a later child issue (#46); processors run via `python -m get_sybers_dfir.<source>` today.
+
+[tool.setuptools.packages.find]
+include = ["get_sybers_dfir*"]

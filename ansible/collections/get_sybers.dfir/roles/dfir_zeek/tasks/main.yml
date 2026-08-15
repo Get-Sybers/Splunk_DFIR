@@ -1,0 +1,33 @@
+---
+# dfir_zeek: PCAPs -> Zeek JSON. The role GROUPS; the playbook DECIDES.
+# NOTE: a first run that processes new captures is legitimately changed=true; a
+# second immediate run is changed=false (captures with output are skipped). That
+# skip lives in the Python processor, not in a task's `when:`.
+
+- name: "zeek | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_zeek_pipeline in ['adx', 'sofelk']
+      - dfir_zeek_pcap_dir | length > 0
+    fail_msg: >-
+      dfir_zeek needs dfir_zeek_pipeline (adx|sofelk) and a non-empty
+      dfir_zeek_pcap_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "zeek | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "zeek | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_zeek_pipeline == 'adx'
+
+- name: "zeek | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_zeek_pipeline == 'sofelk'

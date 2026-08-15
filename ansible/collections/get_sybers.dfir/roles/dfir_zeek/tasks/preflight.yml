@@ -1,0 +1,28 @@
+---
+# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+
+- name: "zeek-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_zeek_docker
+  changed_when: false
+
+- name: "zeek-preflight | stat the pcap dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_zeek_pcap_dir }}"
+  register: dfir_zeek_pcap_stat
+
+- name: "zeek-preflight | pcap dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_zeek_pcap_stat.stat.exists
+      - dfir_zeek_pcap_stat.stat.isdir is defined and dfir_zeek_pcap_stat.stat.isdir
+    fail_msg: >-
+      dfir_zeek_pcap_dir ({{ dfir_zeek_pcap_dir }}) is missing or is not a directory.
+    quiet: true
+
+- name: "zeek-preflight | the get_sybers_dfir.zeek module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.zeek"
+  environment:
+    PYTHONPATH: "{{ dfir_zeek_python_path }}"
+  register: dfir_zeek_import
+  changed_when: false

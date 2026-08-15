@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_out: /tmp/dfir_zeek_molecule/out
+  tasks:
+    - name: "molecule-verify | find the produced Zeek JSON"
+      ansible.builtin.find:
+        paths: "{{ molecule_out }}"
+        patterns: "*.json"
+        recurse: true
+      register: produced
+
+    - name: "molecule-verify | assert Zeek produced a conn.json"
+      ansible.builtin.assert:
+        that:
+          - produced.matched | int > 0
+          - produced.files | map(attribute='path') | map('basename') | select('search', '^conn\\.json$') | list | length > 0
+        fail_msg: "no conn.json produced from the fixture capture"
+        quiet: true
