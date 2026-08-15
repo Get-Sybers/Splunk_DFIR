@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dfir_ingest_sofelk_src_dir: /tmp/dfir_ingest_sofelk_molecule/src
+    dfir_ingest_sofelk_target_dir: /tmp/dfir_ingest_sofelk_molecule/target
+    dfir_ingest_sofelk_python_path: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
+  tasks:
+    - name: "converge | run dfir_ingest_sofelk"
+      ansible.builtin.include_role:
+        name: dfir_ingest_sofelk

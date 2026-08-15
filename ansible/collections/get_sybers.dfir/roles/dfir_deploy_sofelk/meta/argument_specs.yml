@@ -1,0 +1,38 @@
+---
+argument_specs:
+  main:
+    short_description: "Deploy a SOF-ELK stack with an ingest volume."
+    description:
+      - >-
+        Pulls and runs an operator-supplied SOF-ELK image, mounting a host ingest dir
+        into the container's watch path and publishing the Kibana/Dashboards port.
+        SOF-ELK ships primarily as a VM, so no default image is assumed — provide one.
+    options:
+      dfir_deploy_sofelk_image:
+        type: str
+        required: true
+        description: "SOF-ELK container image (operator-supplied; no canonical public one)."
+      dfir_deploy_sofelk_container:
+        type: str
+        required: false
+        default: "sof-elk"
+        description: "Container name."
+      dfir_deploy_sofelk_ingest_dir:
+        type: str
+        required: false
+        description: "Host dir mounted into the container ingest path (match dfir_ingest_sofelk_target_dir)."
+      dfir_deploy_sofelk_container_ingest_path:
+        type: str
+        required: false
+        default: "/logstash"
+        description: "Ingest path inside the container that SOF-ELK watches."
+      dfir_deploy_sofelk_kibana_port:
+        type: int
+        required: false
+        default: 5601
+        description: "Host port for Kibana / OpenSearch Dashboards."
+      dfir_deploy_sofelk_memory:
+        type: str
+        required: false
+        default: "4G"
+        description: "Container memory limit."

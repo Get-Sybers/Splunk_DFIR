@@ -1,0 +1,22 @@
+---
+# SOF-ELK has no canonical public image, so provide one to run this scenario:
+#   molecule test -- -e molecule_sofelk_image=<your-sof-elk-image>
+- name: Prepare
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_sofelk_image: ""
+  tasks:
+    - name: "molecule-prepare | require a SOF-ELK image"
+      ansible.builtin.assert:
+        that:
+          - molecule_sofelk_image | length > 0
+        fail_msg: >-
+          Provide -e molecule_sofelk_image=<image> (SOF-ELK ships as a VM; there is no
+          canonical public single image to default to).
+        quiet: true
+
+    - name: "molecule-prepare | remove any leftover test container"
+      community.docker.docker_container:
+        name: sof-elk-moltest
+        state: absent

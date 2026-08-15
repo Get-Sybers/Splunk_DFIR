@@ -1,0 +1,15 @@
+---
+# Repo root is five levels up from this role.
+dfir_deploy_sofelk_repo_root: "{{ role_path }}/../../../../.."
+
+# SOF-ELK is distributed primarily as a VM; there is no canonical public single
+# image, so the operator supplies one (a SOF-ELK container image or their own build).
+dfir_deploy_sofelk_image: ""
+dfir_deploy_sofelk_container: "sof-elk"
+# Host dir mounted into the container's ingest path. Point dfir_ingest_sofelk's
+# target_dir at the SAME host dir so delivery lands where SOF-ELK watches.
+dfir_deploy_sofelk_ingest_dir: "{{ dfir_deploy_sofelk_repo_root }}/data_store/sofelk-delivered"
+dfir_deploy_sofelk_container_ingest_path: "/logstash"
+# Kibana / OpenSearch Dashboards.
+dfir_deploy_sofelk_kibana_port: 5601
+dfir_deploy_sofelk_memory: "4G"

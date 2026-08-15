@@ -1,0 +1,25 @@
+---
+# dfir_deploy_adx: stand up the emulator + apply the schema. Idempotence comes from
+# module semantics (docker_image/docker_container) and an honest changed_when on the
+# schema apply (created_dbs > 0), not from a task's `when:`.
+
+- name: "deploy-adx | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_deploy_adx_image | length > 0
+      - dfir_deploy_adx_container | length > 0
+      - dfir_deploy_adx_port | int > 0
+    fail_msg: >-
+      dfir_deploy_adx needs a non-empty image + container and a valid port.
+    quiet: true
+  tags: [always]
+
+- name: "deploy-adx | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+- name: "deploy-adx | deploy the emulator and apply the schema"
+  ansible.builtin.include_tasks: deploy.yml

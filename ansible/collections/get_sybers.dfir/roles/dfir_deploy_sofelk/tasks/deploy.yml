@@ -1,0 +1,36 @@
+---
+- name: "deploy-sofelk | pull the SOF-ELK image"
+  community.docker.docker_image:
+    name: "{{ dfir_deploy_sofelk_image }}"
+    source: pull
+    force_source: false
+  register: dfir_deploy_sofelk_pull
+  retries: 3
+  delay: 10
+  until: dfir_deploy_sofelk_pull is succeeded
+
+- name: "deploy-sofelk | run the SOF-ELK container with the ingest volume"
+  community.docker.docker_container:
+    name: "{{ dfir_deploy_sofelk_container }}"
+    image: "{{ dfir_deploy_sofelk_image }}"
+    pull: never
+    state: started
+    detach: true
+    memory: "{{ dfir_deploy_sofelk_memory }}"
+    ports:
+      - "{{ dfir_deploy_sofelk_kibana_port }}:5601"
+    volumes:
+      - "{{ dfir_deploy_sofelk_ingest_dir }}:{{ dfir_deploy_sofelk_container_ingest_path }}"
+
+- name: "deploy-sofelk | read back the container state"
+  community.docker.docker_container_info:
+    name: "{{ dfir_deploy_sofelk_container }}"
+  register: dfir_deploy_sofelk_info
+
+- name: "deploy-sofelk | assert the container is running"
+  ansible.builtin.assert:
+    that:
+      - dfir_deploy_sofelk_info.exists
+      - dfir_deploy_sofelk_info.container.State.Running | bool
+    fail_msg: "the SOF-ELK container is not running after deploy"
+    quiet: true

@@ -18,6 +18,7 @@ def _fake_repo(tmp_path: Path) -> Path:
     for src in ("zeek", "velociraptor"):
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
     (tmp_path / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml").write_text("---\n")
+    (tmp_path / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml").write_text("---\n")
     (tmp_path / "scripts").mkdir()
     for s in ("ingest-kusto.sh", "deploy-kusto.sh", "apply-kusto-schema.sh"):
         (tmp_path / "scripts" / s).write_text("#!/bin/bash\n")
@@ -84,22 +85,17 @@ def test_ingest_drives_the_role(tmp_path):
     assert m.call_args.kwargs["env"]["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
 
 
-def test_deploy_runs_deploy_then_schema(tmp_path):
+def test_deploy_drives_the_role(tmp_path):
     repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=0) as m:
-        r = runner.invoke(cli.app, ["deploy", "--repo-root", str(repo)])
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+        r = runner.invoke(cli.app, ["deploy", "--persist", "--port", "8090", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
-    ran = [c.args[0][1] for c in m.call_args_list]   # the script path arg
-    assert any(p.endswith("deploy-kusto.sh") for p in ran)
-    assert any(p.endswith("apply-kusto-schema.sh") for p in ran)
-
-
-def test_deploy_no_schema_skips_apply(tmp_path):
-    repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=0) as m:
-        runner.invoke(cli.app, ["deploy", "--no-schema", "--repo-root", str(repo)])
-    ran = [c.args[0][1] for c in m.call_args_list]
-    assert not any(p.endswith("apply-kusto-schema.sh") for p in ran)
+    cmd = m.call_args.args[0]
+    assert cmd[0] == "ansible-playbook"
+    assert str(repo / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml") in cmd
+    assert "dfir_deploy_adx_persist=true" in cmd
+    assert "dfir_deploy_adx_port=8090" in cmd
 
 
 def test_failing_command_propagates_exit_code(tmp_path):

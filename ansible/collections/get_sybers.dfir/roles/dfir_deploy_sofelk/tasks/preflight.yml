@@ -1,0 +1,26 @@
+---
+# FIND FACTS -> check existence AND location -> (then DEPLOY + VERIFY).
+
+- name: "deploy-sofelk-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_deploy_sofelk_docker
+  changed_when: false
+
+- name: "deploy-sofelk-preflight | ensure the host ingest dir exists"
+  ansible.builtin.file:
+    path: "{{ dfir_deploy_sofelk_ingest_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: "deploy-sofelk-preflight | stat the ingest dir (confirm it is a directory)"
+  ansible.builtin.stat:
+    path: "{{ dfir_deploy_sofelk_ingest_dir }}"
+  register: dfir_deploy_sofelk_ingest_stat
+
+- name: "deploy-sofelk-preflight | assert the ingest dir is present"
+  ansible.builtin.assert:
+    that:
+      - dfir_deploy_sofelk_ingest_stat.stat.exists
+      - dfir_deploy_sofelk_ingest_stat.stat.isdir is defined and dfir_deploy_sofelk_ingest_stat.stat.isdir
+    fail_msg: "could not establish the host ingest dir {{ dfir_deploy_sofelk_ingest_dir }}"
+    quiet: true

@@ -164,24 +164,30 @@ def ingest(
 def deploy(
     persist: bool = typer.Option(False, "--persist", help="Persist emulator data (opt-in)."),
     port: int = typer.Option(None, "--port", help="Emulator port override."),
-    schema: bool = typer.Option(True, "--schema/--no-schema", help="Apply the schema after deploy."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
 ) -> None:
-    """Deploy the ADX (Kusto) emulator and (by default) apply the schema.
+    """Deploy the ADX (Kusto) emulator + schema by driving dfir_deploy_adx.
 
-    ⚠️ deploy-kusto.sh accepts Microsoft's EULA on your behalf; the emulator has no
-    auth and is localhost-only by default.
+    ⚠️ Running this accepts Microsoft's EULA on your behalf (ACCEPT_EULA=Y); the
+    emulator has no auth and is localhost-only by default.
     """
-    _need("bash")
+    _need("ansible-playbook")
     repo = _repo_root(repo_root)
-    deploy_cmd = ["bash", _script(repo, "deploy-kusto.sh")]
+    playbook = repo / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml"
+    if not playbook.is_file():
+        typer.secho(f"deploy playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
     if persist:
-        deploy_cmd.append("--persist")
+        cmd += ["-e", "dfir_deploy_adx_persist=true"]
     if port is not None:
-        deploy_cmd += ["--port", str(port)]
-    _run(deploy_cmd, cwd=repo)
-    if schema:
-        _run(["bash", _script(repo, "apply-kusto-schema.sh")], cwd=repo)
+        cmd += ["-e", f"dfir_deploy_adx_port={port}"]
+    for kv in extra_var or []:
+        cmd += ["-e", kv]
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    typer.secho("deploying ADX emulator + schema", fg=typer.colors.GREEN)
+    _run(cmd, cwd=repo, env=env)
 
 
 @app.command()
