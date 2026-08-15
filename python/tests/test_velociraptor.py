@@ -58,6 +58,14 @@ def test_process_lays_out_results_and_is_idempotent(tmp_path):
     assert s3["processed"] == 1
 
 
+def test_already_done_is_case_insensitive(tmp_path):
+    # a prior run that produced an uppercase .JSON must still count as done
+    out = tmp_path / "HOST01"
+    out.mkdir()
+    (out / "Windows.System.JSON").write_text("{}")
+    assert velociraptor._already_done(str(out)) is True
+
+
 def test_process_reports_empty_collection_as_failed(tmp_path):
     raw = tmp_path / "raw"
     out = tmp_path / "out"

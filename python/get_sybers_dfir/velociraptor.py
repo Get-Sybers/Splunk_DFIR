@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import zipfile
 
@@ -50,8 +51,10 @@ def _result_members(names: list[str]) -> list[str]:
 
 
 def _already_done(output_dir: str) -> bool:
+    # Case-insensitive: _lay_out preserves the member's original filename case, so a
+    # collection producing e.g. "Windows.System.JSON" must still count as done.
     return os.path.isdir(output_dir) and any(
-        n.endswith(".json") for n in os.listdir(output_dir)
+        n.lower().endswith(".json") for n in os.listdir(output_dir)
     )
 
 
@@ -59,7 +62,8 @@ def _lay_out(zip_path: str, output_dir: str) -> list[str]:
     """Copy each result JSON out of the ZIP into output_dir as its basename.
 
     Artefact name is the result filename (Velociraptor names results by artefact).
-    Two members sharing a basename keep distinct output via a numeric suffix.
+    Two members sharing a basename keep distinct output via a numeric suffix. Members
+    are streamed (result JSON can be large) rather than read fully into memory.
     """
     os.makedirs(output_dir, exist_ok=True)
     written: list[str] = []
@@ -71,7 +75,7 @@ def _lay_out(zip_path: str, output_dir: str) -> list[str]:
                 stem, ext = os.path.splitext(base)
                 dest = os.path.join(output_dir, f"{stem}_{len(written)}{ext}")
             with zf.open(member) as src, open(dest, "wb") as out:
-                out.write(src.read())
+                shutil.copyfileobj(src, out)
             written.append(os.path.basename(dest))
     return written
 

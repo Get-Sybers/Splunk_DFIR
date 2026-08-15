@@ -15,3 +15,12 @@
     patterns: "*.json"
     recurse: true
   register: dfir_velociraptor_sofelk_verify
+
+- name: "velociraptor-sofelk | assert output matches what was processed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_velociraptor_sofelk_run.stdout | from_json).failed | int == 0
+      - dfir_velociraptor_sofelk_verify.matched | int > 0 or (dfir_velociraptor_sofelk_run.stdout | from_json).collections | int == 0
+    fail_msg: >-
+      velociraptor reported failures, or produced no JSON though collections were present.
+    quiet: true
