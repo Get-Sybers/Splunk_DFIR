@@ -16,7 +16,7 @@ argument_specs:
         description: "Which backend to target; selects the output destination."
       dfir_zeek_pcap_dir:
         type: str
-        required: true
+        required: false
         description: "Directory tree of packet captures to process (recursed)."
       dfir_zeek_adx_out_dir:
         type: str
