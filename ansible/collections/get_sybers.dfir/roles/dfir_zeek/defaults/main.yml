@@ -1,0 +1,15 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dfir_zeek_pipeline: adx
+
+# Repo root is five levels up from this role
+# (roles/dfir_zeek -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_zeek_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_zeek_pcap_dir: "{{ dfir_zeek_repo_root }}/data_store/raw/pcaps"
+dfir_zeek_adx_out_dir: "{{ dfir_zeek_repo_root }}/data_store/processed/zeek"
+dfir_zeek_sofelk_out_dir: "{{ dfir_zeek_repo_root }}/data_store/processed/sofelk/zeek"
+dfir_zeek_image: "zeek/zeek"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_zeek_python_path: "{{ dfir_zeek_repo_root }}/python"
+dfir_zeek_force: false
