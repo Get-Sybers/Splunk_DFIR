@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: dfir_deploy_sofelk
+  namespace: get_sybers
+  author: Get-Sybers
+  description: >-
+    Deploy a SOF-ELK stack (operator-supplied image) with an ingest volume, so
+    dfir_ingest_sofelk can deliver into a directory SOF-ELK watches. Runs the
+    container via community.docker.
+  company: Get-Sybers
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: [bookworm, trixie]
+  galaxy_tags: [dfir, deploy, sofelk, elk]
+dependencies: []

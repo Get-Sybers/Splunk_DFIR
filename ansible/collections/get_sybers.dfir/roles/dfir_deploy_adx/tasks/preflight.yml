@@ -1,0 +1,35 @@
+---
+# FIND FACTS -> check existence AND location -> (then DEPLOY + VERIFY).
+
+- name: "deploy-adx-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_deploy_adx_docker
+  changed_when: false
+
+- name: "deploy-adx-preflight | stat the schema dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_deploy_adx_schema_dir }}"
+  register: dfir_deploy_adx_schema_stat
+
+- name: "deploy-adx-preflight | schema dir exists and holds 00-databases.kql"
+  ansible.builtin.stat:
+    path: "{{ dfir_deploy_adx_schema_dir }}/00-databases.kql"
+  register: dfir_deploy_adx_dbfile_stat
+
+- name: "deploy-adx-preflight | assert the schema dir + db file are present"
+  ansible.builtin.assert:
+    that:
+      - dfir_deploy_adx_schema_stat.stat.exists
+      - dfir_deploy_adx_schema_stat.stat.isdir is defined and dfir_deploy_adx_schema_stat.stat.isdir
+      - dfir_deploy_adx_dbfile_stat.stat.exists
+    fail_msg: >-
+      {{ dfir_deploy_adx_schema_dir }} is missing, not a directory, or has no
+      00-databases.kql.
+    quiet: true
+
+- name: "deploy-adx-preflight | the get_sybers_dfir.deploy module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.deploy"
+  environment:
+    PYTHONPATH: "{{ dfir_deploy_adx_python_path }}"
+  register: dfir_deploy_adx_import
+  changed_when: false

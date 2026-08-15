@@ -1,0 +1,10 @@
+---
+# The playbook holds the decisions; the role groups, the tasks act.
+- name: "DFIR | deploy the SOF-ELK stack"
+  hosts: "{{ dfir_hosts | default('localhost') }}"
+  connection: "{{ dfir_connection | default('local') }}"
+  gather_facts: true
+  tasks:
+    - name: "dfir-deploy-sofelk | run the deploy role"
+      ansible.builtin.include_role:
+        name: dfir_deploy_sofelk

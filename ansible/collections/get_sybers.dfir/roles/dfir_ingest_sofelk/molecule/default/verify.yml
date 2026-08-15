@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_target: /tmp/dfir_ingest_sofelk_molecule/target
+  tasks:
+    - name: "molecule-verify | find delivered files"
+      ansible.builtin.find:
+        paths: "{{ molecule_target }}"
+        patterns: "*.json"
+        recurse: true
+      register: delivered
+
+    - name: "molecule-verify | assert the layout was preserved"
+      ansible.builtin.assert:
+        that:
+          - delivered.matched | int == 2
+          - delivered.files | map(attribute='path') | select('search', '/zeek/cap/conn\\.json$') | list | length == 1
+        fail_msg: "sofelk files were not delivered with their tool layout"
+        quiet: true

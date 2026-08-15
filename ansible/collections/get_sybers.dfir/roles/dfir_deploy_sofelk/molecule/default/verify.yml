@@ -1,0 +1,17 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "molecule-verify | the test container is running"
+      community.docker.docker_container_info:
+        name: sof-elk-moltest
+      register: info
+
+    - name: "molecule-verify | assert running with the ingest mount"
+      ansible.builtin.assert:
+        that:
+          - info.exists
+          - info.container.State.Running | bool
+        fail_msg: "SOF-ELK test container is not running"
+        quiet: true

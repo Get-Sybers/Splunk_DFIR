@@ -1,0 +1,9 @@
+---
+- name: Cleanup
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "molecule-cleanup | remove the test container"
+      community.docker.docker_container:
+        name: sof-elk-moltest
+        state: absent

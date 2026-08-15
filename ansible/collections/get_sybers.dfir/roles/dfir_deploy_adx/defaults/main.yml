@@ -1,0 +1,18 @@
+---
+# Repo root is five levels up from this role
+# (roles/dfir_deploy_adx -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_deploy_adx_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_deploy_adx_image: "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
+dfir_deploy_adx_container: "kusto-emulator"
+# Host address the port binds to AND the schema client connects to. The emulator
+# has NO auth, so keep it on localhost.
+dfir_deploy_adx_host: "127.0.0.1"
+dfir_deploy_adx_port: 8080
+dfir_deploy_adx_memory: "4G"
+dfir_deploy_adx_schema_dir: "{{ dfir_deploy_adx_repo_root }}/kusto/schema"
+# Persistent (on-disk) databases require a /kustodata mount; default ephemeral,
+# which is Microsoft's recommendation for this image.
+dfir_deploy_adx_persist: false
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_deploy_adx_python_path: "{{ dfir_deploy_adx_repo_root }}/python"

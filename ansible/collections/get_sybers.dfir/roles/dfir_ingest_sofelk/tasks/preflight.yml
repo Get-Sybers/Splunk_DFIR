@@ -1,0 +1,25 @@
+---
+# FIND FACTS -> check existence AND location -> (then DELIVER + VERIFY). No docker:
+# delivery is a pure-Python file copy.
+
+- name: "ingest-sofelk-preflight | stat the sofelk source dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_ingest_sofelk_src_dir }}"
+  register: dfir_ingest_sofelk_src_stat
+
+- name: "ingest-sofelk-preflight | source dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_ingest_sofelk_src_stat.stat.exists
+      - dfir_ingest_sofelk_src_stat.stat.isdir is defined and dfir_ingest_sofelk_src_stat.stat.isdir
+    fail_msg: >-
+      dfir_ingest_sofelk_src_dir ({{ dfir_ingest_sofelk_src_dir }}) is missing or is
+      not a directory — run the processors with --pipeline sofelk first.
+    quiet: true
+
+- name: "ingest-sofelk-preflight | the get_sybers_dfir.sofelk module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.sofelk"
+  environment:
+    PYTHONPATH: "{{ dfir_ingest_sofelk_python_path }}"
+  register: dfir_ingest_sofelk_import
+  changed_when: false

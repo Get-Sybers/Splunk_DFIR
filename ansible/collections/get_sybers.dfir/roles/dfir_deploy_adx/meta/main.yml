@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: dfir_deploy_adx
+  namespace: get_sybers
+  author: Get-Sybers
+  description: >-
+    Deploy the ADX (Kusto) emulator and apply the schema (databases, tables,
+    ingestion mappings, MITRE CAR functions). Runs the container via
+    community.docker and applies kusto/schema via the get_sybers_dfir.deploy helper.
+  company: Get-Sybers
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: [bookworm, trixie]
+  galaxy_tags: [dfir, deploy, kusto, adx]
+
+dependencies: []
