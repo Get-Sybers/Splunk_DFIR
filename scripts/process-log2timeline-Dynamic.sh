@@ -4,6 +4,12 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"  # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
+# Clean up docker layers left dangling when a pulled :latest tag moves, so they
+# don't accumulate across runs. Runs on exit (success or failure); prunes only
+# untagged, unreferenced images — tool images and live containers are untouched.
+prune_dangling() { command -v docker >/dev/null 2>&1 && docker image prune -f >/dev/null 2>&1 || true; }
+trap prune_dangling EXIT
+
 # Set the input directory containing E01 files
 INPUT_DIR="$REPO_ROOT_DIR/data_store/raw/disk_images"
 # Set the input directory containing VMware VM exports (one sub-folder per VM)

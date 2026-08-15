@@ -2,6 +2,12 @@
 # Ensure correct filepath assigned when referenced
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")" # Resolves full path
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+
+# Clean up docker layers left dangling when a pulled :latest tag moves, so they
+# don't accumulate across runs. Runs on exit (success or failure); prunes only
+# untagged, unreferenced images — tool images and live containers are untouched.
+prune_dangling() { command -v docker >/dev/null 2>&1 && docker image prune -f >/dev/null 2>&1 || true; }
+trap prune_dangling EXIT
 # Define input and output directories dynamically
 PCAP_DIR="$(realpath "$SCRIPT_DIR/../data_store/raw/pcaps")"
 ZEEK_LOGS_DIR="$(realpath "$SCRIPT_DIR/../data_store/processed/zeek")"
