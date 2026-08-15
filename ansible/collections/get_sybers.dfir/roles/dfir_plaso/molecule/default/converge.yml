@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dfir_plaso_pipeline: adx
+    dfir_plaso_input_dir: /tmp/dfir_plaso_molecule/in
+    dfir_plaso_vm_dir: /tmp/dfir_plaso_molecule/vm
+    dfir_plaso_adx_out_dir: /tmp/dfir_plaso_molecule/out
+  tasks:
+    - name: "converge | run dfir_plaso (ADX)"
+      ansible.builtin.include_role:
+        name: dfir_plaso

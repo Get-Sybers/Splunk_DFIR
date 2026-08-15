@@ -1,0 +1,25 @@
+---
+# SOF-ELK ingests Plaso json_line natively; the processing is identical, only the
+# destination differs. Delivery INTO SOF-ELK's watch dir is tracked in #45.
+- name: "plaso-sofelk | process disk images / VM exports into Plaso JSONL"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.plaso', '--input-dir', dfir_plaso_input_dir, '--vm-dir', dfir_plaso_vm_dir, '--out-dir', dfir_plaso_sofelk_out_dir, '--module', dfir_plaso_module, '--image', dfir_plaso_image] + (['--force'] if dfir_plaso_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_plaso_python_path }}"
+  register: dfir_plaso_sofelk_run
+  changed_when: (dfir_plaso_sofelk_run.stdout | from_json).processed | int > 0
+
+- name: "plaso-sofelk | verify enriched JSONL on disk"
+  ansible.builtin.find:
+    paths: "{{ dfir_plaso_sofelk_out_dir }}/jsonl"
+    patterns: "*.jsonl"
+    recurse: false
+  register: dfir_plaso_sofelk_verify
+
+- name: "plaso-sofelk | assert a timeline was produced for the sources present"
+  ansible.builtin.assert:
+    that:
+      - dfir_plaso_sofelk_verify.matched | int > 0 or ((dfir_plaso_sofelk_run.stdout | from_json).images | int + (dfir_plaso_sofelk_run.stdout | from_json).vms | int) == 0
+    fail_msg: >-
+      plaso produced no JSONL at all though disk images / VM exports were present.
+    quiet: true
