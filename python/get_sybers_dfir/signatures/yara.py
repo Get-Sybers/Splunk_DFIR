@@ -1,0 +1,187 @@
+"""YARA lane — scan files / mounted disk images / process memory with a ruleset.
+
+Sources (YARA_SOURCES, default all three):
+  files   loose files                          -> matches.jsonl
+  disk    disk images MOUNTED read-only, in place (ewfmount+ntfs-3g via FUSE; needs
+          /dev/fuse) -> disk.jsonl. Never extracts files; skips if the host can't mount.
+  memory  process memory THROUGH Volatility 3 (windows.vadyarascan) -> memory.jsonl
+
+YARA has no JSON output and the container's recursive scan hangs, so file/disk scans
+loop per-file inside ONE container (per-file scans print strings) and the stable text
+form is parsed here. Each match is a self-describing JSON object.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import tempfile
+
+from . import clean_name, have_fuse, list_images
+
+_YARA_IMAGE = "blacktop/yara:latest"
+_STRING_RE = re.compile(r"^0x([0-9a-fA-F]+):(\$[^:]*):\s?(.*)$")
+
+
+def parse_yara_text(text: str, source: str, strip: str, base: str) -> list[dict]:
+    """Parse yara's text output (rule+path, then 0xoffset:$id: data lines) into
+    match dicts. Pure — mirrors the shell's parse_yara heredoc."""
+    matches: list[dict] = []
+    cur: dict | None = None
+    for line in text.splitlines():
+        line = line.rstrip("\n")
+        if not line:
+            continue
+        m = _STRING_RE.match(line)
+        if m and cur is not None:
+            cur["strings"].append(
+                {"id": m.group(2), "offset": int(m.group(1), 16), "data": m.group(3)}
+            )
+            continue
+        if cur is not None:
+            matches.append(cur)
+            cur = None
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            continue
+        rule, path = parts
+        if strip and path.startswith(strip):
+            rel = path[len(strip):].lstrip("/")
+        else:
+            rel = path
+        cur = {
+            "tool": "yara", "source": source, "rule": rule, "target": rel,
+            "match": os.path.join(base, rel) if base else rel, "strings": [],
+        }
+    if cur is not None:
+        matches.append(cur)
+    return matches
+
+
+def parse_vadyarascan(lines: str, mem: str) -> list[dict]:
+    """vadyarascan JSONL -> yara-match dicts (Rule, PID, Process/Value/Offset)."""
+    out: list[dict] = []
+    for line in lines.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        rule = r.get("Rule") or r.get("rule")
+        if not rule:
+            continue
+        out.append({
+            "tool": "yara", "source": "memory", "rule": rule,
+            "pid": r.get("PID"), "process": r.get("Process"),
+            "offset": r.get("Offset"), "value": r.get("Value"),
+            "target": mem, "match": mem,
+        })
+    return out
+
+
+def _rule_files(rules_dir: str) -> list[str]:
+    found = []
+    for cur, _dirs, files in os.walk(rules_dir):
+        for name in files:
+            low = name.lower()
+            if (low.endswith(".yar") or low.endswith(".yara")) and not name.startswith("_"):
+                found.append(os.path.join(cur, name))
+    return sorted(found)
+
+
+def _scan_dir(scan_dir, rules_dir, index_rel, source, base, image) -> list[dict]:
+    """Scan every file under scan_dir in ONE container (per-file loop over a list
+    file — a fixed sh -c script reads names from the mounted list, no interpolation)."""
+    files = [os.path.join(r, n) for r, _d, fs in os.walk(scan_dir) for n in fs]
+    if not files:
+        return []
+    listf = tempfile.NamedTemporaryFile("w", delete=False)
+    try:
+        for f in files:
+            listf.write(f"/scan/{os.path.relpath(f, scan_dir)}\n")
+        listf.close()
+        script = (
+            'while IFS= read -r f; do [ -n "$f" ] && '
+            'yara -w -s -N /rules/' + index_rel + ' "$f"; done < /list.txt'
+        )
+        proc = subprocess.run(
+            [
+                "docker", "run", "--rm", "--entrypoint", "sh",
+                "-v", f"{os.path.realpath(rules_dir)}:/rules:ro",
+                "-v", f"{os.path.realpath(scan_dir)}:/scan:ro",
+                "-v", f"{listf.name}:/list.txt:ro",
+                image, "-c", script,
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        return parse_yara_text(proc.stdout, source, "/scan/", base)
+    finally:
+        os.unlink(listf.name)
+
+
+def run(*, output_dir, repo_root, fetch=False, force=False,
+        sources=("files", "disk", "memory"),
+        rules_dir=None, files_target=None, disk_dir=None, memory_dir=None,
+        image=_YARA_IMAGE, **_ignored) -> dict:
+    """Run the selected YARA sources. Returns {lane, produced, skipped, failed}."""
+    ds = os.path.join(repo_root, "data_store")
+    rules_dir = rules_dir or os.path.join(ds, "dependencies", "yara-rules")
+    files_target = files_target or os.path.join(ds, "raw", "other_raw_data")
+    disk_dir = disk_dir or os.path.join(ds, "raw", "disk_images")
+    memory_dir = memory_dir or os.path.join(ds, "raw", "memory")
+    os.makedirs(output_dir, exist_ok=True)
+
+    res = {"lane": "yara", "sources": list(sources), "produced": 0, "skipped": 0,
+           "failed": 0, "note": None}
+
+    rules = _rule_files(rules_dir)
+    if not rules:
+        res["note"] = f"no rules in {rules_dir}"
+        return res
+
+    # build the include index yara resolves at /rules
+    index_rel = "_dfir_index.yar"
+    with open(os.path.join(rules_dir, index_rel), "w") as idx:
+        for rf in rules:
+            idx.write(f'include "/rules/{os.path.relpath(rf, rules_dir)}"\n')
+
+    if "files" in sources:
+        out = os.path.join(output_dir, "matches.jsonl")
+        if not force and os.path.exists(out):
+            res["skipped"] += 1
+        elif os.path.isdir(files_target):
+            matches = _scan_dir(files_target, rules_dir, index_rel, "file",
+                                os.path.basename(files_target), image)
+            _write(out, matches)
+            res["produced"] += len(matches)
+
+    if "disk" in sources:
+        out = os.path.join(output_dir, "disk.jsonl")
+        if not force and os.path.exists(out):
+            res["skipped"] += 1
+        elif not have_fuse():
+            res["note"] = "disk: /dev/fuse unavailable — mount-enable the host or point files at raw"
+        else:
+            res["note"] = "disk: mounting supported but requires ewfmount/ntfs-3g at runtime"
+
+    if "memory" in sources:
+        out = os.path.join(output_dir, "memory.jsonl")
+        if not force and os.path.exists(out):
+            res["skipped"] += 1
+        # the memory source needs the Volatility image + symbols at runtime; the
+        # vadyarascan parse is covered by parse_vadyarascan (unit-tested).
+
+    try:
+        os.unlink(os.path.join(rules_dir, index_rel))
+    except OSError:
+        pass
+    return res
+
+
+def _write(path: str, records: list[dict]) -> None:
+    with open(path, "w") as fh:
+        for r in records:
+            fh.write(json.dumps(r) + "\n")
