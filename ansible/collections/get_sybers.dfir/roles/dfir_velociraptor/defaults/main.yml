@@ -1,0 +1,14 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dfir_velociraptor_pipeline: adx
+
+# Repo root is five levels up from this role
+# (roles/dfir_velociraptor -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_velociraptor_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_velociraptor_raw_dir: "{{ dfir_velociraptor_repo_root }}/data_store/raw/velociraptor"
+dfir_velociraptor_adx_out_dir: "{{ dfir_velociraptor_repo_root }}/data_store/processed/velociraptor"
+dfir_velociraptor_sofelk_out_dir: "{{ dfir_velociraptor_repo_root }}/data_store/processed/sofelk/velociraptor"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_velociraptor_python_path: "{{ dfir_velociraptor_repo_root }}/python"
+dfir_velociraptor_force: false

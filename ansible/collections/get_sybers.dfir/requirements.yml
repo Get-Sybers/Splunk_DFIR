@@ -1,0 +1,5 @@
+---
+# Pinned — never :latest, never a bare branch (ANSIBLE-STANDARDS: infra galaxy §2).
+collections:
+  - name: community.docker
+    version: "3.10.3"
