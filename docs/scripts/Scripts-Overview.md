@@ -2,57 +2,94 @@
 
 This directory contains automation scripts for **forensic data processing** and
 for **deploying, schema-loading and ingesting into the Kusto emulator** — the
-DX_DFIR pipeline. Artefact collection is planned via **Velociraptor offline
+DX_DFIR pipeline. Host artefacts are collected with **Velociraptor offline
 collectors running the EZ Tools** (replacing the removed KAPE automation).
 
 ---
 
-## 📂 Script Overview
+## 📂 Processing scripts
 
-Supported scripts — these live in `scripts/` and resolve paths correctly:
+Each processor reads evidence from `data_store/raw/<type>/` and writes
+ingest-ready output to `data_store/processed/<tool>/`. All are container-first and
+resolve their own path, so they can be run from anywhere.
 
-| Script Name                        | Platform | Description                                                                                          |
-|------------------------------------|----------|------------------------------------------------------------------------------------------------------|
-| `setup-environment.sh`             | Linux    | Installs Docker, manages group permissions, and optionally saves images for offline use.             |
-| `process-log2timeline-Dynamic.sh`  | Linux    | Processes **E01 disk images and VMware VM exports** through Plaso, emitting dynamic CSV.             |
-| `process-zeek-ALL.sh`              | Linux    | Processes **all PCAPs** in the dataset using Zeek, preserving ISO8601 timestamps.                    |
-| `process-evtx-EvtxECmd.sh`         | Linux    | Parses raw **Windows Event Logs** (`.evtx`) with EvtxECmd into JSON. ⚠️ Requires operator-supplied EvtxECmd; not runtime-tested. |
-| `deploy-kusto.sh`                  | Linux    | Deploys the **Kusto emulator** — the analysis backend. Localhost-only by default (the emulator has **no auth**), isolated network, ephemeral database by default. ⚠️ Sets `ACCEPT_EULA=Y` on your behalf. `--help` for all flags. |
-| `apply-kusto-schema.sh`            | Linux    | Creates the Kusto databases, tables, ingestion mappings and MITRE CAR functions. Idempotent — safe to re-run. |
-| `ingest-kusto.sh`                  | Linux    | Loads `data_store/processed` into the emulator. Plaso, EvtxECmd and Zeek `conn` only; the Velociraptor loader is not implemented yet. |
+| Script | Reads | Produces |
+|---|---|---|
+| `process-log2timeline-Dynamic.sh` | disk images (E01/VMDK/raw) | Plaso `.plaso` → **JSON Lines** (`psort -o json_line`), split into **one `L2t<Parser>` table per top-level parser** (`scripts/lib/l2t-split.py`); events enriched with hostname / disk id / volume id. |
+| `process-zeek-ALL.sh` | PCAPs | Zeek **JSON** logs, ISO-8601 timestamps — typed `conn` (`network.ZeekConn`) + a generic table for every other log type (`network.Zeek`). |
+| `process-volatility.sh` | memory images | **Volatility 3** (containerised, `sk4la/volatility3`) → one JSONL file per plugin via a custom `jsonl_dfir` renderer. Ships custom plugins `dfir_processes` (psscan → full path/parent/DLLs) and `dfir_registry` (RECmd-style keys from RAM). |
+| `process-evtx-EvtxECmd.sh` | Windows Event Logs (`.evtx`) | EvtxECmd → JSON (`host.EvtxEcmdJson`). ⚠️ needs operator-supplied EvtxECmd. |
+| `process-velociraptor.sh` | Velociraptor offline-collector output (EZ Tools) | JSON for `host.VelociraptorJson` (RECmd registry, etc.). |
+| `process-signatures.sh` | pcaps / files / images / EVTX | Signature/detection lanes — see **Signature detection** below. |
 
-Shared libraries live in `scripts/lib/`: `docker-lifecycle.sh` (container
-replace policy, isolated network, readiness, egress verification, honest
-directory purge) and `kusto-api.sh` (the emulator's REST endpoints, failure
-detection, reachability).
+### Signature detection (`process-signatures.sh`)
 
-The Splunk-era scripts (`deploy-splunk.sh`, `purge-splunk-container.sh`,
-`config-splunk-inputs.sh`) were retired with the Splunk stack, and the KAPE
-PowerShell automation (`Process-Kape-ALL.ps1`, `Setup-Environment-Kape.ps1`)
-was removed in favour of the planned Velociraptor collector path — git
-history and the frozen `deprecated` branch keep them.
+Three standalone lanes under `scripts/signatures/`, each emitting self-describing
+JSONL to `data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`;
+`--fetch` provisions rules/binaries when online.
+
+| Lane | Input | Output |
+|---|---|---|
+| `suricata.sh` | PCAPs | Suricata EVE JSON, `source_pcap`-tagged, alert+context event types. |
+| `yara.sh` | **files**, **disk images** (mounted in place — `ewfmount`+`ntfs-3g`, never extracts), **memory** (via Volatility `windows.vadyarascan`, matches carry PID context) | one JSON object per match (rule, target, offsets/strings). |
+| `hayabusa.sh` | loose `.evtx` + disk images | Hayabusa Sigma detection timeline (native binary). Disk-image EVTX come from a mount, or a **targeted** `image_export --artifact_filters WindowsEventLogs` pull (event logs only, transient). |
+
+> **Mounting note.** Disk-image mounting needs `/dev/fuse`, which an LXC blocks by
+> default; the lanes skip disk images with a host-fix message until it's enabled.
+> **Hayabusa's `-J` JSON input does not detect** (0 hits vs 792 natively) — real
+> `.evtx` is required, from a mount or the targeted extraction.
+
+---
+
+## 📂 Deployment & ingest scripts
+
+| Script | Description |
+|---|---|
+| `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
+| `save-docker-images.sh` | Pull / save / load the analysis Docker images for offline / air-gapped hosts. |
+| `deploy-kusto.sh` | Deploys the **Kusto emulator** (analysis backend). Localhost-only by default (the emulator has **no auth**), isolated network, ephemeral database. ⚠️ Sets `ACCEPT_EULA=Y` on your behalf; `--help` for flags. |
+| `apply-kusto-schema.sh` | Creates the Kusto databases, tables, ingestion mappings and the MITRE CAR functions. Idempotent. |
+| `ingest-kusto.sh` | Loads `data_store/processed` into the emulator: **Plaso `L2t*`, EvtxECmd, Zeek (conn + generic), Volatility, Velociraptor**. `--only <source>` to load one. |
+
+Shared libraries in `scripts/lib/`: `docker-lifecycle.sh` (container replace
+policy, isolated network, readiness, egress verification), `kusto-api.sh` (the
+emulator's REST endpoints, failure detection, reachability), and `l2t-split.py`
+(splits Plaso json_line into per-parser `L2t*` tables). Signature-lane helpers live
+in `scripts/signatures/lib/`.
+
+The Splunk-era and KAPE PowerShell scripts were retired (git history and the frozen
+`deprecated` branch keep them).
+
+---
+
+## 🧹 Self-cleanup
+
+The docker-using processors (`process-evtx`, `process-log2timeline`,
+`process-zeek`, `process-signatures`) run a `prune_dangling` trap on exit that
+removes docker layers left dangling when a pulled `:latest` tag moves — only
+untagged, unreferenced images; tool images and live containers are untouched.
 
 ---
 
 ## ⚠️ Licensing before you run
 
 - **`deploy-kusto.sh` accepts Microsoft's Software License Terms for you**
-  (`ACCEPT_EULA=Y`). The emulator is provided *as-is*, without support or
-  warranties, and is documented as generally unsuitable for production
-  workloads.
+  (`ACCEPT_EULA=Y`). The emulator is *as-is*, unsupported, and documented as
+  generally unsuitable for production.
 
 Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 ## ⚙️ Usage
 
 - Ensure **Docker** is installed and running.
-- Scripts assume the repository follows the correct **directory structure** (see [`data_store/README.md`](/data_store/README.md) for raw data sources).
-- Scripts resolve their own location, so they can be run from anywhere:
+- Scripts assume the repository's **directory structure** (see
+  [`data_store/README.md`](/data_store/README.md) for raw data sources).
 
 ```bash
 ./scripts/deploy-kusto.sh
+./scripts/process-zeek-ALL.sh
+./scripts/ingest-kusto.sh --only zeek
 ```
 
-> ⚠️ The processing scripts run `chmod -R 777` on their working directories
-> under `data_store/` to work around Docker UID mismatches. Don't run them on a
-> shared host.
+> ⚠️ The processing scripts run `chmod -R 777` on their working directories under
+> `data_store/` to work around Docker UID mismatches. Don't run them on a shared host.
