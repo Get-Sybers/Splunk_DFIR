@@ -1,38 +1,39 @@
 ---
 argument_specs:
   main:
-    short_description: "Deploy a SOF-ELK stack with an ingest volume."
+    short_description: "Deploy the from-source SOF-ELK stack (Elasticsearch + Logstash/Filebeat + Kibana)."
     description:
       - >-
-        Pulls and runs an operator-supplied SOF-ELK image, mounting a host ingest dir
-        into the container's watch path and publishing the Kibana/Dashboards port.
-        SOF-ELK ships primarily as a VM, so no default image is assumed — provide one.
+        Builds the SOF-ELK image from docker/sof-elk/Dockerfile (sources the upstream
+        philhagen/sof-elk repo) and brings up the compose stack: Elasticsearch, the
+        SOF-ELK image (Logstash with Filebeat co-located), and Kibana. Localhost-only.
+        Point dfir_deploy_sofelk_ingest_dir at the same path dfir_ingest_sofelk
+        delivers to, so Filebeat picks the files up.
     options:
-      dfir_deploy_sofelk_image:
-        type: str
-        required: true
-        description: "SOF-ELK container image (operator-supplied; no canonical public one)."
-      dfir_deploy_sofelk_container:
+      dfir_deploy_sofelk_compose_dir:
         type: str
         required: false
-        default: "sof-elk"
-        description: "Container name."
+        description: "Dir holding the SOF-ELK Dockerfile + docker-compose.yml (default docker/sof-elk)."
       dfir_deploy_sofelk_ingest_dir:
         type: str
         required: false
-        description: "Host dir mounted into the container ingest path (match dfir_ingest_sofelk_target_dir)."
-      dfir_deploy_sofelk_container_ingest_path:
+        description: "Host dir mounted into the stack at /logstash (match dfir_ingest_sofelk_target_dir)."
+      dfir_deploy_sofelk_elastic_version:
         type: str
         required: false
-        default: "/logstash"
-        description: "Ingest path inside the container that SOF-ELK watches."
-      dfir_deploy_sofelk_kibana_port:
-        type: int
-        required: false
-        default: 5601
-        description: "Host port for Kibana / OpenSearch Dashboards."
-      dfir_deploy_sofelk_memory:
+        default: "9.4.3"
+        description: "Elastic stack version (SOF-ELK main's pin)."
+      dfir_deploy_sofelk_sofelk_ref:
         type: str
         required: false
-        default: "4G"
-        description: "Container memory limit."
+        default: "main"
+        description: "SOF-ELK git ref to build the image from."
+      dfir_deploy_sofelk_build:
+        type: bool
+        required: false
+        default: true
+        description: "Build the SOF-ELK image as part of the deploy."
+      dfir_deploy_sofelk_env_file:
+        type: str
+        required: false
+        description: "Runtime env file written for compose interpolation."
