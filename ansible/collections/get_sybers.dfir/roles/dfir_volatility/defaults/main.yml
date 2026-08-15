@@ -1,0 +1,21 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dfir_volatility_pipeline: adx
+
+# Repo root is five levels up from this role
+# (roles/dfir_volatility -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_volatility_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_volatility_memory_dir: "{{ dfir_volatility_repo_root }}/data_store/raw/memory"
+dfir_volatility_adx_out_dir: "{{ dfir_volatility_repo_root }}/data_store/processed/volatility"
+dfir_volatility_sofelk_out_dir: "{{ dfir_volatility_repo_root }}/data_store/processed/sofelk/volatility"
+# Kernel symbol cache (VOLATILITY_SYMBOLS). Windows plugins fetch ISF tables from
+# the symbol servers on first use — pre-seed this on an isolated host.
+dfir_volatility_symbols_dir: "{{ dfir_volatility_repo_root }}/data_store/dependencies/volatility3-symbols"
+# Custom renderer + plugins live in the repo (dev-scripts), mounted into the run.
+dfir_volatility_renderer: "{{ dfir_volatility_repo_root }}/dev-scripts/volatility/jsonl_dfir_renderer.py"
+dfir_volatility_plugins_dir: "{{ dfir_volatility_repo_root }}/dev-scripts/volatility/plugins"
+dfir_volatility_image: "sk4la/volatility3:latest"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_volatility_python_path: "{{ dfir_volatility_repo_root }}/python"
+dfir_volatility_force: false
