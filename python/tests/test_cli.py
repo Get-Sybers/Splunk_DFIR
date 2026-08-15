@@ -17,6 +17,7 @@ def _fake_repo(tmp_path: Path) -> Path:
     (tmp_path / _COLLECTION / "roles").mkdir(parents=True)
     for src in ("zeek", "velociraptor"):
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
+    (tmp_path / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml").write_text("---\n")
     (tmp_path / "scripts").mkdir()
     for s in ("ingest-kusto.sh", "deploy-kusto.sh", "apply-kusto-schema.sh"):
         (tmp_path / "scripts" / s).write_text("#!/bin/bash\n")
@@ -69,15 +70,18 @@ def test_process_unknown_source_rejected(tmp_path):
     assert r.exit_code != 0
 
 
-def test_ingest_builds_script_command(tmp_path):
+def test_ingest_drives_the_role(tmp_path):
     repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=0) as m:
-        r = runner.invoke(cli.app, ["ingest", "--only", "zeek", "--repo-root", str(repo)])
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+        r = runner.invoke(cli.app, ["ingest", "--only", "zeek", "--force", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
     cmd = m.call_args.args[0]
-    assert cmd[0] == "bash"
-    assert cmd[1].endswith("scripts/ingest-kusto.sh")
-    assert cmd[-2:] == ["--only", "zeek"]
+    assert cmd[0] == "ansible-playbook"
+    assert str(repo / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml") in cmd
+    assert "dfir_ingest_adx_only=zeek" in cmd
+    assert "dfir_ingest_adx_force=true" in cmd
+    assert m.call_args.kwargs["env"]["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
 
 
 def test_deploy_runs_deploy_then_schema(tmp_path):
@@ -100,6 +104,7 @@ def test_deploy_no_schema_skips_apply(tmp_path):
 
 def test_failing_command_propagates_exit_code(tmp_path):
     repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=3):
+    with mock.patch.object(cli.subprocess, "call", return_value=3), \
+            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
         r = runner.invoke(cli.app, ["ingest", "--repo-root", str(repo)])
     assert r.exit_code == 3

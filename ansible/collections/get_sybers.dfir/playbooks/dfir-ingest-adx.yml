@@ -1,0 +1,10 @@
+---
+# The playbook holds the decisions; the role groups, the tasks act.
+- name: "DFIR | load processed data into the ADX emulator"
+  hosts: "{{ dfir_hosts | default('localhost') }}"
+  connection: "{{ dfir_connection | default('local') }}"
+  gather_facts: true
+  tasks:
+    - name: "dfir-ingest-adx | run the ingest role"
+      ansible.builtin.include_role:
+        name: dfir_ingest_adx

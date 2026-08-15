@@ -1,0 +1,18 @@
+---
+# Repo root is five levels up from this role
+# (roles/dfir_ingest_adx -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_ingest_adx_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_ingest_adx_processed_dir: "{{ dfir_ingest_adx_repo_root }}/data_store/processed"
+# Which source to load; empty = all (l2t, zeek, evtx, volatility, velociraptor).
+dfir_ingest_adx_only: ""
+# The ADX (Kusto) emulator endpoint + container (files are docker-cp'd into it).
+dfir_ingest_adx_kusto_host: "127.0.0.1"
+dfir_ingest_adx_kusto_port: 8080
+dfir_ingest_adx_kusto_container: "kusto-emulator"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_ingest_adx_python_path: "{{ dfir_ingest_adx_repo_root }}/python"
+# Re-ingest files already recorded in the in-DB ledger (additive — duplicates rows).
+dfir_ingest_adx_force: false
+# List what would be loaded; contact nothing.
+dfir_ingest_adx_dry_run: false
