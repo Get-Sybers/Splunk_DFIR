@@ -99,9 +99,10 @@ discovered.
 | Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
 | **Kusto emulator deploy** | ✅ Runs | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
-| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso CSV, EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor; the live Velociraptor *collection* loader is still the planned piece |
+| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor; the live Velociraptor *collection* loader is still the planned piece |
 | **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
-| Syslog, Hayabusa, Chainsaw | ❌ Not started | Directory structure only |
+| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `process-signatures.sh`; **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; ingest + CAR wiring is a follow-up |
+| Chainsaw | ❌ Not started | Not built |
 
 ### Known limitations
 

@@ -47,20 +47,22 @@
             │   └── cron/                             # Daemon Cron Jobs
             │
             └── log2timeline/
-            │   └── csv/                              # Log2timeline Output  -> host.L2tCsv
-            │   │
-            │   └── logs/                             # Log2timeline Job Logs
+            │   └── plaso/                            # Plaso storage files (.plaso) — also re-usable by Timesketch
+            │   └── jsonl/                            # Plaso json_line      -> host.L2t<Parser> (one table per top-level parser)
+            │   └── logs/                             # Job logs
             │
             └── windows_logs/                         # EvtxECmd JSON        -> host.EvtxEcmdJson
             │
             └── zeek/
-            │   └── your-pcap-filename/               # Zeek logs            -> network.ZeekConn (conn.log)
+            │   └── <capture>/                        # Zeek JSON            -> network.ZeekConn (conn) + network.Zeek (all others)
             │
-            └── zimmerman/                            # EZ Tools output (planned: Velociraptor offline collectors)
+            └── volatility/
+            │   └── <image>/                          # Volatility 3 JSONL per plugin -> memory.VolatilityJson
             │
-            └── csv/                                  # Any CSV
+            └── signatures/
+            │   └── yara/ suricata/ hayabusa/         # detection JSONL (YARA matches / Suricata EVE / Hayabusa Sigma)
             │
-            └── json/                                 # Any JSON
+            └── velociraptor/                         # Velociraptor collector output (EZ Tools) -> host.VelociraptorJson
 ```
 
 The Splunk-era tree (`splunk/` with its eight apps, `ansible/` with the

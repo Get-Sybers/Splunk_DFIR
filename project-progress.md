@@ -40,10 +40,12 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ `process-log2timeline-Dynamic.sh` | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
 | Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tText`/`L2tUtmp` | ✅ (`user_session` utmp+ssh, `process` cron) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
-| [Syslog](https://syslog-ng.github.io)                         |               |                 |              |               |
-| [Zimmerman](https://github.com/EricZimmerman)                 |               |                 |              |               |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa)       |               |                 |              |               |
-| [Chainsaw](https://github.com/countercept/chainsaw)           |               |                 |              |               |
+| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `process-signatures.sh` (yara.sh) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
+| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `process-signatures.sh` (suricata.sh) | json (EVE) | ⏳ `processed/signatures/suricata` | ⏳ |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `process-signatures.sh` (hayabusa.sh) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
+| [Chainsaw](https://github.com/countercept/chainsaw)           | ❌            |                 |              |               |
+| [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
+| [Zimmerman](https://github.com/EricZimmerman)                 | (via Velociraptor) |            |              |               |
 
 **All nine CAR objects now run against a live emulator.** The MITRE CAR data
 model is expressed as KQL functions in the `mitre` database — `CarFlow()`,
@@ -56,6 +58,14 @@ Security log. Sysmon also strengthens `process` (event 1/5, full pid/ppid/comman
 line), `flow` (3), `registry` (12/13/14) and `file` (11/23). On the live engine
 `CarCoverage()` returned real rows for **all nine** objects — see
 [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+
+**The CAR layer has since been refactored into per-artefact views.** Each object
+is now built as one view per artefact — `Car<Object>_<Artefact>()` (e.g.
+`CarProcess_Sysmon`, `CarProcess_Memory`, `CarRegistry_Recmd`) — that keeps the
+source table's native fields and *adds* the canonical CAR fields; the public
+`CarX()` is a `union isfuzzy` roll-up. Every artefact fills every canonical field
+it can supply, strict to `car_data_model.json`. See
+[docs/CAR-Extraction-Rules.md](/docs/CAR-Extraction-Rules.md) and #43.
 
 **What the live run still does not cover.** Plaso was run for real, but only on
 filesystem test images — a Windows image (for `CarProcess`-from-Plaso via
