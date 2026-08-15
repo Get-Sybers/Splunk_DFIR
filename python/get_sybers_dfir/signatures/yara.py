@@ -92,9 +92,21 @@ def _rule_files(rules_dir: str) -> list[str]:
     return sorted(found)
 
 
-def _scan_dir(scan_dir, rules_dir, index_rel, source, base, image) -> list[dict]:
+def build_index(rules: list[str], rules_dir: str) -> str:
+    """The include index yara loads: each rule referenced by its /rules mount path.
+
+    Pure — the includes are absolute (/rules/<rel>), so the index file can live
+    anywhere (we mount it read-only at /index.yar) and never has to be written into
+    the operator's rules tree (which may be read-only or externally managed)."""
+    return "".join(
+        f'include "/rules/{os.path.relpath(rf, rules_dir)}"\n' for rf in rules
+    )
+
+
+def _scan_dir(scan_dir, rules_dir, index_path, source, base, image) -> list[dict]:
     """Scan every file under scan_dir in ONE container (per-file loop over a list
-    file — a fixed sh -c script reads names from the mounted list, no interpolation)."""
+    file — a fixed sh -c script reads names from the mounted list, no interpolation).
+    The index is bind-mounted at /index.yar; its includes resolve against /rules."""
     files = [os.path.join(r, n) for r, _d, fs in os.walk(scan_dir) for n in fs]
     if not files:
         return []
@@ -105,13 +117,14 @@ def _scan_dir(scan_dir, rules_dir, index_rel, source, base, image) -> list[dict]
         listf.close()
         script = (
             'while IFS= read -r f; do [ -n "$f" ] && '
-            'yara -w -s -N /rules/' + index_rel + ' "$f"; done < /list.txt'
+            'yara -w -s -N /index.yar "$f"; done < /list.txt'
         )
         proc = subprocess.run(
             [
                 "docker", "run", "--rm", "--entrypoint", "sh",
                 "-v", f"{os.path.realpath(rules_dir)}:/rules:ro",
                 "-v", f"{os.path.realpath(scan_dir)}:/scan:ro",
+                "-v", f"{os.path.realpath(index_path)}:/index.yar:ro",
                 "-v", f"{listf.name}:/list.txt:ro",
                 image, "-c", script,
             ],
@@ -142,18 +155,19 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
         res["note"] = f"no rules in {rules_dir}"
         return res
 
-    # build the include index yara resolves at /rules
-    index_rel = "_dfir_index.yar"
-    with open(os.path.join(rules_dir, index_rel), "w") as idx:
-        for rf in rules:
-            idx.write(f'include "/rules/{os.path.relpath(rf, rules_dir)}"\n')
+    # Build the include index in a TEMP file (never write into the operator's rules
+    # tree — it may be read-only/externally managed); it's bind-mounted at /index.yar.
+    idxf = tempfile.NamedTemporaryFile("w", suffix=".yar", delete=False)
+    idxf.write(build_index(rules, rules_dir))
+    idxf.close()
+    index_path = idxf.name
 
     if "files" in sources:
         out = os.path.join(output_dir, "matches.jsonl")
         if not force and os.path.exists(out):
             res["skipped"] += 1
         elif os.path.isdir(files_target):
-            matches = _scan_dir(files_target, rules_dir, index_rel, "file",
+            matches = _scan_dir(files_target, rules_dir, index_path, "file",
                                 os.path.basename(files_target), image)
             _write(out, matches)
             res["produced"] += len(matches)
@@ -175,7 +189,7 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
         # vadyarascan parse is covered by parse_vadyarascan (unit-tested).
 
     try:
-        os.unlink(os.path.join(rules_dir, index_rel))
+        os.unlink(index_path)
     except OSError:
         pass
     return res

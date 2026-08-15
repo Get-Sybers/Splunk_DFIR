@@ -55,23 +55,22 @@ def _run_hayabusa(hb_bin, scan_dir, rules_dir) -> str:
     """Run hayabusa over scan_dir; return its JSONL detections (empty if none)."""
     if not _dir_has_evtx(scan_dir):
         return ""
-    # -u: name only; hayabusa won't overwrite an existing -o file.
-    tmp_out = tempfile.mktemp(suffix=".jsonl")
-    argv = [
-        hb_bin, "json-timeline", "--directory", scan_dir, "--output", tmp_out,
-        "--JSONL-output", "--no-wizard", "--UTC", "--quiet",
-    ]
-    if rules_dir:
-        argv += ["--rules", rules_dir]
-    subprocess.run(argv, capture_output=True, check=False)
-    try:
+    # Hayabusa won't overwrite an existing --output file. Use a fresh temp DIR and a
+    # path inside it that does not exist yet — unique without the deprecated,
+    # TOCTOU-prone tempfile.mktemp(); the dir (and file) are cleaned up on exit.
+    with tempfile.TemporaryDirectory() as tmpd:
+        tmp_out = os.path.join(tmpd, "timeline.jsonl")
+        argv = [
+            hb_bin, "json-timeline", "--directory", scan_dir, "--output", tmp_out,
+            "--JSONL-output", "--no-wizard", "--UTC", "--quiet",
+        ]
+        if rules_dir:
+            argv += ["--rules", rules_dir]
+        subprocess.run(argv, capture_output=True, check=False)
         if os.path.isfile(tmp_out) and os.path.getsize(tmp_out) > 0:
             with open(tmp_out, encoding="utf-8", errors="replace") as fh:
                 return fh.read()
         return ""
-    finally:
-        if os.path.exists(tmp_out):
-            os.remove(tmp_out)
 
 
 def run(*, output_dir, repo_root, fetch=False, force=False,

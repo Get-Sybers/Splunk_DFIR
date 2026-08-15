@@ -39,6 +39,25 @@ def test_parse_yara_text_rule_and_strings():
     assert matches[1]["rule"] == "AnotherRule" and matches[1]["strings"] == []
 
 
+def test_build_index_uses_rules_mount_paths():
+    idx = yara.build_index(["/r/a.yar", "/r/sub/b.yara"], "/r")
+    assert idx == 'include "/rules/a.yar"\ninclude "/rules/sub/b.yara"\n'
+
+
+def test_yara_run_never_writes_into_rules_dir(tmp_path):
+    # a read-only rules tree must not be mutated (index goes to a temp file). Point
+    # files_target at a non-existent dir so the container scan is never reached.
+    rules = tmp_path / "rules"
+    rules.mkdir()
+    (rules / "r.yar").write_text("rule X { condition: true }\n")
+    before = set(os.listdir(rules))
+    res = yara.run(output_dir=str(tmp_path / "out"), repo_root=str(tmp_path),
+                   sources=("files",), rules_dir=str(rules),
+                   files_target=str(tmp_path / "does_not_exist"))
+    assert set(os.listdir(rules)) == before   # no _dfir_index.yar left behind
+    assert res["lane"] == "yara"
+
+
 def test_parse_yara_text_ignores_malformed():
     assert yara.parse_yara_text("", "file", "/scan/", "b") == []
     assert yara.parse_yara_text("justoneword\n", "file", "/scan/", "b") == []
