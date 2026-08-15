@@ -1,0 +1,46 @@
+---
+# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+
+- name: "evtx-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_evtx_docker
+  changed_when: false
+
+- name: "evtx-preflight | stat the evtx dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_evtx_evtx_dir }}"
+  register: dfir_evtx_evtx_stat
+
+- name: "evtx-preflight | evtx dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_evtx_evtx_stat.stat.exists
+      - dfir_evtx_evtx_stat.stat.isdir is defined and dfir_evtx_evtx_stat.stat.isdir
+    fail_msg: >-
+      dfir_evtx_evtx_dir ({{ dfir_evtx_evtx_dir }}) is missing or is not a directory.
+    quiet: true
+
+- name: "evtx-preflight | find the operator-supplied EvtxECmd.dll"
+  ansible.builtin.find:
+    paths: "{{ dfir_evtx_evtxecmd_dir }}"
+    patterns: "EvtxECmd.dll"
+    recurse: true
+  register: dfir_evtx_dll
+
+- name: "evtx-preflight | EvtxECmd.dll is present (operator-supplied)"
+  ansible.builtin.assert:
+    that:
+      - dfir_evtx_dll.matched | int > 0
+    fail_msg: >-
+      EvtxECmd.dll not found under dfir_evtx_evtxecmd_dir
+      ({{ dfir_evtx_evtxecmd_dir }}). EvtxECmd is not vendored — download the .NET
+      release (incl. Maps/) from https://github.com/EricZimmerman/evtx/releases and
+      extract it there.
+    quiet: true
+
+- name: "evtx-preflight | the get_sybers_dfir.evtx module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.evtx"
+  environment:
+    PYTHONPATH: "{{ dfir_evtx_python_path }}"
+  register: dfir_evtx_import
+  changed_when: false

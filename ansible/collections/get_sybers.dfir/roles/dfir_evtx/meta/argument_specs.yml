@@ -1,0 +1,47 @@
+---
+argument_specs:
+  main:
+    short_description: "Windows Event Logs (.evtx) -> EvtxECmd normalised JSON."
+    description:
+      - >-
+        Discovers .evtx under dfir_evtx_evtx_dir, runs EvtxECmd (via the dotnet
+        container) per log, and writes <base>_EvtxECmd_Output.json (+ .xml sidecar)
+        grouped by the source sub-dir (host). Idempotent: a log whose .json output
+        already exists is skipped. EvtxECmd is operator-supplied.
+    options:
+      dfir_evtx_pipeline:
+        type: str
+        required: false
+        default: adx
+        choices: [adx, sofelk]
+        description: "Which backend to target; selects the output destination."
+      dfir_evtx_evtx_dir:
+        type: str
+        required: true
+        description: "Directory tree of .evtx logs to parse (recursed)."
+      dfir_evtx_adx_out_dir:
+        type: str
+        required: false
+        description: "ADX-path output dir (default data_store/processed/windows_logs)."
+      dfir_evtx_sofelk_out_dir:
+        type: str
+        required: false
+        description: "SOF-ELK-path output dir (its Logstash watch dir)."
+      dfir_evtx_evtxecmd_dir:
+        type: str
+        required: true
+        description: "Operator-supplied EvtxECmd .NET release dir (must hold EvtxECmd.dll)."
+      dfir_evtx_dotnet_image:
+        type: str
+        required: false
+        default: "mcr.microsoft.com/dotnet/sdk:8.0"
+        description: "dotnet runtime image that supplies .NET for EvtxECmd."
+      dfir_evtx_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_evtx_force:
+        type: bool
+        required: false
+        default: false
+        description: "Reparse logs that already have output."

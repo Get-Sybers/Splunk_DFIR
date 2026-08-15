@@ -1,0 +1,19 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dfir_evtx_pipeline: adx
+
+# Repo root is five levels up from this role
+# (roles/dfir_evtx -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/other_raw_data/WinEvt"
+dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
+dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
+# EvtxECmd is operator-supplied (not vendored — we don't redistribute other
+# people's builds). Drop the .NET release, incl. Maps/, under this dir.
+dfir_evtx_evtxecmd_dir: "{{ dfir_evtx_repo_root }}/data_store/dependencies/evtxecmd"
+# EvtxECmd targets .NET; this image supplies the runtime on Linux.
+dfir_evtx_dotnet_image: "mcr.microsoft.com/dotnet/sdk:8.0"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_evtx_python_path: "{{ dfir_evtx_repo_root }}/python"
+dfir_evtx_force: false
