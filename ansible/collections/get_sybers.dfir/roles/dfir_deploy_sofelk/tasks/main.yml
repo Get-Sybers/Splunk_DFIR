@@ -1,16 +1,16 @@
 ---
-# dfir_deploy_sofelk: stand up a SOF-ELK stack with an ingest volume. Idempotence
-# comes from module semantics (docker_image/docker_container), not a task's `when:`.
+# dfir_deploy_sofelk: build + bring up the from-source SOF-ELK stack. Idempotence
+# comes from module semantics (docker_image build cache, docker_compose_v2), not a
+# task's `when:`.
 
 - name: "deploy-sofelk | assert inputs"
   ansible.builtin.assert:
     that:
-      - dfir_deploy_sofelk_image | length > 0
-      - dfir_deploy_sofelk_container | length > 0
+      - dfir_deploy_sofelk_compose_dir | length > 0
       - dfir_deploy_sofelk_ingest_dir | length > 0
+      - dfir_deploy_sofelk_elastic_version | length > 0
     fail_msg: >-
-      dfir_deploy_sofelk needs dfir_deploy_sofelk_image (SOF-ELK is not a canonical
-      public image — supply one), a container name and an ingest dir.
+      dfir_deploy_sofelk needs a compose dir, an ingest dir and an elastic version.
     quiet: true
   tags: [always]
 
@@ -21,5 +21,5 @@
       tags: [always]
   tags: [always]
 
-- name: "deploy-sofelk | deploy the stack"
+- name: "deploy-sofelk | build + bring up the stack"
   ansible.builtin.include_tasks: deploy.yml

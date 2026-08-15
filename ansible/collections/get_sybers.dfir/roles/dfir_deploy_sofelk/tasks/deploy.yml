@@ -1,36 +1,33 @@
 ---
-- name: "deploy-sofelk | pull the SOF-ELK image"
-  community.docker.docker_image:
-    name: "{{ dfir_deploy_sofelk_image }}"
-    source: pull
-    force_source: false
-  register: dfir_deploy_sofelk_pull
-  retries: 3
-  delay: 10
-  until: dfir_deploy_sofelk_pull is succeeded
+- name: "deploy-sofelk | write the compose env file"
+  ansible.builtin.copy:
+    dest: "{{ dfir_deploy_sofelk_env_file }}"
+    mode: "0644"
+    content: |
+      ELASTIC_VERSION={{ dfir_deploy_sofelk_elastic_version }}
+      SOFELK_REF={{ dfir_deploy_sofelk_sofelk_ref }}
+      SOFELK_INGEST_DIR={{ dfir_deploy_sofelk_ingest_dir }}
 
-- name: "deploy-sofelk | run the SOF-ELK container with the ingest volume"
-  community.docker.docker_container:
-    name: "{{ dfir_deploy_sofelk_container }}"
-    image: "{{ dfir_deploy_sofelk_image }}"
-    pull: never
-    state: started
-    detach: true
-    memory: "{{ dfir_deploy_sofelk_memory }}"
-    ports:
-      - "{{ dfir_deploy_sofelk_kibana_port }}:5601"
-    volumes:
-      - "{{ dfir_deploy_sofelk_ingest_dir }}:{{ dfir_deploy_sofelk_container_ingest_path }}"
+- name: "deploy-sofelk | build + bring up the SOF-ELK stack"
+  community.docker.docker_compose_v2:
+    project_src: "{{ dfir_deploy_sofelk_compose_dir }}"
+    env_files:
+      - "{{ dfir_deploy_sofelk_env_file }}"
+    build: "{{ 'always' if dfir_deploy_sofelk_build | bool else 'never' }}"
+    state: present
+  register: dfir_deploy_sofelk_up
 
-- name: "deploy-sofelk | read back the container state"
-  community.docker.docker_container_info:
-    name: "{{ dfir_deploy_sofelk_container }}"
-  register: dfir_deploy_sofelk_info
+- name: "deploy-sofelk | read back the running services"
+  community.docker.docker_compose_v2:
+    project_src: "{{ dfir_deploy_sofelk_compose_dir }}"
+    env_files:
+      - "{{ dfir_deploy_sofelk_env_file }}"
+  register: dfir_deploy_sofelk_state
 
-- name: "deploy-sofelk | assert the container is running"
+- name: "deploy-sofelk | assert the sof-elk + elasticsearch services are running"
   ansible.builtin.assert:
     that:
-      - dfir_deploy_sofelk_info.exists
-      - dfir_deploy_sofelk_info.container.State.Running | bool
-    fail_msg: "the SOF-ELK container is not running after deploy"
+      - dfir_deploy_sofelk_state.containers | selectattr('Service', 'equalto', 'sof-elk') | selectattr('State', 'equalto', 'running') | list | length > 0
+      - dfir_deploy_sofelk_state.containers | selectattr('Service', 'equalto', 'elasticsearch') | selectattr('State', 'equalto', 'running') | list | length > 0
+    fail_msg: "the SOF-ELK stack is not fully running: {{ dfir_deploy_sofelk_state.containers | map(attribute='Name') | list }}"
     quiet: true

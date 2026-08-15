@@ -24,8 +24,8 @@ as a single action. Roles land per source as epic #46 retires the matching
 
 Deploy + load roles: **`dfir_deploy_adx`** (emulator + schema), **`dfir_ingest_adx`**
 (processed → ADX, idempotent via an in-DB ledger), **`dfir_ingest_sofelk`** (deliver
-into SOF-ELK's watch dir), **`dfir_deploy_sofelk`** (SOF-ELK stack; operator image).
-`dxdfir deploy` / `dxdfir ingest` drive the ADX pair.
+into SOF-ELK's watch dir), **`dfir_deploy_sofelk`** (builds the from-source SOF-ELK
+stack — `docker/sof-elk/`). `dxdfir deploy` / `dxdfir ingest` drive the ADX pair.
 
 ## Usage
 The **`dxdfir` CLI** (Python package `get_sybers_dfir`) is the front-end — it drives

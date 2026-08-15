@@ -3,11 +3,8 @@
   hosts: localhost
   gather_facts: true
   vars:
-    molecule_sofelk_image: ""
-    dfir_deploy_sofelk_image: "{{ molecule_sofelk_image }}"
-    dfir_deploy_sofelk_container: sof-elk-moltest
     dfir_deploy_sofelk_ingest_dir: /tmp/dfir_deploy_sofelk_molecule/ingest
-    dfir_deploy_sofelk_kibana_port: 5699
+    dfir_deploy_sofelk_env_file: /tmp/dfir_deploy_sofelk_molecule/sofelk.env
   tasks:
     - name: "converge | run dfir_deploy_sofelk"
       ansible.builtin.include_role:
