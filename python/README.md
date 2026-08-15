@@ -18,14 +18,15 @@ python -m get_sybers_dfir.signatures  --output-dir PROCESSED/signatures --repo-r
 Every processor prints a machine-readable JSON summary (`processed`/`skipped`/
 `failed`/…) so its role can set an honest `changed_when`.
 
-## The `dfir` CLI
+## The `dxdfir` CLI
 ```bash
-dfir process zeek --pipeline adx        # drive the dfir_zeek role (preflight → process → verify)
-dfir process signatures -e dfir_signatures_lanes='["yara"]'
-dfir ingest --only zeek                 # load processed output into the ADX emulator
-dfir deploy                             # stand up + schema-load the emulator
-dfir validate                           # run the check harness
-dfir list                               # list processable sources
+dxdfir process zeek --pipeline adx      # drive the dfir_zeek role (preflight → process → verify)
+dxdfir process signatures -e dfir_signatures_lanes='["yara"]'
+dxdfir ingest --only zeek               # load processed output into the ADX emulator
+dxdfir deploy                           # stand up + schema-load the emulator
+dxdfir validate                         # run the check harness
+dxdfir list                             # list processable sources
+man dxdfir                              # the manual (man/dxdfir.1)
 ```
 `process` drives the collection with `ansible-playbook` (the role's one action calls
 the matching `python -m get_sybers_dfir.<source>` for the tight loop). `ingest` /
@@ -35,10 +36,12 @@ in later #46 slices. The repo is auto-detected (or pass `--repo-root` /
 
 ## Install
 ```bash
-pip install ./python          # provides the `dfir` entry point + the package
+pip install ./python          # provides the `dxdfir` entry point + the package
+install -Dm644 man/dxdfir.1 ~/.local/share/man/man1/dxdfir.1   # optional: man page
 ```
 In-repo runs need no install — set `PYTHONPATH=python` (the roles do this via
-`dfir_<source>_python_path`).
+`dfir_<source>_python_path`). Without installing the man page, read it directly with
+`man ./python/man/dxdfir.1`.
 
 ## Test
 ```bash

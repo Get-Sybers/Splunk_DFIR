@@ -5,10 +5,10 @@ The three layers of epic #46 meet here: this CLI holds the user-facing verbs, th
 one action per task), and the ``get_sybers_dfir`` package holds the heavy per-item
 processing the roles invoke.
 
-    dfir process zeek --pipeline adx     # drive the dfir_zeek role
-    dfir ingest --only zeek              # load processed output into the ADX emulator
-    dfir deploy                          # stand up + schema-load the emulator
-    dfir validate                        # run the check harness
+    dxdfir process zeek --pipeline adx   # drive the dfir_zeek role
+    dxdfir ingest --only zeek            # load processed output into the ADX emulator
+    dxdfir deploy                        # stand up + schema-load the emulator
+    dxdfir validate                      # run the check harness
 
 ``process`` drives the collection with ``ansible-playbook`` (preflight → process →
 verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
@@ -186,14 +186,14 @@ def validate(
 @app.command(name="list")
 def list_sources() -> None:
     """List the evidence sources the CLI can process."""
-    typer.echo("Evidence sources (dfir process <source>):")
+    typer.echo("Evidence sources (dxdfir process <source>):")
     for s in Source:
         typer.echo(f"  {s.value}")
 
 
 def _version_cb(value: bool) -> None:
     if value:
-        typer.echo(f"dfir (get_sybers_dfir) {__version__}")
+        typer.echo(f"dxdfir (get_sybers_dfir) {__version__}")
         raise typer.Exit()
 
 
