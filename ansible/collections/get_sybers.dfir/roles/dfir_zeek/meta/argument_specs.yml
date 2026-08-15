@@ -1,0 +1,42 @@
+---
+argument_specs:
+  main:
+    short_description: "PCAPs -> Zeek JSON logs, for the ADX or SOF-ELK pipeline."
+    description:
+      - >-
+        Discovers captures under dfir_zeek_pcap_dir, runs the zeek container per
+        capture (JSON, ISO-8601 timestamps), and writes one folder of *.json per
+        capture. Idempotent: a capture whose output already exists is skipped.
+    options:
+      dfir_zeek_pipeline:
+        type: str
+        required: false
+        default: adx
+        choices: [adx, sofelk]
+        description: "Which backend to target; selects the output destination."
+      dfir_zeek_pcap_dir:
+        type: str
+        required: true
+        description: "Directory tree of packet captures to process (recursed)."
+      dfir_zeek_adx_out_dir:
+        type: str
+        required: false
+        description: "ADX-path output dir (default data_store/processed/zeek)."
+      dfir_zeek_sofelk_out_dir:
+        type: str
+        required: false
+        description: "SOF-ELK-path output dir (its Logstash watch dir)."
+      dfir_zeek_image:
+        type: str
+        required: false
+        default: "zeek/zeek"
+        description: "Zeek container image."
+      dfir_zeek_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_zeek_force:
+        type: bool
+        required: false
+        default: false
+        description: "Reprocess captures that already have output."

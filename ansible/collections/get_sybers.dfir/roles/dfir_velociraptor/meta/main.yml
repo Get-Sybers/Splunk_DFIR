@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: dfir_velociraptor
+  namespace: get_sybers
+  author: Get-Sybers
+  description: >-
+    Lay out Velociraptor offline-collector ZIPs into per-artefact JSON for the ADX
+    or SOF-ELK pipeline. Invokes the get_sybers_dfir.velociraptor Python processor;
+    one folder of result *.json per collection.
+  company: Get-Sybers
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: [bookworm, trixie]
+  galaxy_tags: [dfir, velociraptor, host, registry]
+
+dependencies: []

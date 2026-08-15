@@ -1,0 +1,17 @@
+---
+# The processing is identical, only the destination differs. Whether SOF-ELK
+# consumes Volatility output and delivery into its watch dir is tracked in #45.
+- name: "volatility-sofelk | process memory images into per-plugin JSONL"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.volatility', '--memory-dir', dfir_volatility_memory_dir, '--out-dir', dfir_volatility_sofelk_out_dir, '--symbols-dir', dfir_volatility_symbols_dir, '--renderer', dfir_volatility_renderer, '--plugins-dir', dfir_volatility_plugins_dir, '--image', dfir_volatility_image] + (['--force'] if dfir_volatility_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_volatility_python_path }}"
+  register: dfir_volatility_sofelk_run
+  changed_when: (dfir_volatility_sofelk_run.stdout | from_json).processed | int > 0
+
+- name: "volatility-sofelk | verify per-plugin JSONL on disk"
+  ansible.builtin.find:
+    paths: "{{ dfir_volatility_sofelk_out_dir }}"
+    patterns: "*.jsonl"
+    recurse: true
+  register: dfir_volatility_sofelk_verify

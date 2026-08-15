@@ -1,0 +1,38 @@
+---
+argument_specs:
+  main:
+    short_description: "Velociraptor offline-collector ZIPs -> per-artefact JSON."
+    description:
+      - >-
+        Discovers <collection>.zip files under dfir_velociraptor_raw_dir, unpacks
+        each collection's results/ JSON, and lays them out flat as one folder of
+        *.json per collection. Idempotent: a collection whose output already exists
+        is skipped. Pure Python (zipfile) — no container.
+    options:
+      dfir_velociraptor_pipeline:
+        type: str
+        required: false
+        default: adx
+        choices: [adx, sofelk]
+        description: "Which backend to target; selects the output destination."
+      dfir_velociraptor_raw_dir:
+        type: str
+        required: true
+        description: "Directory of Velociraptor offline-collector <collection>.zip files."
+      dfir_velociraptor_adx_out_dir:
+        type: str
+        required: false
+        description: "ADX-path output dir (default data_store/processed/velociraptor)."
+      dfir_velociraptor_sofelk_out_dir:
+        type: str
+        required: false
+        description: "SOF-ELK-path output dir (its Logstash watch dir)."
+      dfir_velociraptor_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_velociraptor_force:
+        type: bool
+        required: false
+        default: false
+        description: "Re-lay-out collections that already have output."

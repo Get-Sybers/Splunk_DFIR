@@ -1,0 +1,24 @@
+---
+- name: "zeek-adx | process pcaps into Zeek JSON"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.zeek', '--pcap-dir', dfir_zeek_pcap_dir, '--out-dir', dfir_zeek_adx_out_dir, '--image', dfir_zeek_image] + (['--force'] if dfir_zeek_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_zeek_python_path }}"
+  register: dfir_zeek_adx_run
+  changed_when: (dfir_zeek_adx_run.stdout | from_json).processed | int > 0
+
+- name: "zeek-adx | verify Zeek JSON logs on disk"
+  ansible.builtin.find:
+    paths: "{{ dfir_zeek_adx_out_dir }}"
+    patterns: "*.json"
+    recurse: true
+  register: dfir_zeek_adx_verify
+
+- name: "zeek-adx | assert output matches what was processed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_zeek_adx_run.stdout | from_json).failed | int == 0
+      - dfir_zeek_adx_verify.matched | int > 0 or (dfir_zeek_adx_run.stdout | from_json).captures | int == 0
+    fail_msg: >-
+      zeek reported failures, or produced no JSON logs though captures were present.
+    quiet: true
