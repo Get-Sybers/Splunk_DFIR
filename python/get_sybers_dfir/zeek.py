@@ -62,23 +62,26 @@ def discover(pcap_dir: str) -> list[str]:
 
 
 def _already_done(output_dir: str) -> bool:
-    return os.path.isdir(output_dir) and any(
-        n.endswith(".json") for n in os.listdir(output_dir)
-    )
+    if not os.path.isdir(output_dir):
+        return False
+    try:
+        return any(n.endswith(".json") for n in os.listdir(output_dir))
+    except OSError:
+        return False
 
 
 def _run_zeek(pcap_dir: str, rel: str, temp_dir: str, image: str) -> None:
     """Run zeek in a container over one capture, writing JSON logs into temp_dir."""
-    cmd = (
-        f"cd /logs && zeek -C -r '/pcap/{rel}' "
-        "LogAscii::use_json=T 'LogAscii::json_timestamps=JSON::TS_ISO8601'"
-    )
     subprocess.run(
         [
             "docker", "run", "--rm",
             "-v", f"{pcap_dir}:/pcap:ro",
             "-v", f"{temp_dir}:/logs",
-            image, "sh", "-c", cmd,
+            "--workdir", "/logs",
+            image,
+            "zeek", "-C", "-r", f"/pcap/{rel}",
+            "LogAscii::use_json=T",
+            "LogAscii::json_timestamps=JSON::TS_ISO8601",
         ],
         check=True,
     )

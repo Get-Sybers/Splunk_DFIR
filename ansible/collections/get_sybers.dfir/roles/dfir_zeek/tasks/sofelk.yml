@@ -16,3 +16,12 @@
     patterns: "*.json"
     recurse: true
   register: dfir_zeek_sofelk_verify
+
+- name: "zeek-sofelk | assert output matches what was processed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_zeek_sofelk_run.stdout | from_json).failed | int == 0
+      - dfir_zeek_sofelk_verify.matched | int > 0 or (dfir_zeek_sofelk_run.stdout | from_json).captures | int == 0
+    fail_msg: >-
+      zeek reported failures, or produced no JSON logs though captures were present.
+    quiet: true

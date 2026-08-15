@@ -1,7 +1,5 @@
 """Unit tests for the pure logic of the zeek processor (no docker needed)."""
-import os
 import struct
-import tempfile
 
 from get_sybers_dfir import zeek
 
