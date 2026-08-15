@@ -25,8 +25,14 @@ as a single action. Roles land per source as epic #46 retires the matching
 Ingest and deploy roles (`dfir_ingest_*`, `dfir_deploy_*`) follow as later slices of #46.
 
 ## Usage
-Each source has a playbook under `playbooks/`; the playbook selects the role and
-passes the pipeline.
+The **`dxdfir` CLI** (Python package `get_sybers_dfir`) is the front-end — it drives
+these roles for you:
+```bash
+dxdfir process zeek --pipeline adx      # = the dfir_zeek role, preflight → process → verify
+dxdfir process signatures               # all lanes
+```
+Or run a playbook directly; each source has one under `playbooks/`, which selects
+the role and passes the pipeline:
 ```bash
 ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=adx
 ansible-playbook playbooks/dfir-process-velociraptor.yml -e dfir_velociraptor_pipeline=adx
