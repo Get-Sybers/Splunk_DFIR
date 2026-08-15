@@ -51,6 +51,23 @@ def test_locate_dll_absent(tmp_path):
     assert evtx.locate_dll(str(tmp_path)) is None
 
 
+def test_locate_dll_ignores_redundant_separators(tmp_path):
+    # depth is computed via os.sep splitting, so a trailing/duplicated separator in
+    # the search root must not throw off the maxdepth-3 bound.
+    nested = tmp_path / "EvtxECmd"
+    nested.mkdir()
+    (nested / "EvtxECmd.dll").write_bytes(b"MZ")
+    messy_root = str(tmp_path) + os.sep + os.sep  # e.g. ".../dir//"
+    assert evtx.locate_dll(messy_root) == os.path.join("EvtxECmd", "EvtxECmd.dll")
+
+
+def test_locate_dll_respects_maxdepth(tmp_path):
+    deep = tmp_path / "a" / "b" / "c" / "d"     # depth 4 > 3
+    deep.mkdir(parents=True)
+    (deep / "EvtxECmd.dll").write_bytes(b"MZ")
+    assert evtx.locate_dll(str(tmp_path)) is None
+
+
 def test_process_reports_missing_dll(tmp_path):
     evtx_dir = tmp_path / "in"
     evtx_dir.mkdir()

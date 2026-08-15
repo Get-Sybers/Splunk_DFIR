@@ -53,9 +53,12 @@ def locate_dll(evtxecmd_dir: str) -> str | None:
     root = os.path.join(evtxecmd_dir, "EvtxECmd.dll")
     if os.path.isfile(root):
         return "EvtxECmd.dll"
-    base_depth = evtxecmd_dir.rstrip("/").count("/")
     for cur, _dirs, files in os.walk(evtxecmd_dir):
-        if cur.count("/") - base_depth > 3:
+        # Depth relative to evtxecmd_dir, via os.sep splitting (portable — not a
+        # literal "/" count, which breaks on Windows paths / redundant separators).
+        rel = os.path.relpath(cur, evtxecmd_dir)
+        depth = 0 if rel == "." else len(rel.split(os.sep))
+        if depth > 3:
             continue
         if "EvtxECmd.dll" in files:
             return os.path.relpath(os.path.join(cur, "EvtxECmd.dll"), evtxecmd_dir)

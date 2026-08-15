@@ -20,11 +20,27 @@
       dfir_evtx_evtx_dir ({{ dfir_evtx_evtx_dir }}) is missing or is not a directory.
     quiet: true
 
+- name: "evtx-preflight | stat the EvtxECmd release dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_evtx_evtxecmd_dir }}"
+  register: dfir_evtx_evtxecmd_stat
+
+- name: "evtx-preflight | EvtxECmd release dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_evtx_evtxecmd_stat.stat.exists
+      - dfir_evtx_evtxecmd_stat.stat.isdir is defined and dfir_evtx_evtxecmd_stat.stat.isdir
+    fail_msg: >-
+      dfir_evtx_evtxecmd_dir ({{ dfir_evtx_evtxecmd_dir }}) is missing or is not a
+      directory — extract the operator-supplied EvtxECmd release there.
+    quiet: true
+
 - name: "evtx-preflight | find the operator-supplied EvtxECmd.dll"
   ansible.builtin.find:
     paths: "{{ dfir_evtx_evtxecmd_dir }}"
     patterns: "EvtxECmd.dll"
     recurse: true
+    depth: 3           # matches the processor's locate_dll() maxdepth
   register: dfir_evtx_dll
 
 - name: "evtx-preflight | EvtxECmd.dll is present (operator-supplied)"

@@ -16,3 +16,12 @@
     patterns: "*_EvtxECmd_Output.json"
     recurse: true
   register: dfir_evtx_sofelk_verify
+
+- name: "evtx-sofelk | assert output matches what was processed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_evtx_sofelk_run.stdout | from_json).failed | int == 0
+      - dfir_evtx_sofelk_verify.matched | int > 0 or (dfir_evtx_sofelk_run.stdout | from_json).files | int == 0
+    fail_msg: >-
+      evtx reported failures, or produced no JSON though logs were present.
+    quiet: true
