@@ -1,0 +1,32 @@
+---
+# dfir_volatility: memory images -> per-plugin JSONL. The role GROUPS; the playbook
+# DECIDES. Idempotence (skip plugins with valid output) lives in the Python
+# processor, not in a task's `when:`.
+
+- name: "volatility | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_volatility_pipeline in ['adx', 'sofelk']
+      - dfir_volatility_memory_dir | length > 0
+    fail_msg: >-
+      dfir_volatility needs dfir_volatility_pipeline (adx|sofelk) and a non-empty
+      dfir_volatility_memory_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "volatility | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "volatility | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_volatility_pipeline == 'adx'
+
+- name: "volatility | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_volatility_pipeline == 'sofelk'

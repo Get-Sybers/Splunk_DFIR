@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_out: /tmp/dfir_volatility_molecule/out
+  tasks:
+    - name: "molecule-verify | find the produced per-plugin JSONL"
+      ansible.builtin.find:
+        paths: "{{ molecule_out }}"
+        patterns: "*.jsonl"
+        recurse: true
+      register: produced
+
+    - name: "molecule-verify | assert at least banners.Banners produced output"
+      ansible.builtin.assert:
+        that:
+          - produced.matched | int > 0
+          - produced.files | map(attribute='path') | map('basename') | select('search', '^banners\\.Banners\\.jsonl$') | list | length > 0
+        fail_msg: "no plugin JSONL produced from the sample memory image (banners.Banners needs no symbols)"
+        quiet: true
