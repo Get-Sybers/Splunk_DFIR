@@ -34,9 +34,18 @@ def staged_name(rel: str) -> str:
 
 
 def _records(path: str):
-    """Yield the records in a processed file — a JSON array/object, or JSON Lines."""
-    with open(path, encoding="utf-8", errors="replace") as fh:
-        raw = fh.read()
+    """Yield the records in a processed file — a JSON array/object, or JSON Lines.
+
+    Resilient to the file vanishing mid-read: a processor still running may remove
+    an empty/failed output between the loader discovering it and opening it (e.g.
+    Volatility prunes empty per-plugin files), so a missing/unreadable file yields
+    nothing rather than raising.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            raw = fh.read()
+    except OSError:
+        return
     stripped = raw.lstrip()
     if stripped[:1] == "[":
         try:

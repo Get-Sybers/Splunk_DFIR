@@ -52,6 +52,12 @@ def test_records_array_and_jsonl(tmp_path):
     assert list(prepare._records(str(jl))) == [{"x": 1}, {"x": 2}]
 
 
+def test_records_missing_file_yields_nothing(tmp_path):
+    # a processor still running may prune an empty output between the loader
+    # discovering it and reading it — a vanished file must yield nothing, not raise.
+    assert list(prepare._records(str(tmp_path / "gone.jsonl"))) == []
+
+
 def test_zeek_wrap_skips_conn(tmp_path):
     conn = tmp_path / "conn.json"
     conn.write_text('{"id":1}\n')
