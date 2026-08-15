@@ -1,0 +1,32 @@
+---
+# dfir_signatures: YARA / Suricata / Hayabusa detection lanes -> JSONL. The role
+# GROUPS; the playbook DECIDES. Idempotence (skip lanes whose output exists) lives in
+# the Python processor, not in a task's `when:`.
+
+- name: "signatures | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_signatures_pipeline in ['adx', 'sofelk']
+      - dfir_signatures_lanes | difference(['yara', 'suricata', 'hayabusa']) | length == 0
+    fail_msg: >-
+      dfir_signatures needs dfir_signatures_pipeline (adx|sofelk); dfir_signatures_lanes
+      may only contain yara/suricata/hayabusa.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "signatures | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "signatures | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_signatures_pipeline == 'adx'
+
+- name: "signatures | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_signatures_pipeline == 'sofelk'

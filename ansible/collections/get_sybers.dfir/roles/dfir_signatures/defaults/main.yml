@@ -1,0 +1,17 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dfir_signatures_pipeline: adx
+
+# Repo root is five levels up from this role
+# (roles/dfir_signatures -> get_sybers.dfir -> collections -> ansible -> repo).
+dfir_signatures_repo_root: "{{ role_path }}/../../../../.."
+
+dfir_signatures_adx_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/signatures"
+dfir_signatures_sofelk_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/sofelk/signatures"
+# Which detection lanes to run; empty = all (yara, suricata, hayabusa).
+dfir_signatures_lanes: []
+# --fetch provisions rules/binaries when online (never in an air-gapped run).
+dfir_signatures_fetch: false
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dfir_signatures_python_path: "{{ dfir_signatures_repo_root }}/python"
+dfir_signatures_force: false
