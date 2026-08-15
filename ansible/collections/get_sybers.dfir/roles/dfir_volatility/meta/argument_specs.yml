@@ -18,7 +18,7 @@ argument_specs:
         description: "Which backend to target; selects the output destination."
       dfir_volatility_memory_dir:
         type: str
-        required: true
+        required: false
         description: "Directory tree of memory images to process (recursed)."
       dfir_volatility_adx_out_dir:
         type: str

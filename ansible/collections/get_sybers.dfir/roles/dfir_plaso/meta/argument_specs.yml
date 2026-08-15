@@ -18,7 +18,7 @@ argument_specs:
         description: "Which backend to target; selects the output destination."
       dfir_plaso_input_dir:
         type: str
-        required: true
+        required: false
         description: "Disk-image tree (E01/raw/img/dd/vmdk/vhd/vhdx/aff), recursed."
       dfir_plaso_vm_dir:
         type: str

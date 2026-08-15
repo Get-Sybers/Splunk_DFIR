@@ -17,7 +17,7 @@ argument_specs:
         description: "Which backend to target; selects the output destination."
       dfir_evtx_evtx_dir:
         type: str
-        required: true
+        required: false
         description: "Directory tree of .evtx logs to parse (recursed)."
       dfir_evtx_adx_out_dir:
         type: str
@@ -29,7 +29,7 @@ argument_specs:
         description: "SOF-ELK-path output dir (its Logstash watch dir)."
       dfir_evtx_evtxecmd_dir:
         type: str
-        required: true
+        required: false
         description: "Operator-supplied EvtxECmd .NET release dir (must hold EvtxECmd.dll)."
       dfir_evtx_dotnet_image:
         type: str

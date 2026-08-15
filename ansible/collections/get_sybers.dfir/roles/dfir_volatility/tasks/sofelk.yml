@@ -15,3 +15,14 @@
     patterns: "*.jsonl"
     recurse: true
   register: dfir_volatility_sofelk_verify
+
+# Per-plugin failures are NORMAL (Windows plugins error without symbols), so the
+# gate is "some plugin produced output, or there were no images" — not failed==0.
+- name: "volatility-sofelk | assert output was produced for the images present"
+  ansible.builtin.assert:
+    that:
+      - dfir_volatility_sofelk_verify.matched | int > 0 or (dfir_volatility_sofelk_run.stdout | from_json).images | int == 0
+    fail_msg: >-
+      volatility produced no JSONL at all though memory images were present (symbols
+      unavailable for every plugin?).
+    quiet: true

@@ -17,7 +17,7 @@ argument_specs:
         description: "Which backend to target; selects the output destination."
       dfir_velociraptor_raw_dir:
         type: str
-        required: true
+        required: false
         description: "Directory of Velociraptor offline-collector <collection>.zip files."
       dfir_velociraptor_adx_out_dir:
         type: str
