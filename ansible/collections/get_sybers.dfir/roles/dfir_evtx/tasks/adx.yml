@@ -1,0 +1,24 @@
+---
+- name: "evtx-adx | parse .evtx into EvtxECmd JSON"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.evtx', '--evtx-dir', dfir_evtx_evtx_dir, '--out-dir', dfir_evtx_adx_out_dir, '--evtxecmd-dir', dfir_evtx_evtxecmd_dir, '--dotnet-image', dfir_evtx_dotnet_image] + (['--force'] if dfir_evtx_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_evtx_python_path }}"
+  register: dfir_evtx_adx_run
+  changed_when: (dfir_evtx_adx_run.stdout | from_json).processed | int > 0
+
+- name: "evtx-adx | verify EvtxECmd JSON on disk"
+  ansible.builtin.find:
+    paths: "{{ dfir_evtx_adx_out_dir }}"
+    patterns: "*_EvtxECmd_Output.json"
+    recurse: true
+  register: dfir_evtx_adx_verify
+
+- name: "evtx-adx | assert output matches what was processed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_evtx_adx_run.stdout | from_json).failed | int == 0
+      - dfir_evtx_adx_verify.matched | int > 0 or (dfir_evtx_adx_run.stdout | from_json).files | int == 0
+    fail_msg: >-
+      evtx reported failures, or produced no JSON though logs were present.
+    quiet: true

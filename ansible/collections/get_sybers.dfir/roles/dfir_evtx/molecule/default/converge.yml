@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dfir_evtx_pipeline: adx
+    dfir_evtx_evtx_dir: /tmp/dfir_evtx_molecule/in
+    dfir_evtx_adx_out_dir: /tmp/dfir_evtx_molecule/out
+    dfir_evtx_evtxecmd_dir: "{{ molecule_evtxecmd_dir | default(lookup('env', 'EVTXECMD_DIR')) }}"
+  tasks:
+    - name: "converge | run dfir_evtx (ADX)"
+      ansible.builtin.include_role:
+        name: dfir_evtx

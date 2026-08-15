@@ -31,4 +31,5 @@ passes the pipeline.
 ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=adx
 ansible-playbook playbooks/dfir-process-velociraptor.yml -e dfir_velociraptor_pipeline=adx
 ansible-playbook playbooks/dfir-process-volatility.yml -e dfir_volatility_pipeline=adx
+ansible-playbook playbooks/dfir-process-evtx.yml -e dfir_evtx_pipeline=adx
 ```
