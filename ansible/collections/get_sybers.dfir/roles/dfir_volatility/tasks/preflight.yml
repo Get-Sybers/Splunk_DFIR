@@ -1,0 +1,57 @@
+---
+# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+
+- name: "volatility-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_volatility_docker
+  changed_when: false
+
+- name: "volatility-preflight | stat the memory dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_volatility_memory_dir }}"
+  register: dfir_volatility_mem_stat
+
+- name: "volatility-preflight | memory dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_volatility_mem_stat.stat.exists
+      - dfir_volatility_mem_stat.stat.isdir is defined and dfir_volatility_mem_stat.stat.isdir
+    fail_msg: >-
+      dfir_volatility_memory_dir ({{ dfir_volatility_memory_dir }}) is missing or is
+      not a directory.
+    quiet: true
+
+- name: "volatility-preflight | stat the jsonl_dfir renderer"
+  ansible.builtin.stat:
+    path: "{{ dfir_volatility_renderer }}"
+  register: dfir_volatility_renderer_stat
+
+- name: "volatility-preflight | the renderer file is present"
+  ansible.builtin.assert:
+    that:
+      - dfir_volatility_renderer_stat.stat.exists
+      - dfir_volatility_renderer_stat.stat.isreg is defined and dfir_volatility_renderer_stat.stat.isreg
+    fail_msg: >-
+      jsonl_dfir renderer not found at {{ dfir_volatility_renderer }}.
+    quiet: true
+
+- name: "volatility-preflight | stat the custom plugins dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_volatility_plugins_dir }}"
+  register: dfir_volatility_plugins_stat
+
+- name: "volatility-preflight | the custom plugins dir is present"
+  ansible.builtin.assert:
+    that:
+      - dfir_volatility_plugins_stat.stat.exists
+      - dfir_volatility_plugins_stat.stat.isdir is defined and dfir_volatility_plugins_stat.stat.isdir
+    fail_msg: >-
+      custom plugins dir not found at {{ dfir_volatility_plugins_dir }}.
+    quiet: true
+
+- name: "volatility-preflight | the get_sybers_dfir.volatility module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.volatility"
+  environment:
+    PYTHONPATH: "{{ dfir_volatility_python_path }}"
+  register: dfir_volatility_import
+  changed_when: false
