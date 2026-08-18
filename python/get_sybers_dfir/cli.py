@@ -1,4 +1,4 @@
-"""``dfir`` — the DX_DFIR pipeline front-end (Typer).
+"""``dxdfir`` — the DX_DFIR pipeline front-end (Typer).
 
 The three layers of epic #46 meet here: this CLI holds the user-facing verbs, the
 ``get_sybers.dfir`` Ansible collection holds the orchestration (one role per source,
@@ -12,8 +12,9 @@ processing the roles invoke.
 
 ``process`` drives the collection with ``ansible-playbook`` (preflight → process →
 verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
-the tight loop. ``ingest`` / ``deploy`` / ``validate`` currently front the repo's
-shell scripts — they become roles in later #46 slices.
+the tight loop. ``ingest`` and ``deploy`` drive the ``dfir_ingest_adx`` /
+``dfir_deploy_adx`` roles the same way; ``validate`` runs the repo's check harness
+(``tests/run-checks.sh``).
 """
 from __future__ import annotations
 

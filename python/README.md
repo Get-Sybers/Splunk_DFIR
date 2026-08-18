@@ -1,7 +1,7 @@
 # get_sybers_dfir
 
 The processing logic of the DX_DFIR pipeline as an importable, unit-tested Python
-package, plus the **`dfir`** command-line front-end (Typer) — the top layer of epic
+package, plus the **`dxdfir`** command-line front-end (Typer) — the top layer of epic
 #46. The heavy per-item work (container runs, JSON reshaping) lives here; the
 `get_sybers.dfir` Ansible collection orchestrates it one action per task.
 
@@ -29,10 +29,10 @@ dxdfir list                             # list processable sources
 man dxdfir                              # the manual (man/dxdfir.1)
 ```
 `process` drives the collection with `ansible-playbook` (the role's one action calls
-the matching `python -m get_sybers_dfir.<source>` for the tight loop). `ingest` /
-`deploy` / `validate` currently front the repo's shell scripts — they become roles
-in later #46 slices. The repo is auto-detected (or pass `--repo-root` /
-`$DFIR_REPO_ROOT`).
+the matching `python -m get_sybers_dfir.<source>` for the tight loop). `ingest` and
+`deploy` drive the `dfir_ingest_adx` / `dfir_deploy_adx` roles the same way;
+`validate` runs the repo's check harness (`tests/run-checks.sh`). The repo is
+auto-detected (or pass `--repo-root` / `$DFIR_REPO_ROOT`).
 
 ## Install
 ```bash
