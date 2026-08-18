@@ -20,12 +20,13 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .B dxdfir ingest
 .RB [ --only
 .IR SOURCE ]
+.RB [ --force ]
+.RB [ --dry-run ]
 .br
 .B dxdfir deploy
 .RB [ --persist ]
 .RB [ --port
 .IR PORT ]
-.RB [ --no-schema ]
 .br
 .B dxdfir validate
 .br
@@ -50,12 +51,17 @@ drives a source's role with
 \(em preflight, then process, then verify \(em and the role's single action calls
 .RB \(lq python \-m get_sybers_dfir. SOURCE \(rq
 for the tight loop.
-.B ingest ,
-.B deploy
+.B ingest
 and
+.B deploy
+likewise drive roles \(em
+.B dfir_ingest_adx
+and
+.B dfir_deploy_adx
+\(em while
 .B validate
-currently front the repository's shell scripts; they become roles in later slices
-of epic #46.
+fronts the repository's check harness
+.RB ( tests/run-checks.sh ).
 .SH COMMANDS
 .TP
 .BI "process " SOURCE
@@ -66,14 +72,17 @@ Idempotent: inputs that already have output are skipped (use
 to reprocess).
 .TP
 .B ingest
-Load processed output into the ADX (Kusto) emulator (fronts
-.IR ingest-kusto.sh ).
+Load processed output into the ADX (Kusto) emulator by driving the
+.B dfir_ingest_adx
+role. Idempotent: an in-DB ledger records every loaded file, so a re-run loads
+only new files (use
+.B --force
+to re-ingest).
 .TP
 .B deploy
-Deploy the ADX (Kusto) emulator and, by default, apply the schema (fronts
-.I deploy-kusto.sh
-and
-.IR apply-kusto-schema.sh ).
+Deploy the ADX (Kusto) emulator and apply the schema by driving the
+.B dfir_deploy_adx
+role.
 .TP
 .B validate
 Run the repository check harness (fronts
@@ -117,14 +126,17 @@ Persist the emulator's data (opt-in; it is ephemeral by default).
 .TP
 .BI --port " PORT"
 Emulator port override.
-.TP
-.BR --schema " / " --no-schema
-Apply (default) or skip the schema after deploying.
 .SS ingest
 .TP
 .BI --only " SOURCE"
 Load one source only:
 .BR l2t ", " zeek ", " evtx ", " volatility ", " velociraptor .
+.TP
+.B --force
+Re-ingest files already recorded in the ledger (additive; duplicates rows).
+.TP
+.B --dry-run
+List what would be loaded; contact nothing.
 .SH ENVIRONMENT
 .TP
 .B DFIR_REPO_ROOT

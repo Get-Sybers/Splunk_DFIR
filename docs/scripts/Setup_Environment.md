@@ -11,6 +11,12 @@ concern and lives in its own script, [`save-docker-images.sh`](#pre-seeding-imag
 On a host with registry access nothing further is needed — the individual
 processing scripts pull their images on first use.
 
+> **For the `dxdfir` CLI path** (the pipeline front-end): this script installs the
+> *scripts'* dependencies, not the CLI's. `dxdfir` additionally needs
+> `ansible-playbook` on `PATH` and the Python package installed
+> (`pip install ./python`, or `PYTHONPATH=python` for in-repo runs) — see
+> [How It Runs](/README.md#how-it-runs).
+
 ## Prerequisites
 - A Debian- or Ubuntu-based Linux distribution (the Docker apt repository is
   derived from `/etc/os-release`, so derivatives that declare `ID_LIKE` work too)

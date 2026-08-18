@@ -10,6 +10,17 @@ pre-release code is frozen on the
 [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated)
 branch.
 
+## 🧱 Architecture (epics #45 / #46)
+
+The pipeline has been rebuilt as a three-layer stack: the **`dxdfir` CLI** →
+the **`get_sybers.dfir` Ansible collection** (one role per source) → the
+**`get_sybers_dfir` Python package**, driving two backends via
+`--pipeline adx|sofelk` (ADX / Kusto emulator + SOF-ELK). All ten roles, the CLI
+and the from-source SOF-ELK stack exist on `dev`; the one open box is **per-source
+retirement of the `process-*.sh` scripts**. The tables below track the
+processing / ingest layer (still named by the `process-*.sh` scripts the roles
+wrap) — see [How It Runs](/README.md#how-it-runs) and #46.
+
 A note on what the ticks mean, because the previous version of this board was
 generous with them:
 
@@ -31,7 +42,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 
 | Processing Tool / Artefact                                    | Automate Data | File Type      | Kusto Ingest | CAR Functions |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | csv             | ✅           |     ✅ (`file`) |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
@@ -144,7 +155,9 @@ Things that are broken or unsafe right now.
 ## 🔄 In Progress
 
 ### 🔹 **Documentation**
-- Update **READMEs** based on testing outcomes and any new features.
+- Align the docs with the #45/#46 rewrite — present the `dxdfir` CLI + collection
+  as the front-end and frame the `process-*.sh` scripts as the legacy layer being
+  retired (in progress).
 
 ---
 
