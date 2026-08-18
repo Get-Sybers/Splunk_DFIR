@@ -45,6 +45,7 @@ functions.
 ### 📚 This Page
 
 - [Overview](#overview)
+- [How It Runs](#how-it-runs)
 - [What Actually Works](#what-actually-works)
 - [Before You Run Anything](#before-you-run-anything)
 - [Why This Exists](#why-this-exists)
@@ -78,6 +79,31 @@ instead of a pile of CSVs.
 
 That's the idea. Here's where it honestly stands.
 
+## 🧱 How It Runs
+<a name="how-it-runs"></a>
+
+The pipeline is a three-layer design (epic #46):
+
+- **`dxdfir` CLI** — the front-end (`python/`, Typer): `dxdfir process <source>`,
+  `dxdfir deploy`, `dxdfir ingest`, `dxdfir validate`, `dxdfir list` (`man dxdfir`
+  for the manual).
+- **`get_sybers.dfir` Ansible collection** — orchestration, one role per source,
+  one action per task; the CLI drives it with `ansible-playbook`.
+- **`get_sybers_dfir` Python package** — the per-item processing the roles invoke
+  (also runnable as `python -m get_sybers_dfir.<source>`).
+
+Each processor targets a backend with `--pipeline adx|sofelk`: **ADX** (the Kusto
+emulator, default) or **SOF-ELK** (`docker/sof-elk/`). `dxdfir deploy`/`ingest`
+cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
+`dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
+
+The original `process-*.sh` scripts still ship under `scripts/` — they are the
+layer the capabilities below were actually exercised with, and are retired per
+source as each role's full path is proven. The CLI additionally needs
+`ansible-playbook` on `PATH` and the package installed (`pip install ./python`, or
+`PYTHONPATH=python` for in-repo runs); `setup-environment.sh` does not install
+these yet.
+
 ## 🧪 What Actually Works
 <a name="what-actually-works"></a>
 
@@ -87,6 +113,11 @@ and interfaces may still change. What the current line buys you over the
 [pre-release line](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) is
 that the defects below are known and written down rather than waiting to be
 discovered.
+
+The **Notes** name the `process-*.sh` script that does the work; each source is
+also runnable as `dxdfir process <source>` (which drives the matching
+`dfir_<source>` role — same container, same output). The ✅/⚠️ states reflect
+hand-runs of the scripts, not the role path or any automated test.
 
 | Capability | State | Notes |
 |:---|:---|:---|
