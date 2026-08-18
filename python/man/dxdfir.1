@@ -118,7 +118,7 @@ Pass an extra Ansible variable through to the role; repeatable. Use it to overri
 a role default, e.g.
 .RB \(lq -e\  dfir_zeek_pcap_dir=/evidence/pcaps \(rq
 or
-.RB \(lq -e\  dfir_signatures_lanes=[\(dqyara\(dq] \(rq.
+.RB \(lq -e\  \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq \(rq.
 .SS deploy
 .TP
 .B --persist
@@ -126,6 +126,14 @@ Persist the emulator's data (opt-in; it is ephemeral by default).
 .TP
 .BI --port " PORT"
 Emulator port override.
+.TP
+.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
+As for
+.B process
+above; use
+.B -e
+to override role variables (e.g.
+.IR dfir_deploy_adx_host ).
 .SS ingest
 .TP
 .BI --only " SOURCE"
@@ -137,6 +145,11 @@ Re-ingest files already recorded in the ledger (additive; duplicates rows).
 .TP
 .B --dry-run
 List what would be loaded; contact nothing.
+.TP
+.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
+As for
+.B process
+above.
 .SH ENVIRONMENT
 .TP
 .B DFIR_REPO_ROOT
@@ -147,7 +160,7 @@ directory, then from the installed package's location.
 .TP
 .B ANSIBLE_ROLES_PATH
 Set by
-.B process
+.BR process ", " ingest " and " deploy
 to the collection's roles directory so the roles resolve without installing the
 collection.
 .SH EXIT STATUS
@@ -171,7 +184,7 @@ Reprocess memory images, overriding the input directory:
 .B dxdfir process volatility --force -e dfir_volatility_memory_dir=/evidence/mem
 .TP
 Run only the YARA signature lane:
-.B dxdfir process signatures -e dfir_signatures_lanes=[\(dqyara\(dq]
+.B dxdfir process signatures -e \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq
 .TP
 Stand up the emulator, then load Zeek output:
 .B dxdfir deploy && dxdfir ingest --only zeek
