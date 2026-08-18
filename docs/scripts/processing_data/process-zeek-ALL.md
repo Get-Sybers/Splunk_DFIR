@@ -23,15 +23,17 @@ The `process-zeek-ALL.sh` script automates the processing of network packet capt
 2. For each packet capture file:
    - Creates a temporary directory for initial processing
    - Runs Zeek analysis inside a Docker container
-   - Converts timestamps to ISO8601 format using zeek-cut
+   - Zeek writes JSON directly (`LogAscii::use_json=T`) with ISO-8601 timestamps
    - Saves the processed logs to a dedicated output directory
 3. Cleans up temporary files and Docker containers after processing
 
 ## Output Format
-- Each PCAP file gets its own directory of Zeek log files
-- Log files follow Zeek's standard naming conventions (conn.log, dns.log, http.log, etc.)
-- All timestamps are converted to ISO8601 format for consistency
-- Tab-separated values in each log file with field headers
+- Each PCAP file gets its own directory of Zeek logs
+- Zeek writes JSON natively (`LogAscii::use_json=T`); each log is renamed from
+  Zeek's `.log` extension to `.json` on the way out (`conn.json`, `dns.json`,
+  `http.json`, …)
+- Content is JSON, one object per line, with ISO-8601 timestamps
+  (`LogAscii::json_timestamps=JSON::TS_ISO8601`) — not TSV
 
 ## Troubleshooting
 - Check Docker is running

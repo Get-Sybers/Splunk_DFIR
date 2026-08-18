@@ -45,5 +45,5 @@ In-repo runs need no install — set `PYTHONPATH=python` (the roles do this via
 
 ## Test
 ```bash
-cd python && PYTHONPATH=. python -m pytest        # 64 unit tests (pure logic; no docker)
+cd python && PYTHONPATH=. python -m pytest        # 81 unit tests (pure logic; no docker)
 ```

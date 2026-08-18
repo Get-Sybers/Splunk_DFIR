@@ -105,7 +105,7 @@ schema, kept for the reasoning even though the Splunk side is retired.
 | Splunk | Kusto | Notes |
 |:---|:---|:---|
 | Index | **Database** | `host`, `network`, `memory`, `misc`, `mitre` → 5 databases |
-| Sourcetype | **Table** | Kusto entity names cannot contain `:`, so `l2t:csv` → `L2tCsv` |
+| Sourcetype | **Table** | Kusto entity names cannot contain `:`, so a colon-bearing sourcetype like `zeek:conn` → `ZeekConn` |
 | `props.conf INDEXED_EXTRACTIONS` | **Ingestion mapping** | CSV and JSON mappings, precreated and referenced |
 | `props.conf` FIELDALIAS / EVAL | **Function**, or update policy | See below |
 | `transforms.conf` | **Update policy** | Only where a materialised second table is wanted |
@@ -150,8 +150,8 @@ than failing halfway and leaving a partial state.
 > necessary, the data is 'coerced' into this schema during ingestion."
 
 No schema inference. Every table needs explicit DDL, which means the port has
-to decide column types for each source up front — Plaso CSV, Zeek TSV,
-EvtxECmd JSON, Velociraptor JSON. That is the bulk of Stage 2's work.
+to decide column types for each source up front — Plaso json_line, Zeek JSON,
+EvtxECmd JSON, Velociraptor and Volatility JSON. That is the bulk of Stage 2's work.
 
 One `.ingest into` locator is one file; multiple files go in one command as
 multiple locators, or via an external table over the directory.

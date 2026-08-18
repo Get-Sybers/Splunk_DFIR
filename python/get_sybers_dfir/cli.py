@@ -92,14 +92,6 @@ def _need(tool: str) -> None:
         raise typer.Exit(127)
 
 
-def _script(repo: Path, name: str) -> str:
-    p = repo / "scripts" / name
-    if not p.is_file():
-        typer.secho(f"script not found: {p}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    return str(p)
-
-
 # --------------------------------------------------------------------------- commands
 @app.command()
 def process(
