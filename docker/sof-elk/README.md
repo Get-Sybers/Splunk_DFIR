@@ -32,6 +32,10 @@ Deliver each processor's `sofelk` output into the matching `<type>/` dir.
 - The non-default Logstash plugins are installed from **SOF-ELK's own declared list**
   (`ansible/roles/logstash/defaults/main.yaml` → `logstash_plugins`) read out of the
   clone — so a rebuild tracks upstream instead of drifting from a hardcoded copy.
+- **GeoLite2 databases are seeded** into `/usr/local/share/GeoIP/` (where SOF-ELK's
+  geoip filters expect them) from the copies the `logstash-filter-geoip` plugin
+  already bundles, so the image is config-valid out of the box; refresh them with a
+  MaxMind licence via SOF-ELK's `geoip_bootstrap.sh`.
 - The image only patches ONE upstream line — the Elasticsearch output's host, which
   SOF-ELK hardcodes to `localhost` — making it `${ES_HOSTS:localhost:9200}` so the
   containerised Logstash reaches the `elasticsearch` service. Everything else is
