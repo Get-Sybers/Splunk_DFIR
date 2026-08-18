@@ -243,6 +243,13 @@ lookups, splunk-ansible playbooks — since retired with the Splunk stack, but
 still in git history). Matching that licence keeps the project compatible with
 everything it has ever redistributed.
 
+**Mixed licensing.** The repository root is Apache-2.0 (above). The pipeline code
+added in the #46 rewrite is offered under the more permissive **MIT** licence as
+self-contained, reusable components: the `get_sybers_dfir` Python package
+(`python/`, per its `pyproject.toml`) and the `get_sybers.dfir` Ansible collection
+(`ansible/collections/`, per `galaxy.yml` and each role's `meta/main.yml`). MIT and
+Apache-2.0 are compatible; each subtree carries its own declared licence.
+
 Third-party components, the tools this pipeline drives, and the licensing
 obligations that fall on *you* rather than on this code are documented in
 [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md). Attribution required by
