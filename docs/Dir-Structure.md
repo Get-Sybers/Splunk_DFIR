@@ -1,14 +1,30 @@
 ## 🗺️ Find Your Way Around
+
+The pipeline is a three-layer design (epic #46): the **`dxdfir` CLI** (the verbs)
+drives the **`get_sybers.dfir` Ansible collection** (orchestration), which invokes
+the **`get_sybers_dfir` Python package** (the per-item processing). The original
+`process-*.sh` scripts still ship under `scripts/` and are retired per source as
+each role is proven.
+
 ```
   $DX_DFIR
-    └── scripts/                                      # Processing + emulator deploy/apply/ingest scripts
-    │   │
+    └── python/                                       # get_sybers_dfir package + the dxdfir CLI — the front-end
+    │   └── get_sybers_dfir/                          # processors (zeek/plaso/volatility/evtx/velociraptor/signatures), ingest/, cli.py
+    │   └── man/                                      # dxdfir.1 man page
+    │   └── tests/                                    # pytest unit tests (pure logic, no Docker)
+    │
+    └── ansible/collections/get_sybers.dfir/         # the Ansible collection — orchestration
+    │   └── roles/                                    # one role per source + ingest/deploy roles (adx, sofelk)
+    │   └── playbooks/                                # dfir-process-* / dfir-ingest-* / dfir-deploy-*
+    │
+    └── scripts/                                      # Legacy bash pipeline (process/deploy/apply/ingest) — being retired per #46
     │   └── lib/                                      # Shared bash libraries: docker lifecycle, Kusto REST API
     │
-    └── dev-scripts/                                  # Experimental/one-off helpers, unsupported
+    └── docker/                                       # Container builds — the from-source SOF-ELK stack (sof-elk/)
+    │
+    └── dev-scripts/                                  # Experimental/one-off helpers, unsupported (e.g. the Plaso output module)
     │
     └── kusto/                                        # The analysis backend — offline Azure Data Explorer
-    │   │
     │   └── schema/                                   # Databases, tables, ingestion mappings, MITRE CAR functions
     │
     └── tests/                                        # run-checks.sh — the check harness that gates CI
@@ -65,9 +81,11 @@
             └── velociraptor/                         # Velociraptor collector output (EZ Tools) -> host.VelociraptorJson
 ```
 
-The Splunk-era tree (`splunk/` with its eight apps, `ansible/` with the
-in-container provisioning playbooks) was retired when the SIEM moved to the
-Kusto emulator, and the KAPE automation (`processed/kape/`, the two PowerShell
-scripts) was removed in favour of the planned Velociraptor offline collectors
-running the EZ Tools. All of it survives in git history and on the frozen
+The Splunk-era tree (`splunk/` with its eight apps, and a since-removed
+in-container provisioning `ansible/` — **unrelated to today's
+`get_sybers.dfir` collection** under `ansible/collections/`) was retired when
+the SIEM moved to the Kusto emulator, and the KAPE automation
+(`processed/kape/`, the two PowerShell scripts) was removed in favour of the
+planned Velociraptor offline collectors running the EZ Tools. All of it
+survives in git history and on the frozen
 [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) branch.
