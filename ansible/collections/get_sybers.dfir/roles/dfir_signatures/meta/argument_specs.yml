@@ -1,0 +1,47 @@
+---
+argument_specs:
+  main:
+    short_description: "YARA / Suricata / Hayabusa detection lanes -> JSONL."
+    description:
+      - >-
+        Runs the signature engines over the evidence and writes one <lane>/ folder of
+        detection JSONL under the output dir. As ported to Python here: YARA over loose
+        files, Suricata over PCAPs, Hayabusa over loose Windows Event Logs. Disk-image
+        and memory YARA and disk-image Hayabusa are not yet ported (they live in
+        scripts/process-signatures.sh); such a source notes it and produces nothing.
+        Idempotent: a lane whose output already exists is skipped.
+    options:
+      dfir_signatures_pipeline:
+        type: str
+        required: false
+        default: adx
+        choices: [adx, sofelk]
+        description: "Which backend to target; selects the output destination."
+      dfir_signatures_adx_out_dir:
+        type: str
+        required: false
+        description: "ADX-path output base (default data_store/processed/signatures)."
+      dfir_signatures_sofelk_out_dir:
+        type: str
+        required: false
+        description: "SOF-ELK-path output base (delivered into SOF-ELK by dfir_ingest_sofelk)."
+      dfir_signatures_lanes:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description: "Lanes to run; empty = all. Any of: yara, suricata, hayabusa."
+      dfir_signatures_fetch:
+        type: bool
+        required: false
+        default: false
+        description: "Accepted for parity with the bash script; provisioning is not yet ported to the Python processor (no-op)."
+      dfir_signatures_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_signatures_force:
+        type: bool
+        required: false
+        default: false
+        description: "Regenerate lane outputs that already exist."

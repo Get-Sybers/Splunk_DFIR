@@ -1,0 +1,32 @@
+---
+# dfir_velociraptor: collection ZIPs -> per-artefact JSON. The role GROUPS; the
+# playbook DECIDES. Idempotence (skip collections whose output exists) lives in the
+# Python processor, not in a task's `when:`.
+
+- name: "velociraptor | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_velociraptor_pipeline in ['adx', 'sofelk']
+      - dfir_velociraptor_raw_dir | length > 0
+    fail_msg: >-
+      dfir_velociraptor needs dfir_velociraptor_pipeline (adx|sofelk) and a
+      non-empty dfir_velociraptor_raw_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any files are written.
+- name: "velociraptor | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "velociraptor | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_velociraptor_pipeline == 'adx'
+
+- name: "velociraptor | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_velociraptor_pipeline == 'sofelk'

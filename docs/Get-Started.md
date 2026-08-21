@@ -5,6 +5,27 @@
 > note that the Kusto emulator carries licensing terms you are accepting
 > — [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
+### 🧭 Two ways to drive this
+
+The **`dxdfir` CLI** is the pipeline's front-end (three-layer design — see
+[How It Runs](/README.md#how-it-runs)). The numbered steps below use the underlying
+`process-*.sh` scripts directly — the layer the
+[capability states](/README.md#what-actually-works) were validated with. The CLI
+runs the same flow:
+
+```bash
+pip install ./python     # provides dxdfir (also needs ansible-playbook on PATH)
+dxdfir process plaso     # sources: plaso | zeek | evtx | volatility | velociraptor | signatures
+dxdfir deploy            # stand up the ADX (Kusto) emulator + apply schema
+dxdfir ingest            # load data_store/processed into it
+dxdfir validate          # run the repo check harness
+```
+
+`dxdfir deploy`/`ingest` target the ADX emulator; the SOF-ELK path is
+`dxdfir process <source> --pipeline sofelk`, then the collection's
+`dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks. `man dxdfir` for
+the manual.
+
 ### ⚙️ **Step 1: Setup Environment**
 - **Run setup-environment.sh:**
   ```bash
@@ -40,7 +61,9 @@ _Refer to [📁 Dir-Structure](/docs/Dir-Structure.md) for detailed directory st
 DX_DFIR/scripts/process-log2timeline-Dynamic.sh
 ```
 - Automates forensic analysis of all `.E01` disk images and VMware VM exports using Plaso.
-- Output lands in `data_store/processed/log2timeline/csv/`, with job logs in `logs/`.
+- Output lands in `data_store/processed/log2timeline/jsonl/` (Plaso `json_line`,
+  fanned out into one `host.L2t<Parser>` table per top-level parser on ingest),
+  the `.plaso` databases in `plaso/`, and job logs in `logs/`.
 
 ### 🛜 **Step 4: Process PCAPs with Zeek**
 ```bash
@@ -116,16 +139,19 @@ DX_DFIR/scripts/apply-kusto-schema.sh
 ```bash
 DX_DFIR/scripts/ingest-kusto.sh
 ```
-- Loads `data_store/processed/` into the emulator: Plaso CSV → `host.L2tCsv`,
-  EvtxECmd JSON → `host.EvtxEcmdJson`, Zeek `conn.log` → `network.ZeekConn`.
-- The Velociraptor loader is **not implemented yet** — the table
-  exists, the loader does not. The script says so rather than pretending.
-  (Artefact collection is planned via Velociraptor offline collectors running
-  the EZ Tools; the KAPE path was removed.)
+- Loads `data_store/processed/` into the emulator: Plaso `json_line` fanned out
+  into per-parser `host.L2t<Parser>` tables, EvtxECmd JSON → `host.EvtxEcmdJson`,
+  Zeek `conn` → `network.ZeekConn` (every other Zeek log → the generic
+  `network.Zeek`), Volatility JSONL → `memory.VolatilityJson`, and Velociraptor
+  JSON → `host.VelociraptorJson` (each record wrapped with its `Artefact`/`SourceFile`).
+- The Velociraptor **ingest** loader is wired; what's still partial is the
+  **upstream** collection path — the Velociraptor offline collectors running the
+  EZ Tools (the KAPE replacement) aren't built yet, so in practice there is
+  usually no processed Velociraptor data to load.
 - Ingestion is additive with no fishbucket: re-running duplicates rows. To
   start clean, redeploy (ephemeral default) and re-ingest.
-- `--only l2t|zeek|evtx` limits to one source; `--dry-run` lists without
-  contacting anything.
+- `--only l2t|zeek|evtx|volatility|velociraptor` limits to one source;
+  `--dry-run` lists without contacting anything.
 
 ### 🔎 **Step 9: Query**
 

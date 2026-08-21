@@ -1,0 +1,23 @@
+---
+- name: "ingest-sofelk | deliver processed sofelk output into the watch dir"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.sofelk', '--src-dir', dfir_ingest_sofelk_src_dir, '--target-dir', dfir_ingest_sofelk_target_dir] + (['--force'] if dfir_ingest_sofelk_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_ingest_sofelk_python_path }}"
+  register: dfir_ingest_sofelk_run
+  changed_when: (dfir_ingest_sofelk_run.stdout | from_json).delivered | int > 0
+
+- name: "ingest-sofelk | verify files landed in the watch dir"
+  ansible.builtin.find:
+    paths: "{{ dfir_ingest_sofelk_target_dir }}"
+    recurse: true
+  register: dfir_ingest_sofelk_verify
+
+- name: "ingest-sofelk | assert delivery matched what was found"
+  ansible.builtin.assert:
+    that:
+      - (dfir_ingest_sofelk_run.stdout | from_json).failed | int == 0
+      - dfir_ingest_sofelk_verify.matched | int > 0 or (dfir_ingest_sofelk_run.stdout | from_json).found | int == 0
+    fail_msg: >-
+      sofelk delivery reported failures, or delivered nothing though source files were present.
+    quiet: true

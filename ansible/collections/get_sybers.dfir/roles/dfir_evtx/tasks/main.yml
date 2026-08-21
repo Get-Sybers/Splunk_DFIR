@@ -1,0 +1,34 @@
+---
+# dfir_evtx: .evtx -> EvtxECmd JSON. The role GROUPS; the playbook DECIDES.
+# Idempotence (skip logs whose .json output exists) lives in the Python processor,
+# not in a task's `when:`.
+
+- name: "evtx | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_evtx_pipeline in ['adx', 'sofelk']
+      - dfir_evtx_evtx_dir | length > 0
+      # A release dir is required only in operator mode; bundled mode bakes it in.
+      - dfir_evtx_use_bundled_image | bool or dfir_evtx_evtxecmd_dir | length > 0
+    fail_msg: >-
+      dfir_evtx needs dfir_evtx_pipeline (adx|sofelk), a non-empty dfir_evtx_evtx_dir,
+      and (in operator mode) dfir_evtx_evtxecmd_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "evtx | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "evtx | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_evtx_pipeline == 'adx'
+
+- name: "evtx | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_evtx_pipeline == 'sofelk'

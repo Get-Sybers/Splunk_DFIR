@@ -45,6 +45,7 @@ functions.
 ### 📚 This Page
 
 - [Overview](#overview)
+- [How It Runs](#how-it-runs)
 - [What Actually Works](#what-actually-works)
 - [Before You Run Anything](#before-you-run-anything)
 - [Why This Exists](#why-this-exists)
@@ -78,6 +79,31 @@ instead of a pile of CSVs.
 
 That's the idea. Here's where it honestly stands.
 
+## 🧱 How It Runs
+<a name="how-it-runs"></a>
+
+The pipeline is a three-layer design (epic #46):
+
+- **`dxdfir` CLI** — the front-end (`python/`, Typer): `dxdfir process <source>`,
+  `dxdfir deploy`, `dxdfir ingest`, `dxdfir validate`, `dxdfir list` (`man dxdfir`
+  for the manual).
+- **`get_sybers.dfir` Ansible collection** — orchestration, one role per source,
+  one action per task; the CLI drives it with `ansible-playbook`.
+- **`get_sybers_dfir` Python package** — the per-item processing the roles invoke
+  (also runnable as `python -m get_sybers_dfir.<source>`).
+
+Each processor targets a backend with `--pipeline adx|sofelk`: **ADX** (the Kusto
+emulator, default) or **SOF-ELK** (`docker/sof-elk/`). `dxdfir deploy`/`ingest`
+cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
+`dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
+
+The original `process-*.sh` scripts still ship under `scripts/` — they are the
+layer the capabilities below were actually exercised with, and are retired per
+source as each role's full path is proven. The CLI additionally needs
+`ansible-playbook` on `PATH` and the package installed with `pip install ./python`
+(which provides the `dxdfir` entry point and its one dependency, Typer);
+`setup-environment.sh` does not install these yet.
+
 ## 🧪 What Actually Works
 <a name="what-actually-works"></a>
 
@@ -88,13 +114,18 @@ and interfaces may still change. What the current line buys you over the
 that the defects below are known and written down rather than waiting to be
 discovered.
 
+The **Notes** name the `process-*.sh` script that does the work; each source is
+also runnable as `dxdfir process <source>` (which drives the matching
+`dfir_<source>` role — same container, same output). The ✅/⚠️ states reflect
+hand-runs of the scripts, not the role path or any automated test.
+
 | Capability | State | Notes |
 |:---|:---|:---|
 | Disk images → Plaso timeline JSON | ✅ Works | `process-log2timeline-Dynamic.sh`; `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → per-parser `host.L2t<Parser>` tables (routed by top-level Plaso parser; `L2tAll()` unions them) |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
-| Raw EVTX → EvtxECmd JSON | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh`; operator-supplied EvtxECmd (MIT). **Never run against a real event log** |
+| Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, feeding `CarUserSession`/`CarProcess`/`CarService` (real 4624/4688/7045) |
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
 | Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
@@ -211,6 +242,13 @@ releases vendored substantially more Apache-2.0 code (Splunk Security Content
 lookups, splunk-ansible playbooks — since retired with the Splunk stack, but
 still in git history). Matching that licence keeps the project compatible with
 everything it has ever redistributed.
+
+**Mixed licensing.** The repository root is Apache-2.0 (above). The pipeline code
+added in the #46 rewrite is offered under the more permissive **MIT** licence as
+self-contained, reusable components: the `get_sybers_dfir` Python package
+(`python/`, per its `pyproject.toml`) and the `get_sybers.dfir` Ansible collection
+(`ansible/collections/`, per `galaxy.yml` and each role's `meta/main.yml`). MIT and
+Apache-2.0 are compatible; each subtree carries its own declared licence.
 
 Third-party components, the tools this pipeline drives, and the licensing
 obligations that fall on *you* rather than on this code are documented in

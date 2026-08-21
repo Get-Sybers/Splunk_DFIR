@@ -1,0 +1,211 @@
+.TH DXDFIR 1 "2026-08-15" "get_sybers_dfir 0.1.0" "DX_DFIR Manual"
+.SH NAME
+dxdfir \- DX_DFIR forensic processing pipeline front-end
+.SH SYNOPSIS
+.B dxdfir
+.RI [ --version ]
+.I COMMAND
+.RI [ ARGS ...]
+.br
+.B dxdfir process
+.I SOURCE
+.RB [ --pipeline
+.IR adx | sofelk ]
+.RB [ --force ]
+.RB [ --repo-root
+.IR PATH ]
+.RB [ --extra-var
+.IR KEY=VALUE ]...
+.br
+.B dxdfir ingest
+.RB [ --only
+.IR SOURCE ]
+.RB [ --force ]
+.RB [ --dry-run ]
+.br
+.B dxdfir deploy
+.RB [ --persist ]
+.RB [ --port
+.IR PORT ]
+.br
+.B dxdfir validate
+.br
+.B dxdfir list
+.SH DESCRIPTION
+.B dxdfir
+is the user-facing front-end of the DX_DFIR pipeline \(em an offline,
+container-based digital-forensics workflow that turns raw evidence (packet
+captures, disk images, memory, Windows event logs, Velociraptor collections) into
+normalised JSON and detection events for the analysis backend.
+.PP
+It is the top of a three-layer design: this command holds the verbs, the
+.B get_sybers.dfir
+Ansible collection holds the orchestration (one role per source, one action per
+task), and the
+.B get_sybers_dfir
+Python package holds the heavy per-item processing the roles invoke.
+.PP
+.B dxdfir process
+drives a source's role with
+.BR ansible-playbook (1)
+\(em preflight, then process, then verify \(em and the role's single action calls
+.RB \(lq python \-m get_sybers_dfir. SOURCE \(rq
+for the tight loop.
+.B ingest
+and
+.B deploy
+likewise drive roles \(em
+.B dfir_ingest_adx
+and
+.B dfir_deploy_adx
+\(em while
+.B validate
+fronts the repository's check harness
+.RB ( tests/run-checks.sh ).
+.SH COMMANDS
+.TP
+.BI "process " SOURCE
+Process one evidence source. \fISOURCE\fR is one of
+.BR zeek ", " velociraptor ", " evtx ", " volatility ", " plaso ", " signatures .
+Idempotent: inputs that already have output are skipped (use
+.B --force
+to reprocess).
+.TP
+.B ingest
+Load processed output into the ADX (Kusto) emulator by driving the
+.B dfir_ingest_adx
+role. Idempotent: an in-DB ledger records every loaded file, so a re-run loads
+only new files (use
+.B --force
+to re-ingest).
+.TP
+.B deploy
+Deploy the ADX (Kusto) emulator and apply the schema by driving the
+.B dfir_deploy_adx
+role.
+.TP
+.B validate
+Run the repository check harness (fronts
+.IR tests/run-checks.sh ).
+.TP
+.B list
+List the evidence sources
+.B process
+accepts.
+.SH OPTIONS
+.SS Global
+.TP
+.B --version
+Print the version and exit.
+.TP
+.B --help
+Show help for the command and exit.
+.SS process
+.TP
+.BR --pipeline ", " -p " " \fIadx\fR|\fIsofelk\fR
+Backend to target; selects the output destination. Default:
+.BR adx .
+.TP
+.B --force
+Reprocess inputs that already have output.
+.TP
+.BI --repo-root " PATH"
+DX_DFIR repository root. Auto-detected otherwise (see
+.BR ENVIRONMENT ).
+.TP
+.BR --extra-var ", " -e " " \fIKEY=VALUE\fR
+Pass an extra Ansible variable through to the role; repeatable. Use it to override
+a role default, e.g.
+.RB \(lq -e\  dfir_zeek_pcap_dir=/evidence/pcaps \(rq
+or
+.RB \(lq -e\  \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq \(rq.
+.SS deploy
+.TP
+.B --persist
+Persist the emulator's data (opt-in; it is ephemeral by default).
+.TP
+.BI --port " PORT"
+Emulator port override.
+.TP
+.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
+As for
+.B process
+above; use
+.B -e
+to override role variables (e.g.
+.IR dfir_deploy_adx_host ).
+.SS ingest
+.TP
+.BI --only " SOURCE"
+Load one source only:
+.BR l2t ", " zeek ", " evtx ", " volatility ", " velociraptor .
+.TP
+.B --force
+Re-ingest files already recorded in the ledger (additive; duplicates rows).
+.TP
+.B --dry-run
+List what would be loaded; contact nothing.
+.TP
+.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
+As for
+.B process
+above.
+.SH ENVIRONMENT
+.TP
+.B DFIR_REPO_ROOT
+Repository root, used when
+.B --repo-root
+is not given. If neither is set, the repo is found by walking up from the current
+directory, then from the installed package's location.
+.TP
+.B ANSIBLE_ROLES_PATH
+Set by
+.BR process ", " ingest " and " deploy
+to the collection's roles directory so the roles resolve without installing the
+collection.
+.SH EXIT STATUS
+.B dxdfir
+exits
+.B 0
+on success and propagates the exit status of the underlying
+.BR ansible-playbook (1)
+run or script on failure;
+.B 2
+for a usage/lookup error (e.g. the repo or a playbook could not be found) and
+.B 127
+if a required tool is not on
+.BR PATH .
+.SH EXAMPLES
+.TP
+Process packet captures for the ADX backend:
+.B dxdfir process zeek --pipeline adx
+.TP
+Reprocess memory images, overriding the input directory:
+.B dxdfir process volatility --force -e dfir_volatility_memory_dir=/evidence/mem
+.TP
+Run only the YARA signature lane:
+.B dxdfir process signatures -e \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq
+.TP
+Stand up the emulator, then load Zeek output:
+.B dxdfir deploy && dxdfir ingest --only zeek
+.SH FILES
+.TP
+.I ansible/collections/get_sybers.dfir/
+The Ansible collection driven by
+.BR "dxdfir process" .
+.TP
+.I python/get_sybers_dfir/
+The processing package (also runnable as
+.RB \(lq python\ -m\ get_sybers_dfir. SOURCE \(rq).
+.TP
+.I data_store/
+Raw evidence and processed output (gitignored).
+.SH SEE ALSO
+.BR ansible-playbook (1),
+.BR docker (1).
+The processors run standalone as
+.RB \(lq python\ -m\ get_sybers_dfir. SOURCE \ --help\(rq.
+.SH AUTHOR
+Get-Sybers.
+.SH LICENSE
+MIT.

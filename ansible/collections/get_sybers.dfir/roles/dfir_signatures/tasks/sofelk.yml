@@ -1,0 +1,27 @@
+---
+# SOF-ELK ingests Suricata EVE (and others) via its own Logstash pipeline; the
+# detection work is identical, only the destination differs. Delivery INTO SOF-ELK's
+# watch dir is tracked in #45.
+- name: "signatures-sofelk | run the detection lanes into JSONL"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.signatures', '--output-dir', dfir_signatures_sofelk_out_dir, '--repo-root', dfir_signatures_repo_root] + (dfir_signatures_lanes | map('regex_replace', '^(.+)$', '--only=\\1') | list) + (['--fetch'] if dfir_signatures_fetch | bool else []) + (['--force'] if dfir_signatures_force | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_signatures_python_path }}"
+  register: dfir_signatures_sofelk_run
+  changed_when: (dfir_signatures_sofelk_run.stdout | from_json).processed | int > 0
+
+- name: "signatures-sofelk | verify detection JSONL on disk"
+  ansible.builtin.find:
+    paths: "{{ dfir_signatures_sofelk_out_dir }}"
+    patterns: "*.jsonl"
+    recurse: true
+  register: dfir_signatures_sofelk_verify
+
+- name: "signatures-sofelk | assert no lane failed and output matches what ran"
+  ansible.builtin.assert:
+    that:
+      - (dfir_signatures_sofelk_run.stdout | from_json).failed | int == 0
+      - dfir_signatures_sofelk_verify.matched | int > 0 or (dfir_signatures_sofelk_run.stdout | from_json).processed | int == 0
+    fail_msg: >-
+      a signature lane reported failures, or produced detections that are not on disk.
+    quiet: true

@@ -1,0 +1,32 @@
+---
+# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+# Per-lane inputs (rules, pcaps, evtx, images) are optional — each lane notes and
+# skips when its inputs/tools are missing — so only the repo anchor + docker + the
+# module are asserted here.
+
+- name: "signatures-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_signatures_docker
+  changed_when: false
+
+- name: "signatures-preflight | stat the repo root"
+  ansible.builtin.stat:
+    path: "{{ dfir_signatures_repo_root }}/data_store"
+  register: dfir_signatures_ds_stat
+
+- name: "signatures-preflight | the data_store anchor exists"
+  ansible.builtin.assert:
+    that:
+      - dfir_signatures_ds_stat.stat.exists
+      - dfir_signatures_ds_stat.stat.isdir is defined and dfir_signatures_ds_stat.stat.isdir
+    fail_msg: >-
+      {{ dfir_signatures_repo_root }}/data_store is missing — the lanes derive their
+      inputs from it.
+    quiet: true
+
+- name: "signatures-preflight | the get_sybers_dfir.signatures module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.signatures"
+  environment:
+    PYTHONPATH: "{{ dfir_signatures_python_path }}"
+  register: dfir_signatures_import
+  changed_when: false

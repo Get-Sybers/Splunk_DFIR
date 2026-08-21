@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dfir_signatures_pipeline: adx
+    dfir_signatures_repo_root: /tmp/dfir_signatures_molecule/repo
+    dfir_signatures_adx_out_dir: /tmp/dfir_signatures_molecule/repo/data_store/processed/signatures
+    dfir_signatures_lanes: [yara]
+    # the fake repo has no python package — point PYTHONPATH at the real repo.
+    dfir_signatures_python_path: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
+  tasks:
+    - name: "converge | run dfir_signatures (ADX, yara lane)"
+      ansible.builtin.include_role:
+        name: dfir_signatures

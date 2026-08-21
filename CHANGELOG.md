@@ -10,6 +10,34 @@ script names, sourcetypes, field names, and app layouts included.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-21
+
+### Changed — pipeline rebuilt as the `dxdfir` CLI + `get_sybers.dfir` collection (#45/#46)
+
+The headline of this release. The pipeline is now a three-layer stack — the
+**`dxdfir` CLI** → the **`get_sybers.dfir` Ansible collection** (one role per
+source, one action per task) → the **`get_sybers_dfir` Python package** — driving
+two backends via `--pipeline adx|sofelk`.
+
+- **Ten per-source roles + processors**: `dfir_zeek`, `dfir_volatility`,
+  `dfir_velociraptor`, `dfir_evtx`, `dfir_plaso`, `dfir_signatures`,
+  `dfir_ingest_adx`, `dfir_ingest_sofelk`, `dfir_deploy_adx`, `dfir_deploy_sofelk`
+  — each role wraps a `python -m get_sybers_dfir.<source>` processor.
+- **`dxdfir` CLI** (Typer): `process` / `ingest` / `deploy` / `validate`, with a
+  man page and 80+ unit tests.
+- **Dual output**: every processor targets ADX (Kusto emulator) or SOF-ELK.
+- **From-source SOF-ELK image** (`docker/sof-elk/`) so `dfir_deploy_sofelk` has a
+  real image to run.
+- **Bundled `dfir/evtxecmd` image** (`docker/evtxecmd/`): one pinnable image for
+  the EvtxECmd path (DLL + Maps/ baked in), validated on 103 real LoneWolf event
+  logs → `host.EvtxEcmdJson` (55,638 rows) feeding CAR
+  `user_session`/`process`/`service`.
+- ADX ingest is idempotent via an in-DB ledger; a processed file vanishing
+  mid-read is tolerated.
+
+> The legacy `process-*.sh` scripts remain during per-source retirement; the roles
+> are the supported entry point.
+
 ### Added — deeper Linux CAR coverage (process / service / user_session)
 
 - **`CarProcess()` gains a Linux branch** from syslog cron `CMD` executions
@@ -713,5 +741,7 @@ when someone ran it. They are listed first, because how they got in matters.
   make that deliberate — deferred, because it is a decision about which version
   you want to run.
 
-[Unreleased]: https://github.com/Get-Sybers/DX_DFIR/compare/v0.2.0-beta...HEAD
+[Unreleased]: https://github.com/Get-Sybers/DX_DFIR/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Get-Sybers/DX_DFIR/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Get-Sybers/DX_DFIR/releases/tag/v0.1.0
 [0.2.0-beta]: https://github.com/Get-Sybers/DX_DFIR/releases/tag/v0.2.0-beta

@@ -1,0 +1,59 @@
+---
+- name: "deploy-adx | pull the emulator image"
+  community.docker.docker_image:
+    name: "{{ dfir_deploy_adx_image }}"
+    source: pull
+    force_source: false
+  register: dfir_deploy_adx_pull
+  retries: 3
+  delay: 10
+  until: dfir_deploy_adx_pull is succeeded
+
+- name: "deploy-adx | run the emulator container (localhost-only, ACCEPT_EULA=Y)"
+  community.docker.docker_container:
+    name: "{{ dfir_deploy_adx_container }}"
+    image: "{{ dfir_deploy_adx_image }}"
+    pull: never
+    state: started
+    detach: true
+    tty: true
+    memory: "{{ dfir_deploy_adx_memory }}"
+    ports:
+      - "{{ dfir_deploy_adx_host }}:{{ dfir_deploy_adx_port }}:8080"
+    env:
+      ACCEPT_EULA: "Y"
+
+- name: "deploy-adx | wait for the engine to answer"
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -m
+      - get_sybers_dfir.ingest
+      - --ping
+      - --host
+      - "{{ dfir_deploy_adx_host }}"
+      - --port
+      - "{{ dfir_deploy_adx_port | string }}"
+  environment:
+    PYTHONPATH: "{{ dfir_deploy_adx_python_path }}"
+  register: dfir_deploy_adx_ready
+  changed_when: false
+  retries: 30
+  delay: 5
+  until: dfir_deploy_adx_ready.rc == 0
+
+- name: "deploy-adx | create databases + apply the schema"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.deploy', '--schema-dir', dfir_deploy_adx_schema_dir, '--host', dfir_deploy_adx_host, '--port', dfir_deploy_adx_port | string, '--container', dfir_deploy_adx_container] + (['--persist'] if dfir_deploy_adx_persist | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_deploy_adx_python_path }}"
+  register: dfir_deploy_adx_schema
+  changed_when: (dfir_deploy_adx_schema.stdout | from_json).created_dbs | int > 0
+
+- name: "deploy-adx | assert the schema applied cleanly"
+  ansible.builtin.assert:
+    that:
+      - (dfir_deploy_adx_schema.stdout | from_json).failed | int == 0
+    fail_msg: >-
+      schema apply reported failures: {{ (dfir_deploy_adx_schema.stdout | from_json).errors }}
+    quiet: true
