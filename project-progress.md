@@ -44,7 +44,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ⚠️     | evtx → json     | ✅           |     ✅ (`process`/`user_session`/`service`) |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
 | Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
@@ -105,8 +105,10 @@ Things that are broken or unsafe right now.
 - **The emulator has no security features at all** — no auth, no access
   control, plaintext HTTP, no encryption at rest. The `127.0.0.1` binding is
   the only control; see [SECURITY.md](/SECURITY.md).
-- **Raw EVTX processing is built but unverified.** `process-evtx-EvtxECmd.sh`
-  has never been run against a real event log.
+- ~~**Raw EVTX processing is built but unverified.**~~ **Resolved.** The `dfir_evtx`
+  role ran on **103 real event logs** carved from the LoneWolf image (bundled
+  `dfir/evtxecmd` image), 55,638 rows into `host.EvtxEcmdJson`, feeding
+  `CarUserSession`/`CarProcess`/`CarService` from real 4624/4688/7045.
 
 ---
 
@@ -147,7 +149,8 @@ Things that are broken or unsafe right now.
   `registry` CAR object when it lands. If the collectors emit EZ-tool CSV,
   the answer is typed per-artefact tables or JSON conversion — a CSV mapping
   cannot populate a `dynamic` column.
-- Verify `process-evtx-EvtxECmd.sh` against a real event log.
+- ✅ Verify the EvtxECmd path against a real event log — done (see Known
+  Limitations; 103 real LoneWolf logs → `host.EvtxEcmdJson` → CAR).
 
 ### 🔹 **Environment & Dependencies**
 - Create a guide for **setting up the development environment**.

@@ -125,7 +125,7 @@ hand-runs of the scripts, not the role path or any automated test.
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
-| Raw EVTX → EvtxECmd JSON | ⚠️ Built, untested | `process-evtx-EvtxECmd.sh`; operator-supplied EvtxECmd (MIT). **Never run against a real event log** |
+| Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, feeding `CarUserSession`/`CarProcess`/`CarService` (real 4624/4688/7045) |
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
 | Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |

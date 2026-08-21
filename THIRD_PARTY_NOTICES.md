@@ -110,11 +110,12 @@ repository.**
 | [Plaso / log2timeline](https://github.com/log2timeline/plaso) | `log2timeline/plaso:latest` container | Apache-2.0 | None |
 | [Zeek](https://zeek.org/) | `zeek/zeek:latest` container | BSD-3-Clause | None |
 | [Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview) | `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` container — **the analysis backend** | **Proprietary** — Microsoft Software License Terms | See below |
-| [EvtxECmd](https://github.com/EricZimmerman/evtx) | `scripts/process-evtx-EvtxECmd.sh` runs operator-supplied `EvtxECmd.dll` in a .NET container | **MIT** | None — no commercial-use restriction |
+| [EvtxECmd](https://github.com/EricZimmerman/evtx) | `get_sybers_dfir.evtx` runs `EvtxECmd.dll` in a .NET container — either the bundled `dfir/evtxecmd` image (`docker/evtxecmd`, fetches the release at build time) or an operator-supplied release | **MIT** | None — no commercial-use restriction |
 | [Velociraptor](https://github.com/Velocidex/velociraptor) | JSON output normalised by `dev-scripts/`; Kusto loader not yet implemented | AGPL-3.0 | None — output ingestion does not trigger AGPL |
 
 No tool binaries are vendored in this repository — every tool above is either
-pulled as a container image or supplied by the operator.
+pulled as a container image, fetched at image-build time from its upstream release
+(e.g. `docker/evtxecmd`), or supplied by the operator.
 
 **Formerly invoked: KAPE** (Kroll Artifact Parser and Extractor). The KAPE
 PowerShell automation was removed in favour of the planned **Velociraptor

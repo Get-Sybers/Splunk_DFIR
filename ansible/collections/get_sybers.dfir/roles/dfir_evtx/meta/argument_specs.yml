@@ -4,10 +4,14 @@ argument_specs:
     short_description: "Windows Event Logs (.evtx) -> EvtxECmd normalised JSON."
     description:
       - >-
-        Discovers .evtx under dfir_evtx_evtx_dir, runs EvtxECmd (via the dotnet
-        container) per log, and writes <base>_EvtxECmd_Output.json (+ .xml sidecar)
-        grouped by the source sub-dir (host). Idempotent: a log whose .json output
-        already exists is skipped. EvtxECmd is operator-supplied.
+        Discovers .evtx under dfir_evtx_evtx_dir, runs EvtxECmd (in a container) per
+        log, and writes <base>_EvtxECmd_Output.json (+ .xml sidecar) grouped by the
+        source sub-dir (host). Idempotent: a log whose .json output already exists is
+        skipped.
+      - >-
+        EvtxECmd is supplied one of two ways (dfir_evtx_use_bundled_image): the
+        bundled dfir/evtxecmd image (docker/evtxecmd) that bakes the DLL + Maps/, or
+        an operator-supplied .NET release mounted into a stock runtime image.
     options:
       dfir_evtx_pipeline:
         type: str
@@ -27,6 +31,24 @@ argument_specs:
         type: str
         required: false
         description: "SOF-ELK-path output dir (delivered into SOF-ELK by dfir_ingest_sofelk)."
+      dfir_evtx_use_bundled_image:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Use the bundled dfir/evtxecmd image (DLL + Maps/ baked in). When false,
+          mount an operator-supplied release from dfir_evtx_evtxecmd_dir instead.
+      dfir_evtx_bundled_image:
+        type: str
+        required: false
+        default: "dfir/evtxecmd:latest"
+        description: "The bundled EvtxECmd image tag (built from docker/evtxecmd)."
+      dfir_evtx_image:
+        type: str
+        required: false
+        description: >-
+          The image the processor runs; defaults to the bundled or operator image
+          per dfir_evtx_use_bundled_image. Override to pin a digest.
       dfir_evtx_evtxecmd_dir:
         type: str
         required: false
@@ -34,8 +56,10 @@ argument_specs:
       dfir_evtx_dotnet_image:
         type: str
         required: false
-        default: "mcr.microsoft.com/dotnet/sdk:8.0"
-        description: "dotnet runtime image that supplies .NET for EvtxECmd."
+        default: "mcr.microsoft.com/dotnet/runtime:9.0"
+        description: >-
+          Operator-supplied mode: the stock .NET runtime image the release mounts
+          into. Must be a .NET 9.x runtime (EvtxECmd's current build targets net9.0).
       dfir_evtx_python_path:
         type: str
         required: false
