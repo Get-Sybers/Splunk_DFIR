@@ -28,9 +28,11 @@ def _fake_repo(tmp_path: Path) -> Path:
 
 
 def test_version():
+    from get_sybers_dfir import __version__
     r = runner.invoke(cli.app, ["--version"])
     assert r.exit_code == 0
-    assert "0.1.0" in r.stdout
+    # assert against the package version so a bump doesn't require touching this test
+    assert __version__ in r.stdout
 
 
 def test_list_shows_all_sources():

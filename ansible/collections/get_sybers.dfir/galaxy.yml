@@ -16,7 +16,9 @@ tags:
   - forensics
   - security
 dependencies:
-  community.docker: ">=3.10.3"
+  # Bounded below the next major so a Galaxy install can't pull a breaking 4.x;
+  # requirements.yml pins the exact tested version (3.10.3) for reproducible installs.
+  community.docker: ">=3.10.3,<4.0.0"
 build_ignore:
   - "roles/*/molecule"
   - "*.pyc"

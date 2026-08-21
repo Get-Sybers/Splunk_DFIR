@@ -5,7 +5,8 @@ hayabusa}.sh`` lanes and ``lib/disk-image.sh``). Runs the three signature engine
 over the evidence and lands their native events as ingest-ready JSON Lines under
 ``<output_dir>/<lane>/``:
 
-    yara       files / mounted disk images / memory (Volatility vadyarascan)
+    yara       loose files (the mounted-disk-image and memory/vadyarascan sources
+               are not yet ported — those record a note only; see yara.py)
     suricata   PCAPs -> Suricata EVE alerts (+context event types)
     hayabusa   Windows Event Logs (.evtx) -> Sigma detection timeline
 
