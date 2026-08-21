@@ -1,17 +1,23 @@
 # EvtxECmd
 
-Extract the published EvtxECmd release here. Used by
-[`scripts/process-evtx-EvtxECmd.sh`](/scripts/process-evtx-EvtxECmd.sh) to turn
-raw `.evtx` files into something Splunk can index.
+> **You usually don't need this directory.** The `dfir_evtx` role defaults to the
+> **bundled** [`dfir/evtxecmd`](/docker/evtxecmd) image, which bakes `EvtxECmd.dll`
+> + `Maps/` for you — `docker build -t dfir/evtxecmd:latest docker/evtxecmd`. This
+> dir is the **operator-supplied** fallback, used only when you run with
+> `dfir_evtx_use_bundled_image=false`.
+
+Extract the published EvtxECmd release here for the operator-supplied path. The
+`get_sybers_dfir.evtx` processor mounts it read-only into a stock .NET runtime
+container to turn raw `.evtx` into normalised JSON.
 
 ## Get it
 
 - <https://github.com/EricZimmerman/evtx/releases>
 - or <https://ericzimmerman.github.io/>
 
-Take the **.NET** build — the script runs it on Linux inside a
-`mcr.microsoft.com/dotnet/sdk` container, so `EvtxECmd.dll` is what's needed,
-not `EvtxECmd.exe`.
+Take the **.NET** build — it runs on Linux inside a
+`mcr.microsoft.com/dotnet/runtime:9.0` container (EvtxECmd's current build targets
+net9.0), so `EvtxECmd.dll` is what's needed, not `EvtxECmd.exe`.
 
 Expected layout (either works):
 

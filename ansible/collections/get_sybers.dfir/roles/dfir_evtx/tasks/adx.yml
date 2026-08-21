@@ -1,7 +1,7 @@
 ---
 - name: "evtx-adx | parse .evtx into EvtxECmd JSON"
   ansible.builtin.command:
-    argv: "{{ ['python3', '-m', 'get_sybers_dfir.evtx', '--evtx-dir', dfir_evtx_evtx_dir, '--out-dir', dfir_evtx_adx_out_dir, '--evtxecmd-dir', dfir_evtx_evtxecmd_dir, '--dotnet-image', dfir_evtx_dotnet_image] + (['--force'] if dfir_evtx_force | bool else []) }}"
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.evtx', '--evtx-dir', dfir_evtx_evtx_dir, '--out-dir', dfir_evtx_adx_out_dir, '--image', dfir_evtx_image] + ([] if dfir_evtx_use_bundled_image | bool else ['--evtxecmd-dir', dfir_evtx_evtxecmd_dir]) + (['--force'] if dfir_evtx_force | bool else []) }}"
   environment:
     PYTHONPATH: "{{ dfir_evtx_python_path }}"
   register: dfir_evtx_adx_run

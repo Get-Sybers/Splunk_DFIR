@@ -8,10 +8,11 @@
     that:
       - dfir_evtx_pipeline in ['adx', 'sofelk']
       - dfir_evtx_evtx_dir | length > 0
-      - dfir_evtx_evtxecmd_dir | length > 0
+      # A release dir is required only in operator mode; bundled mode bakes it in.
+      - dfir_evtx_use_bundled_image | bool or dfir_evtx_evtxecmd_dir | length > 0
     fail_msg: >-
-      dfir_evtx needs dfir_evtx_pipeline (adx|sofelk), a non-empty dfir_evtx_evtx_dir
-      and dfir_evtx_evtxecmd_dir.
+      dfir_evtx needs dfir_evtx_pipeline (adx|sofelk), a non-empty dfir_evtx_evtx_dir,
+      and (in operator mode) dfir_evtx_evtxecmd_dir.
     quiet: true
   tags: [always]
 

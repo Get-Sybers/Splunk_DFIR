@@ -9,11 +9,27 @@ dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
 dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/other_raw_data/WinEvt"
 dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
 dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
-# EvtxECmd is operator-supplied (not vendored — we don't redistribute other
-# people's builds). Drop the .NET release, incl. Maps/, under this dir.
+
+# How EvtxECmd is supplied — two modes:
+#   bundled  (default): the dfir/evtxecmd image (docker/evtxecmd) bakes EvtxECmd.dll
+#            + Maps/. Nothing to place by hand; build it once with
+#            `docker build -t dfir/evtxecmd:latest docker/evtxecmd`.
+#   operator: set dfir_evtx_use_bundled_image=false and drop the .NET EvtxECmd
+#            release (incl. Maps/) under dfir_evtx_evtxecmd_dir. EvtxECmd is MIT but
+#            we don't vendor it; the operator supplies the build.
+dfir_evtx_use_bundled_image: true
+dfir_evtx_bundled_image: "dfir/evtxecmd:latest"
+# Operator-supplied mode only: the release dir, and the stock .NET runtime image
+# that mounts it. EvtxECmd's current build targets net9.0, so the runtime is 9.x
+# (the old sdk:8.0 default silently fails against today's release).
 dfir_evtx_evtxecmd_dir: "{{ dfir_evtx_repo_root }}/data_store/dependencies/evtxecmd"
-# EvtxECmd targets .NET; this image supplies the runtime on Linux.
-dfir_evtx_dotnet_image: "mcr.microsoft.com/dotnet/sdk:8.0"
+dfir_evtx_dotnet_image: "mcr.microsoft.com/dotnet/runtime:9.0"
+
+# The image the processor actually runs — bundled or the mount-into-runtime one.
+# `| bool` so the string extra-var form (-e dfir_evtx_use_bundled_image=false) is
+# read the same way here as in every task (a bare non-empty string is Jinja-truthy).
+dfir_evtx_image: "{{ dfir_evtx_bundled_image if dfir_evtx_use_bundled_image | bool else dfir_evtx_dotnet_image }}"
+
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_evtx_python_path: "{{ dfir_evtx_repo_root }}/python"
 dfir_evtx_force: false
