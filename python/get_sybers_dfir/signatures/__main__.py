@@ -17,7 +17,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo-root", required=True, help="repo root (lane input/dep defaults hang off it)")
     ap.add_argument("--only", action="append", choices=list(LANES),
                     help="run only this lane (repeatable); default all")
-    ap.add_argument("--fetch", action="store_true", help="provision rules/binaries when online")
+    ap.add_argument("--fetch", action="store_true",
+                    help="accepted for parity with the bash lanes; provisioning is "
+                         "not yet implemented (a lane missing its deps records a note)")
     ap.add_argument("--force", action="store_true", help="regenerate outputs that already exist")
     args = ap.parse_args(argv)
 

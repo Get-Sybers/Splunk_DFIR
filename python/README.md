@@ -26,7 +26,7 @@ dxdfir ingest --only zeek               # load processed output into the ADX emu
 dxdfir deploy                           # stand up + schema-load the emulator
 dxdfir validate                         # run the check harness
 dxdfir list                             # list processable sources
-man dxdfir                              # the manual (man/dxdfir.1)
+man dxdfir                              # the manual (python/man/dxdfir.1)
 ```
 `process` drives the collection with `ansible-playbook` (the role's one action calls
 the matching `python -m get_sybers_dfir.<source>` for the tight loop). `ingest` and
@@ -37,7 +37,7 @@ auto-detected (or pass `--repo-root` / `$DFIR_REPO_ROOT`).
 ## Install
 ```bash
 pip install ./python          # provides the `dxdfir` entry point + the package
-install -Dm644 man/dxdfir.1 ~/.local/share/man/man1/dxdfir.1   # optional: man page
+install -Dm644 python/man/dxdfir.1 ~/.local/share/man/man1/dxdfir.1   # optional: man page
 ```
 In-repo runs need no install — set `PYTHONPATH=python` (the roles do this via
 `dfir_<source>_python_path`). Without installing the man page, read it directly with
