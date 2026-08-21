@@ -1,0 +1,32 @@
+---
+# dfir_plaso: disk images / VM exports -> enriched Plaso JSONL. The role GROUPS; the
+# playbook DECIDES. Idempotence (skip images with a .plaso db + recorded output)
+# lives in the Python processor, not in a task's `when:`.
+
+- name: "plaso | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_plaso_pipeline in ['adx', 'sofelk']
+      - dfir_plaso_input_dir | length > 0
+    fail_msg: >-
+      dfir_plaso needs dfir_plaso_pipeline (adx|sofelk) and a non-empty
+      dfir_plaso_input_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "plaso | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# Pipeline selection is a decision — it sits on the include, never on an action.
+- name: "plaso | ADX pipeline"
+  ansible.builtin.include_tasks: adx.yml
+  when: dfir_plaso_pipeline == 'adx'
+
+- name: "plaso | SOF-ELK pipeline"
+  ansible.builtin.include_tasks: sofelk.yml
+  when: dfir_plaso_pipeline == 'sofelk'

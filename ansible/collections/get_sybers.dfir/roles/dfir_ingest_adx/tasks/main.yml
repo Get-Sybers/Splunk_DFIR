@@ -1,0 +1,26 @@
+---
+# dfir_ingest_adx: load data_store/processed into the ADX emulator. Idempotence
+# (skip files already in the in-DB ledger) lives in the Python loader, not in a
+# task's `when:`.
+
+- name: "ingest-adx | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_ingest_adx_processed_dir | length > 0
+      - dfir_ingest_adx_only in ['', 'l2t', 'zeek', 'evtx', 'volatility', 'velociraptor']
+    fail_msg: >-
+      dfir_ingest_adx needs a non-empty dfir_ingest_adx_processed_dir; dfir_ingest_adx_only
+      may only be one of l2t/zeek/evtx/volatility/velociraptor (or empty for all).
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any ingest.
+- name: "ingest-adx | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+- name: "ingest-adx | load processed data into the emulator"
+  ansible.builtin.include_tasks: ingest.yml

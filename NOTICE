@@ -9,6 +9,11 @@ lookups), are in THIRD_PARTY_NOTICES.md. Formerly vendored components remain
 in this repository's git history, and their attributions continue to apply to
 anyone working from an older commit.
 
+The get_sybers_dfir Python package (python/) and the get_sybers.dfir Ansible
+collection (ansible/collections/) are licensed MIT, as declared in their
+pyproject.toml, galaxy.yml and role meta/main.yml files. The repository root is
+otherwise Apache-2.0 (see LICENSE).
+
 --------------------------------------------------------------------------------
 MITRE Cyber Analytics Repository (CAR)
 --------------------------------------------------------------------------------

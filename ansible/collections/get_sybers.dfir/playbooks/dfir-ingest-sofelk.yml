@@ -1,0 +1,10 @@
+---
+# The playbook holds the decisions; the role groups, the tasks act.
+- name: "DFIR | deliver processed output into SOF-ELK's watch dir"
+  hosts: "{{ dfir_hosts | default('localhost') }}"
+  connection: "{{ dfir_connection | default('local') }}"
+  gather_facts: true
+  tasks:
+    - name: "dfir-ingest-sofelk | run the sofelk delivery role"
+      ansible.builtin.include_role:
+        name: dfir_ingest_sofelk

@@ -5,6 +5,15 @@ for **deploying, schema-loading and ingesting into the Kusto emulator** — the
 DX_DFIR pipeline. Host artefacts are collected with **Velociraptor offline
 collectors running the EZ Tools** (replacing the removed KAPE automation).
 
+> **These scripts are the legacy layer.** The pipeline's front-end is now the
+> **`dxdfir` CLI** driving the **`get_sybers.dfir` Ansible collection** (one role
+> per source) — see [How It Runs](/README.md#how-it-runs). Each `process-*.sh`
+> below has a matching `dfir_<source>` role (`dxdfir process <source>`); the
+> deploy/apply/ingest scripts map to the `dfir_deploy_adx` / `dfir_ingest_adx`
+> roles (`dxdfir deploy` / `dxdfir ingest`). Scripts are retired per source as each
+> role's full path is proven (epic #46); until then both are available, and this
+> page documents the scripts.
+
 ---
 
 ## 📂 Processing scripts

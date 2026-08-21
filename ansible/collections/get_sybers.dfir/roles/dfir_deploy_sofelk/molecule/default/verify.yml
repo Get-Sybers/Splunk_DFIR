@@ -1,0 +1,18 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "molecule-verify | read the stack state"
+      community.docker.docker_compose_v2:
+        project_src: "{{ (playbook_dir + '/../../../../../../../docker/sof-elk') | realpath }}"
+        env_files: [/tmp/dfir_deploy_sofelk_molecule/sofelk.env]
+      register: state
+
+    - name: "molecule-verify | assert elasticsearch + sof-elk are running"
+      ansible.builtin.assert:
+        that:
+          - state.containers | selectattr('Service', 'equalto', 'sof-elk') | selectattr('State', 'equalto', 'running') | list | length > 0
+          - state.containers | selectattr('Service', 'equalto', 'elasticsearch') | selectattr('State', 'equalto', 'running') | list | length > 0
+        fail_msg: "SOF-ELK stack not fully running"
+        quiet: true

@@ -1,0 +1,184 @@
+"""Unit tests for the pure logic of the evtx processor (no docker/EvtxECmd needed)."""
+import os
+
+from get_sybers_dfir import evtx
+
+
+def test_out_names():
+    j, x = evtx.out_names("/x/Security.evtx")
+    assert j == "Security_EvtxECmd_Output.json"
+    assert x == "Security_EvtxECmd_Output.xml"
+    # case-insensitive extension
+    j2, _ = evtx.out_names("/x/System.EVTX")
+    assert j2 == "System_EvtxECmd_Output.json"
+
+
+def test_host_group_root_is_unspecified(tmp_path):
+    root = tmp_path
+    (root / "Security.evtx").write_bytes(b"x")
+    assert evtx.host_group(str(root / "Security.evtx"), str(root)) == "unspecified_host"
+
+
+def test_host_group_uses_subdir(tmp_path):
+    sub = tmp_path / "HOST01"
+    sub.mkdir()
+    (sub / "Security.evtx").write_bytes(b"x")
+    assert evtx.host_group(str(sub / "Security.evtx"), str(tmp_path)) == "HOST01"
+
+
+def test_discover_recurses_and_sorts(tmp_path):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "System.evtx").write_bytes(b"x")
+    (tmp_path / "Security.EVTX").write_bytes(b"x")
+    (tmp_path / "notes.txt").write_bytes(b"x")
+    got = [os.path.relpath(p, tmp_path) for p in evtx.discover(str(tmp_path))]
+    assert got == ["Security.EVTX", "a/System.evtx"]
+
+
+def test_locate_dll_at_root(tmp_path):
+    (tmp_path / "EvtxECmd.dll").write_bytes(b"MZ")
+    assert evtx.locate_dll(str(tmp_path)) == "EvtxECmd.dll"
+
+
+def test_locate_dll_nested(tmp_path):
+    nested = tmp_path / "EvtxECmd"
+    nested.mkdir()
+    (nested / "EvtxECmd.dll").write_bytes(b"MZ")
+    assert evtx.locate_dll(str(tmp_path)) == os.path.join("EvtxECmd", "EvtxECmd.dll")
+
+
+def test_locate_dll_absent(tmp_path):
+    assert evtx.locate_dll(str(tmp_path)) is None
+
+
+def test_locate_dll_ignores_redundant_separators(tmp_path):
+    # depth is computed via os.sep splitting, so a trailing/duplicated separator in
+    # the search root must not throw off the maxdepth-3 bound.
+    nested = tmp_path / "EvtxECmd"
+    nested.mkdir()
+    (nested / "EvtxECmd.dll").write_bytes(b"MZ")
+    messy_root = str(tmp_path) + os.sep + os.sep  # e.g. ".../dir//"
+    assert evtx.locate_dll(messy_root) == os.path.join("EvtxECmd", "EvtxECmd.dll")
+
+
+def test_locate_dll_respects_maxdepth(tmp_path):
+    deep = tmp_path / "a" / "b" / "c" / "d"     # depth 4 > 3
+    deep.mkdir(parents=True)
+    (deep / "EvtxECmd.dll").write_bytes(b"MZ")
+    assert evtx.locate_dll(str(tmp_path)) is None
+
+
+def test_process_reports_missing_dll(tmp_path):
+    evtx_dir = tmp_path / "in"
+    evtx_dir.mkdir()
+    (evtx_dir / "Security.evtx").write_bytes(b"x")
+    # operator-supplied mode with no DLL under the dir -> hard error
+    s = evtx.process(str(evtx_dir), str(tmp_path / "out"), str(tmp_path / "noevtxecmd"))
+    assert s["evtxecmd_dll"] is None and s.get("error")
+    assert s["processed"] == 0
+
+
+# ---- two-mode container invocation ----------------------------------------
+def test_argv_operator_mode_mounts_release():
+    argv = evtx.evtxecmd_argv(
+        "/raw/HOST01/Security.evtx", "/out/HOST01",
+        "Security_EvtxECmd_Output.json", "Security_EvtxECmd_Output.xml",
+        "mcr.microsoft.com/dotnet/runtime:9.0",
+        evtxecmd_dir="/deps/evtxecmd", dll_rel="EvtxECmd.dll",
+    )
+    # the release is mounted read-only and run from that workdir
+    assert "-v" in argv and "/deps/evtxecmd:/evtxecmd:ro" in argv
+    assert argv[argv.index("-w") + 1] == "/evtxecmd"
+    assert "dotnet" in argv and "/evtxecmd/EvtxECmd.dll" in argv
+    # input dir mounted from the log's parent; output from dest_dir
+    assert "/raw/HOST01:/input:ro" in argv
+    assert "/out/HOST01:/output" in argv
+    assert argv[argv.index("-f") + 1] == "/input/Security.evtx"
+
+
+def test_argv_bundled_mode_has_no_release_mount():
+    argv = evtx.evtxecmd_argv(
+        "/raw/HOST01/Security.evtx", "/out/HOST01",
+        "Security_EvtxECmd_Output.json", "Security_EvtxECmd_Output.xml",
+        "dfir/evtxecmd:latest",
+    )
+    # no /evtxecmd mount, no -w; the baked-in DLL path is used
+    assert "-w" not in argv
+    assert not any(str(a).endswith(":/evtxecmd:ro") for a in argv)
+    assert evtx.BUNDLED_DLL in argv
+    assert argv[argv.index("dotnet") + 1] == evtx.BUNDLED_DLL
+    # input/output mounts are still there
+    assert "/raw/HOST01:/input:ro" in argv
+    assert "/out/HOST01:/output" in argv
+
+
+def test_argv_modes_differ_only_by_mount_and_dll():
+    common = ("/raw/x/S.evtx", "/out/x", "S.json", "S.xml")
+    op = evtx.evtxecmd_argv(*common, "img", evtxecmd_dir="/d", dll_rel="EvtxECmd.dll")
+    bd = evtx.evtxecmd_argv(*common, "img")
+    # both drive the same tool args after the image name
+    assert op[op.index("-f"):] == bd[bd.index("-f"):]
+
+
+def test_has_records_bom_only_is_empty(tmp_path):
+    # EvtxECmd writes a BOM-only file for a log with no events — size 3, zero records.
+    p = tmp_path / "HardwareEvents_EvtxECmd_Output.json"
+    p.write_bytes(b"\xef\xbb\xbf")
+    assert p.stat().st_size == 3          # non-empty by byte size...
+    assert evtx._has_records(str(p)) is False   # ...but no records
+
+
+def test_has_records_true_with_a_record(tmp_path):
+    p = tmp_path / "Security_EvtxECmd_Output.json"
+    p.write_bytes(b"\xef\xbb\xbf" + b'{"EventId":4624}\n')
+    assert evtx._has_records(str(p)) is True
+
+
+def test_has_records_whitespace_only_is_empty(tmp_path):
+    p = tmp_path / "x.json"
+    p.write_text("\n  \n")
+    assert evtx._has_records(str(p)) is False
+
+
+def test_process_counts_empty_log_apart_from_failed(tmp_path, monkeypatch):
+    evtx_dir = tmp_path / "in"
+    evtx_dir.mkdir()
+    (evtx_dir / "Empty.evtx").write_bytes(b"x")
+
+    def fake_run(evtx_file, dest_dir, json_out, xml_out, image, **kw):
+        # simulate EvtxECmd on an empty log: exits 0, writes a BOM-only file
+        with open(os.path.join(dest_dir, json_out), "wb") as f:
+            f.write(b"\xef\xbb\xbf")
+
+    monkeypatch.setattr(evtx, "_run_evtxecmd", fake_run)
+    s = evtx.process(str(evtx_dir), str(tmp_path / "out"), image="dfir/evtxecmd:latest")
+    assert s["empty"] == 1
+    assert s["failed"] == 0            # an empty log is not a failure
+    assert s["processed"] == 0
+    # the BOM-only artefact is dropped so it never reaches ingest
+    assert not (tmp_path / "out" / "unspecified_host" / "Empty_EvtxECmd_Output.json").exists()
+
+
+def test_process_bundled_mode_needs_no_dll(tmp_path, monkeypatch):
+    evtx_dir = tmp_path / "in"
+    evtx_dir.mkdir()
+    (evtx_dir / "Security.evtx").write_bytes(b"x")
+
+    calls = {}
+
+    def fake_run(evtx_file, dest_dir, json_out, xml_out, image, **kw):
+        calls["image"] = image
+        calls["kw"] = kw
+        # simulate EvtxECmd writing a non-empty json
+        with open(os.path.join(dest_dir, json_out), "w") as f:
+            f.write('{"EventId":1}\n')
+
+    monkeypatch.setattr(evtx, "_run_evtxecmd", fake_run)
+    s = evtx.process(str(evtx_dir), str(tmp_path / "out"), image="dfir/evtxecmd:latest")
+    assert s["bundled"] is True
+    assert s.get("error") is None
+    assert s["evtxecmd_dll"] == evtx.BUNDLED_DLL
+    assert s["processed"] == 1
+    # bundled mode passes no release dir down to the runner
+    assert calls["kw"].get("evtxecmd_dir") in (None, "")
+    assert calls["image"] == "dfir/evtxecmd:latest"

@@ -1,0 +1,44 @@
+---
+# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+# dfir_plaso_vm_dir is optional (the processor tolerates its absence), so it is not
+# asserted here.
+
+- name: "plaso-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dfir_plaso_docker
+  changed_when: false
+
+- name: "plaso-preflight | stat the disk-image input dir"
+  ansible.builtin.stat:
+    path: "{{ dfir_plaso_input_dir }}"
+  register: dfir_plaso_input_stat
+
+- name: "plaso-preflight | input dir exists and is a directory"
+  ansible.builtin.assert:
+    that:
+      - dfir_plaso_input_stat.stat.exists
+      - dfir_plaso_input_stat.stat.isdir is defined and dfir_plaso_input_stat.stat.isdir
+    fail_msg: >-
+      dfir_plaso_input_dir ({{ dfir_plaso_input_dir }}) is missing or is not a directory.
+    quiet: true
+
+- name: "plaso-preflight | stat the l2t_json_dfir output module"
+  ansible.builtin.stat:
+    path: "{{ dfir_plaso_module }}"
+  register: dfir_plaso_module_stat
+
+- name: "plaso-preflight | the output module file is present"
+  ansible.builtin.assert:
+    that:
+      - dfir_plaso_module_stat.stat.exists
+      - dfir_plaso_module_stat.stat.isreg is defined and dfir_plaso_module_stat.stat.isreg
+    fail_msg: >-
+      l2t_json_dfir output module not found at {{ dfir_plaso_module }}.
+    quiet: true
+
+- name: "plaso-preflight | the get_sybers_dfir.plaso module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.plaso"
+  environment:
+    PYTHONPATH: "{{ dfir_plaso_python_path }}"
+  register: dfir_plaso_import
+  changed_when: false
