@@ -1,4 +1,4 @@
-## 🗺️ Find Your Way Around
+## Find Your Way Around
 
 The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives the
 **`get_sybers.dfir` Ansible collection** (orchestration), which invokes the

@@ -1,4 +1,4 @@
-# 📜 Scripts Directory (`./scripts`)
+# Scripts Directory (`./scripts`)
 
 This directory contains automation scripts for **forensic data processing** and
 for **deploying, schema-loading and ingesting into the Kusto emulator** — the
@@ -15,7 +15,7 @@ collectors running the EZ Tools** (replacing the removed KAPE automation).
 
 ---
 
-## 📂 Processing scripts
+## Processing scripts
 
 Each processor reads evidence from `data_store/raw/<type>/` and writes
 ingest-ready output to `data_store/processed/<tool>/`. All are container-first and
@@ -49,7 +49,7 @@ JSONL to `data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`;
 
 ---
 
-## 📂 Deployment & ingest scripts
+## Deployment & ingest scripts
 
 | Script | Description |
 |---|---|
@@ -70,7 +70,7 @@ The Splunk-era and KAPE PowerShell scripts were retired (git history and the fro
 
 ---
 
-## 🧹 Self-cleanup
+## Self-cleanup
 
 The docker-using processors (`process-evtx`, `process-log2timeline`,
 `process-zeek`, `process-signatures`) run a `prune_dangling` trap on exit that
@@ -79,7 +79,7 @@ untagged, unreferenced images; tool images and live containers are untouched.
 
 ---
 
-## ⚠️ Licensing before you run
+## Licensing before you run
 
 - **`deploy-kusto.sh` accepts Microsoft's Software License Terms for you**
   (`ACCEPT_EULA=Y`). The emulator is *as-is*, unsupported, and documented as
@@ -87,7 +87,7 @@ untagged, unreferenced images; tool images and live containers are untouched.
 
 Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
-## ⚙️ Usage
+## Usage
 
 - Ensure **Docker** is installed and running.
 - Scripts assume the repository's **directory structure** (see

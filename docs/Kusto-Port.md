@@ -1,4 +1,4 @@
-# 🧊 The Kusto emulator — the analysis backend
+# The Kusto emulator — the analysis backend
 
 > **Status: run against a live emulator.** Stages 1-3 (deploy, apply, ingest)
 > and the five sourced CAR objects have now been exercised end-to-end on the
