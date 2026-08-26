@@ -196,7 +196,7 @@ ZeekSsl() {
     | project Ts, Uid = tostring(Record.uid),
               SrcIp = tostring(Record.["id.orig_h"]), DestIp = tostring(Record.["id.resp_h"]),
               Version = tostring(Record.version), Cipher = tostring(Record.cipher),
-              ServerName = tostring(Record.server_name), Ja3 = tostring(Record.ja3), Record
+              ServerName = tostring(Record.server_name), Record
 }
 
 .create-or-alter function
