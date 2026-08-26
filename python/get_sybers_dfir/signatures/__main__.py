@@ -18,8 +18,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", action="append", choices=list(LANES),
                     help="run only this lane (repeatable); default all")
     ap.add_argument("--fetch", action="store_true",
-                    help="accepted for parity with the bash lanes; provisioning is "
-                         "not yet implemented (a lane missing its deps records a note)")
+                    help="provision rules when online: the yara lane fetches the pinned "
+                         "DetectRaptor ruleset when it has no rules yet (see "
+                         "signatures/detectraptor.py); the other lanes still record a "
+                         "note when their deps are missing")
     ap.add_argument("--force", action="store_true", help="regenerate outputs that already exist")
     # Suricata tuning (HOME_NET is Suricata's primary tuning variable: rule direction
     # keys off $HOME_NET/$EXTERNAL_NET).

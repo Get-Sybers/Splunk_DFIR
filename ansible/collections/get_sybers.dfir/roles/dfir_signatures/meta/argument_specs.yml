@@ -35,7 +35,7 @@ argument_specs:
         type: bool
         required: false
         default: false
-        description: "Accepted for parity with the bash script; provisioning is not yet ported to the Python processor (no-op)."
+        description: "Provision rules when online: the YARA lane fetches the pinned DetectRaptor ruleset when it has no rules yet (sha256-verified, idempotent); other lanes note missing deps."
       dfir_signatures_python_path:
         type: str
         required: false

@@ -45,7 +45,47 @@ cp my_malware.yar data_store/dependencies/yara-rules/mine/
 ```
 
 `--fetch` downloads a YARA-Forge starter set **only when the directory has no
-rules yet** — your own rules suppress it.
+rules yet** — your own rules suppress it. The Python lane's `--fetch` provisions
+[DetectRaptor](https://github.com/mgreen27/DetectRaptor) instead — see below.
+
+### DetectRaptor content
+
+[DetectRaptor](https://github.com/mgreen27/DetectRaptor) (Matt Green / mgreen27)
+is bulk Velociraptor detection content. The part this pipeline can consume is its
+**YARA** sets — a curated webshell ruleset plus per-OS file and process sets,
+YARA-Forge-derived with per-rule provenance metadata. Enable either way:
+
+```bash
+# implicitly — the Python YARA lane's --fetch (also dfir_signatures_fetch=true)
+python3 -m get_sybers_dfir.signatures --only yara --fetch \
+    --output-dir data_store/processed/signatures --repo-root .
+
+# explicitly — the provisioning module itself
+python3 -m get_sybers_dfir.signatures.detectraptor \
+    --rules-dir data_store/dependencies/yara-rules
+```
+
+Both download a **commit-pinned, sha256-verified** set of assets and merge them
+into `yara-rules/detectraptor/detectraptor.yar` (~10,700 rules). The merge is
+required: upstream publishes each set for a separate Velociraptor artifact and
+freely repeats rule identifiers across files, but this lane compiles one index —
+so duplicates are dropped first-wins, and rules needing module features the
+`blacktop/yara` build lacks (`telfhash`) are skipped. Per-rule `meta` blocks
+(author, `source_url`, `license_url`) are kept byte-for-byte.
+
+- **Idempotent** — an existing `detectraptor.yar` is left alone; delete it or
+  `--force` (module CLI) to refresh. The lane's `--fetch` also stands down when
+  the tree already has *any* rules, exactly like the shell lane's starter.
+- **Do not combine with YARA-Forge packages** (e.g. the shell `yara.sh --fetch`
+  starter) in one rules dir — DetectRaptor's sets are largely YARA-Forge
+  extracts, and duplicate identifiers fail the whole single-index compile.
+- **Advancing the pin:** bump `_PIN` in
+  `python/get_sybers_dfir/signatures/detectraptor.py`, run
+  `python3 -m get_sybers_dfir.signatures.detectraptor --print-hashes`, paste the
+  digests into `ASSETS`.
+- **Not consumed:** DetectRaptor's VQL artifacts and CSV lookups (they need a
+  Velociraptor server); it ships no Sigma or Suricata rules. Licensing and
+  attribution: [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 **Verify:** the lane reports the rule-file count (confirm yours is counted), then
 check the output — each match is one JSON object naming your rule:
