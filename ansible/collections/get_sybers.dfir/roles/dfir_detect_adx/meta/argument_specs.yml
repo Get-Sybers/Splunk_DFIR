@@ -1,0 +1,61 @@
+---
+argument_specs:
+  main:
+    short_description: "Run every applicable registered detection over the processed data."
+    description:
+      - >-
+        The detection-orchestration role (DetectRaptor's StartHunts model on the
+        Kusto backend): the get_sybers_dfir.detect runner surveys which processed
+        data is actually present — which ADX tables exist and are non-empty, which
+        signature-lane JSONL outputs are on disk — then runs only the registered
+        detections whose declared target data is there. Every hit lands in
+        misc.Detections tagged with the detection id, severity, ATT&CK ids, source
+        and a per-sweep RunId; the DetectionsLatest()/DetectionSummary() views read
+        the newest sweep. Sweeps are append-only and never mutate history.
+        Requires a deployed emulator.
+    options:
+      dfir_detect_adx_processed_dir:
+        type: str
+        required: false
+        description: "data_store/processed tree (for the signature-lane JSONL detections)."
+      dfir_detect_adx_only:
+        type: str
+        required: false
+        default: ""
+        description: "Comma-separated registry detection id(s) to run; empty = every one."
+      dfir_detect_adx_dry_run:
+        type: bool
+        required: false
+        default: false
+        description: >-
+          Report which detections would run against the present data; execute
+          nothing. Still queries the emulator (read-only targeting).
+      dfir_detect_adx_limit:
+        type: int
+        required: false
+        default: 1000
+        description: "Max hits recorded per detection per sweep."
+      dfir_detect_adx_jsonl_out:
+        type: str
+        required: false
+        default: ""
+        description: "Also export the sweep's hits as JSON Lines to this path; empty = no export."
+      dfir_detect_adx_kusto_host:
+        type: str
+        required: false
+        default: "127.0.0.1"
+        description: "Emulator host."
+      dfir_detect_adx_kusto_port:
+        type: int
+        required: false
+        default: 8080
+        description: "Emulator port."
+      dfir_detect_adx_kusto_container:
+        type: str
+        required: false
+        default: "kusto-emulator"
+        description: "Emulator container name (recorded in summaries; no docker access needed)."
+      dfir_detect_adx_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."

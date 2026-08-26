@@ -1,0 +1,26 @@
+---
+# FIND FACTS -> check module import + engine reachability -> (then DETECT).
+# No docker checks: the orchestrator talks pure HTTP to the emulator.
+
+- name: "detect-adx-preflight | the get_sybers_dfir.detect module imports"
+  ansible.builtin.command: python3 -c "import get_sybers_dfir.detect"
+  environment:
+    PYTHONPATH: "{{ dfir_detect_adx_python_path }}"
+  register: dfir_detect_adx_import
+  changed_when: false
+
+- name: "detect-adx-preflight | the ADX emulator engine is reachable"
+  ansible.builtin.command:
+    argv:
+      - python3
+      - -m
+      - get_sybers_dfir.detect
+      - --ping
+      - --host
+      - "{{ dfir_detect_adx_kusto_host }}"
+      - --port
+      - "{{ dfir_detect_adx_kusto_port }}"
+  environment:
+    PYTHONPATH: "{{ dfir_detect_adx_python_path }}"
+  register: dfir_detect_adx_reachable
+  changed_when: false

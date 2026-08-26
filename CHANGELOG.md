@@ -7,6 +7,19 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Added
+- **Detection orchestration** (`get_sybers_dfir.detect` + `dfir_detect_adx` role +
+  `dxdfir detect`), modelled on DetectRaptor's StartHunts runner: a registry where
+  each detection declares the processed data it targets (an ADX `db.Table` or a
+  signature-lane JSONL output), a runner that surveys what is actually present and
+  executes only the applicable detections (KQL detections run engine-side via
+  `.set-or-append`; JSONL detections stream their lane files), and a unified
+  `misc.Detections` output — every hit tagged with detection id, severity, ATT&CK
+  techniques, source and a per-sweep `RunId` (`kusto/schema/50-detections.kql`,
+  with `DetectionsLatest()`/`DetectionSummary()` views over the newest sweep).
+  Seeded with 11 detections spanning EvtxECmd, Plaso prefetch, Zeek, Volatility,
+  Velociraptor and the three signature lanes.
+
 ## [0.2.0] - 2026-08-21
 
 ### Changed
