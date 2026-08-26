@@ -1,4 +1,4 @@
-# 🧊 DX_DFIR Pipeline
+# DX_DFIR Pipeline
 
 [![release](https://img.shields.io/github/v/release/Get-Sybers/DX_DFIR?include_prereleases&label=release)](https://github.com/Get-Sybers/DX_DFIR/releases)
 [![checks](https://github.com/Get-Sybers/DX_DFIR/actions/workflows/checks.yml/badge.svg)](https://github.com/Get-Sybers/DX_DFIR/actions/workflows/checks.yml)
@@ -27,7 +27,7 @@ functions.
 
 ---
 
-## 📚 Repo
+## Repo
 
 - [1. Overview](#overview)
 - [2. Get-Started](/docs/Get-Started.md)
@@ -42,7 +42,7 @@ functions.
 > branch. It is unsupported and keeps every defect later releases fixed.
 > Don't build on it.
 
-### 📚 This Page
+### This Page
 
 - [Overview](#overview)
 - [How It Runs](#how-it-runs)
@@ -58,7 +58,7 @@ functions.
 
 ---
 
-## ‼️ Disclaimer
+## Disclaimer
 
 Running DFIR tools in a containerized environment can be risky. Ensure you
 understand the implications and risks before proceeding. This project is
@@ -70,7 +70,7 @@ you have resources you'd like to add, please submit a PR.
 This project is not affiliated with or endorsed by any of the tools used or
 organizations mentioned.
 
-## 🚀 Overview
+## Overview
 <a name="overview"></a>
 
 Point it at a disk image or a PCAP, and it processes the evidence, loads the
@@ -79,7 +79,7 @@ instead of a pile of CSVs.
 
 That's the idea. Here's where it honestly stands.
 
-## 🧱 How It Runs
+## How It Runs
 <a name="how-it-runs"></a>
 
 The pipeline is a three-layer design:
@@ -102,7 +102,7 @@ the `dxdfir` CLI and the collection are the supported front-end. The CLI needs
 `ansible-playbook` on `PATH` and the package installed with `pip install ./python`
 (which provides the `dxdfir` entry point and its one dependency, Typer).
 
-## 🧪 What Actually Works
+## What Actually Works
 <a name="what-actually-works"></a>
 
 This runs on the author's machine and has not been validated anywhere else.
@@ -153,7 +153,7 @@ runs on the author's corpus, not an automated test suite.
 - **The `_time`/timestamp normalisation story is inconsistent** across
   sources. Plaso and Zeek are good; everything else is unverified.
 
-## 🛑 Before You Run Anything
+## Before You Run Anything
 <a name="before-you-run-anything"></a>
 
 Three things that will bite you otherwise:
@@ -173,7 +173,7 @@ Three things that will bite you otherwise:
    still a safety net, not a guarantee — check `git status` before you commit,
    every time.
 
-## 🏴‍☠️ Why This Exists
+## Why This Exists
 <a name="why-this-exists"></a>
 
 Most SOCs have already figured this problem out. Unfortunately, DeadBox
@@ -184,7 +184,7 @@ tasks, lowering the barrier to entry and encouraging faster DFIR skill
 development by transforming forensic data into neatly mapped, standardized
 tables you can query in KQL — offline, on your own machine.
 
-## 🎯 The Problem - DeadBox Forensics
+## The Problem - DeadBox Forensics
 <a name="the-problem---deadbox-forensics"></a>
 
 DFIR analysts juggle mountains of fragmented artifacts and data produced by
@@ -192,7 +192,7 @@ various tools, leading to extensive manual parsing. This slows junior DFIR
 analyst skill development and risks overlooking crucial details precisely when
 speed and accuracy matter most.
 
-## 🌟 Get-Sybers Solution
+## Get-Sybers Solution
 <a name="get-sybers-solution"></a>
 
 Automate and clarify the DeadBox DFIR data pipeline by normalizing data fields
@@ -202,7 +202,7 @@ local Data Explorer emulator.
 
 *Aspiration, not current state — see [What Actually Works](#what-actually-works).*
 
-## 🎁 Benefits
+## Benefits
 <a name="benefits"></a>
 
 - **Less Pain, More Gain**: Automate tedious tasks, focusing your time on investigations.
@@ -210,7 +210,7 @@ local Data Explorer emulator.
 - **Ready to Roll**: Quick-deployment scripts get you operational swiftly.
 - **Offline by Design**: The real ADX query engine with no cloud, no account, and no network.
 
-## 🛠️ Envisioned Endstate
+## Envisioned Endstate
 <a name="envisioned-endstate"></a>
 
 **This is the goal, not a working example.** The CAR functions that would make
@@ -228,7 +228,7 @@ CarProcess()
 | 2025-01-01T11:05:52 | DC-1           | svc_backup   | `powershell.exe Get-ChildItem -Path \\server\share`       | WinEVTX:Security         |
 | 2025-01-01T11:45:17 | WKS-2          | jdoe         | `powershell.exe -EncodedCommand JABzAD0AbgBlAHQAIAB1AH...`| Volatile:Get-Process     |
 
-## ⚖️ Licence
+## Licence
 <a name="licence"></a>
 
 Apache-2.0 — see [LICENSE](/LICENSE).
@@ -255,7 +255,7 @@ Apache-2.0 §4 is in [NOTICE](/NOTICE).
 
 ---
 
-## 📌 Notes
+## Notes
 <a name="notes"></a>
 
 - Ensure your Docker environment is correctly set up before running scripts.

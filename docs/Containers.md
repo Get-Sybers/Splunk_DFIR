@@ -1,10 +1,10 @@
-# 🛠️ 01_Containers
+# 01_Containers
 
 This section lists the required Docker containers for the DFIR automation pipeline and their respective documentation links.
 
 ---
 
-## 📦 Pull Required Containers
+## Pull Required Containers
 
 ```sh
 log2timeline/plaso:latest                                    # Plaso timelining + image_export (dfVFS)
@@ -28,7 +28,7 @@ image) — `process-signatures.sh --fetch` downloads the pinned release into
 
 ---
 
-## 🔗 Container Documentation
+## Container Documentation
 
 - [Plaso (log2timeline) – Docker Hub](https://hub.docker.com/r/log2timeline/plaso)
 - [Zeek (Network Security Monitor) – Docker Hub](https://hub.docker.com/r/zeek/zeek)

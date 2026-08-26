@@ -1,4 +1,4 @@
-# 🧪 Runtime validation — fields, source types, and CAR coverage
+# Runtime validation — fields, source types, and CAR coverage
 
 This is the first record of the pipeline **run against a live Kusto emulator**
 with data processed from the [Digital Corpora](https://digitalcorpora.org/)

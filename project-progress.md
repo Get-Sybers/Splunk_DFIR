@@ -1,4 +1,4 @@
-# 🗂️ DX_DFIR Pipeline Task Board
+# DX_DFIR Pipeline Task Board
 
 Tracks tasks for the DFIR automation project — from forensic data processing to
 the Kusto-emulator analysis backend.
@@ -10,7 +10,7 @@ pre-release code is frozen on the
 [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated)
 branch.
 
-## 🧱 Architecture (epics #45 / #46)
+## Architecture (epics #45 / #46)
 
 The pipeline has been rebuilt as a three-layer stack: the **`dxdfir` CLI** →
 the **`get_sybers.dfir` Ansible collection** (one role per source) → the
@@ -89,7 +89,7 @@ live tool output. The remaining runtime checklist is
 
 ---
 
-# 🚨 Known Limitations
+# Known Limitations
 
 Things that are broken or unsafe right now.
 
@@ -114,9 +114,9 @@ Things that are broken or unsafe right now.
 
 # Update log
 
-## 🔜 To Do
+## To Do
 
-### 🔹 **Run the backend to ground** — *the blocker for everything*
+### Run the backend to ground — *the blocker for everything*
 - ⬜ **Run it.** Nothing has touched a real emulator. That gates everything
   below and is worth more than any further code —
   [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
@@ -125,7 +125,7 @@ Things that are broken or unsafe right now.
   `velociraptor_prepare`), but the upstream offline-collector path that feeds it
   isn't built, and nothing has run against a real emulator.
 
-### 🔹 **Data Models & MITRE CAR Mapping**
+### Data Models & MITRE CAR Mapping
 - Validate the CAR field mappings against real Windows event logs, Zeek logs,
   and forensic artifacts (KQL functions exist; values unverified).
 - Extend lookups for event IDs, log sources, and mapped MITRE techniques —
@@ -134,14 +134,14 @@ Things that are broken or unsafe right now.
 - A visualisation story for CAR-mapped events (the emulator has no dashboard
   layer; Kusto.Explorer or a thin web UI are the candidates).
 
-### 🔹 **Testing** — *partly done*
+### Testing — *partly done*
 - ✅ Syntax/lint gating — `tests/run-checks.sh` (`bash -n`, shellcheck, path
   resolution, the container-lifecycle library's behavioural tests, Kusto
   schema consistency, gitignore, secrets, doc links). The count is whatever
   the harness prints; it is deliberately not restated here.
 - ⬜ A smoke test that runs the pipeline against a small public sample image.
 
-### 🔹 **Velociraptor offline collectors (EZ Tools) & Raw EVTX**
+### Velociraptor offline collectors (EZ Tools) & Raw EVTX
 - Build the offline-collector path: Velociraptor collectors running the EZ
   Tools for artefact collection and parsing — the replacement for the removed
   KAPE automation. Same Zimmerman parsers and field names, so the retired
@@ -152,23 +152,23 @@ Things that are broken or unsafe right now.
 - ✅ Verify the EvtxECmd path against a real event log — done (see Known
   Limitations; 103 real LoneWolf logs → `host.EvtxEcmdJson` → CAR).
 
-### 🔹 **Environment & Dependencies**
+### Environment & Dependencies
 - Create a guide for **setting up the development environment**.
 
 ---
 
-## 🔄 In Progress
+## In Progress
 
-### 🔹 **Documentation**
+### Documentation
 - Align the docs with the #45/#46 rewrite — present the `dxdfir` CLI + collection
   as the front-end and frame the `process-*.sh` scripts as the legacy layer being
   retired (in progress).
 
 ---
 
-## ✅ Done
+## Done
 
-### 🔹 **Plaso pipeline migrated CSV → JSON (json_line), with a Plaso output module**
+### Plaso pipeline migrated CSV → JSON (json_line), with a Plaso output module
 ✅ **Plaso now outputs `json_line`, not the flat 23-column CSV** — the CSV forced
 every parser's event into a lowest-common-denominator schema and dropped the rest
 (imphash, sha256, pe_type, pathspec, the typed utmp/cron/ssh fields…). New
@@ -190,7 +190,7 @@ hostname. The hostname/username half is upstreamed as
 ✅ Fixed a critical regression first: the processor had been left emitting
 `json_line` at a path/format the CSV ingest couldn't read (#38).
 
-### 🔹 **CAR to 9/9 objects (Sysmon) + Zeek all-log JSON pipeline**
+### CAR to 9/9 objects (Sysmon) + Zeek all-log JSON pipeline
 ✅ **All nine CAR objects sourced and validated live.** Added `CarDriver()`
 (Sysmon 6), `CarModule()` (Sysmon 7) and `CarThread()` (Sysmon 8) — the three
 that had no dead-box source — and strengthened `CarProcess` (1/5), `CarFlow`
@@ -211,7 +211,7 @@ and every other log lands in the generic `Zeek` dynamic table via a
 `{LogType, SourceFile, Record}` wrapper — `dns`/`http`/`ssl`/… all queryable,
 with `ZeekLog()`/`ZeekDns()`/`ZeekHttp()`/`ZeekSsl()` views. Validated live.
 
-### 🔹 **First run against a live Kusto emulator** — *the blocker, broken*
+### First run against a live Kusto emulator — *the blocker, broken*
 ✅ Deploy → apply → ingest → `CarCoverage()` executed end-to-end on the real
 `kustainer-linux` engine, with data processed from the Digital Corpora sample
 URLs. Five of nine CAR objects returned real rows. Full write-up, including the
@@ -248,7 +248,7 @@ Full Android/macOS *disk images* (5–48 GB) exceed the working disk here; the
 real artefact formats were parsed instead. See
 [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
 
-### 🔹 **The pivot: Splunk → Data Explorer emulator**
+### The pivot: Splunk → Data Explorer emulator
 ✅ Ported the SIEM layer to the Kusto emulator — 5 databases, typed tables and
 ingestion mappings for Plaso/EvtxECmd/Zeek `conn`, MITRE CAR as KQL functions,
 deploy/apply/ingest scripts with the container lessons the Splunk path paid
@@ -259,30 +259,30 @@ Ansible, vendored ESCU lookups. History and the `deprecated` branch keep it.
 ✅ Consolidated the container lifecycle into `scripts/lib/docker-lifecycle.sh`
 and the ingest sources into a descriptor table.
 
-### 🔹 **Field Extractions**
+### Field Extractions
 
 ✅ **Log2timeline field mappings**
   - log2timeline output was changed from json to "dynamic" which outputs a "comma delimited" output. The reason for this is l2t captures more timestamp formats than I knew existed and won't convert them into epoch unless --dynamic output is made.
   - the end result is surprisingly a looot better than I expected csv.
   - huge benefit is I was able to pass the "datetime" field l2t outputs in as the timeline `_time` value — the same field now drives `Timestamp` in `host.L2tCsv`.
 
-### 🔹 **Dynamic Scripts Testing**
+### Dynamic Scripts Testing
 ✅ Test `process-log2timeline-Dynamic.sh` for processing **single and all E01 images**.
 ✅ Test `process-zeek-ALL.sh`.
 ✅ VMware VM export support added to log2timeline processing — lightly tested.
 
-### ✅ **log2timeline Processing**
+### log2timeline Processing
 - Functional pipeline for **E01 images → Plaso → CSV**.
   *(output was originally JSON, later changed to csv)*
 
-### ✅ **Zeek Processing**
+### Zeek Processing
 - PCAPs successfully converted into Zeek logs.
 
-### ✅ **Repository Setup & Documentation**
+### Repository Setup & Documentation
 - Created base directory structure (`data_store`, `scripts`).
 - Wrote **README files** for root, `data_store`, and `scripts` directories.
 
-### ✅ **Release hygiene** *(v0.2.0-beta)*
+### Release hygiene *(v0.2.0-beta)*
 - Audited every vendored dependency and settled the project licence — Apache-2.0.
 - Added `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `CHANGELOG.md`.
 
