@@ -41,6 +41,7 @@ import subprocess
 import sys
 
 from . import imageexport
+from .signatures import hayabusa as _hb
 
 # Operator-supplied mode: a stock .NET runtime image mounts the operator's release.
 # EvtxECmd's current .NET build targets net9.0, so the runtime must be 9.x — the old
@@ -286,6 +287,53 @@ def extract_images(image_src, stage_dir, *, plaso_image=imageexport.PLASO_IMAGE,
     return summary
 
 
+def run_hayabusa(sources, out_dir, *, hb_dir=None, hb_bin=None, rules_dir=None,
+                 force=False) -> dict:
+    """Run Hayabusa (Sigma detection) over the .evtx the evtx lane collected — the
+    loose dirs and/or the image-extracted stage in ``sources`` — writing a tool-tagged
+    detection timeline to ``<out_dir>/hayabusa/timeline.jsonl``.
+
+    Reuses ``signatures.hayabusa`` (one Hayabusa implementation), and because it scans
+    the SAME dirs the evtx lane populated, disk-image EVTX now reaches Hayabusa through
+    the lane's ``imageexport`` extraction — the case the standalone signature lane could
+    only cover by mounting (``/dev/fuse``).
+
+    Hayabusa here is enrichment: a missing binary or zero detections is a note, never a
+    failure — the evtx run's success is EvtxECmd's.
+    """
+    out = os.path.join(out_dir, "hayabusa")
+    timeline = os.path.join(out, "timeline.jsonl")
+    summary = {"tool": "hayabusa", "produced": 0, "scanned": 0, "skipped": 0,
+               "note": None, "output": None}
+    if not force and os.path.exists(timeline) and os.path.getsize(timeline) > 0:
+        summary["skipped"] = 1
+        summary["output"] = timeline
+        return summary
+    hb_bin = hb_bin or (_hb.find_binary(hb_dir) if hb_dir else None)
+    if not hb_bin or not os.access(hb_bin, os.X_OK):
+        summary["note"] = f"no hayabusa binary under {hb_dir!r} — supply --hayabusa-dir"
+        return summary
+    rules_dir = rules_dir or os.path.join(os.path.dirname(hb_bin), "rules")
+    raw = ""
+    for src in sources:
+        if os.path.isdir(src):
+            hits = _hb.scan_directory(hb_bin, src, rules_dir)
+            if hits.strip():
+                summary["scanned"] += 1
+                raw += hits
+    if not raw.strip():
+        summary["note"] = "no detections (no EVTX reachable, or nothing matched)"
+        return summary
+    os.makedirs(out, exist_ok=True)
+    detections = _hb.tag_detections(raw)
+    with open(timeline, "w") as w:
+        for ev in detections:
+            w.write(json.dumps(ev) + "\n")
+    summary["produced"] = len(detections)
+    summary["output"] = timeline
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="get_sybers_dfir.evtx",
@@ -314,6 +362,15 @@ def main(argv: list[str] | None = None) -> int:
              "is omitted) or a stock .NET runtime that mounts the operator release.",
     )
     ap.add_argument("--force", action="store_true", help="reparse logs that already have output")
+    ap.add_argument("--hayabusa", action="store_true",
+                    help="also run Hayabusa (Sigma detection) over the same .evtx and write "
+                         "<out-dir>/hayabusa/timeline.jsonl. Enrichment: a missing binary or "
+                         "zero detections is a note, not a failure.")
+    ap.add_argument("--hayabusa-dir", default="",
+                    help="dir holding the hayabusa binary (+ rules/). Default when --hayabusa "
+                         "is set: data_store/dependencies/hayabusa under the CWD.")
+    ap.add_argument("--hayabusa-rules", default="",
+                    help="Sigma rules dir for Hayabusa (default: rules/ beside the binary).")
     args = ap.parse_args(argv)
 
     if not args.evtx_dir and not args.image_src:
@@ -349,6 +406,17 @@ def main(argv: list[str] | None = None) -> int:
             summary["error"] = s["error"]
         for k in ("files", "processed", "skipped", "empty", "failed"):
             summary[k] += s.get(k, 0)
+
+    # Hayabusa (Sigma detection) over the SAME .evtx set — part of evtx processing,
+    # not a separate lane. Enrichment only: never changes the exit code.
+    if args.hayabusa:
+        hb_dir = os.path.realpath(args.hayabusa_dir) if args.hayabusa_dir \
+            else os.path.join(os.getcwd(), "data_store", "dependencies", "hayabusa")
+        summary["hayabusa"] = run_hayabusa(
+            sources, out_dir, hb_dir=hb_dir,
+            rules_dir=(os.path.realpath(args.hayabusa_rules) if args.hayabusa_rules else None),
+            force=args.force,
+        )
 
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
