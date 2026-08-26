@@ -207,33 +207,37 @@ def run_l2t(client, processed_dir, container, staging_dir, seen, dry_run, summar
         rel = os.path.relpath(f, processed_dir)
         fh = _file_hash(rel)
         prefix = prepare.staged_name(rel)
-        tables = prepare.split_l2t(f, rel)
-        if not tables:
+        if dry_run:
+            # cheap streaming scan — never holds the (multi-GB) file in memory
+            for _table in prepare.l2t_tables(f):
+                summary["submitted"] += 1
+            continue
+        # Stream the split to per-table files on disk (staging_dir), one record at a
+        # time — a Plaso json_line output can be many GB and must not be buffered.
+        table_files = prepare.split_l2t(f, rel, staging_dir, prefix)
+        if not table_files:
             continue
         file_ok = True
-        for table, lines in tables.items():
-            if not dry_run and table not in ensured:
+        for table, host_tmp in table_files.items():
+            if table not in ensured:
                 client.mgmt("host", f".create-merge table {table} "
                             "(SourceImage:string, Timestamp:datetime, Parser:string, Record:dynamic)")
                 client.mgmt("host", f'.create-or-alter table {table} ingestion json mapping '
                             f'"L2tMapping" ```{L2T_MAPPING}```')
                 ensured.add(table)
-            name = f"{prefix}.{table}"
-            dest = f"{CONTAINER_STAGE}/{name}"
-            if dry_run:
-                summary["submitted"] += 1
-                continue
-            host_tmp = os.path.join(staging_dir, name)
-            with open(host_tmp, "w") as w:
-                w.write("\n".join(lines) + "\n")
+            dest = f"{CONTAINER_STAGE}/{prefix}.{table}"
             if not _docker_cp(host_tmp, container, dest):
                 summary["failed"] += 1
                 file_ok = False
-                continue
-            if not _ingest_batched(client, "host", table, "L2tMapping", "multijson", False,
-                                   [dest], dry_run, summary):
+            elif not _ingest_batched(client, "host", table, "L2tMapping", "multijson", False,
+                                     [dest], dry_run, summary):
                 file_ok = False
-        if file_ok and not dry_run:
+            # free the host staging file as we go — keeps disk use bounded
+            try:
+                os.remove(host_tmp)
+            except OSError:
+                pass
+        if file_ok:
             record_hashes(client, [fh])
             ingested += 1
     summary["sources"]["Plaso l2t -> host.L2t<Parser>"] = {
@@ -264,7 +268,13 @@ def process(processed_dir, only=None, dry_run=False, force=False,
             summary["error"] = f"could not reach container '{container}'"
             return summary
 
-    with tempfile.TemporaryDirectory(prefix="dfir-ingest-") as staging_dir:
+    # Stage on the same (disk-backed) filesystem as the processed data, NOT the
+    # default /tmp — which is often tmpfs (RAM). The l2t split can write several GB
+    # of per-table staging files, and buffering that in RAM would OOM the box.
+    staging_base = os.path.dirname(processed_dir)
+    if not (staging_base and os.path.isdir(staging_base)):
+        staging_base = None  # fall back to the system default
+    with tempfile.TemporaryDirectory(prefix="dfir-ingest-", dir=staging_base) as staging_dir:
         for row in SOURCES:
             if only and only != row["key"]:
                 continue
