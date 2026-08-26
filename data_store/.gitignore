@@ -21,12 +21,27 @@
 # ... but descend into subdirectories, so the skeleton is preserved ...
 !*/
 
-# ... and keep only these.
-!.gitignore
-!.gitkeep
-!README.md
+# ... except fetched tool caches under dependencies/ (not committed — provisioned
+# by --fetch). hayabusa ships an embedded git repo under rules/, which git would
+# otherwise offer to add as a submodule.
+/dependencies/hayabusa/
 
-!dependencies/.gitkeep
+# ... and keep only these.
+#
+# This file only (anchored) — NOT a bare `!.gitignore`, which un-ignores every
+# nested .gitignore in the evidence (imaged filesystems carry hundreds).
+!/.gitignore
+# Empty .gitkeep placeholders (empty by convention, so harmless even if one turns
+# up in evidence).
+!.gitkeep
+
+# Documentation READMEs — anchored to their EXACT paths (leading `/`), NOT by name.
+# A bare `!README.md` un-ignores every README.md in the tree, including ones that
+# are part of the forensic evidence (iOS/Android app bundles, test corpora, …) and
+# may carry secrets. Only these three skeleton READMEs are re-included.
+!/README.md
+!/dependencies/evtxecmd/README.md
+!/processed/velociraptor/README.md
 
 # ------------------------------------------------------------------------------
 # Removed: !dependencies/SuperMem/**
