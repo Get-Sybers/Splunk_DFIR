@@ -1,11 +1,14 @@
 """Hayabusa lane — Sigma-based Windows event-log detection -> native JSONL.
 
-Scans loose ``*.evtx`` under the raw tree. Disk-image EVTX (mount read-only and scan
-winevt\\Logs in place, or a targeted image_export of only the event logs) is NOT YET
-PORTED here — an image with no reachable EVTX records a note only; the working
-implementation is in scripts/signatures/hayabusa.sh. (Hayabusa's ``-J`` JSON input
-yields 0 detections on Plaso/evtx_dump JSON vs 792 natively, #1324, so real .evtx is
-required.)
+Scans loose ``*.evtx`` under the raw tree, and (with ``/dev/fuse``) disk images
+mounted read-only in place. Disk-image EVTX **without** fuse now flows through the
+evtx pipeline instead: ``get_sybers_dfir.evtx --image-src`` extracts WindowsEventLogs
+with log2timeline/plaso (``imageexport``) and runs Hayabusa over them
+(``get_sybers_dfir.evtx.run_hayabusa``, which reuses ``scan_directory`` /
+``find_binary`` / ``tag_detections`` here) — so Hayabusa detection is part of evtx
+processing, not a separate image-mount step. (Hayabusa's ``-J`` JSON input yields 0
+detections on Plaso/evtx_dump JSON vs 792 natively, #1324, so real .evtx is required —
+which is why extraction, not JSON conversion, is the path.)
 
 Native Rust binary (no official image); operator-supplied. ``--fetch`` is accepted
 for parity with the bash script but not yet implemented here.
@@ -54,8 +57,12 @@ def _dir_has_evtx(d: str) -> bool:
     return False
 
 
-def _run_hayabusa(hb_bin, scan_dir, rules_dir) -> str:
-    """Run hayabusa over scan_dir; return its JSONL detections (empty if none)."""
+def scan_directory(hb_bin, scan_dir, rules_dir) -> str:
+    """Run hayabusa over scan_dir; return its JSONL detections (empty if none).
+
+    Public so the evtx pipeline (get_sybers_dfir.evtx.run_hayabusa) can scan the
+    same .evtx it collected — loose or image-extracted — without duplicating this.
+    """
     if not _dir_has_evtx(scan_dir):
         return ""
     # Hayabusa won't overwrite an existing --output file. Use a fresh temp DIR and a
@@ -100,7 +107,7 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     raw = ""
     # 1) loose EVTX
     if _dir_has_evtx(loose_dir):
-        raw += _run_hayabusa(hb_bin, loose_dir, rules_dir)
+        raw += scan_directory(hb_bin, loose_dir, rules_dir)
 
     # 2) disk images: mount read-only and scan in place (needs /dev/fuse)
     if scan_disk and os.path.isdir(disk_dir):
