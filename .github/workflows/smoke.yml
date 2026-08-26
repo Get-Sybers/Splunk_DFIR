@@ -1,0 +1,59 @@
+name: smoke
+
+# Runs the pipeline for real and asserts CORRECTNESS — the coverage `checks`
+# deliberately does not provide (issue #10). It deploys a throwaway Kusto
+# emulator, processes sha256-pinned Sysmon .evtx through the real evtx lane
+# (EvtxECmd), ingests, and asserts every Sysmon-sourced CAR object returns rows
+# with its EvtxPayload-derived fields correctly populated. The EvtxPayload
+# XML→JSON break that zeroed those fields passes `checks` but fails this.
+#
+# Kept OUT of the every-push `checks` job because it builds an image and runs the
+# kustainer emulator (minutes, not seconds). It runs:
+#   - on PRs that touch the pipeline itself (the changes that can break it)
+#   - nightly, as a standing regression signal
+#   - on demand (workflow_dispatch)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:00 UTC nightly — a daily regression signal independent of pushes.
+    - cron: "0 6 * * *"
+  pull_request:
+    paths:
+      - "kusto/schema/**"
+      - "python/get_sybers_dfir/evtx.py"
+      - "python/get_sybers_dfir/imageexport.py"
+      - "python/get_sybers_dfir/ingest/**"
+      - "docker/evtxecmd/**"
+      - "scripts/deploy-kusto.sh"
+      - "scripts/apply-kusto-schema.sh"
+      - "scripts/lib/kusto-api.sh"
+      - "tests/smoke-test.sh"
+      - "dev-scripts/fetch-samples.sh"
+      - "dev-scripts/samples-manifest.tsv"
+      - ".github/workflows/smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      # The evtx/ingest/imageexport code the smoke test drives is pure stdlib
+      # (urllib, subprocess) — no pip install needed — but a known Python is.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The evtx lane runs EvtxECmd from the bundled image; build it once here
+      # (the smoke test asserts its presence and fails loudly if absent).
+      - name: Build the bundled EvtxECmd image
+        run: docker build -t dfir/evtxecmd:latest docker/evtxecmd
+
+      - name: Run the pipeline smoke test
+        run: ./tests/smoke-test.sh
