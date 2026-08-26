@@ -9,7 +9,7 @@ then creates the databases and applies every `kusto/schema/*.kql`.
 The container is stood up with `community.docker`; the schema side is the
 `get_sybers_dfir.deploy` helper.
 
-## ⚠️ EULA
+## EULA
 The emulator starts with `ACCEPT_EULA=Y` — running this role **accepts Microsoft's
 Software License Terms** on your behalf. The emulator is *as-is*, unsupported, has
 **no authentication** (hence localhost-only), and is documented as generally
