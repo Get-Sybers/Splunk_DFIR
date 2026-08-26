@@ -182,3 +182,43 @@ def test_process_bundled_mode_needs_no_dll(tmp_path, monkeypatch):
     # bundled mode passes no release dir down to the runner
     assert calls["kw"].get("evtxecmd_dir") in (None, "")
     assert calls["image"] == "dfir/evtxecmd:latest"
+
+
+def test_extract_images_reuses_existing(tmp_path, monkeypatch):
+    """An image whose stage subdir already holds .evtx is reused, not re-extracted."""
+    img = tmp_path / "Host.E01"
+    img.write_bytes(b"x")
+    stage = tmp_path / "stage"
+    # pre-seed the stage subdir (image stem) with an already-extracted log
+    dest = stage / "Host"
+    dest.mkdir(parents=True)
+    (dest / "System.evtx").write_bytes(b"x")
+
+    def boom(*a, **k):
+        raise AssertionError("extract() must not run when logs are already staged")
+
+    monkeypatch.setattr(evtx.imageexport, "extract", boom)
+    s = evtx.extract_images(str(img), str(stage))
+    assert s["images"] == 1 and s["reused"] == 1 and s["extracted"] == 0
+
+
+def test_extract_images_runs_and_counts(tmp_path, monkeypatch):
+    img = tmp_path / "Host.raw"
+    img.write_bytes(b"x")
+    stage = tmp_path / "stage"
+
+    def fake_extract(image, out_dir, **kw):
+        os.makedirs(out_dir, exist_ok=True)
+        p = os.path.join(out_dir, "Security.evtx")
+        open(p, "wb").write(b"x")
+        return [p, os.path.join(out_dir, "ignored.txt")]
+
+    monkeypatch.setattr(evtx.imageexport, "extract", fake_extract)
+    s = evtx.extract_images(str(img), str(stage))
+    assert s["extracted"] == 1 and s["reused"] == 0 and s["failed"] == 0
+
+
+def test_main_requires_a_source(capsys):
+    import pytest
+    with pytest.raises(SystemExit):
+        evtx.main(["--out-dir", "/tmp/x"])

@@ -95,16 +95,26 @@
 // Sysmon PID, so it is called out at each Sysmon branch.
 
 //=============================================================================
-// Helper — pull a value out of an EvtxECmd Payload XML fragment by Name.
+// Helper — pull a value out of an EvtxECmd Payload by Name.
 //
-// EvtxECmd puts EventData in Payload as <Data Name="X">value</Data>, and its
-// PayloadData1..6 summary fields vary by map, so they are not dependable for a
-// specific value. Same approach as the Splunk-era EXTRACT rules.
+// EvtxECmd's --json output stores EventData in Payload as JSON: an array of
+// {"@Name":"X","#text":"value"} objects under EventData.Data (a field with no
+// value has no "#text"). Its PayloadData1..6 summary fields vary by map, so they
+// are not dependable for a specific value — hence extracting from Payload.
+//
+// The value is captured with an escape-aware regex, then round-tripped through
+// parse_json so JSON escapes are decoded (\\ -> \ in paths, \" -> " in command
+// lines). A legacy fallback matches the old XML shape (<Data Name="X">value</Data>)
+// so payloads captured before the JSON switch still resolve.
 //=============================================================================
 .create-or-alter function
-with (docstring = "Extract <Data Name='key'> from an EvtxECmd Payload fragment", folder = "Helpers")
+with (docstring = "Extract a field from an EvtxECmd Payload by Name (JSON output; falls back to the legacy XML shape)", folder = "Helpers")
 EvtxPayload(payload:string, key:string) {
-    extract(strcat(@'<Data Name="', key, @'">([^<]*)</Data>'), 1, payload)
+    let j = tostring(parse_json(strcat('"',
+        extract(strcat(@'"@Name":"', key, @'","#text":"((?:[^"\\]|\\.)*)"'), 1, payload),
+        '"')));
+    iff(isnotempty(j), j,
+        extract(strcat(@'<Data Name="', key, @'">([^<]*)</Data>'), 1, payload))
 }
 
 //=============================================================================

@@ -114,6 +114,15 @@ if [[ -t 1 ]]; then CURL_PROGRESS=(--progress-bar); else CURL_PROGRESS=(--no-pro
 # handling of keys with spaces); otherwise curl with a percent-encoded URL.
 download() { # rel dest
     local rel="$1" dest="$2"
+    # A path column that is itself a full URL (http/https) is fetched directly —
+    # for samples hosted outside Digital Corpora (e.g. GitHub). It is stored
+    # already percent-encoded in the manifest, so curl gets it verbatim; aws and
+    # the corpora base are bypassed.
+    case "$rel" in
+        http://*|https://*)
+            curl -fSL "${CURL_PROGRESS[@]}" --retry 3 --retry-delay 5 -C - -o "$dest" "$rel"
+            return ;;
+    esac
     if [[ "$DL_TOOL" == aws ]]; then
         aws s3 cp "$S3_BASE/$rel" "$dest" --no-sign-request --only-show-errors
     else
@@ -422,7 +431,7 @@ fetch_group() { # group
     total=$(awk -F'\t' '{b+=$3} END{print b+0}' <<< "$rows")
     echo "Group: $group"
     echo "Size:  $(human "$total") across $(wc -l <<< "$rows") file(s)"
-    echo "Source: Digital Corpora (public). Nothing here is case evidence."
+    echo "Source: public DFIR corpora. Nothing here is case evidence."
     disk_ok "$total" || return 1
     echo
 
@@ -448,7 +457,7 @@ fetch_file() { # pattern
     total=$(awk -F'\t' '{b+=$3} END{print b+0}' <<< "$rows")
     echo "Matched $(wc -l <<< "$rows") file(s), $(human "$total"):"
     awk -F'\t' '{printf "   %s / %s\n",$1,$2}' <<< "$rows"
-    echo "Source: Digital Corpora (public). Nothing here is case evidence."
+    echo "Source: public DFIR corpora. Nothing here is case evidence."
     disk_ok "$total" || return 1
     echo
 

@@ -1,4 +1,4 @@
-# group	name	bytes	sha256	path (under https://digitalcorpora.s3.amazonaws.com/corpora/)
+# group	name	bytes	sha256	path (under https://digitalcorpora.s3.amazonaws.com/corpora/, OR a full http(s):// URL — percent-encoded — for a sample hosted elsewhere, e.g. GitHub)
 # sha256 of '-' means size-verified only; see fetch-samples.sh --help
 dfrws-challenge-2021	1_Skimmer_mSD.zip	36665139	1c5ad394daa49573f4088a31fb7f6a3f537dbcd092fdfd5abc8b572ebedbc262	dfrws/challenge-2021/1_Skimmer_mSD.zip
 dfrws-challenge-2021	2_Raspberry_Pi_mSD.zip	1814397882	-	dfrws/challenge-2021/2_Raspberry_Pi_mSD.zip
@@ -860,3 +860,15 @@ scenarios-magnet	2022 CTF - Linux.7z	14552740705	-	scenarios/magnet/2022 CTF - L
 scenarios-magnet	2022 CTF - Takeout.zip	2580941	-	scenarios/magnet/2022 CTF - Takeout.zip
 scenarios-magnet	2022 CTF - Windows.zip	37725211173	-	scenarios/magnet/2022 CTF - Windows.zip
 scenarios-magnet	2022 CTF - iOS Full File System.zip	4711962945	-	scenarios/magnet/2022 CTF - iOS Full File System.zip
+
+# sysmon-attack-samples — real Sysmon .evtx from sbousseaden/EVTX-ATTACK-SAMPLES (MIT),
+#   covering the Sysmon EventIDs the CAR schema maps: 1/5 process, 3 network, 6 driver,
+#   7 module, 8 remote-thread, 11 file, 12/13 registry. Validates the Sysmon CAR objects
+#   (the corpus disk images carry no Sysmon). Routed to other_raw_data/WinEvt/<group>/.
+sysmon-attack-samples	DSE_bypass_BYOV_TDL_dummydriver_sysmon_6_7_13.evtx	69632	1162521cb06986ddef24bff7c044b05d63f37ea8faeaa6acd8cc2529b05c7618	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/DSE_bypass_BYOV_TDL_dummydriver_sysmon_6_7_13.evtx
+sysmon-attack-samples	apt10_jjs_sideloading_prochollowing_persist_as_service_sysmon_1_7_8_13.evtx	69632	a623b11315eacd9732da5ebeabdb7c72d0f641fdf0ec5d2ec43e360abd13837e	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/apt10_jjs_sideloading_prochollowing_persist_as_service_sysmon_1_7_8_13.evtx
+sysmon-attack-samples	DE_UAC_Disabled_Sysmon_12_13.evtx	69632	06d462b8367cfc620bc84dbda970cf34bff761e02d9d6e1d33bc48f56bc66e6d	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/DE_UAC_Disabled_Sysmon_12_13.evtx
+sysmon-attack-samples	Sysmon_12_DE_AntiForensics_MRU_DeleteKey.evtx	69632	1eb4fc9d4fc6c4c36db7c4ec2ae5a6833e6cfb8d26e4c1f8d0653d5a78c533f3	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/Sysmon_12_DE_AntiForensics_MRU_DeleteKey.evtx
+sysmon-attack-samples	discovery_UEFI_Settings_rweverything_sysmon_6.evtx	69632	1f1903ca9c4a89b9e463c0c0de671da0862b0aa06af9145cfabd0255468b5eba	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Discovery/discovery_UEFI_Settings_rweverything_sysmon_6.evtx
+sysmon-attack-samples	privesc_rotten_potato_from_webshell_metasploit_sysmon_1_8_3.evtx	69632	03d1d202bdf50f7290da06e816ddf9535705f90acebbb0ccae7d2e62dcbf6699	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Privilege%20Escalation/privesc_rotten_potato_from_webshell_metasploit_sysmon_1_8_3.evtx
+sysmon-attack-samples	Sysmon_UACME_23.evtx	69632	c742e7767e11e4810cbbe77f53d04e855241b85b1df30c954e9210e50b5ba772	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Privilege%20Escalation/Sysmon_UACME_23.evtx
