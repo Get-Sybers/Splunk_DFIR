@@ -82,7 +82,7 @@ That's the idea. Here's where it honestly stands.
 ## 🧱 How It Runs
 <a name="how-it-runs"></a>
 
-The pipeline is a three-layer design (epic #46):
+The pipeline is a three-layer design:
 
 - **`dxdfir` CLI** — the front-end (`python/`, Typer): `dxdfir process <source>`,
   `dxdfir deploy`, `dxdfir ingest`, `dxdfir validate`, `dxdfir list` (`man dxdfir`
@@ -97,12 +97,10 @@ emulator, default) or **SOF-ELK** (`docker/sof-elk/`). `dxdfir deploy`/`ingest`
 cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
 `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
 
-The original `process-*.sh` scripts still ship under `scripts/` — they are the
-layer the capabilities below were actually exercised with, and are retired per
-source as each role's full path is proven. The CLI additionally needs
+The original `process-*.sh` scripts also ship under `scripts/` as the legacy layer;
+the `dxdfir` CLI and the collection are the supported front-end. The CLI needs
 `ansible-playbook` on `PATH` and the package installed with `pip install ./python`
-(which provides the `dxdfir` entry point and its one dependency, Typer);
-`setup-environment.sh` does not install these yet.
+(which provides the `dxdfir` entry point and its one dependency, Typer).
 
 ## 🧪 What Actually Works
 <a name="what-actually-works"></a>
@@ -114,10 +112,10 @@ and interfaces may still change. What the current line buys you over the
 that the defects below are known and written down rather than waiting to be
 discovered.
 
-The **Notes** name the `process-*.sh` script that does the work; each source is
-also runnable as `dxdfir process <source>` (which drives the matching
-`dfir_<source>` role — same container, same output). The ✅/⚠️ states reflect
-hand-runs of the scripts, not the role path or any automated test.
+The **Notes** name the underlying tool; each source runs as `dxdfir process
+<source>` (driving the matching `dfir_<source>` role) or as the legacy
+`process-*.sh` script — same container, same output. The ✅/⚠️ states reflect real
+runs on the author's corpus, not an automated test suite.
 
 | Capability | State | Notes |
 |:---|:---|:---|
@@ -127,12 +125,12 @@ hand-runs of the scripts, not the role path or any automated test.
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
 | Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, feeding `CarUserSession`/`CarProcess`/`CarService` (real 4624/4688/7045) |
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
-| Velociraptor offline collectors (EZ Tools) | ❌ Not started | **The planned artefact-collection path, replacing the removed KAPE automation** — same Zimmerman parsers, no Kroll licence constraint |
+| Velociraptor offline collectors (EZ Tools) | ❌ Not provided | Collecting artefacts off endpoints is out of scope here — the repo processes collector output you supply (same Zimmerman parsers, no Kroll licence constraint) |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
 | **Kusto emulator deploy** | ✅ Runs | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
-| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor; the live Velociraptor *collection* loader is still the planned piece |
+| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor collector output |
 | **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
-| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `process-signatures.sh`; **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; ingest + CAR wiring is a follow-up |
+| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `process-signatures.sh`; **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
 | Chainsaw | ❌ Not started | Not built |
 
 ### Known limitations
@@ -243,9 +241,9 @@ lookups, splunk-ansible playbooks — since retired with the Splunk stack, but
 still in git history). Matching that licence keeps the project compatible with
 everything it has ever redistributed.
 
-**Mixed licensing.** The repository root is Apache-2.0 (above). The pipeline code
-added in the #46 rewrite is offered under the more permissive **MIT** licence as
-self-contained, reusable components: the `get_sybers_dfir` Python package
+**Mixed licensing.** The repository root is Apache-2.0 (above). The pipeline code is
+offered under the more permissive **MIT** licence as self-contained, reusable
+components: the `get_sybers_dfir` Python package + `dxdfir` CLI
 (`python/`, per its `pyproject.toml`) and the `get_sybers.dfir` Ansible collection
 (`ansible/collections/`, per `galaxy.yml` and each role's `meta/main.yml`). MIT and
 Apache-2.0 are compatible; each subtree carries its own declared licence.
