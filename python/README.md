@@ -1,8 +1,8 @@
 # get_sybers_dfir
 
 The processing logic of the DX_DFIR pipeline as an importable, unit-tested Python
-package, plus the **`dxdfir`** command-line front-end (Typer) — the top layer of epic
-#46. The heavy per-item work (container runs, JSON reshaping) lives here; the
+package, plus the **`dxdfir`** command-line front-end (Typer) — the top layer of the
+pipeline. The heavy per-item work (container runs, JSON reshaping) lives here; the
 `get_sybers.dfir` Ansible collection orchestrates it one action per task.
 
 ## Processors

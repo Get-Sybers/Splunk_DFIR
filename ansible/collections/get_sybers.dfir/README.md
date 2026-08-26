@@ -10,10 +10,8 @@ Conforms to the Get-Sybers Ansible standards (naming/structuring + one-action-pe
 
 ## Roles
 One role per evidence source; each invokes its `get_sybers_dfir.<source>` processor
-as a single action. All six process roles exist (`dfir_zeek` was the exemplar the
-pattern was proven on); the matching `process-*.sh` scripts all remain and are
-retired per source only as each role's full path is proven — none retired yet
-(epic #46).
+as a single action. The matching `process-*.sh` scripts remain under `scripts/` as
+the legacy layer.
 
 | Role | Source | Processor |
 |---|---|---|

@@ -10,9 +10,8 @@ collectors running the EZ Tools** (replacing the removed KAPE automation).
 > per source) — see [How It Runs](/README.md#how-it-runs). Each `process-*.sh`
 > below has a matching `dfir_<source>` role (`dxdfir process <source>`); the
 > deploy/apply/ingest scripts map to the `dfir_deploy_adx` / `dfir_ingest_adx`
-> roles (`dxdfir deploy` / `dxdfir ingest`). Scripts are retired per source as each
-> role's full path is proven (epic #46); until then both are available, and this
-> page documents the scripts.
+> roles (`dxdfir deploy` / `dxdfir ingest`). The CLI and the roles are the supported
+> front-end; these scripts remain as the legacy layer, and this page documents them.
 
 ---
 
