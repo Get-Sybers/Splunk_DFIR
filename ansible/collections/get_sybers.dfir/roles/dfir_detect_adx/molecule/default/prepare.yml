@@ -1,0 +1,30 @@
+---
+# Needs a deployed emulator (`dxdfir deploy`) with the schema applied. Stages a
+# tiny signature-lane fixture so the converge has a detection that must fire.
+- name: Prepare
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_processed: /tmp/dfir_detect_adx_molecule/processed
+  tasks:
+    - name: "molecule-prepare | require a reachable emulator"
+      ansible.builtin.command:
+        argv: [python3, -m, get_sybers_dfir.detect, --ping]
+      environment:
+        PYTHONPATH: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
+      register: ping
+      changed_when: false
+      failed_when: ping.rc != 0
+
+    - name: "molecule-prepare | signatures/hayabusa fixture dir"
+      ansible.builtin.file:
+        path: "{{ molecule_processed }}/signatures/hayabusa"
+        state: directory
+        mode: "0755"
+
+    - name: "molecule-prepare | one promotable high-severity record"
+      ansible.builtin.copy:
+        dest: "{{ molecule_processed }}/signatures/hayabusa/molecule.jsonl"
+        content: |
+          {"Timestamp":"2020-01-02 03:04:05.000 +00:00","RuleTitle":"DFIR_DETECT_MOLECULE","Level":"high","Computer":"MOLECULE-HOST","Channel":"Sec","EventID":9999,"RuleID":"00000000-0000-0000-0000-000000000000","tool":"hayabusa"}
+        mode: "0644"

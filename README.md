@@ -85,8 +85,8 @@ That's the idea. Here's where it honestly stands.
 The pipeline is a three-layer design:
 
 - **`dxdfir` CLI** — the front-end (`python/`, Typer): `dxdfir process <source>`,
-  `dxdfir deploy`, `dxdfir ingest`, `dxdfir validate`, `dxdfir list` (`man dxdfir`
-  for the manual).
+  `dxdfir deploy`, `dxdfir ingest`, `dxdfir detect`, `dxdfir validate`,
+  `dxdfir list` (`man dxdfir` for the manual).
 - **`get_sybers.dfir` Ansible collection** — orchestration, one role per source,
   one action per task; the CLI drives it with `ansible-playbook`.
 - **`get_sybers_dfir` Python package** — the per-item processing the roles invoke

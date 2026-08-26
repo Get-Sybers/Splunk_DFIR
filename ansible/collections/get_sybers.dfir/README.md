@@ -27,6 +27,12 @@ Deploy + load roles: **`dfir_deploy_adx`** (emulator + schema), **`dfir_ingest_a
 into SOF-ELK's watch dir), **`dfir_deploy_sofelk`** (builds the from-source SOF-ELK
 stack — `docker/sof-elk/`). `dxdfir deploy` / `dxdfir ingest` drive the ADX pair.
 
+Analysis role: **`dfir_detect_adx`** — the detection orchestrator
+(`get_sybers_dfir.detect`). It surveys which processed data is actually present
+(ADX tables + signature-lane JSONL outputs), runs only the registered detections
+whose target data is there, and lands every hit — uniformly tagged — in
+`misc.Detections`. `dxdfir detect` drives it.
+
 ## Usage
 The **`dxdfir` CLI** (Python package `get_sybers_dfir`) is the front-end — it drives
 these roles for you:
