@@ -95,11 +95,34 @@ def test_split_l2t_groups_and_converts_timestamp(tmp_path):
         '{"parser":"filestat","timestamp":1609459200000000,"image_hostname":"H"}\n'
         '{"parser":"winreg/appcompatcache","timestamp":0}\n'
     )
-    out = prepare.split_l2t(str(f), "log2timeline/jsonl/host.jsonl")
+    out_dir = tmp_path / "stage"
+    out_dir.mkdir()
+    # streaming split: writes one file per table, returns {table: filepath}
+    out = prepare.split_l2t(str(f), "log2timeline/jsonl/host.jsonl", str(out_dir), "H")
     assert set(out) == {"L2tFilestat", "L2tWinreg"}
-    fs = json.loads(out["L2tFilestat"][0])
+    fs_lines = [json.loads(x) for x in open(out["L2tFilestat"]) if x.strip()]
+    assert len(fs_lines) == 1
+    fs = fs_lines[0]
     assert fs["Parser"] == "filestat" and fs["SourceImage"].endswith("host.jsonl")
     assert fs["Timestamp"] == "2021-01-01T00:00:00.000000Z"
+    # the staged file is named {prefix}.{table}
+    assert out["L2tFilestat"].endswith("H.L2tFilestat")
     # zero timestamp -> left unset (not 1970)
-    wr = json.loads(out["L2tWinreg"][0])
+    wr = [json.loads(x) for x in open(out["L2tWinreg"]) if x.strip()][0]
     assert "Timestamp" not in wr
+
+
+def test_l2t_tables_streaming_scan(tmp_path):
+    f = tmp_path / "host.jsonl"
+    f.write_text(
+        '{"parser":"filestat","timestamp":1}\n'
+        '{"parser":"filestat","timestamp":2}\n'
+        '{"parser":"winreg/appcompatcache","timestamp":0}\n'
+        '\n'                                  # blank line skipped
+        'not-json\n'                          # bad line skipped
+    )
+    assert prepare.l2t_tables(str(f)) == {"L2tFilestat": 2, "L2tWinreg": 1}
+
+
+def test_iter_jsonl_missing_file_yields_nothing(tmp_path):
+    assert list(prepare._iter_jsonl(str(tmp_path / "gone.jsonl"))) == []
