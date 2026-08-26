@@ -12,6 +12,10 @@ YARA has no JSON output and the container's recursive scan hangs, so the file sc
 loops per-file inside ONE container (per-file scans print strings) and the stable text
 form is parsed here. Each match is a self-describing JSON object. parse_vadyarascan()
 exists (and is unit-tested) for when the memory source is wired up.
+
+Rules are operator-supplied under data_store/dependencies/yara-rules. ``--fetch``
+provisions the DetectRaptor ruleset (pinned + sha256-verified, merged into
+detectraptor/detectraptor.yar) when it is absent — see detectraptor.py.
 """
 from __future__ import annotations
 
@@ -153,6 +157,18 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     res = {"lane": "yara", "sources": list(sources), "produced": 0, "skipped": 0,
            "failed": 0, "note": None}
 
+    if fetch and not _rule_files(rules_dir):
+        # Provision the DetectRaptor ruleset — like the shell lane's YARA-Forge
+        # starter, ONLY when the tree has no rules yet: operator rules suppress it,
+        # and DetectRaptor's sets are YARA-Forge extracts, so dropping the merged
+        # file next to a YARA-Forge set would fail the single-index compile on
+        # duplicate identifiers. Offline/failed fetch is a note, not a failure.
+        from . import detectraptor
+        try:
+            detectraptor.fetch(rules_dir)
+        except Exception as exc:  # noqa: BLE001 — network/hash errors surface as a note
+            res["note"] = f"detectraptor fetch failed: {exc}"
+
     rules = _rule_files(rules_dir)
     if not rules:
         res["note"] = f"no rules in {rules_dir}"
@@ -180,9 +196,11 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
         if not force and os.path.exists(out):
             res["skipped"] += 1
         elif not have_fuse():
-            res["note"] = "disk: /dev/fuse unavailable — mount-enable the host or point files at raw"
+            note = "disk: /dev/fuse unavailable — mount-enable the host or point files at raw"
+            res["note"] = f"{res['note']}; {note}" if res["note"] else note
         else:
-            res["note"] = "disk: mounting supported but requires ewfmount/ntfs-3g at runtime"
+            note = "disk: mounting supported but requires ewfmount/ntfs-3g at runtime"
+            res["note"] = f"{res['note']}; {note}" if res["note"] else note
 
     if "memory" in sources:
         out = os.path.join(output_dir, "memory.jsonl")

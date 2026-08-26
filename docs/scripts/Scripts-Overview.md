@@ -34,8 +34,9 @@ resolve their own path, so they can be run from anywhere.
 
 Three standalone lanes under `scripts/signatures/`, each emitting self-describing
 JSONL to `data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`;
-`--fetch` provisions rules/binaries when online. To supply your own YARA or
-Suricata rules (and tune Suricata's `HOME_NET`), see
+`--fetch` provisions rules/binaries when online (the Python YARA lane fetches the
+pinned [DetectRaptor](https://github.com/mgreen27/DetectRaptor) ruleset). To supply
+your own YARA or Suricata rules (and tune Suricata's `HOME_NET`), see
 [Signature-Rules](/docs/Signature-Rules.md).
 
 **Hayabusa** now also runs inside the **evtx pipeline** (`dxdfir process evtx`,
