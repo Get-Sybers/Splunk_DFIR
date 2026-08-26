@@ -56,6 +56,30 @@ The terms still bind whoever downloads them, and they are not uniform:
 None of these are case evidence. `data_store/` remains deny-by-default and
 holds nothing, and `samples/` is now written the same way.
 
+### DetectRaptor YARA content — fetched, not redistributed
+
+**This repository ships none of it.** The YARA lane's `--fetch`
+(`get_sybers_dfir/signatures/detectraptor.py`) downloads the YARA rulesets from
+[mgreen27/DetectRaptor](https://github.com/mgreen27/DetectRaptor) — commit-pinned,
+sha256-verified — and merges them into
+`data_store/dependencies/yara-rules/detectraptor/detectraptor.yar`, which is
+deny-by-default gitignored. Only the manifest (URLs + hashes) lives in this
+repository, so no redistribution obligation attaches — the same position as the
+sample corpora above.
+
+Terms still bind the operator who fetches, and they are layered:
+
+- **DetectRaptor itself declares no repository-level licence.** Treat the
+  aggregation as all-rights-reserved beyond the fetching-for-use its README
+  invites; do not redistribute the merged file.
+- **Each rule carries its own provenance** — upstream is a YARA-Forge-style
+  aggregation and every rule's `meta` block records `author`, `source_url` and
+  `license_url` (Neo23x0 signature-base, Mandiant, Arkbird_SOLG, …). The merge
+  keeps those blocks byte-for-byte; the per-rule licences (mostly DRL/CC/Apache)
+  govern the rules.
+- DetectRaptor's **VQL artifacts and CSV lookups are not fetched** — they need a
+  Velociraptor server this pipeline does not run.
+
 ---
 
 ---

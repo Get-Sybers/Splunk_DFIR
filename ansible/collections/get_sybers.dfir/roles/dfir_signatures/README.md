@@ -27,16 +27,18 @@ as a **single action**. One `<lane>/` folder of detections under the output base
 | `dfir_signatures_adx_out_dir` | `<repo>/data_store/processed/signatures` | ADX-path output base. |
 | `dfir_signatures_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/signatures` | SOF-ELK-path output base. |
 | `dfir_signatures_lanes` | `[]` (all) | Lanes to run — any of `yara`, `suricata`, `hayabusa`. |
-| `dfir_signatures_fetch` | `false` | Accepted for parity with the bash script; the Python processor does not provision rules/binaries (a no-op) — use `process-signatures.sh --fetch` for that. |
+| `dfir_signatures_fetch` | `false` | Provision rules when online: the YARA lane fetches the pinned DetectRaptor ruleset into `yara-rules/detectraptor/` (sha256-verified, merged, idempotent) when it has no rules yet. The other lanes still record a note when their deps are missing — use `process-signatures.sh --fetch` for those. |
 | `dfir_signatures_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
 | `dfir_signatures_force` | `false` | Regenerate lane outputs that already exist. |
 
 ## Rules / binaries
 Operator-supplied: YARA rules under `data_store/dependencies/yara-rules`, ET Open
 under `.../suricata-rules`, the Hayabusa binary under `.../hayabusa`.
-(`dfir_signatures_fetch` / `--fetch` is a no-op in the Python processor —
-provisioning lives in the bash `process-signatures.sh`.) A lane with no rules/inputs
-notes it and produces nothing (not a failure).
+`dfir_signatures_fetch` / `--fetch` provisions the DetectRaptor YARA ruleset when
+the tree has no rules yet (see `docs/Signature-Rules.md` → *DetectRaptor
+content*); Suricata/Hayabusa provisioning still lives in the bash
+`process-signatures.sh`. A lane with no rules/inputs notes it and produces
+nothing (not a failure).
 
 ## Idempotence
 A lane whose output already exists is skipped — the skip lives in the Python
