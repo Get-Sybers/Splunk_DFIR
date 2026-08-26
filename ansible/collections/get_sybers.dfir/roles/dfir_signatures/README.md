@@ -16,10 +16,9 @@ as a **single action**. One `<lane>/` folder of detections under the output base
 > **Ported subset.** The Python processor currently runs YARA over **loose files
 > only** and Hayabusa over **loose `.evtx` only**; Suricata is fully ported.
 > Disk-image scanning (read-only FUSE mount) and memory YARA (Volatility
-> `vadyarascan`) are implemented in the bash `scripts/process-signatures.sh` but
-> **not yet ported** here — a `disk`/`memory` source records a note and produces
-> nothing. Use `process-signatures.sh` for disk/memory coverage until the port
-> lands.
+> `vadyarascan`) are implemented in the bash `scripts/process-signatures.sh`, **not**
+> in the Python processor — a `disk`/`memory` source records a note and produces
+> nothing. Use `process-signatures.sh` for disk/memory coverage.
 
 ## Role variables
 | Variable | Default | Description |
@@ -28,7 +27,7 @@ as a **single action**. One `<lane>/` folder of detections under the output base
 | `dfir_signatures_adx_out_dir` | `<repo>/data_store/processed/signatures` | ADX-path output base. |
 | `dfir_signatures_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/signatures` | SOF-ELK-path output base. |
 | `dfir_signatures_lanes` | `[]` (all) | Lanes to run — any of `yara`, `suricata`, `hayabusa`. |
-| `dfir_signatures_fetch` | `false` | Accepted for parity with the bash script; rule/binary provisioning is **not yet ported** to the Python processor (currently a no-op). |
+| `dfir_signatures_fetch` | `false` | Accepted for parity with the bash script; the Python processor does not provision rules/binaries (a no-op) — use `process-signatures.sh --fetch` for that. |
 | `dfir_signatures_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
 | `dfir_signatures_force` | `false` | Regenerate lane outputs that already exist. |
 
