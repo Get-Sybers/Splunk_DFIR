@@ -1,11 +1,11 @@
-# 🚀 Get Started
+# Get Started
 
 > These steps reflect the paths that actually work today. See
 > [What Actually Works](/README.md#what-actually-works) before you start, and
 > note that the Kusto emulator carries licensing terms you are accepting
 > — [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
-### 🧭 Two ways to drive this
+### Two ways to drive this
 
 The **`dxdfir` CLI** is the pipeline's front-end (three-layer design — see
 [How It Runs](/README.md#how-it-runs)). The numbered steps below use the underlying
@@ -26,14 +26,14 @@ dxdfir validate          # run the repo check harness
 `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks. `man dxdfir` for
 the manual.
 
-### ⚙️ **Step 1: Setup Environment**
+### Step 1: Setup Environment
 - **Run setup-environment.sh:**
   ```bash
   DX_DFIR/scripts/setup-environment.sh
   ```
 _Refer to [📁 Setup_Environment](/docs/scripts/Setup_Environment.md) for details on the script._
 
-### 🗂️ **Step 2: Place Raw Data**
+### Step 2: Place Raw Data
 - **Disk Images (`.E01`):**
   ```bash
   DX_DFIR/data_store/raw/disk_images/
@@ -56,7 +56,7 @@ _Refer to [📁 Setup_Environment](/docs/scripts/Setup_Environment.md) for detai
 
 _Refer to [📁 Dir-Structure](/docs/Dir-Structure.md) for detailed directory structures._
 
-### 💾 **Step 3: Process Forensic Images (E01 / VMware)**
+### Step 3: Process Forensic Images (E01 / VMware)
 ```bash
 DX_DFIR/scripts/process-log2timeline-Dynamic.sh
 ```
@@ -65,14 +65,14 @@ DX_DFIR/scripts/process-log2timeline-Dynamic.sh
   fanned out into one `host.L2t<Parser>` table per top-level parser on ingest),
   the `.plaso` databases in `plaso/`, and job logs in `logs/`.
 
-### 🛜 **Step 4: Process PCAPs with Zeek**
+### Step 4: Process PCAPs with Zeek
 ```bash
 DX_DFIR/scripts/process-zeek-ALL.sh
 ```
 - Automates processing of all network capture files (`.pcap` and `.pcapng`) using Zeek.
 - Output lands in `data_store/processed/zeek/<pcap-name>/`.
 
-### 🪟 **Step 5: Parse Windows Event Logs (optional)**
+### Step 5: Parse Windows Event Logs (optional)
 ```bash
 DX_DFIR/scripts/process-evtx-EvtxECmd.sh
 ```
@@ -83,7 +83,7 @@ DX_DFIR/scripts/process-evtx-EvtxECmd.sh
 - ⚠️ Not runtime-tested — see
   [the script docs](/docs/scripts/processing_data/process-evtx-EvtxECmd.md).
 
-### 🧊 **Step 6: Deploy the Kusto emulator**
+### Step 6: Deploy the Kusto emulator
 ```bash
 DX_DFIR/scripts/deploy-kusto.sh
 ```
@@ -125,7 +125,7 @@ intended workflow is redeploy + re-ingest, which is cheap:
 | `KUSTO_CONTAINER` | `kusto-emulator` | Container name |
 | `KUSTO_NETWORK` | `kusto-dfir-isolated` | Isolated network name |
 
-### 🏗️ **Step 7: Apply the schema**
+### Step 7: Apply the schema
 ```bash
 DX_DFIR/scripts/apply-kusto-schema.sh
 ```
@@ -135,7 +135,7 @@ DX_DFIR/scripts/apply-kusto-schema.sh
 - Detects from the running container whether `/kustodata` is mounted and picks
   persist/volatile to match; `--persist` / `--volatile` override.
 
-### 📥 **Step 8: Ingest processed evidence**
+### Step 8: Ingest processed evidence
 ```bash
 DX_DFIR/scripts/ingest-kusto.sh
 ```
@@ -153,7 +153,7 @@ DX_DFIR/scripts/ingest-kusto.sh
 - `--only l2t|zeek|evtx|volatility|velociraptor` limits to one source;
   `--dry-run` lists without contacting anything.
 
-### 🔎 **Step 9: Query**
+### Step 9: Query
 
 Connect any Kusto client to `http://127.0.0.1:8080` (for example
 [Kusto.Explorer](https://learn.microsoft.com/en-us/kusto/tools/kusto-explorer)

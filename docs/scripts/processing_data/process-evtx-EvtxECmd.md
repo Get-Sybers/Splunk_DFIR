@@ -77,7 +77,7 @@ extracted from the `Payload` EventData fragment by the `EvtxPayload()` helper
 in `kusto/schema/40-mitre.kql`. Mapping fixes are query-time changes, not
 re-ingests.
 
-## ⚠️ Why the XML lane is not ingested
+## Why the XML lane is not ingested
 
 - `Payload` in the JSON output is `reader.ReadOuterXml()` over `EventData` /
   `UserData` — the **data fragment only**, with no `<System>` block. It is not a
