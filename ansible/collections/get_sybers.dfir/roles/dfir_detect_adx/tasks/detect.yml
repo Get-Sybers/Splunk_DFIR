@@ -1,0 +1,17 @@
+---
+- name: "detect-adx | sweep the processed data with the applicable detections"
+  ansible.builtin.command:
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.detect', '--processed-dir', dfir_detect_adx_processed_dir, '--limit', dfir_detect_adx_limit | string, '--host', dfir_detect_adx_kusto_host, '--port', dfir_detect_adx_kusto_port | string, '--container', dfir_detect_adx_kusto_container] + (['--only', dfir_detect_adx_only] if dfir_detect_adx_only | length > 0 else []) + (['--jsonl-out', dfir_detect_adx_jsonl_out] if dfir_detect_adx_jsonl_out | length > 0 else []) + (['--dry-run'] if dfir_detect_adx_dry_run | bool else []) }}"
+  environment:
+    PYTHONPATH: "{{ dfir_detect_adx_python_path }}"
+  register: dfir_detect_adx_run
+  changed_when: (dfir_detect_adx_run.stdout | from_json).hits_total | int > 0
+
+- name: "detect-adx | assert no detection failed"
+  ansible.builtin.assert:
+    that:
+      - (dfir_detect_adx_run.stdout | from_json).failed | int == 0
+    fail_msg: >-
+      detect reported {{ (dfir_detect_adx_run.stdout | from_json).failed }} failed
+      detection(s): {{ (dfir_detect_adx_run.stdout | from_json).errors }}
+    quiet: true

@@ -7,14 +7,15 @@ processing the roles invoke.
 
     dxdfir process zeek --pipeline adx   # drive the dfir_zeek role
     dxdfir ingest --only zeek            # load processed output into the ADX emulator
+    dxdfir detect                        # run every applicable registered detection
     dxdfir deploy                        # stand up + schema-load the emulator
     dxdfir validate                      # run the check harness
 
 ``process`` drives the collection with ``ansible-playbook`` (preflight → process →
 verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
-the tight loop. ``ingest`` and ``deploy`` drive the ``dfir_ingest_adx`` /
-``dfir_deploy_adx`` roles the same way; ``validate`` runs the repo's check harness
-(``tests/run-checks.sh``).
+the tight loop. ``ingest``, ``detect`` and ``deploy`` drive the ``dfir_ingest_adx``
+/ ``dfir_detect_adx`` / ``dfir_deploy_adx`` roles the same way; ``validate`` runs
+the repo's check harness (``tests/run-checks.sh``).
 """
 from __future__ import annotations
 
@@ -30,7 +31,7 @@ import typer
 from . import __version__
 
 app = typer.Typer(
-    help="DX_DFIR forensic pipeline front-end (process / ingest / deploy / validate).",
+    help="DX_DFIR forensic pipeline front-end (process / ingest / detect / deploy / validate).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -150,6 +151,43 @@ def ingest(
         cmd += ["-e", kv]
     env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
     typer.secho("ingesting processed → ADX emulator", fg=typer.colors.GREEN)
+    _run(cmd, cwd=repo, env=env)
+
+
+@app.command()
+def detect(
+    only: str = typer.Option(None, "--only", help="Run only these detection id(s), comma-separated."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Report targeting decisions; execute nothing."),
+    limit: int = typer.Option(None, "--limit", help="Max hits recorded per detection."),
+    jsonl_out: Path = typer.Option(None, "--jsonl-out", help="Also export the sweep's hits as JSON Lines."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
+) -> None:
+    """Sweep the processed data with every applicable registered detection (dfir_detect_adx).
+
+    The detection orchestrator surveys which processed data is actually present
+    (ADX tables + signature-lane JSONL) and runs only the registered detections
+    whose target data is there; hits land uniformly tagged in misc.Detections.
+    """
+    _need("ansible-playbook")
+    repo = _repo_root(repo_root)
+    playbook = repo / _COLLECTION / "playbooks" / "dfir-detect-adx.yml"
+    if not playbook.is_file():
+        typer.secho(f"detect playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
+    if only:
+        cmd += ["-e", f"dfir_detect_adx_only={only}"]
+    if dry_run:
+        cmd += ["-e", "dfir_detect_adx_dry_run=true"]
+    if limit is not None:
+        cmd += ["-e", f"dfir_detect_adx_limit={limit}"]
+    if jsonl_out is not None:
+        cmd += ["-e", f"dfir_detect_adx_jsonl_out={jsonl_out}"]
+    for kv in extra_var or []:
+        cmd += ["-e", kv]
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    typer.secho("running detections over processed data → misc.Detections", fg=typer.colors.GREEN)
     _run(cmd, cwd=repo, env=env)
 
 

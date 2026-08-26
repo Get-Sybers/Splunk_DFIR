@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: dfir_detect_adx
+  namespace: get_sybers
+  author: Get-Sybers
+  description: >-
+    Run the detection orchestrator over the processed data in the ADX (Kusto)
+    emulator. Invokes the get_sybers_dfir.detect runner, which surveys what data
+    is actually present, executes only the registered detections whose target
+    data is there, and collects every hit — uniformly tagged — in misc.Detections.
+  company: Get-Sybers
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: [bookworm, trixie]
+  galaxy_tags: [dfir, detection, kusto, adx]
+
+dependencies: []
