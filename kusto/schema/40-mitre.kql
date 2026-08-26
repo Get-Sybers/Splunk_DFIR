@@ -136,7 +136,7 @@ CarFlow_Zeek() {
         proto_info   = Service,
         ["flags"]    = History,   // `flags` is a KQL reserved word — must be bracket-quoted
         start_time   = Ts,
-        end_time     = iff(isnotnull(DurationSec), datetime_add('second', toint(DurationSec), Ts), datetime(null)),
+        end_time     = iff(isnotnull(DurationSec), datetime_add('microsecond', tolong(DurationSec * 1000000), Ts), datetime(null)),
         packet_count = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0)
 }
 
