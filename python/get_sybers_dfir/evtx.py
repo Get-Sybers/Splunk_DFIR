@@ -18,10 +18,19 @@ EvtxECmd exits 0 on an empty/corrupt log, so a zero-record output is removed and
 counted as failed (not treated as done). Emits a machine-readable summary as JSON on
 stdout so the Ansible task can set an honest ``changed_when`` (``processed > 0``).
 
-Run standalone or via the ``dfir`` CLI:
+Inputs may be loose ``.evtx`` (``--evtx-dir``) or a disk image / directory of images
+(``--image-src``): WindowsEventLogs are pulled out of the image with log2timeline's
+``image_export.py`` (see ``imageexport``) into a stage dir, then parsed like any other
+log — so the lane consumes E01/raw/VMDK evidence without a hand-extraction step.
 
-    python -m get_sybers_dfir.evtx --evtx-dir RAW/WinEvt --out-dir PROCESSED/windows_logs \
-        --evtxecmd-dir DEPENDENCIES/evtxecmd
+Run standalone or via the ``dxdfir`` CLI:
+
+    # loose logs, bundled EvtxECmd image
+    python -m get_sybers_dfir.evtx --evtx-dir RAW/WinEvt --out-dir PROCESSED/windows_logs
+
+    # straight from a disk image
+    python -m get_sybers_dfir.evtx --image-src RAW/disk_images/Host.E01 \
+        --out-dir PROCESSED/windows_logs
 """
 from __future__ import annotations
 
@@ -30,6 +39,8 @@ import json
 import os
 import subprocess
 import sys
+
+from . import imageexport
 
 # Operator-supplied mode: a stock .NET runtime image mounts the operator's release.
 # EvtxECmd's current .NET build targets net9.0, so the runtime must be 9.x — the old
@@ -240,12 +251,57 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
     return summary
 
 
+def extract_images(image_src, stage_dir, *, plaso_image=imageexport.PLASO_IMAGE,
+                   vss=False, force=False) -> dict:
+    """Pull WindowsEventLogs (``.evtx``) out of every disk image at ``image_src`` into
+    ``stage_dir/<image_stem>/``, so ``process()`` can then run over ``stage_dir`` as if
+    the logs had been supplied loose. Per-image subdirs keep hosts separated.
+
+    Idempotent: an image whose stage subdir already holds ``.evtx`` is skipped unless
+    ``force`` (re-extraction is the slow part). Returns a summary of what was extracted.
+    """
+    stage_dir = os.path.realpath(stage_dir)
+    images = imageexport.discover_images(image_src)
+    summary = {"image_src": os.path.realpath(image_src), "stage_dir": stage_dir,
+               "images": len(images), "extracted": 0, "reused": 0, "failed": 0,
+               "results": []}
+    for img in images:
+        stem = os.path.splitext(os.path.basename(img))[0]
+        dest = os.path.join(stage_dir, stem)
+        have = [os.path.join(r, f) for r, _d, fs in os.walk(dest) for f in fs
+                if f.lower().endswith(".evtx")] if os.path.isdir(dest) else []
+        if have and not force:
+            summary["reused"] += 1
+            summary["results"].append({"image": img, "evtx": len(have), "reused": True})
+            continue
+        try:
+            written = imageexport.extract(img, dest, plaso_image=plaso_image, vss=vss)
+        except subprocess.CalledProcessError:
+            summary["failed"] += 1
+            summary["results"].append({"image": img, "error": "image_export failed"})
+            continue
+        evtx = [f for f in written if f.lower().endswith(".evtx")]
+        summary["extracted"] += len(evtx)
+        summary["results"].append({"image": img, "evtx": len(evtx)})
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="get_sybers_dfir.evtx",
         description="Windows Event Logs (.evtx) -> EvtxECmd normalised JSON",
     )
-    ap.add_argument("--evtx-dir", required=True, help="directory tree of .evtx logs (recursed)")
+    ap.add_argument("--evtx-dir", help="directory tree of loose .evtx logs (recursed). "
+                    "Optional if --image-src is given.")
+    ap.add_argument("--image-src", help="disk image (E01/raw/VMDK) or a directory of them; "
+                    "WindowsEventLogs (.evtx) are extracted with log2timeline/plaso "
+                    "image_export.py, then processed. Combine with or use instead of --evtx-dir.")
+    ap.add_argument("--stage-dir", help="where --image-src extractions land "
+                    "(default: <out-dir>/_extracted_evtx). Per-image subdirs; reused across runs.")
+    ap.add_argument("--plaso-image", default=imageexport.PLASO_IMAGE,
+                    help="container image providing image_export.py (default: %(default)s)")
+    ap.add_argument("--vss", action="store_true",
+                    help="also extract from Volume Shadow Copies during --image-src extraction")
     ap.add_argument("--out-dir", required=True, help="output dir; grouped by source sub-dir (host)")
     ap.add_argument(
         "--evtxecmd-dir", default="",
@@ -260,12 +316,40 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--force", action="store_true", help="reparse logs that already have output")
     args = ap.parse_args(argv)
 
-    # Image and mode are coupled; process() picks the mode-appropriate default when
-    # --image is omitted (bundled image without a release dir, stock runtime with).
-    summary = process(
-        args.evtx_dir, args.out_dir, args.evtxecmd_dir or None,
-        image=args.image, force=args.force,
-    )
+    if not args.evtx_dir and not args.image_src:
+        ap.error("provide --evtx-dir, --image-src, or both")
+
+    out_dir = os.path.realpath(args.out_dir)
+
+    # Disk-image inputs first: extract WindowsEventLogs into the stage dir, then treat
+    # that stage dir as an evtx source alongside any loose --evtx-dir.
+    extract_summary = None
+    sources = []
+    if args.evtx_dir:
+        sources.append(os.path.realpath(args.evtx_dir))
+    if args.image_src:
+        stage_dir = os.path.realpath(args.stage_dir) if args.stage_dir \
+            else os.path.join(out_dir, "_extracted_evtx")
+        extract_summary = extract_images(
+            args.image_src, stage_dir, plaso_image=args.plaso_image,
+            vss=args.vss, force=args.force,
+        )
+        sources.append(stage_dir)
+
+    # Process each source; merge the per-source summaries into one honest total.
+    summary = {"tool": "evtx", "out_dir": out_dir, "sources": [],
+               "files": 0, "processed": 0, "skipped": 0, "empty": 0, "failed": 0}
+    if extract_summary is not None:
+        summary["extract"] = extract_summary
+    for src in sources:
+        s = process(src, out_dir, args.evtxecmd_dir or None,
+                    image=args.image, force=args.force)
+        summary["sources"].append(s)
+        if s.get("error"):
+            summary["error"] = s["error"]
+        for k in ("files", "processed", "skipped", "empty", "failed"):
+            summary[k] += s.get(k, 0)
+
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
     if summary.get("error"):
