@@ -34,7 +34,16 @@ resolve their own path, so they can be run from anywhere.
 
 Three standalone lanes under `scripts/signatures/`, each emitting self-describing
 JSONL to `data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`;
-`--fetch` provisions rules/binaries when online.
+`--fetch` provisions rules/binaries when online. To supply your own YARA or
+Suricata rules (and tune Suricata's `HOME_NET`), see
+[Signature-Rules](/docs/Signature-Rules.md).
+
+**Hayabusa** now also runs inside the **evtx pipeline** (`dxdfir process evtx`,
+or `python -m get_sybers_dfir.evtx --hayabusa`): it scans the same `.evtx` that
+lane collects — loose logs or those extracted from a disk image via `--image-src`
+— so disk-image EVTX reaches Hayabusa through the evtx lane's extraction rather
+than needing a `/dev/fuse` mount. The standalone `hayabusa.sh` lane remains for
+mount-based scans.
 
 | Lane | Input | Output |
 |---|---|---|

@@ -24,6 +24,16 @@ dfir_evtx_vss: false
 # the disk/signature lanes).
 dfir_evtx_plaso_image: "log2timeline/plaso:latest"
 
+# Hayabusa (Sigma detection) over the same .evtx this lane collects — loose or
+# image-extracted. Enrichment: a missing binary or zero detections is a note, not a
+# failure, so leaving this on is safe even without the binary provisioned.
+dfir_evtx_hayabusa: true
+# Dir holding the hayabusa binary (+ rules/). Empty => the processor's default,
+# data_store/dependencies/hayabusa under the CWD.
+dfir_evtx_hayabusa_dir: "{{ dfir_evtx_repo_root }}/data_store/dependencies/hayabusa"
+# Sigma rules dir (empty => rules/ beside the binary).
+dfir_evtx_hayabusa_rules: ""
+
 # How EvtxECmd is supplied — two modes:
 #   bundled  (default): the dfir/evtxecmd image (docker/evtxecmd) bakes EvtxECmd.dll
 #            + Maps/. Nothing to place by hand; build it once with

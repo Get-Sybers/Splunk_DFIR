@@ -122,3 +122,67 @@ def test_process_no_rules_no_pcaps_is_clean(tmp_path):
     assert s["tool"] == "signatures"
     assert s["processed"] == 0 and s["failed"] == 0
     assert set(s["results"]) == {"yara", "suricata", "hayabusa"}
+
+
+# ---- Suricata tuning (HOME_NET / --set), all pure ---------------------------
+from get_sybers_dfir.signatures import suricata
+
+
+def test_derive_home_net_picks_observed_private_supernets():
+    hn = suricata.derive_home_net(["10.1.2.3", "192.168.1.5", "8.8.8.8"])
+    assert hn == "[10.0.0.0/8,192.168.0.0/16]"          # only the seen privates, in order
+
+
+def test_derive_home_net_falls_back_when_no_private():
+    hn = suricata.derive_home_net(["8.8.8.8", "1.1.1.1", "garbage"])
+    assert hn == "[10.0.0.0/8,172.16.0.0/12,192.168.0.0/16]"   # RFC1918 default
+
+
+def test_var_sets_home_net_implies_external_complement():
+    s = suricata.var_sets(home_net="[10.0.0.0/8]")
+    assert "vars.address-groups.HOME_NET=[10.0.0.0/8]" in s
+    assert "vars.address-groups.EXTERNAL_NET=![10.0.0.0/8]" in s
+
+
+def test_var_sets_explicit_external_and_extra_passthrough():
+    s = suricata.var_sets(home_net="[10.0.0.0/8]", external_net="[1.2.3.0/24]",
+                          extra_sets=["vars.port-groups.HTTP_PORTS=8080"])
+    assert "vars.address-groups.EXTERNAL_NET=[1.2.3.0/24]" in s
+    assert "vars.port-groups.HTTP_PORTS=8080" in s
+
+
+def test_var_sets_empty_when_nothing_given():
+    assert suricata.var_sets() == []
+
+
+def test_suricata_argv_carries_sets_and_rules(tmp_path):
+    pcap = tmp_path / "c.pcap"; pcap.write_bytes(b"x")
+    rules = tmp_path / "r"; rules.mkdir(); rf = rules / "suricata.rules"; rf.write_text("")
+    argv = suricata.suricata_argv(str(pcap), "/out", str(rules), str(rf), "img",
+                                  sets=["vars.address-groups.HOME_NET=[10.0.0.0/8]"])
+    assert "-r" in argv and "/pcaps/c.pcap" in argv
+    assert argv[argv.index("-S") + 1] == "/rules/suricata.rules"
+    i = argv.index("--set")
+    assert argv[i + 1] == "vars.address-groups.HOME_NET=[10.0.0.0/8]"
+
+
+def test_collect_ips_from_eve_stream():
+    eve = '\n'.join([
+        '{"event_type":"flow","src_ip":"10.0.0.1","dest_ip":"8.8.8.8"}',
+        '{"event_type":"alert","src_ip":"10.0.0.2","dest_ip":"10.0.0.1"}',
+        'not json',
+        '{"event_type":"stats"}',
+    ])
+    assert suricata.collect_ips(eve) == ["10.0.0.1", "10.0.0.2", "8.8.8.8"]
+
+
+# ---- Hayabusa in the evtx pipeline (no-binary note path) --------------------
+from get_sybers_dfir import evtx
+
+
+def test_evtx_run_hayabusa_notes_missing_binary(tmp_path):
+    empty = tmp_path / "hb"; empty.mkdir()
+    out = tmp_path / "out"; out.mkdir()
+    res = evtx.run_hayabusa([str(tmp_path)], str(out), hb_dir=str(empty))
+    assert res["produced"] == 0 and res["output"] is None
+    assert "no hayabusa binary" in res["note"]

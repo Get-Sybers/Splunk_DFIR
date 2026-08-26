@@ -47,6 +47,22 @@ argument_specs:
         required: false
         default: "log2timeline/plaso:latest"
         description: "Container providing image_export.py for disk-image extraction."
+      dfir_evtx_hayabusa:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Also run Hayabusa (Sigma detection) over the same .evtx this lane collects,
+          writing <out-dir>/hayabusa/timeline.jsonl. Enrichment: a missing binary or
+          zero detections is a note, not a failure.
+      dfir_evtx_hayabusa_dir:
+        type: str
+        required: false
+        description: "Dir holding the hayabusa binary (+ rules/)."
+      dfir_evtx_hayabusa_rules:
+        type: str
+        required: false
+        description: "Sigma rules dir for Hayabusa (empty => rules/ beside the binary)."
       dfir_evtx_adx_out_dir:
         type: str
         required: false
