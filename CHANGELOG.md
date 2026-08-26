@@ -7,7 +7,22 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-26
+
 ### Added
+- Hayabusa (Sigma detection) inside the evtx lane (`get_sybers_dfir.evtx --hayabusa`,
+  `dfir_evtx_hayabusa`), scanning the same `.evtx` the lane collects — loose or
+  disk-image-extracted.
+- Disk-image EVTX extraction in the evtx lane (`--image-src`): WindowsEventLogs pulled
+  from E01/raw/VMDK with log2timeline/plaso `image_export.py` (`get_sybers_dfir.imageexport`).
+- Suricata tuning: `--home-net` / `--external-net` / `--suricata-set`, and
+  `--auto-home-net` (HOME_NET derived per-pcap from the observed private subnets).
+- DetectRaptor YARA provisioning (`get_sybers_dfir.signatures.detectraptor`): commit-pinned,
+  sha256-verified fetch merged into the yara-rules ruleset.
+- Pipeline smoke test (`tests/smoke-test.sh` + the `smoke` CI workflow): runs the real
+  evtx -> EvtxECmd -> ingest pipeline over sha256-pinned Sysmon fixtures and asserts the
+  CAR objects populate correctly.
+- `docs/Signature-Rules.md`: adding your own YARA / Suricata rules (and tuning HOME_NET).
 - **Detection orchestration** (`get_sybers_dfir.detect` + `dfir_detect_adx` role +
   `dxdfir detect`), modelled on DetectRaptor's StartHunts runner: a registry where
   each detection declares the processed data it targets (an ADX `db.Table` or a
@@ -19,6 +34,13 @@ is `0`, anything may change without notice.
   with `DetectionsLatest()`/`DetectionSummary()` views over the newest sweep).
   Seeded with 11 detections spanning EvtxECmd, Plaso prefetch, Zeek, Volatility,
   Velociraptor and the three signature lanes.
+
+### Fixed
+- `EvtxPayload()` parses EvtxECmd's JSON payload; it matched only the legacy XML shape
+  before, silently emptying every Sysmon/Security-derived CAR field (command line, parent,
+  service name/path, Sysmon network 5-tuple, driver/module/thread).
+- `CarFlow` end_time preserves sub-second connection duration (was truncated to whole seconds).
+- `ZeekSsl()` drops the always-null `Ja3` projection (base Zeek never emits it).
 
 ## [0.2.0] - 2026-08-21
 
