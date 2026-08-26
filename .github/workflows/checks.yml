@@ -8,10 +8,11 @@ name: checks
 # documentation links.
 #
 # What it does NOT cover: the pipeline. Nothing here processes a disk image,
-# a PCAP, or an event log, and nothing starts the Kusto emulator. Those need a
-# real host with Docker and real evidence — see the open issues tagged
-# `needs-runtime`. A green tick here means the repository is internally
-# consistent, not that the pipeline works.
+# a PCAP, or an event log, and nothing starts the Kusto emulator. That runtime
+# correctness coverage lives in the separate `smoke` workflow (smoke.yml), which
+# runs the real pipeline against pinned fixtures and asserts the CAR output. A
+# green tick HERE means the repository is internally consistent, not that the
+# pipeline works — that is what `smoke` is for.
 
 on:
   push:
