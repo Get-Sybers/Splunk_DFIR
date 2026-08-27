@@ -12,10 +12,14 @@
         recurse: true
       register: produced
 
-    - name: "molecule-verify | assert at least banners.Banners produced output"
+    # banners.Banners is NOT a safe canary: it scans for LINUX kernel banners, so
+    # a Windows memory image legitimately produces nothing from it. The honest
+    # gate is that the plugin set produced SOME JSONL from the sample.
+    - name: "molecule-verify | assert the plugin set produced output"
       ansible.builtin.assert:
         that:
           - produced.matched | int > 0
-          - produced.files | map(attribute='path') | map('basename') | select('search', '^banners\\.Banners\\.jsonl$') | list | length > 0
-        fail_msg: "no plugin JSONL produced from the sample memory image (banners.Banners needs no symbols)"
+        fail_msg: >-
+          no plugin JSONL produced from the sample memory image (symbols
+          unavailable for every plugin, or the image is unreadable)
         quiet: true
