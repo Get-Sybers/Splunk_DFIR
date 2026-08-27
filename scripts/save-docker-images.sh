@@ -30,10 +30,20 @@ DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
 
 # Docker images the processors run. Keep in step with the same list in
 # setup-environment.sh's documentation.
+# Everything the pipeline runs is now BUILT in-repo (hardened dfir/* images —
+# `ansible-playbook playbooks/dfir-build-images.yml`); this script saves those
+# builds plus the two images that cannot be built from source: the proprietary
+# Kusto emulator, and the stock .NET runtime for evtxecmd's operator-supplied
+# mode. Third-party tool images are gone from the runtime entirely.
 IMAGES=(
-    "log2timeline/plaso:latest"
-    "zeek/zeek:latest"
+    "dfir/yara:latest"
+    "dfir/suricata:latest"
+    "dfir/zeek:latest"
+    "dfir/volatility:latest"
+    "dfir/plaso:latest"
+    "dfir/evtxecmd:latest"
     "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
+    "mcr.microsoft.com/dotnet/runtime:9.0"
 )
 
 MODE="save"

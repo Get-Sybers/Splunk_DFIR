@@ -47,7 +47,7 @@ argument_specs:
       dfir_evtx_plaso_image:
         type: str
         required: false
-        default: "log2timeline/plaso:latest"
+        default: "dfir/plaso:latest"
         description: "Container providing image_export.py for disk-image extraction."
       dfir_evtx_hayabusa:
         type: bool

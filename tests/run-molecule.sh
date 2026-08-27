@@ -5,7 +5,8 @@
 # Runs the collection's molecule scenarios inside a purpose-built container
 # (python + molecule + a STATIC docker CLI), so molecule never has to be
 # installed on the host. The scenarios use the delegated driver: the role under
-# test runs its tool containers (blacktop/yara, zeek/zeek, log2timeline/plaso,
+# test runs its tool containers (the hardened dfir/* images — build them first
+# with playbooks/dfir-build-images.yml,
 # ...) against the HOST docker daemon through the mounted socket. For that to
 # work, the repo and /tmp are mounted at IDENTICAL paths inside the molecule
 # container — every bind path the role hands the daemon must be valid on the
@@ -48,7 +49,9 @@ FROM python:3.12-slim
 ADD https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz /tmp/docker.tgz
 RUN tar -xzf /tmp/docker.tgz -C /tmp && mv /tmp/docker/docker /usr/local/bin/docker \
     && rm -rf /tmp/docker /tmp/docker.tgz
-RUN pip install --no-cache-dir molecule ansible-core
+# requests + docker SDK: community.docker's modules import them (the
+# dfir_images scenario builds images through that collection)
+RUN pip install --no-cache-dir molecule ansible-core requests docker
 DOCKERFILE
 fi
 

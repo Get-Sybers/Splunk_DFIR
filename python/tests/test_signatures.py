@@ -1,4 +1,5 @@
 """Unit tests for the signatures lanes' pure parsing logic (no engines needed)."""
+import json
 import os
 
 from get_sybers_dfir import signatures
@@ -118,16 +119,28 @@ def test_vadyarascan_argv_mounts_and_wrapper_args(tmp_path):
     sym = tmp_path / "symbols"; sym.mkdir()
     ren = tmp_path / "r.py"; ren.write_text("")
     rules = tmp_path / "combined.yar"; rules.write_text("rule X { condition: true }")
-    argv = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules), "vol:img")
+    argv = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules), "vol:img",
+                                 out_mount="/scratch/out")
     assert argv[:3] == ["docker", "run", "--rm"]
+    for flag in ("--cap-drop", "--security-opt"):
+        assert flag in argv
+    assert "--network" in argv                                   # offline by default
     assert f"{mem.parent}:/mem:ro" in argv                       # image dir read-only
     assert f"{sym}:/symbols" in argv                             # symbols writable (ISF cache)
     assert f"{rules}:/rules/combined.yar:ro" in argv
+    assert "/scratch/out:/volout" in argv
     assert "vol:img" in argv
-    # wrapper argv: renderer, symbols, image, rules file — in that order
-    assert argv[-4:] == ["/opt/jsonl_dfir_renderer.py", "/symbols",
-                         "/mem/memdump.mem", "/rules/combined.yar"]
-    assert "windows.vadyarascan.VadYaraScan" in argv[argv.index("-c") + 1]
+    extra = json.loads(argv[argv.index("-e") + 1])
+    tool = extra["dfir_run_argv"]
+    # python restricted to the baked wrapper; scan JSONL written by the role
+    assert tool[:3] == ["python3", "/opt/dfir/vol_wrapper.py",
+                        "/opt/jsonl_dfir_renderer.py"]
+    assert "windows.vadyarascan.VadYaraScan" in tool
+    assert extra["dfir_run_stdout_file"] == "/volout/out.jsonl"
+    # symbols_online lifts the network isolation for ISF fetch
+    online = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules),
+                                   "vol:img", symbols_online=True)
+    assert "--network" not in online
 
 
 def test_combine_rules_concatenates(tmp_path):
@@ -220,10 +233,15 @@ def test_suricata_argv_carries_sets_and_rules(tmp_path):
     rules = tmp_path / "r"; rules.mkdir(); rf = rules / "suricata.rules"; rf.write_text("")
     argv = suricata.suricata_argv(str(pcap), "/out", str(rules), str(rf), "img",
                                   sets=["vars.address-groups.HOME_NET=[10.0.0.0/8]"])
-    assert "-r" in argv and "/pcaps/c.pcap" in argv
-    assert argv[argv.index("-S") + 1] == "/rules/suricata.rules"
-    i = argv.index("--set")
-    assert argv[i + 1] == "vars.address-groups.HOME_NET=[10.0.0.0/8]"
+    # hardened invocation: flags + the tool argv handed to the image's run role
+    for flag in ("--cap-drop", "--security-opt", "--network"):
+        assert flag in argv
+    tool = json.loads(argv[argv.index("-e") + 1])["dfir_run_argv"]
+    assert tool[0] == "suricata"
+    assert "-r" in tool and "/pcaps/c.pcap" in tool
+    assert tool[tool.index("-S") + 1] == "/rules/suricata.rules"
+    i = tool.index("--set")
+    assert tool[i + 1] == "vars.address-groups.HOME_NET=[10.0.0.0/8]"
 
 
 def test_collect_ips_from_eve_stream():

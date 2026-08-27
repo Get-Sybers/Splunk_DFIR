@@ -1,0 +1,13 @@
+---
+# Builds the LIGHTEST image (yara) for real and lets the role's own contract
+# assertion run — proving the in-build ansible hardening produced a compliant
+# image. The full set is exercised by the release-gate run-through.
+- name: Converge
+  hosts: localhost
+  gather_facts: false
+  vars:
+    dfir_images_set: [yara]
+  tasks:
+    - name: "converge | run dfir_images (yara only)"
+      ansible.builtin.include_role:
+        name: dfir_images

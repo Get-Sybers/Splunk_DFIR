@@ -3,6 +3,17 @@
 Collection-level changes only; the project-wide history lives in the repository
 root [CHANGELOG.md](../../../CHANGELOG.md).
 
+## 0.4.0
+
+- New `dfir_images` role: builds the hardened dfir/* tool images from in-repo
+  Dockerfiles (ansible-only execution, allow-listed run role, uid0 renamed and
+  locked, no sudo/su, no package managers, non-root runtime) and verifies the
+  contract per build, statically and in-container.
+- Processor roles default to the dfir/* images; `dfir_volatility_symbols_online`
+  gates the one legitimate network need.
+- Process tasks pass runtime hardening through the shared
+  `get_sybers_dfir.container` invocation layer.
+
 ## 0.3.1
 
 - One pipeline-agnostic `tasks/process.yml` per processor role; the adx|sofelk

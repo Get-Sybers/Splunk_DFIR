@@ -33,9 +33,10 @@ import os
 import subprocess
 import tempfile
 
+from .. import container
 from . import clean_name
 
-_SURICATA_IMAGE = "jasonish/suricata:latest"
+_SURICATA_IMAGE = "dfir/suricata:latest"
 _WANTED = {"alert", "anomaly", "http", "dns", "tls", "fileinfo", "flow"}
 
 # Ranges that count as "home" when auto-deriving HOME_NET: RFC1918 + CGNAT +
@@ -451,20 +452,22 @@ def discover(pcap_dir: str) -> list[str]:
 
 
 def suricata_argv(pcap, out_dir, rules_dir, rules_file, image, sets=None):
-    """The ``docker run`` argv for one offline Suricata pass. ``sets`` are Suricata
-    ``--set key=value`` tuning entries (HOME_NET etc. from ``var_sets``). Pure."""
-    argv = [
-        "docker", "run", "--rm",
-        "-v", f"{os.path.dirname(pcap)}:/pcaps:ro",
-        "-v", f"{os.path.realpath(rules_dir)}:/rules:ro",
-        "-v", f"{out_dir}:/out",
-        image, "suricata", "-r", f"/pcaps/{os.path.basename(pcap)}", "-l", "/out", "-k", "none",
-    ]
+    """The ``docker run`` argv for one offline Suricata pass on the hardened
+    dfir/suricata image (ansible-only execution, allow-listed argv, no caps, no
+    network — offline replay needs none). ``sets`` are Suricata ``--set
+    key=value`` tuning entries (HOME_NET etc. from ``var_sets``). Pure."""
+    tool = ["suricata", "-r", f"/pcaps/{os.path.basename(pcap)}",
+            "-l", "/out", "-k", "none"]
     if rules_file:
-        argv += ["-S", f"/rules/{os.path.basename(rules_file)}"]
-    for s in (sets or []):
-        argv += ["--set", s]
-    return argv
+        tool += ["-S", f"/rules/{os.path.basename(rules_file)}"]
+    for entry in (sets or []):
+        tool += ["--set", entry]
+    return container.ansible_run(
+        image, tool,
+        mounts=[f"{os.path.dirname(pcap)}:/pcaps:ro",
+                f"{os.path.realpath(rules_dir)}:/rules:ro",
+                f"{out_dir}:/out"],
+    )
 
 
 def _run_suricata(pcap, out_dir, rules_dir, rules_file, image, sets=None):

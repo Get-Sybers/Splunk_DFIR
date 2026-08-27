@@ -1,0 +1,43 @@
+---
+- name: "run | assert the invocation is allow-listed for this image"
+  ansible.builtin.assert:
+    that:
+      - dfir_run_argv | length > 0
+      - dfir_run_argv[0] in lookup('env', 'DFIR_ALLOWED_ARGV0').split(':')
+      - >-
+        lookup('env', 'DFIR_ALLOWED_ARGV1') == ''
+        or dfir_run_argv[0] not in lookup('env', 'DFIR_ALLOWED_INTERPRETERS', default='python3:dotnet').split(':')
+        or (dfir_run_argv | length > 1
+            and dfir_run_argv[1] in lookup('env', 'DFIR_ALLOWED_ARGV1').split(':'))
+    fail_msg: >-
+      refused: this image only runs {{ lookup('env', 'DFIR_ALLOWED_ARGV0') }}
+      (interpreter scripts restricted to {{ lookup('env', 'DFIR_ALLOWED_ARGV1') }}),
+      got {{ dfir_run_argv[:2] }}.
+    quiet: true
+
+- name: "run | execute the tool"
+  ansible.builtin.command:
+    argv: "{{ dfir_run_argv }}"
+    chdir: "{{ dfir_run_chdir | default('', true) or omit }}"
+  register: dfir_run_result
+  changed_when: true
+  failed_when: false
+
+- name: "run | write the tool's stdout to the requested output file"
+  ansible.builtin.copy:
+    content: "{{ dfir_run_result.stdout }}"
+    dest: "{{ dfir_run_stdout_file }}"
+    mode: "0644"
+  when: dfir_run_stdout_file | length > 0
+
+- name: "run | surface the tool's stderr for the caller's logs"
+  ansible.builtin.debug:
+    msg: "{{ dfir_run_result.stderr | default('') | trim }}"
+  when: (dfir_run_result.stderr | default('')) | trim | length > 0
+
+- name: "run | propagate the tool's exit status"
+  ansible.builtin.assert:
+    that:
+      - dfir_run_result.rc == 0
+    fail_msg: "tool exited rc={{ dfir_run_result.rc }}"
+    quiet: true

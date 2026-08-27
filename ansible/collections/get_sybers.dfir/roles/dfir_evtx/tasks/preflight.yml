@@ -21,7 +21,8 @@
     quiet: true
 
 # Bundled mode: the dfir/evtxecmd image must already exist locally (it bakes the
-# DLL + Maps/). Build it once — docker build -t dfir/evtxecmd:latest docker/evtxecmd.
+# DLL + Maps/). Build it with the dfir_images role:
+#   ansible-playbook playbooks/dfir-build-images.yml
 - name: "evtx-preflight | bundled EvtxECmd image is present"
   when: dfir_evtx_use_bundled_image | bool
   block:
@@ -39,7 +40,7 @@
           - dfir_evtx_bundled_inspect.rc == 0
         fail_msg: >-
           Bundled image {{ dfir_evtx_image }} not found. Build it with
-          `docker build -t {{ dfir_evtx_bundled_image }} docker/evtxecmd`, or set
+          `ansible-playbook playbooks/dfir-build-images.yml`, or set
           dfir_evtx_use_bundled_image=false to use an operator-supplied release.
         quiet: true
 

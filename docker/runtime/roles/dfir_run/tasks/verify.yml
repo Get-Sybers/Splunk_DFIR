@@ -1,0 +1,41 @@
+---
+- name: "verify | current uid"
+  ansible.builtin.command:
+    argv: [id, -u]
+  register: dfir_run_verify_uid
+  changed_when: false
+
+- name: "verify | the uid-0 account name"
+  ansible.builtin.command:
+    argv: [getent, passwd, "0"]
+  register: dfir_run_verify_root
+  changed_when: false
+
+- name: "verify | escalation and installer binaries"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  register: dfir_run_verify_bins
+  loop:
+    - /usr/bin/sudo
+    - /usr/bin/su
+    - /bin/su
+    - /usr/bin/apt-get
+    - /usr/bin/dpkg
+    - /usr/local/bin/pip
+    - /usr/bin/pip
+
+- name: "verify | assert the hardening contract"
+  ansible.builtin.assert:
+    that:
+      - dfir_run_verify_uid.stdout == "2000"
+      - dfir_run_verify_root.stdout.startswith("ansible:")
+      - dfir_run_verify_bins.results | map(attribute='stat.exists') | select | list | length == 0
+    fail_msg: >-
+      hardening contract violated: uid={{ dfir_run_verify_uid.stdout }},
+      uid0={{ dfir_run_verify_root.stdout.split(':')[0] }},
+      leftover binaries present.
+    quiet: true
+
+- name: "verify | report"
+  ansible.builtin.debug:
+    msg: "DFIR-HARDEN-VERIFY-OK uid=2000 root=ansible no-sudo no-pkg-mgr"

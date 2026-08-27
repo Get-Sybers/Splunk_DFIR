@@ -9,7 +9,7 @@ never the whole filesystem.
 It ports ``sig_extract_artifacts`` from the retired shell lane library
 (``scripts/signatures/lib/disk-image.sh``, the Hayabusa lane's extractor) — same
 container, same flags — so the evtx and signature lanes source disk-image EVTX the
-one proven way. Reusing the already-shipped ``log2timeline/plaso`` image keeps the
+one proven way. Reusing the pipeline's own hardened ``dfir/plaso`` image keeps the
 .NET evtxecmd image free of a dfVFS/pytsk3 stack.
 
 ``image_export_argv`` is pure (no I/O) so the container invocation is unit-testable
@@ -20,8 +20,10 @@ from __future__ import annotations
 import os
 import subprocess
 
-# The disk lane already ships this image (the plaso + signature lanes pin it).
-PLASO_IMAGE = "log2timeline/plaso:latest"
+from . import container
+
+# The pipeline's own hardened plaso image (built by the dfir-build-images playbook).
+PLASO_IMAGE = "dfir/plaso:latest"
 
 # Formats dfVFS can open. Supersets the retired disk-image.sh's sig_list_images()
 # with the VHD/VHDX/QCOW2 formats the plaso processor also accepts, so every image

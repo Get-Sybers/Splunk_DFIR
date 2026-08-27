@@ -1,0 +1,63 @@
+---
+# One image: build from docker/<name>/Dockerfile (context docker/, so the
+# shared hardening playbook and runtime role are in reach), then verify the
+# Splunk-style contract twice — statically (pinned ansible ENTRYPOINT, fixed
+# non-root USER, hardened label) and from INSIDE the running container via the
+# embedded run role's verify mode (uid 2000, uid0 renamed to ansible, no
+# sudo/su, no package manager, no pip).
+
+- name: "images-build | build the hardened image dfir/{{ dfir_images_name }}"
+  community.docker.docker_image:
+    name: "dfir/{{ dfir_images_name }}"
+    tag: latest
+    source: build
+    force_source: "{{ dfir_images_force | bool }}"
+    build:
+      path: "{{ dfir_images_context }}"
+      dockerfile: "{{ dfir_images_name }}/Dockerfile"
+
+- name: "images-build | inspect dfir/{{ dfir_images_name }}"
+  community.docker.docker_image_info:
+    name: "dfir/{{ dfir_images_name }}:latest"
+  register: dfir_images_inspect
+
+- name: "images-build | assert the static contract on dfir/{{ dfir_images_name }}"
+  ansible.builtin.assert:
+    that:
+      - dfir_images_inspect.images | length == 1
+      - dfir_images_inspect.images[0].Config.User == "2000:2000"
+      - (dfir_images_inspect.images[0].Config.Labels or {})['com.get-sybers.hardened'] | default('') == 'true'
+      - (dfir_images_inspect.images[0].Config.Entrypoint or [])[0] | default('') == 'ansible-playbook'
+      - "'/opt/dfir/entrypoint.yml' in (dfir_images_inspect.images[0].Config.Entrypoint or [])"
+    fail_msg: >-
+      dfir/{{ dfir_images_name }} does not satisfy the static hardening contract
+      (USER 2000:2000, com.get-sybers.hardened label, pinned ansible-playbook
+      ENTRYPOINT on /opt/dfir/entrypoint.yml).
+    quiet: true
+
+- name: "images-build | verify the contract from inside dfir/{{ dfir_images_name }}"
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --rm
+      - --cap-drop
+      - ALL
+      - --security-opt
+      - no-new-privileges
+      - --network
+      - none
+      - "dfir/{{ dfir_images_name }}:latest"
+      - -e
+      - '{"dfir_run_verify": true}'
+  register: dfir_images_verify_run
+  changed_when: false
+
+- name: "images-build | assert the in-container verification reported OK"
+  ansible.builtin.assert:
+    that:
+      - "'DFIR-HARDEN-VERIFY-OK' in dfir_images_verify_run.stdout"
+    fail_msg: >-
+      dfir/{{ dfir_images_name }} failed its own in-container hardening
+      verification (run role verify mode).
+    quiet: true
