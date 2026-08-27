@@ -34,6 +34,9 @@ app = typer.Typer(
     help="DX_DFIR forensic pipeline front-end (process / ingest / detect / deploy / validate).",
     no_args_is_help=True,
     add_completion=False,
+    # Accept -h as well as --help at every level: the group and, by context
+    # inheritance, each subcommand — so `dxdfir -h`, `dxdfir process -h`, etc. all work.
+    context_settings={"help_option_names": ["-h", "--help"]},
 )
 
 _COLLECTION = "ansible/collections/get_sybers.dfir"
@@ -253,12 +256,46 @@ def validate(
     _run(["bash", str(checks)], cwd=repo)
 
 
+# Where each source reads its evidence from (relative to data_store/raw), and the
+# file types that count as evidence there — mirrors the roles' input-dir defaults.
+_EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "zeek":         (("pcaps",),                 (".pcap", ".pcapng", ".cap")),
+    "evtx":         (("other_raw_data/WinEvt",), (".evtx",)),
+    "volatility":   (("memory",),                (".dmp", ".mem", ".lime", ".vmem", ".raw", ".dump", ".bin")),
+    "plaso":        (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
+                                                   ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
+    "velociraptor": (("velociraptor",),          (".zip", ".json")),
+}
+
+
 @app.command(name="list")
-def list_sources() -> None:
-    """List the evidence sources the CLI can process."""
-    typer.echo("Evidence sources (dxdfir process <source>):")
-    for s in Source:
-        typer.echo(f"  {s.value}")
+def list_sources(
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """List staged evidence under data_store/raw — what `dxdfir process <source>` will read."""
+    repo = _repo_root(repo_root)
+    raw = repo / "data_store" / "raw"
+    typer.secho(f"Evidence under {raw.relative_to(repo)}/", bold=True)
+    for src in Source:
+        name = src.value
+        if name == "signatures":
+            continue  # spans the other lanes' inputs; reported separately below
+        subs, exts = _EVIDENCE[name]
+        count = 0
+        missing = []
+        for sub in subs:
+            d = raw / sub
+            if d.is_dir():
+                count += sum(1 for p in d.rglob("*") if p.is_file() and p.suffix.lower() in exts)
+            else:
+                missing.append(sub)
+        colour = typer.colors.GREEN if count else typer.colors.BRIGHT_BLACK
+        loc = ", ".join(subs) + "/"
+        note = typer.style("  (not staged)", fg=typer.colors.BRIGHT_BLACK) if count == 0 else ""
+        typer.echo(f"  {name:<13} {typer.style(f'{count:>5}', fg=colour)} file(s)  {loc}{note}")
+    typer.echo(f"  {'signatures':<13} {'—':>5}          scans pcaps / files / disk images / evtx (the lanes above)")
+    typer.echo("")
+    typer.echo("Process one with:  dxdfir process <source>   (see  dxdfir process -h)")
 
 
 def _version_cb(value: bool) -> None:

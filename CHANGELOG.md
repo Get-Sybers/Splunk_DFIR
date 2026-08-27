@@ -16,6 +16,10 @@ is `0`, anything may change without notice.
   work on a clean install.
 - `scripts/setup-environment.sh` now installs the `dxdfir` CLI (into a dedicated venv),
   not just Docker and the userland tools.
+- `dxdfir list` now inventories the evidence staged under `data_store/raw` (per source,
+  with file counts and whether it is staged) instead of just naming the source types.
+- `-h` is accepted everywhere as an alias for `--help` (`dxdfir -h`, `dxdfir process -h`,
+  …), each level showing its own options.
 
 ### Added
 - Root `README.md` **Quick Start**: clone -> `setup-environment.sh` -> `dxdfir deploy`
