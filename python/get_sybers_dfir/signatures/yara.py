@@ -270,7 +270,7 @@ def _scan_dir(scan_dir, rules_dir, index_path, source, base, image) -> list[dict
         # per-file scan script (/opt/dfir/scan-list.sh) — the loop lives in the
         # image, no shell command is injected from here. The role writes the
         # scan's stdout to the mounted out dir.
-        subprocess.run(
+        proc = subprocess.run(
             container.ansible_run(
                 image,
                 ["/opt/dfir/scan-list.sh"],
@@ -284,6 +284,12 @@ def _scan_dir(scan_dir, rules_dir, index_path, source, base, image) -> list[dict
             capture_output=True, check=False,
         )
         raw_path = os.path.join(out_mount, "raw.txt")
+        # A failed container run with no output file is a SCAN failure, never
+        # "no matches" — zero hits must always mean the scan actually ran.
+        if proc.returncode != 0 and not os.path.isfile(raw_path):
+            raise RuntimeError(
+                f"yara scan container failed (rc={proc.returncode}) and wrote "
+                "no output — see the run role's play output")
         raw = ""
         if os.path.isfile(raw_path):
             with open(raw_path, encoding="utf-8", errors="replace") as fh:
@@ -350,10 +356,15 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
         if not force and os.path.exists(out):
             res["skipped"] += 1
         elif os.path.isdir(files_target):
-            matches = _scan_dir(files_target, rules_dir, index_path, "file",
-                                os.path.basename(files_target), image)
-            _write(out, matches)
-            res["produced"] += len(matches)
+            try:
+                matches = _scan_dir(files_target, rules_dir, index_path, "file",
+                                    os.path.basename(files_target), image)
+            except RuntimeError as exc:
+                res["failed"] += 1
+                _note(res, f"files: {exc}")
+            else:
+                _write(out, matches)
+                res["produced"] += len(matches)
 
     if "disk" in sources:
         out = os.path.join(output_dir, "disk.jsonl")
@@ -380,8 +391,12 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
                     scanroot = mnt
                     if disk_subpath and os.path.isdir(os.path.join(mnt, disk_subpath)):
                         scanroot = os.path.join(mnt, disk_subpath)
-                    matches += _scan_dir(scanroot, rules_dir, index_path, "disk",
-                                         os.path.basename(img), image)
+                    try:
+                        matches += _scan_dir(scanroot, rules_dir, index_path, "disk",
+                                             os.path.basename(img), image)
+                    except RuntimeError as exc:
+                        res["failed"] += 1
+                        _note(res, f"disk {os.path.basename(img)}: {exc}")
                 finally:
                     unmount_image(state, mnt)
             _write(out, matches)
