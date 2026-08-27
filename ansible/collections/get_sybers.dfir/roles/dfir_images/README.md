@@ -34,6 +34,30 @@ Runtime is the other half: the Python processors run every image with
 `--cap-drop ALL --security-opt no-new-privileges` and `--network none`
 (volatility gets an explicit opt-in for symbol fetch).
 
+## What is removed vs. what remains (and why)
+
+Verify any image: `docker run --rm --entrypoint /bin/sh dfir/<tool>:latest -c
+'id -u; getent passwd 0; command -v apt-get dpkg pip sudo su || echo none'`.
+
+**Removed** (confirmed in every image): the package managers (`apt`, `apt-get`,
+`dpkg`), `pip`/`pip3`, `sudo`/`su`/`pkexec`, the account-manipulation suite
+(`passwd`, `chsh`, `usermod`, …), and every setuid/setgid bit. The uid-0 account
+is renamed `ansible` and locked; the tool runs as uid 2000.
+
+**Deliberately kept**: a shell (`/bin/sh` → dash, and `bash`) and `python3`.
+This is a direct consequence of the Splunk-docker posture — **ansible is the
+container's only execution path**, and ansible's local connection executes every
+module through `/bin/sh` with `python3`. Deleting them would break the run role
+that enforces the allow-list. So the design does not pretend the shell is gone;
+it makes the shell **unreachable**: the ENTRYPOINT is pinned to
+`ansible-playbook /opt/dfir/entrypoint.yml`, which runs the allow-listed run
+role and nothing else, so a caller cannot ask the container to run `sh` (only
+the image's allow-listed tool argv). Combined with runtime `--cap-drop ALL
+--security-opt no-new-privileges --network none`, an escape would need a defect
+in ansible/the run role itself, not a handy interpreter — the shell is present
+but has no path to invocation. Removing installers and escalation tooling means
+even a hypothetical foothold cannot fetch or build more, or gain privilege.
+
 ## The one deviation
 
 The Kusto emulator (`kustainer`) is proprietary and cannot be built from
