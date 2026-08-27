@@ -1,6 +1,6 @@
 """EvtxECmd processor — Windows Event Logs (.evtx) -> normalised JSON.
 
-Faithful port of the retired ``process-evtx-EvtxECmd.sh``: the analysis backend
+The analysis backend
 cannot read binary ``.evtx``, so EvtxECmd (Eric Zimmerman, .NET, run via the dotnet
 container) converts each log to ``<base>_EvtxECmd_Output.json`` (normalised records,
 one JSON object per line -> host.EvtxEcmdJson) plus a best-effort ``.xml`` sidecar

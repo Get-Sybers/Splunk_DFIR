@@ -97,8 +97,10 @@ emulator, default) or **SOF-ELK** (`docker/sof-elk/`). `dxdfir deploy`/`ingest`
 cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
 `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
 
-The original `process-*.sh` scripts also ship under `scripts/` as the legacy layer;
-the `dxdfir` CLI and the collection are the supported front-end. Install the CLI with
+The `dxdfir` CLI and the collection are the supported front-end; the retired
+per-source `process-*.sh` scripts have been removed (their behaviour lives in the
+`get_sybers_dfir` processors). The signature lanes (`process-signatures.sh`) remain as
+a shell layer. Install the CLI with
 `pip install ./python` — it provides the `dxdfir` entry point plus its dependencies
 (Typer and **ansible-core**, so `ansible-playbook` ships alongside it and the CLI
 finds it automatically). `scripts/setup-environment.sh` does this for you — see
@@ -147,15 +149,14 @@ that the defects below are known and written down rather than waiting to be
 discovered.
 
 The **Notes** name the underlying tool; each source runs as `dxdfir process
-<source>` (driving the matching `dfir_<source>` role) or as the legacy
-`process-*.sh` script — same container, same output. The ✅/⚠️ states reflect real
-runs on the author's corpus, not an automated test suite.
+<source>` (driving the matching `dfir_<source>` role → the `get_sybers_dfir`
+processor). The ✅/⚠️ states reflect real runs on the author's corpus.
 
 | Capability | State | Notes |
 |:---|:---|:---|
-| Disk images → Plaso timeline JSON | ✅ Works | `process-log2timeline-Dynamic.sh`; `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → per-parser `host.L2t<Parser>` tables (routed by top-level Plaso parser; `L2tAll()` unions them) |
+| Disk images → Plaso timeline JSON | ✅ Works | the plaso lane (`dxdfir process plaso`); `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → per-parser `host.L2t<Parser>` tables (routed by top-level Plaso parser; `L2tAll()` unions them) |
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
-| PCAP → Zeek JSON logs | ✅ Works | `process-zeek-ALL.sh`; `use_json=T`, ISO8601 timestamps |
+| PCAP → Zeek JSON logs | ✅ Works | the zeek lane (`dxdfir process zeek`); `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
 | Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, feeding `CarUserSession`/`CarProcess`/`CarService` (real 4624/4688/7045) |
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |

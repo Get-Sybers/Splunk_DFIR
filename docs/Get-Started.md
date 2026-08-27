@@ -5,19 +5,18 @@
 > note that the Kusto emulator carries licensing terms you are accepting
 > — [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
-### Two ways to drive this
+### Driving the pipeline
 
 The **`dxdfir` CLI** is the pipeline's front-end (three-layer design — see
-[How It Runs](/README.md#how-it-runs)). The numbered steps below use the underlying
-`process-*.sh` scripts directly — the layer the
-[capability states](/README.md#what-actually-works) were validated with. The CLI
-runs the same flow:
+[How It Runs](/README.md#how-it-runs)). Install it, then the numbered steps below
+walk a run end to end:
 
 ```bash
-pip install ./python     # provides dxdfir (also needs ansible-playbook on PATH)
+pip install ./python     # provides dxdfir + ansible-core; or run scripts/setup-environment.sh
 dxdfir process plaso     # sources: plaso | zeek | evtx | volatility | velociraptor | signatures
 dxdfir deploy            # stand up the ADX (Kusto) emulator + apply schema
 dxdfir ingest            # load data_store/processed into it
+dxdfir detect            # sweep detections across what's present
 dxdfir validate          # run the repo check harness
 ```
 
@@ -58,7 +57,7 @@ _Refer to [📁 Dir-Structure](/docs/Dir-Structure.md) for detailed directory st
 
 ### Step 3: Process Forensic Images (E01 / VMware)
 ```bash
-DX_DFIR/scripts/process-log2timeline-Dynamic.sh
+dxdfir process plaso
 ```
 - Automates forensic analysis of all `.E01` disk images and VMware VM exports using Plaso.
 - Output lands in `data_store/processed/log2timeline/jsonl/` (Plaso `json_line`,
@@ -67,21 +66,20 @@ DX_DFIR/scripts/process-log2timeline-Dynamic.sh
 
 ### Step 4: Process PCAPs with Zeek
 ```bash
-DX_DFIR/scripts/process-zeek-ALL.sh
+dxdfir process zeek
 ```
 - Automates processing of all network capture files (`.pcap` and `.pcapng`) using Zeek.
 - Output lands in `data_store/processed/zeek/<pcap-name>/`.
 
 ### Step 5: Parse Windows Event Logs (optional)
 ```bash
-DX_DFIR/scripts/process-evtx-EvtxECmd.sh
+dxdfir process evtx
 ```
 - Converts `.evtx` in `data_store/raw/other_raw_data/WinEvt/<host>/` using EvtxECmd.
 - Requires operator-supplied EvtxECmd — see
   [the README](/data_store/dependencies/evtxecmd/README.md). MIT licensed, no
   commercial-use restriction.
-- ⚠️ Not runtime-tested — see
-  [the script docs](/docs/scripts/processing_data/process-evtx-EvtxECmd.md).
+- See [Scripts-Overview](/docs/scripts/Scripts-Overview.md) for the pipeline layers.
 
 ### Step 6: Deploy the Kusto emulator
 ```bash

@@ -7,7 +7,7 @@
 // Semi-structured is the honest representation here rather than a guess at a
 // common schema — a `dynamic` Record column per row, accessed as Record.Field.
 //
-// Memory is processed with Volatility 3 (process-volatility.sh), whose
+// Memory is processed with Volatility 3 (the volatility lane), whose
 // `-r json` renderer emits an array of row objects per plugin. ingest-kusto.sh
 // wraps each row as {Plugin, SourceFile, Record} — Plugin/SourceFile are
 // per-file constants .ingest cannot inject, so the loader derives them from the
@@ -16,7 +16,7 @@
 //=============================================================================
 // VolatilityJson — Volatility 3, one row per plugin-output row.
 //
-// process-volatility.sh runs `vol -r json` per plugin; ingest-kusto.sh wraps
+// the volatility lane runs `vol -r json` per plugin; ingest-kusto.sh wraps
 // each row object as {Plugin, SourceFile, Record}. Volatility's json renderer
 // nests tree-plugin descendants under a "__children" array inside each Record,
 // which survives fine in a dynamic column (Record.__children[0].PID ...).

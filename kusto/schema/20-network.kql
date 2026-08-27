@@ -1,6 +1,6 @@
 // Database: network — Zeek
 //
-// scripts/process-zeek-ALL.sh runs Zeek with LogAscii::use_json=T and
+// the zeek lane runs Zeek with LogAscii::use_json=T and
 // json_timestamps=JSON::TS_ISO8601, so every log is JSON Lines with ISO-8601
 // timestamps — one object per row, native JSON types, produced entirely inside
 // the container. That is why ingestion here is by JSON PATH, not by TSV ordinal:

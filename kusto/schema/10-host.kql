@@ -30,7 +30,7 @@
 //                ingestion mapping cannot call unixtime_microseconds_todatetime)
 //   Parser       the FULL parser string (e.g. "winreg/appcompatcache"), so the
 //                plugin stays distinguishable WITHIN a top-level-parser table
-//   Record       the whole Plaso event, incl. the process-log2timeline-Dynamic.sh
+//   Record       the whole Plaso event, incl. the the plaso lane
 //                enrichments (Record.image_hostname / disk_id / volume_id / …)
 //
 // ingest-kusto.sh splits each json_line by top-level parser, wraps each event

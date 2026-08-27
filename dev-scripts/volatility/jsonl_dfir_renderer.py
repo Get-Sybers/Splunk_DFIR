@@ -9,7 +9,7 @@ exactly what the ingest wants.
 
 Registration: Volatility 3 auto-discovers every `CLIRenderer` subclass that has
 been imported (`framework.class_subclasses`), so importing this module before the
-CLI runs adds `jsonl_dfir` to `-r` — no core patch. scripts/process-volatility.sh
+CLI runs adds `jsonl_dfir` to `-r` — no core patch. the volatility lane
 loads it via a small import wrapper, the same pattern as the Plaso l2t_json_dfir
 output module.
 
