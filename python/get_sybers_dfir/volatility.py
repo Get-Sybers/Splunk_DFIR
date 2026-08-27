@@ -3,7 +3,7 @@
 Run a fixed set of
 Volatility 3 plugins over each memory image with the custom ``jsonl_dfir`` renderer
 (one flat JSON object per TreeGrid node — one process/connection/artefact per line),
-writing ``<plugin>.jsonl`` per image. ingest-kusto.sh wraps each line as
+writing ``<plugin>.jsonl`` per image. The ingest loader wraps each line as
 ``{Plugin, SourceFile, Record}`` into memory.VolatilityJson, where the plugin's
 fields are reachable as ``Record.FieldName`` in KQL.
 

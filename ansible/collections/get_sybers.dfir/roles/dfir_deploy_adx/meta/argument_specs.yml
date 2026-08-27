@@ -29,6 +29,26 @@ argument_specs:
         required: false
         default: 8080
         description: "Host port mapped to the emulator's 8080."
+      dfir_deploy_adx_expose:
+        type: bool
+        required: false
+        default: false
+        description: >-
+          Deliberate-effort gate: a non-local dfir_deploy_adx_host is refused by
+          the preflight unless this is true (the emulator has no auth).
+      dfir_deploy_adx_isolated:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Attach the container to a bridge with IP masquerade disabled so it
+          gets no useful egress (published ports keep working). Verified after
+          deploy by probing egress from inside the container.
+      dfir_deploy_adx_network:
+        type: str
+        required: false
+        default: "kusto-dfir-isolated"
+        description: "Name of the isolated docker network."
       dfir_deploy_adx_memory:
         type: str
         required: false

@@ -1,11 +1,11 @@
 // Databases — one per data domain (the Splunk-era indexes they replaced).
 //
-// Applied by scripts/apply-kusto-schema.sh, which sends each statement to the
+// Applied by the schema applier (get_sybers_dfir.deploy), which sends each statement to the
 // management endpoint. This file is NOT run with .execute database script,
 // because database creation is a cluster-level command.
 //
 // ⚠️ `.create database <name> persist(...)` FAILS if the target folders already
-//    exist. apply-kusto-schema.sh therefore checks `.show databases` first and
+//    exist. The applier therefore checks `.show databases` first and
 //    skips any that are present, rather than assuming a clean slate. That is
 //    the same trap that once let the retired Splunk deploy report success having
 //    deployed nothing.
@@ -20,7 +20,7 @@
 //    way to use a keyword as an entity name; the other four are bracketed too
 //    so a future engine keyword cannot reintroduce the same trap. Downstream
 //    `database("network")` references are already string-quoted, so only the
-//    creation site needed the fix. apply-kusto-schema.sh parses the plain name
+//    creation site needed the fix. The applier parses the plain name
 //    back out of the brackets.
 
 .create database ["host"]    volatile

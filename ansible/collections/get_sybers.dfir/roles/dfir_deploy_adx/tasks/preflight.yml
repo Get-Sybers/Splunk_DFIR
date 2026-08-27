@@ -1,6 +1,21 @@
 ---
 # FIND FACTS -> check existence AND location -> (then DEPLOY + VERIFY).
 
+# Checked FIRST — refusing an unsafe request must not depend on unrelated
+# preconditions (docker, schema files) passing before it.
+- name: "deploy-adx-preflight | refuse a non-local bind unless explicitly allowed"
+  ansible.builtin.assert:
+    that:
+      - dfir_deploy_adx_host in ['127.0.0.1', 'localhost', '::1']
+        or dfir_deploy_adx_expose | bool
+    fail_msg: >-
+      dfir_deploy_adx_host={{ dfir_deploy_adx_host }} would publish the emulator
+      off-localhost. It has NO authentication, NO access control and speaks
+      plaintext HTTP — anyone who can reach it can read and modify everything
+      ingested, which is evidence. If you really mean to, set
+      dfir_deploy_adx_expose=true as well.
+    quiet: true
+
 - name: "deploy-adx-preflight | docker daemon reachable"
   ansible.builtin.command: docker version
   register: dfir_deploy_adx_docker

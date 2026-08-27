@@ -159,7 +159,7 @@ processor). The ✅/⚠️ states reflect real runs on the author's corpus.
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
 | Velociraptor offline collectors (EZ Tools) | ❌ Not provided | Collecting artefacts off endpoints is out of scope here — the repo processes collector output you supply (same Zimmerman parsers, no Kroll licence constraint) |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
-| **Kusto emulator deploy** | ✅ Runs | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
+| **Kusto emulator deploy** | ✅ Runs | `dxdfir deploy` (the `dfir_deploy_adx` role) — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
 | **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor collector output |
 | **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
 | **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `get_sybers_dfir.signatures` (the `dfir_signatures` role); **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
@@ -192,9 +192,10 @@ Three things that will bite you otherwise:
 
 1. **The emulator has no security features at all.** No authentication, no
    access control, plaintext HTTP, no encryption at rest — documented
-   properties, not misconfigurations. `deploy-kusto.sh` binds it to
-   `127.0.0.1` and requires typing `expose` to bind anywhere else; that
-   binding is the only control there is. It also runs isolated by default —
+   properties, not misconfigurations. The deploy (`dxdfir deploy`, the
+   `dfir_deploy_adx` role) binds it to `127.0.0.1` and refuses any other bind
+   address unless `dfir_deploy_adx_expose=true` is set as well; that binding
+   is the only control there is. It also runs isolated by default —
    no outbound network access. Not an airgap — see [SECURITY.md](/SECURITY.md).
 2. **Deploying accepts Microsoft's Software License Terms on your behalf**
    (`ACCEPT_EULA=Y`), and Microsoft provides the emulator *as-is*, without

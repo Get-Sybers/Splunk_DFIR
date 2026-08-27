@@ -48,10 +48,10 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-# Userland tools the processing scripts shell out to. curl and python3 back
-# lib/kusto-api.sh, unzip backs the velociraptor lane, tar backs the image
-# tarballs written by save-docker-images.sh. ca-certificates and gnupg are
-# needed to add the Docker repo itself.
+# Userland tools the pipeline shells out to. python3 runs the get_sybers_dfir
+# package, unzip backs the velociraptor lane, tar backs the image tarballs
+# written by save-docker-images.sh, curl fetches sample fixtures.
+# ca-certificates and gnupg are needed to add the Docker repo itself.
 APT_DEPS=(ca-certificates curl gnupg unzip python3 python3-venv tar)
 REQUIRED_CMDS=(curl python3 unzip tar realpath readlink)
 
@@ -188,9 +188,9 @@ fi
 ################################################################################
 # Install the userland tools the processing scripts need.
 #
-# The old script installed none of these. the velociraptor lane exits on a
-# missing unzip, and lib/kusto-api.sh exits on a missing curl or python3 —
-# each one an error the analyst hit halfway through an ingest instead of here.
+# The old script installed none of these. The velociraptor lane exits on a
+# missing unzip, and nothing in the pipeline runs without python3 — each one
+# an error the analyst hit halfway through an ingest instead of here.
 MISSING_DEPS=()
 for cmd in "${REQUIRED_CMDS[@]}"; do
     command -v "$cmd" >/dev/null 2>&1 || MISSING_DEPS+=("$cmd")

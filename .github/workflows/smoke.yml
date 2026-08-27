@@ -24,10 +24,12 @@ on:
       - "python/get_sybers_dfir/evtx.py"
       - "python/get_sybers_dfir/imageexport.py"
       - "python/get_sybers_dfir/ingest/**"
+      - "python/get_sybers_dfir/deploy.py"
+      - "python/get_sybers_dfir/cli.py"
+      - "python/pyproject.toml"
       - "docker/evtxecmd/**"
-      - "scripts/deploy-kusto.sh"
-      - "scripts/apply-kusto-schema.sh"
-      - "scripts/lib/kusto-api.sh"
+      - "ansible/collections/get_sybers.dfir/roles/dfir_deploy_adx/**"
+      - "ansible/collections/get_sybers.dfir/playbooks/dfir-deploy-adx.yml"
       - "tests/smoke-test.sh"
       - "dev-scripts/fetch-samples.sh"
       - "dev-scripts/samples-manifest.tsv"
@@ -43,12 +45,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The evtx/ingest/imageexport code the smoke test drives is pure stdlib
-      # (urllib, subprocess) — no pip install needed — but a known Python is.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      # The smoke test deploys the throwaway emulator through the framework:
+      # `dxdfir deploy` drives the dfir_deploy_adx role. Installing the package
+      # brings the CLI (typer) and ansible-core; the collection itself is
+      # resolved in-repo (the CLI sets ANSIBLE_ROLES_PATH), but its
+      # community.docker dependency — and the `requests` library those modules
+      # need — must be installed. The processors (evtx/ingest/imageexport)
+      # stay pure stdlib.
+      - name: Install the dxdfir CLI + collection dependencies
+        run: |
+          python -m pip install --quiet ./python requests
+          ansible-galaxy collection install -r ansible/collections/get_sybers.dfir/requirements.yml
 
       # The evtx lane runs EvtxECmd from the bundled image; build it once here
       # (the smoke test asserts its presence and fails loudly if absent).

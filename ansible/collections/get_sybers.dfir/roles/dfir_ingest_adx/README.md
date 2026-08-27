@@ -31,8 +31,8 @@ together — they never drift. A first run loads new files (`changed=true`); an
 immediate re-run loads nothing (`changed=false`).
 
 ## Prerequisite
-A deployed, schema-loaded emulator — `dxdfir deploy` (or `deploy-kusto.sh` +
-`apply-kusto-schema.sh`). The preflight fails clearly if the engine is unreachable.
+A deployed, schema-loaded emulator — `dxdfir deploy` (the `dfir_deploy_adx`
+role). The preflight fails clearly if the engine is unreachable.
 
 ## Example
 ```bash

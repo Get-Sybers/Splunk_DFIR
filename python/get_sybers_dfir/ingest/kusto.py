@@ -1,11 +1,11 @@
 """Minimal client for the Kusto emulator's REST endpoints.
 
-Port of ``scripts/lib/kusto-api.sh``. The emulator has no auth (it binds to
-localhost), so there is no token handling. Kusto routes by request type:
-``/v1/rest/mgmt`` for control commands (leading ``.``) and ``/v1/rest/query`` for
-KQL. The engine returns HTTP 200 with an error *document* on failure, so the status
-code proves nothing — :func:`failed` inspects the body (error envelope, a per-row
-``Result="Failed"``, a non-JSON body, or no body at all).
+The emulator has no auth (it binds to localhost), so there is no token handling.
+Kusto routes by request type: ``/v1/rest/mgmt`` for control commands (leading
+``.``) and ``/v1/rest/query`` for KQL — a ``.`` command sent to the query endpoint
+is rejected. The engine returns HTTP 200 with an error *document* on failure, so
+the status code proves nothing — :func:`failed` inspects the body (error envelope,
+a per-row ``Result="Failed"``, a non-JSON body, or no body at all).
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ _TIMEOUT = 600
 
 def failed(resp: str) -> bool:
     """True if a Kusto response is a failure (envelope, per-row Failed, non-JSON,
-    or empty). Mirrors kusto-api.sh's kusto_failed."""
+    or empty)."""
     if not resp or not resp.strip():
         return True                         # no response = failure
     try:

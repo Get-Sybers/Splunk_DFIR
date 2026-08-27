@@ -27,8 +27,9 @@ These are already known. You do not need to report them.
 
 - **The Kusto emulator has no security features at all.** No authentication, no
   access control, plaintext HTTP, no encryption at rest — Microsoft documents
-  all four as absent. `scripts/deploy-kusto.sh` binds it to `127.0.0.1` and
-  requires typing a confirmation to bind anywhere else, and that binding is the
+  all four as absent. The deploy (`dxdfir deploy`, the `dfir_deploy_adx` role)
+  binds it to `127.0.0.1` and refuses any other bind address without an explicit
+  second variable (`dfir_deploy_adx_expose=true`), and that binding is the
   only control there is. Anyone who can reach the port can read and modify
   everything ingested, which is evidence. See
   [docs/Kusto-Port.md](/docs/Kusto-Port.md).
@@ -68,7 +69,8 @@ legally significant.
 - The processing scripts mount evidence directories into containers. The VMware
   path is mounted read-only; treat everything else as potentially mutable.
 - The emulator holds ingested evidence unauthenticated on localhost, and
-  `ingest-kusto.sh` stages copies of evidence inside the container during
-  loading (cleaned up on exit, including on Ctrl-C).
+  the ingest loader (`dxdfir ingest`, `get_sybers_dfir.ingest`) stages copies
+  of evidence inside the container during loading (cleaned up on exit,
+  including on Ctrl-C).
 - Nothing here is written to preserve chain of custody. If your work needs to
   stand up in a legal context, this project is not sufficient on its own.

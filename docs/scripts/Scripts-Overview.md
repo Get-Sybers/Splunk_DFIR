@@ -1,16 +1,19 @@
 # Scripts Directory (`./scripts`)
 
-This directory contains automation scripts for **forensic data processing** and
-for **deploying, schema-loading and ingesting into the Kusto emulator** — the
-DX_DFIR pipeline. Host artefacts are collected with **Velociraptor offline
-collectors running the EZ Tools** (replacing the removed KAPE automation).
+This directory contains **host provisioning** scripts — installing the
+environment and seeding the analysis container images. Host artefacts are
+collected with **Velociraptor offline collectors running the EZ Tools**
+(replacing the removed KAPE automation).
 
 > **The `dxdfir` CLI and the `get_sybers.dfir` collection are the supported
-> front-end** — see [How It Runs](/README.md#how-it-runs). The retired per-source
-> `process-*.sh` scripts and the signature-lane shell scripts have been removed;
-> their behaviour lives in the `get_sybers_dfir` processors (`dxdfir process
-> <source>`, signatures included). The deploy/apply/ingest scripts (`dxdfir
-> deploy` / `dxdfir ingest`) remain, and this page documents them.
+> front-end** — see [How It Runs](/README.md#how-it-runs). Every data-pipeline
+> shell script has been retired: the per-source `process-*.sh` scripts, the
+> signature-lane scripts, and the deploy/apply/ingest scripts
+> (`deploy-kusto.sh`, `apply-kusto-schema.sh`, `ingest-kusto.sh`,
+> `scripts/lib/`). Their behaviour lives in the `get_sybers_dfir` package and
+> the collection's roles: `dxdfir process <source>`, `dxdfir deploy`
+> (the `dfir_deploy_adx` role + `get_sybers_dfir.deploy`), and `dxdfir ingest`
+> (the `dfir_ingest_adx` role + `get_sybers_dfir.ingest`).
 
 ---
 
@@ -54,23 +57,29 @@ than needing a `/dev/fuse` mount.
 
 ---
 
-## Deployment & ingest scripts
+## Deployment & ingest
+
+Deploy and ingest run through the framework — no shell scripts:
+
+- **`dxdfir deploy`** drives the `dfir_deploy_adx` role: pulls + runs the
+  **Kusto emulator** localhost-only (the emulator has **no auth**), attaches it
+  to a masquerade-off isolated network, verifies the port bindings and egress,
+  waits for the engine, then creates the databases and applies the schema
+  (tables, ingestion mappings, MITRE CAR functions — `get_sybers_dfir.deploy`,
+  idempotent). ⚠️ Sets `ACCEPT_EULA=Y` on your behalf.
+- **`dxdfir ingest`** drives the `dfir_ingest_adx` role
+  (`get_sybers_dfir.ingest`): loads `data_store/processed` — **Plaso `L2t*`,
+  EvtxECmd, Zeek (conn typed + generic), Volatility, Velociraptor** — with an
+  in-DB ledger for idempotence. `--only <source>` to load one.
+
+## Provisioning scripts
 
 The analysis container images are catalogued in [Containers](/docs/Containers.md).
-
 
 | Script | Description |
 |---|---|
 | `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
 | `save-docker-images.sh` | Pull / save / load the analysis Docker images for offline / air-gapped hosts. |
-| `deploy-kusto.sh` | Deploys the **Kusto emulator** (analysis backend). Localhost-only by default (the emulator has **no auth**), isolated network, ephemeral database. ⚠️ Sets `ACCEPT_EULA=Y` on your behalf; `--help` for flags. |
-| `apply-kusto-schema.sh` | Creates the Kusto databases, tables, ingestion mappings and the MITRE CAR functions. Idempotent. |
-| `ingest-kusto.sh` | Loads `data_store/processed` into the emulator: **Plaso `L2t*`, EvtxECmd, Zeek (conn + generic), Volatility, Velociraptor**. `--only <source>` to load one. |
-
-Shared libraries in `scripts/lib/`: `docker-lifecycle.sh` (container replace
-policy, isolated network, readiness, egress verification), `kusto-api.sh` (the
-emulator's REST endpoints, failure detection, reachability), and `l2t-split.py`
-(splits Plaso json_line into per-parser `L2t*` tables).
 
 The Splunk-era and KAPE PowerShell scripts were retired (git history and the frozen
 `deprecated` branch keep them).
@@ -79,7 +88,7 @@ The Splunk-era and KAPE PowerShell scripts were retired (git history and the fro
 
 ## Licensing before you run
 
-- **`deploy-kusto.sh` accepts Microsoft's Software License Terms for you**
+- **`dxdfir deploy` accepts Microsoft's Software License Terms for you**
   (`ACCEPT_EULA=Y`). The emulator is *as-is*, unsupported, and documented as
   generally unsuitable for production.
 
@@ -88,13 +97,13 @@ Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 ## Usage
 
 - Ensure **Docker** is installed and running.
-- Scripts assume the repository's **directory structure** (see
+- Everything assumes the repository's **directory structure** (see
   [`data_store/README.md`](/data_store/README.md) for raw data sources).
 
 ```bash
-./scripts/deploy-kusto.sh
+dxdfir deploy
 dxdfir process zeek
-./scripts/ingest-kusto.sh --only zeek
+dxdfir ingest --only zeek
 ```
 
 > ⚠️ The processing lanes `chmod 777` their working directories under
