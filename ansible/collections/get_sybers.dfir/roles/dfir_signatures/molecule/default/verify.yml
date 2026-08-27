@@ -8,12 +8,12 @@
     - name: "molecule-verify | read the yara matches"
       ansible.builtin.slurp:
         src: "{{ molecule_yara_out }}/matches.jsonl"
-      register: matches
+      register: dfir_signatures_matches
 
     - name: "molecule-verify | assert the fixture rule matched the sample"
       ansible.builtin.assert:
         that:
-          - (matches.content | b64decode) is search('DFIR_Molecule_Marker')
-          - (matches.content | b64decode) is search('MOLECULE_DETECTION_MARKER')
+          - (dfir_signatures_matches.content | b64decode) is search('DFIR_Molecule_Marker')
+          - (dfir_signatures_matches.content | b64decode) is search('MOLECULE_DETECTION_MARKER')
         fail_msg: "the yara lane did not record the fixture rule's match"
         quiet: true

@@ -9,12 +9,12 @@
   tasks:
     - name: "molecule-prepare | require a reachable emulator"
       ansible.builtin.command:
-        argv: [python3, -m, get_sybers_dfir.detect, --ping]
+        argv: [python3, -m, get_sybers_dfir.detect, --dfir_detect_adx_ping]
       environment:
         PYTHONPATH: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
-      register: ping
+      register: dfir_detect_adx_ping
       changed_when: false
-      failed_when: ping.rc != 0
+      failed_when: dfir_detect_adx_ping.rc != 0
 
     - name: "molecule-prepare | signatures/hayabusa fixture dir"
       ansible.builtin.file:
@@ -25,6 +25,15 @@
     - name: "molecule-prepare | one promotable high-severity record"
       ansible.builtin.copy:
         dest: "{{ molecule_processed }}/signatures/hayabusa/molecule.jsonl"
-        content: |
-          {"Timestamp":"2020-01-02 03:04:05.000 +00:00","RuleTitle":"DFIR_DETECT_MOLECULE","Level":"high","Computer":"MOLECULE-HOST","Channel":"Sec","EventID":9999,"RuleID":"00000000-0000-0000-0000-000000000000","tool":"hayabusa"}
+        content: "{{ dfir_detect_adx_fixture_record | to_json }}\n"
         mode: "0644"
+      vars:
+        dfir_detect_adx_fixture_record:
+          Timestamp: "2020-01-02 03:04:05.000 +00:00"
+          RuleTitle: "DFIR_DETECT_MOLECULE"
+          Level: "high"
+          Computer: "MOLECULE-HOST"
+          Channel: "Sec"
+          EventID: 9999
+          RuleID: "00000000-0000-0000-0000-000000000000"
+          tool: "hayabusa"

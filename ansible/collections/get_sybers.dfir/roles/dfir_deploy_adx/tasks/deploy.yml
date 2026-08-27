@@ -110,7 +110,10 @@
 
 - name: "deploy-adx | create databases + apply the schema"
   ansible.builtin.command:
-    argv: "{{ ['python3', '-m', 'get_sybers_dfir.deploy', '--schema-dir', dfir_deploy_adx_schema_dir, '--host', dfir_deploy_adx_host, '--port', dfir_deploy_adx_port | string, '--container', dfir_deploy_adx_container] + (['--persist'] if dfir_deploy_adx_persist | bool else []) }}"
+    argv: >-
+      {{ ['python3', '-m', 'get_sybers_dfir.deploy', '--schema-dir', dfir_deploy_adx_schema_dir, '--host', dfir_deploy_adx_host,
+          '--port', dfir_deploy_adx_port | string, '--container', dfir_deploy_adx_container]
+      + (['--persist'] if dfir_deploy_adx_persist | bool else []) }}
   environment:
     PYTHONPATH: "{{ dfir_deploy_adx_python_path }}"
   register: dfir_deploy_adx_schema

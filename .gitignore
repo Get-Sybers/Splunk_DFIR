@@ -60,4 +60,8 @@ dist/
 
 # Build / runtime artefacts
 err.log
-logs/
+# ansible log_path target: keep the dir, ignore its contents
+logs/*
+!logs/.gitkeep
+# ansible-lint's project-local collection cache
+.ansible/

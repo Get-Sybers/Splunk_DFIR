@@ -52,12 +52,20 @@ jobs:
             sudo apt-get install -y -qq shellcheck
           fi
           python -m pip install --quiet --upgrade pip
+          # ansible-lint (production profile) gates the collection; its
+          # dependency resolution needs the pinned community.docker installed
+          # into the collection's project-local cache (gitignored).
+          python -m pip install --quiet ansible-lint
+          ansible-galaxy collection install --force \
+            -r ansible/collections/get_sybers.dfir/requirements.yml \
+            -p ansible/collections/get_sybers.dfir/.ansible/collections
 
       - name: Report tool versions
         run: |
           echo "bash        $(bash --version | head -1)"
           echo "shellcheck  $(shellcheck --version | grep version: | head -1)"
           echo "python      $(python --version)"
+          echo "ansible-lint $(ansible-lint --version | head -1)"
 
       - name: Run repository checks
         run: ./tests/run-checks.sh -v

@@ -73,7 +73,10 @@ argument_specs:
         type: bool
         required: false
         default: false
-        description: "Provision rules when online: the YARA lane fetches the pinned DetectRaptor ruleset when it has no rules yet (sha256-verified, idempotent); other lanes note missing deps."
+        description: >-
+          Provision rules when online: the YARA lane fetches the pinned
+          DetectRaptor ruleset when it has no rules yet (sha256-verified,
+          idempotent); other lanes note missing deps.
       dfir_signatures_python_path:
         type: str
         required: false

@@ -9,12 +9,12 @@
   tasks:
     - name: "molecule-prepare | require a reachable emulator"
       ansible.builtin.command:
-        argv: [python3, -m, get_sybers_dfir.ingest, --ping]
+        argv: [python3, -m, get_sybers_dfir.ingest, --dfir_ingest_adx_ping]
       environment:
         PYTHONPATH: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
-      register: ping
+      register: dfir_ingest_adx_ping
       changed_when: false
-      failed_when: ping.rc != 0
+      failed_when: dfir_ingest_adx_ping.rc != 0
 
     - name: "molecule-prepare | processed/velociraptor fixture dir"
       ansible.builtin.file:

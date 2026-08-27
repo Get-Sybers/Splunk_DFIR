@@ -65,3 +65,22 @@ Scenarios that need operator-supplied fixtures (a sample `.evtx` + EvtxECmd
 release, a disk image, a memory image) read them from `MOLECULE_SAMPLE_*` /
 `MOLECULE_EVTXECMD_DIR` env vars and are skipped with a note when absent —
 see the script header for the full list.
+
+## Standards alignment
+
+The collection tracks the common Ansible best-practice set; where a practice
+does not fit a localhost forensic pipeline, the deviation is deliberate and
+recorded here rather than half-implemented.
+
+| Practice | Where it lives here |
+|---|---|
+| Structure, naming, docs | One role per evidence source; `main -> preflight -> process` task files; house task-name prefix `<role>-<stage> \| description`; per-role `README.md` + `meta/argument_specs.yml`; collection `CHANGELOG.md`; playbooks under `playbooks/`. |
+| Variables, no hardcoding | Everything flows through `defaults/main.yml` with the `dfir_<role>_` prefix; inputs validated with `assert` at play start; the adx\|sofelk decision is a resolved variable (`dfir_<role>_out_dir`), not duplicated task files. |
+| Idempotency | State lives in the Python processors (skip-if-done); `changed_when` reads each processor's JSON summary; exit codes are re-run-safe; molecule enforces `changed=0` on the second run. Check mode is supported: command tasks skip and their gates skip with them. |
+| Roles for reusability | Single-responsibility roles invoked by thin playbooks; shared behaviour lives in the Python package, not copy-pasted tasks; versioned as a collection (`galaxy.yml`, pinned deps in `requirements.yml`). |
+| Error handling & validation | Preflight asserts prerequisites before anything runs; the process/verify/gate unit runs in a `block` whose `rescue` surfaces the processor's JSON summary and stderr as one diagnostic before failing. |
+| Dynamic inventory | **Deviation:** the pipeline is localhost-only by design (evidence never leaves the analysis host); there is no fleet to discover. |
+| Testing in CI/CD | `ansible-lint` (production profile, config in `.ansible-lint`) + the repo harness run on every push/PR; molecule scenarios run the roles for real (`tests/run-molecule.sh`), idempotence included. |
+| Cross-platform conditionals | **Deviation:** targets are containers on a Linux analysis host; the only branch point is the adx\|sofelk pipeline, handled by variable resolution rather than `when` ladders. |
+| Vault / secrets | **No secrets exist in the collection by design** — the Kusto emulator is auth-less and localhost-bound. The repo harness scans for leaked secrets on every run; if a credentialled backend is ever added, its secrets go through Ansible Vault, never defaults. |
+| Monitor, log, audit | Repo-root `ansible.cfg` appends every run to `logs/ansible.log` (gitignored) and enables `ansible.posix.profile_tasks` for per-task timing; every processor emits a machine-readable JSON summary that the roles gate on. |

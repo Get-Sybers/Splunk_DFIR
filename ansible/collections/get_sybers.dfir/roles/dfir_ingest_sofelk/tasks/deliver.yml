@@ -1,7 +1,9 @@
 ---
 - name: "ingest-sofelk | deliver processed sofelk output into the watch dir"
   ansible.builtin.command:
-    argv: "{{ ['python3', '-m', 'get_sybers_dfir.sofelk', '--src-dir', dfir_ingest_sofelk_src_dir, '--target-dir', dfir_ingest_sofelk_target_dir] + (['--force'] if dfir_ingest_sofelk_force | bool else []) }}"
+    argv: >-
+      {{ ['python3', '-m', 'get_sybers_dfir.sofelk', '--src-dir', dfir_ingest_sofelk_src_dir, '--target-dir', dfir_ingest_sofelk_target_dir]
+      + (['--force'] if dfir_ingest_sofelk_force | bool else []) }}
   environment:
     PYTHONPATH: "{{ dfir_ingest_sofelk_python_path }}"
   register: dfir_ingest_sofelk_run
