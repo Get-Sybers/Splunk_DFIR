@@ -494,7 +494,7 @@ done < <(grep -E '^!.*\*\*' data_store/.gitignore 2>/dev/null)
 # ------------------------------------------------------------------------------
 group "Secrets"
 # ------------------------------------------------------------------------------
-if git grep -InE '(BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,})' -- . >/dev/null 2>&1; then
+if git grep -InE '(BEGIN [A-Z ]*PRIVATE KEY|A[KS]IA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})' -- . >/dev/null 2>&1; then
     fail "possible secret material in the working tree"
 else
     pass "no secret patterns in tree"
