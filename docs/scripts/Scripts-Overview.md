@@ -7,50 +7,48 @@ collectors running the EZ Tools** (replacing the removed KAPE automation).
 
 > **The `dxdfir` CLI and the `get_sybers.dfir` collection are the supported
 > front-end** — see [How It Runs](/README.md#how-it-runs). The retired per-source
-> `process-*.sh` scripts have been removed; their behaviour lives in the
-> `get_sybers_dfir` processors (`dxdfir process <source>`). The deploy/apply/ingest
-> scripts (`dxdfir deploy` / `dxdfir ingest`) and the signature lanes
-> (`process-signatures.sh`) remain, and this page documents them.
+> `process-*.sh` scripts and the signature-lane shell scripts have been removed;
+> their behaviour lives in the `get_sybers_dfir` processors (`dxdfir process
+> <source>`, signatures included). The deploy/apply/ingest scripts (`dxdfir
+> deploy` / `dxdfir ingest`) remain, and this page documents them.
 
 ---
 
-## Processing scripts
+## Processing
 
 Per-source processing runs through the **`dxdfir` CLI** (`dxdfir process <source>`),
 which drives the `get_sybers.dfir` roles and the `get_sybers_dfir` Python processors
 (see [How It Runs](/README.md#how-it-runs)); each is also runnable as
 `python -m get_sybers_dfir.<source>`. The retired per-source `process-*.sh` scripts
-have been removed — their behaviour lives in those processors. The one processing
-script that remains is the signature orchestrator:
+have been removed — their behaviour lives in those processors. No processing shell
+scripts remain.
 
-| Script | Reads | Produces |
-|---|---|---|
-| `process-signatures.sh` | pcaps / files / images / EVTX | Signature/detection lanes — see **Signature detection** below. |
+### Signature detection (`get_sybers_dfir.signatures`)
 
-### Signature detection (`process-signatures.sh`)
-
-Three standalone lanes under `scripts/signatures/`, each emitting self-describing
-JSONL to `data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`;
-`--fetch` provisions rules/binaries when online (the Python YARA lane fetches the
-pinned [DetectRaptor](https://github.com/mgreen27/DetectRaptor) ruleset). To supply
+The three signature lanes (formerly `scripts/process-signatures.sh` +
+`scripts/signatures/`) are Python: `python -m get_sybers_dfir.signatures`, or the
+`dfir_signatures` role. Each lane emits self-describing JSONL to
+`data_store/processed/signatures/<tool>/`. Run all, or `--only <lane>`; `--fetch`
+provisions rules when online (the YARA lane fetches the pinned
+[DetectRaptor](https://github.com/mgreen27/DetectRaptor) ruleset). To supply
 your own YARA or Suricata rules (and tune Suricata's `HOME_NET`), see
 [Signature-Rules](/docs/Signature-Rules.md).
 
-**Hayabusa** now also runs inside the **evtx pipeline** (`dxdfir process evtx`,
+**Hayabusa** also runs inside the **evtx pipeline** (`dxdfir process evtx`,
 or `python -m get_sybers_dfir.evtx --hayabusa`): it scans the same `.evtx` that
 lane collects — loose logs or those extracted from a disk image via `--image-src`
 — so disk-image EVTX reaches Hayabusa through the evtx lane's extraction rather
-than needing a `/dev/fuse` mount. The standalone `hayabusa.sh` lane remains for
-mount-based scans.
+than needing a `/dev/fuse` mount.
 
 | Lane | Input | Output |
 |---|---|---|
-| `suricata.sh` | PCAPs | Suricata EVE JSON, `source_pcap`-tagged, alert+context event types. |
-| `yara.sh` | **files**, **disk images** (mounted in place — `ewfmount`+`ntfs-3g`, never extracts), **memory** (via Volatility `windows.vadyarascan`, matches carry PID context) | one JSON object per match (rule, target, offsets/strings). |
-| `hayabusa.sh` | loose `.evtx` + disk images | Hayabusa Sigma detection timeline (native binary). Disk-image EVTX come from a mount, or a **targeted** `image_export --artifact_filters WindowsEventLogs` pull (event logs only, transient). |
+| `suricata` | PCAPs | Suricata EVE JSON, `source_pcap`-tagged, alert+context event types. |
+| `yara` | **files**, **disk images** (mounted read-only in place — `ewfmount`+`ntfs-3g`, never extracts; `--yara-sources` selects), **memory** (via Volatility `windows.vadyarascan`, matches carry PID context) | one JSON object per match (rule, target, offsets/strings). |
+| `hayabusa` | loose `.evtx` (+ disk-image EVTX via the evtx lane's targeted `image_export --artifact_filters WindowsEventLogs` pull — event logs only, transient) | Hayabusa Sigma detection timeline (native binary). |
 
 > **Mounting note.** Disk-image mounting needs `/dev/fuse`, which an LXC blocks by
-> default; the lanes skip disk images with a host-fix message until it's enabled.
+> default; the YARA disk source skips images with a host-fix note until it's
+> enabled (nothing is ever extracted out of an image for YARA).
 > **Hayabusa's `-J` JSON input does not detect** (0 hits vs 792 natively) — real
 > `.evtx` is required, from a mount or the targeted extraction.
 
@@ -72,19 +70,10 @@ The analysis container images are catalogued in [Containers](/docs/Containers.md
 Shared libraries in `scripts/lib/`: `docker-lifecycle.sh` (container replace
 policy, isolated network, readiness, egress verification), `kusto-api.sh` (the
 emulator's REST endpoints, failure detection, reachability), and `l2t-split.py`
-(splits Plaso json_line into per-parser `L2t*` tables). Signature-lane helpers live
-in `scripts/signatures/lib/`.
+(splits Plaso json_line into per-parser `L2t*` tables).
 
 The Splunk-era and KAPE PowerShell scripts were retired (git history and the frozen
 `deprecated` branch keep them).
-
----
-
-## Self-cleanup
-
-`process-signatures.sh` runs a `prune_dangling` trap on exit that removes docker
-layers left dangling when a pulled `:latest` tag moves — only untagged, unreferenced
-images; tool images and live containers are untouched.
 
 ---
 
@@ -108,5 +97,5 @@ dxdfir process zeek
 ./scripts/ingest-kusto.sh --only zeek
 ```
 
-> ⚠️ The processing scripts run `chmod -R 777` on their working directories under
+> ⚠️ The processing lanes `chmod 777` their working directories under
 > `data_store/` to work around Docker UID mismatches. Don't run them on a shared host.

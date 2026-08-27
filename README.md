@@ -95,9 +95,9 @@ cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
 `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
 
 The `dxdfir` CLI and the collection are the supported front-end; the retired
-per-source `process-*.sh` scripts have been removed (their behaviour lives in the
-`get_sybers_dfir` processors). The signature lanes (`process-signatures.sh`) remain as
-a shell layer. Install the CLI with
+per-source `process-*.sh` scripts and the signature-lane shell scripts have been
+removed (their behaviour lives in the `get_sybers_dfir` processors — signatures
+included, as `get_sybers_dfir.signatures`). Install the CLI with
 `pip install ./python` — it provides the `dxdfir` entry point plus its dependencies
 (Typer and **ansible-core**, so `ansible-playbook` ships alongside it and the CLI
 finds it automatically). `scripts/setup-environment.sh` does this for you — see
@@ -162,7 +162,7 @@ processor). The ✅/⚠️ states reflect real runs on the author's corpus.
 | **Kusto emulator deploy** | ✅ Runs | `deploy-kusto.sh` — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
 | **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor collector output |
 | **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
-| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `process-signatures.sh`; **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
+| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `get_sybers_dfir.signatures` (the `dfir_signatures` role); **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
 | Chainsaw | ❌ Not started | Not built |
 
 ### Known limitations

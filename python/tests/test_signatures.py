@@ -78,6 +78,66 @@ def test_parse_vadyarascan():
     }
 
 
+# ---- yara disk source: mount argv construction (pure, no FUSE needed) ------
+_MMLS = """DOS Partition Table
+Offset Sector: 0
+Units are in 512-byte sectors
+
+      Slot      Start        End          Length       Description
+002:  000:000   0000000128   0031457279   0031457151   NTFS / exFAT (0x07)
+003:  000:001   0031457280   0031459327   0000002048   Linux (0x83)
+"""
+
+
+def test_parse_mmls_offset_first_ntfs_partition():
+    assert yara.parse_mmls_offset(_MMLS) == 128 * 512
+
+
+def test_parse_mmls_offset_basic_data_and_none():
+    text = "005:  000:002   0000206848   0104855551   0104648704   Basic data partition\n"
+    assert yara.parse_mmls_offset(text) == 206848 * 512
+    assert yara.parse_mmls_offset("") == 0                       # partitionless volume
+    assert yara.parse_mmls_offset("no table\n") == 0
+
+
+def test_mount_argvs():
+    assert yara.ewfmount_argv("/d/case.E01", "/tmp/ewf") == \
+        ["ewfmount", "/d/case.E01", "/tmp/ewf"]
+    assert yara.mmls_argv("/tmp/ewf/ewf1") == ["mmls", "-a", "/tmp/ewf/ewf1"]
+    argv = yara.ntfs3g_argv("/tmp/ewf/ewf1", "/mnt/y0", 65536)
+    assert argv == ["ntfs-3g", "-o", "ro,offset=65536,streams_interface=windows",
+                    "/tmp/ewf/ewf1", "/mnt/y0"]
+    assert "ro," in argv[2]                                      # read-only, always
+
+
+# ---- yara memory source: vadyarascan argv + rules concat --------------------
+def test_vadyarascan_argv_mounts_and_wrapper_args(tmp_path):
+    mem = tmp_path / "case" / "memdump.mem"
+    mem.parent.mkdir()
+    mem.write_bytes(b"x")
+    sym = tmp_path / "symbols"; sym.mkdir()
+    ren = tmp_path / "r.py"; ren.write_text("")
+    rules = tmp_path / "combined.yar"; rules.write_text("rule X { condition: true }")
+    argv = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules), "vol:img")
+    assert argv[:3] == ["docker", "run", "--rm"]
+    assert f"{mem.parent}:/mem:ro" in argv                       # image dir read-only
+    assert f"{sym}:/symbols" in argv                             # symbols writable (ISF cache)
+    assert f"{rules}:/rules/combined.yar:ro" in argv
+    assert "vol:img" in argv
+    # wrapper argv: renderer, symbols, image, rules file — in that order
+    assert argv[-4:] == ["/opt/jsonl_dfir_renderer.py", "/symbols",
+                         "/mem/memdump.mem", "/rules/combined.yar"]
+    assert "windows.vadyarascan.VadYaraScan" in argv[argv.index("-c") + 1]
+
+
+def test_combine_rules_concatenates(tmp_path):
+    a = tmp_path / "a.yar"; a.write_text("rule A { condition: true }")
+    b = tmp_path / "b.yar"; b.write_text("rule B { condition: false }")
+    got = yara.combine_rules([str(a), str(b)])
+    assert "rule A" in got and "rule B" in got
+    assert got.index("rule A") < got.index("rule B")
+
+
 # ---- suricata EVE filtering ------------------------------------------------
 def test_filter_eve_keeps_wanted_and_annotates():
     stream = (

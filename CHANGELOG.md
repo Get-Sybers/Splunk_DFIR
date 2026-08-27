@@ -7,13 +7,28 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Added
+- The YARA lane's **disk** and **memory** sources are now in the Python processor
+  (`get_sybers_dfir.signatures.yara`): disk images mounted read-only in place
+  (ewfmount → ntfs-3g, FUSE; nothing extracted) → `disk.jsonl`, and process
+  memory via Volatility 3 `windows.vadyarascan` (matches carry PID context) →
+  `memory.jsonl`. `--yara-sources` selects sources; the mount/scan invocations
+  are pure, unit-tested helpers.
+
 ### Removed
 - The retired per-source `process-*.sh` scripts (`process-zeek-ALL.sh`,
   `process-evtx-EvtxECmd.sh`, `process-volatility.sh`,
   `process-log2timeline-Dynamic.sh`, `process-velociraptor.sh`) and the dead
   `process-log2timeline-JSON_Line.sh` — their behaviour lives in the
-  `get_sybers_dfir` processors (`dxdfir process <source>`). The signature lanes
-  (`process-signatures.sh`) and the deploy/apply/ingest scripts remain.
+  `get_sybers_dfir` processors (`dxdfir process <source>`). The deploy/apply/ingest
+  scripts remain.
+- The signature-lane shell scripts (`process-signatures.sh`,
+  `scripts/signatures/{yara,suricata,hayabusa}.sh`, `scripts/signatures/lib/disk-image.sh`)
+  — fully ported to `get_sybers_dfir.signatures` (the `dfir_signatures` role /
+  `python -m get_sybers_dfir.signatures`). Not carried over: the shell lanes'
+  online provisioning of the YARA-Forge starter, ET Open (`suricata-update`) and
+  the Hayabusa binary — rules/binaries are operator-supplied (the Python
+  `--fetch` provisions the pinned DetectRaptor YARA set).
 
 ## [0.3.1] - 2026-08-26
 

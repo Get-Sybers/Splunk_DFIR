@@ -23,6 +23,11 @@ def main(argv: list[str] | None = None) -> int:
                          "signatures/detectraptor.py); the other lanes still record a "
                          "note when their deps are missing")
     ap.add_argument("--force", action="store_true", help="regenerate outputs that already exist")
+    # YARA source selection (the shell lane's YARA_SOURCES).
+    ap.add_argument("--yara-sources",
+                    help="comma list of yara sources to run: files,disk,memory "
+                         "(default all three). disk needs /dev/fuse + ewfmount/ntfs-3g "
+                         "on the host; memory needs the Volatility 3 image + symbols.")
     # Suricata tuning (HOME_NET is Suricata's primary tuning variable: rule direction
     # keys off $HOME_NET/$EXTERNAL_NET).
     ap.add_argument("--home-net", help="Suricata HOME_NET, e.g. '[10.0.0.0/8,192.168.0.0/16]'. "
@@ -43,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
         "auto_home_net": args.auto_home_net,
         "extra_sets": args.suricata_set or [],
     }}
+    if args.yara_sources:
+        srcs = tuple(s.strip() for s in args.yara_sources.split(",") if s.strip())
+        bad = [s for s in srcs if s not in ("files", "disk", "memory")]
+        if bad:
+            ap.error(f"--yara-sources: unknown source(s) {','.join(bad)} "
+                     "(choose from files,disk,memory)")
+        config["yara"] = {"sources": srcs}
     summary = process(
         args.output_dir, lanes, repo_root=args.repo_root,
         fetch=args.fetch, force=args.force, config=config,

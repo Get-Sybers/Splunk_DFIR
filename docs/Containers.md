@@ -18,11 +18,11 @@ mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest   # analysis backend 
 `save-docker-images.sh` seeds only the three long-lived images for offline hosts —
 `log2timeline/plaso`, `zeek/zeek` and the Kusto emulator. The `sk4la/volatility3`,
 `blacktop/yara` and `jasonish/suricata` images are pulled on first use by the
-memory/signature scripts (save/load them manually with `docker save`/`docker load`
+memory/signature lanes (save/load them manually with `docker save`/`docker load`
 if you need them offline too).
 
 **Not containers:** **Hayabusa** ships as a self-contained Rust binary (no official
-image) — `process-signatures.sh --fetch` downloads the pinned release into
+image) — operator-supplied: download the pinned release into
 `data_store/dependencies/hayabusa/`. Disk-image file access uses host tools
 (`ewf-tools`, `sleuthkit`, `ntfs-3g`) installed by `setup-environment.sh`.
 

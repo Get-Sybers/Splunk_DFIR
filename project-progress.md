@@ -51,9 +51,9 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
 | Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tText`/`L2tUtmp` | ✅ (`user_session` utmp+ssh, `process` cron) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
-| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `process-signatures.sh` (yara.sh) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
-| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `process-signatures.sh` (suricata.sh) | json (EVE) | ⏳ `processed/signatures/suricata` | ⏳ |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `process-signatures.sh` (hayabusa.sh) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
+| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dfir.signatures` (yara lane) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
+| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dfir.signatures` (suricata lane) | json (EVE) | ⏳ `processed/signatures/suricata` | ⏳ |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
 | [Chainsaw](https://github.com/countercept/chainsaw)           | ❌            |                 |              |               |
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
 | [Zimmerman](https://github.com/EricZimmerman)                 | (via Velociraptor) |            |              |               |
