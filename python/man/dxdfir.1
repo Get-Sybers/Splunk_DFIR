@@ -105,17 +105,21 @@ Run the repository check harness (fronts
 .IR tests/run-checks.sh ).
 .TP
 .B list
-List the evidence sources
+Inventory the evidence staged under
+.IR data_store/raw :
+for each source that
 .B process
-accepts.
+reads, the input directory and how many evidence files are present.
 .SH OPTIONS
 .SS Global
 .TP
 .B --version
 Print the version and exit.
 .TP
-.B --help
-Show help for the command and exit.
+.BR --help ", " -h
+Show help and exit. Accepted at every level, e.g.\&
+.BR "dxdfir -h" " or " "dxdfir " \fICOMMAND\fR " -h" .
+Each level shows its own options.
 .SS process
 .TP
 .BR --pipeline ", " -p " " \fIadx\fR|\fIsofelk\fR
