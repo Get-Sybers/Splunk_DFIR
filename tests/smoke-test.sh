@@ -122,7 +122,7 @@ command -v python3 >/dev/null 2>&1 || die "python3 not found."
 "${DXDFIR[@]}" --version >/dev/null 2>&1 \
     || die "the dxdfir CLI does not run — install it (pip install ./python; it brings typer + ansible-core)."
 docker image inspect dfir/evtxecmd:latest >/dev/null 2>&1 \
-    || die "image dfir/evtxecmd:latest missing — build it: docker build -t dfir/evtxecmd:latest docker/evtxecmd"
+    || die "image dfir/evtxecmd:latest missing — build it: docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker"
 pass "docker, python3, the dxdfir CLI, and dfir/evtxecmd:latest present"
 
 # =============================================================================
