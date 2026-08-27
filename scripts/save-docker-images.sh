@@ -28,8 +28,8 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
 
-# Docker images the processing scripts run. Keep in step with the same list in
-# setup-environment.sh's documentation and the individual process-*.sh scripts.
+# Docker images the processors run. Keep in step with the same list in
+# setup-environment.sh's documentation.
 IMAGES=(
     "log2timeline/plaso:latest"
     "zeek/zeek:latest"

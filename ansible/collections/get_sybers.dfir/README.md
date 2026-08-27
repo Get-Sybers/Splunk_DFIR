@@ -10,8 +10,7 @@ Conforms to the Get-Sybers Ansible standards (naming/structuring + one-action-pe
 
 ## Roles
 One role per evidence source; each invokes its `get_sybers_dfir.<source>` processor
-as a single action. The matching `process-*.sh` scripts remain under `scripts/` as
-the legacy layer.
+as a single action.
 
 | Role | Source | Processor |
 |---|---|---|

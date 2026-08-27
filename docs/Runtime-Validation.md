@@ -158,7 +158,7 @@ from the Security one:
 
 ### The Zeek JSON reconciliation
 
-the zeek lane emits JSON (`LogAscii::use_json=T`), but the loader still
+The zeek lane emits JSON (`LogAscii::use_json=T`), but the loader still
 expected TSV with `#fields` headers — the two stages had drifted and could not
 run end to end. Fixed by mapping `conn.json` into the typed `ZeekConn` table by
 **JSON path** (`$['id.orig_h']`, immune to Zeek field reordering — so the old
@@ -423,13 +423,13 @@ PAM session events are the auth evidence that is present.
 python3 -m venv /tmp/plaso-venv && . /tmp/plaso-venv/bin/activate && pip install plaso
 #    fetch three small images (see samples-manifest.tsv) into
 #    data_store/raw/disk_images/, then run psteal with the exact --fields from
-#    the plaso lane (the script itself uses the Docker image,
+#    the plaso lane (which uses the Docker image,
 #    which is blocked here; native psteal takes the same arguments).
 
 # 1b. Memory (real tool) — Volatility 3 also installs from PyPI
 pip install volatility3
 #    fetch a small memory image (e.g. drives-nps-2009-patents *dramimage) into
-#    data_store/raw/memory/, then: ./scripts/the volatility lane
+#    data_store/raw/memory/, then: dxdfir process volatility
 #    (Windows plugins need symbol-server egress; banners works offline.)
 
 # 2. Backend (real)

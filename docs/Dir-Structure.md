@@ -2,8 +2,7 @@
 
 The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives the
 **`get_sybers.dfir` Ansible collection** (orchestration), which invokes the
-**`get_sybers_dfir` Python package** (the per-item processing). The original
-`process-*.sh` scripts also ship under `scripts/` as the legacy layer.
+**`get_sybers_dfir` Python package** (the per-item processing).
 
 ```
   $DX_DFIR
@@ -16,7 +15,7 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
     │   └── roles/                                    # one role per source + ingest/deploy roles (adx, sofelk)
     │   └── playbooks/                                # dfir-process-* / dfir-ingest-* / dfir-deploy-*
     │
-    └── scripts/                                      # Legacy bash pipeline (process/deploy/apply/ingest)
+    └── scripts/                                      # Deploy/apply/ingest + signature lanes (bash)
     │   └── lib/                                      # Shared bash libraries: docker lifecycle, Kusto REST API
     │
     └── docker/                                       # Container builds — the from-source SOF-ELK stack (sof-elk/)

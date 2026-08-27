@@ -5,13 +5,12 @@ for **deploying, schema-loading and ingesting into the Kusto emulator** — the
 DX_DFIR pipeline. Host artefacts are collected with **Velociraptor offline
 collectors running the EZ Tools** (replacing the removed KAPE automation).
 
-> **These scripts are the legacy layer.** The pipeline's front-end is now the
-> **`dxdfir` CLI** driving the **`get_sybers.dfir` Ansible collection** (one role
-> per source) — see [How It Runs](/README.md#how-it-runs). Each `process-*.sh`
-> below has a matching `dfir_<source>` role (`dxdfir process <source>`); the
-> deploy/apply/ingest scripts map to the `dfir_deploy_adx` / `dfir_ingest_adx`
-> roles (`dxdfir deploy` / `dxdfir ingest`). The CLI and the roles are the supported
-> front-end; these scripts remain as the legacy layer, and this page documents them.
+> **The `dxdfir` CLI and the `get_sybers.dfir` collection are the supported
+> front-end** — see [How It Runs](/README.md#how-it-runs). The retired per-source
+> `process-*.sh` scripts have been removed; their behaviour lives in the
+> `get_sybers_dfir` processors (`dxdfir process <source>`). The deploy/apply/ingest
+> scripts (`dxdfir deploy` / `dxdfir ingest`) and the signature lanes
+> (`process-signatures.sh`) remain, and this page documents them.
 
 ---
 
@@ -58,6 +57,9 @@ mount-based scans.
 ---
 
 ## Deployment & ingest scripts
+
+The analysis container images are catalogued in [Containers](/docs/Containers.md).
+
 
 | Script | Description |
 |---|---|
