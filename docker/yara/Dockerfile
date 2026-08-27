@@ -14,7 +14,9 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends yara ansible-core
 COPY runtime /opt/dfir
-COPY yara/scan-list.sh /opt/dfir/scan-list.sh
+# --chmod: the exec bit must come from the build, not the checkout — commits
+# made through the GitHub API cannot carry file modes, so the repo copy is 644.
+COPY --chmod=0755 yara/scan-list.sh /opt/dfir/scan-list.sh
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
     ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
