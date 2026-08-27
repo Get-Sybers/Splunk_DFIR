@@ -2,8 +2,9 @@
 
 Unpack each collection
 ZIP and lay its per-artefact ``results/<Artefact>.json`` (JSON Lines) out flat under
-one folder per collection, where ``ingest-kusto.sh`` expects it. The ingest hook
-does the ``{Artefact, SourceFile, Record}`` shaping; here we only copy verbatim.
+one folder per collection, where the ingest loader (``get_sybers_dfir.ingest``)
+expects it. The ingest-side wrap does the ``{Artefact, SourceFile, Record}``
+shaping; here we only copy verbatim.
 
 Layout: a Velociraptor offline collection stores query results as
 ``results/<Artefact>.json``. Those are copied; if a collection nests them

@@ -255,8 +255,9 @@ for (isolation verified both directions, honest purges, real readiness
 checks).
 ✅ Retired the Splunk stack in one cut — scripts, eight apps, in-container
 Ansible, vendored ESCU lookups. History and the `deprecated` branch keep it.
-✅ Consolidated the container lifecycle into `scripts/lib/docker-lifecycle.sh`
-and the ingest sources into a descriptor table.
+✅ Consolidated the container lifecycle into a shared library and the ingest
+sources into a descriptor table (both since retired with the shell pipeline —
+the roles and `get_sybers_dfir` carry the behaviour).
 
 ### Field Extractions
 

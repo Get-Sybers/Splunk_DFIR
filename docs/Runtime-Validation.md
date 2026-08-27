@@ -93,7 +93,7 @@ dtg                          hostname  user       command_line                  
 | # | File | Symptom on the live emulator | Fix |
 |:--|:--|:--|:--|
 | 1 | `kusto/schema/00-databases.kql` | `.create database network volatile` → **`General_BadRequest`**. `network` is a reserved word in the engine grammar; a bare name that read fine and failed on first contact. `host` created only because it happened to be first. | Bracket-quote every name: `.create database ["network"] volatile`. Downstream `database("network")` refs were already string-quoted. |
-| 2 | `scripts/apply-kusto-schema.sh`, `tests/run-checks.sh` | The two places that parse database names out of the `.kql` expected the bare form and would have read every DB as absent once #1 was bracketed. | Bracket-tolerant regex that strips `["…"]` back to the plain name; command construction brackets the name too. |
+| 2 | the schema applier (then `apply-kusto-schema.sh`, since ported to `get_sybers_dfir.deploy`), `tests/run-checks.sh` | The two places that parse database names out of the `.kql` expected the bare form and would have read every DB as absent once #1 was bracketed. | Bracket-tolerant regex that strips `["…"]` back to the plain name; command construction brackets the name too. |
 | 3 | `kusto/schema/40-mitre.kql` — `CarCoverage()` | `print Object="registry", Rows = 0L` → **`SEM0100: Failed to resolve … '0L'`**. This emulator build rejects the typed-integer-literal suffix (`0L`), though it is valid in the cloud grammar. | `long(0)` — accepted by both, keeps the column a `long`. |
 | 4 | `kusto/schema/40-mitre.kql` — `CarFile()` | 260 of 1240 real Plaso rows got an **empty `action`**. The `modify` regex matched only `content modification`, but a real NTFS image emits three modification descriptions. | Broaden the branch to `(?i)modification\|mtime`, capturing `Content`, `Metadata` and `File Last` modification times. All 1240 rows now classify. |
 
@@ -235,7 +235,8 @@ headers, 21 columns (ordinals 0–20 = `ZeekConnMapping`).
 - **`ts` renders ISO8601 as `2008-07-22T02:51:23+0000`** (offset *without* a
   colon). Kusto parses it as `datetime` → `…Z`. This was an open question about
   the ISO8601 story; it holds.
-- `ingest-kusto.sh`'s Zeek path did its job live: the `#fields` order guard
+- The then-shell ingest's Zeek path (since ported to `get_sybers_dfir.ingest`)
+  did its job live: the `#fields` order guard
   passed, `#`-lines were stripped, and the 21 columns landed in the right typed
   columns (`SrcIp`, `SrcPort`, `DestIp`, `DestPort`, `Proto`, `Service`,
   `ConnState` all correct).
@@ -274,8 +275,9 @@ objects per plugin, with tree-plugin descendants nested under `__children`.
   driven by fixtures.
 - **Loader — constant-column injection.** `Plugin` and `SourceFile` are per-file
   constants and `.ingest` cannot inject a constant column — the exact reason the
-  Velociraptor loader was "NOT IMPLEMENTED." `ingest-kusto.sh`'s
-  `volatility_prepare` hook wraps each row as `{Plugin, SourceFile, Record}`
+  Velociraptor loader was "NOT IMPLEMENTED." The ingest loader's volatility
+  wrap (now `get_sybers_dfir.ingest.prepare`) rewrites each row as
+  `{Plugin, SourceFile, Record}`
   JSON Lines, so `VolatilityJson` lands with `Plugin`/`SourceFile` populated and
   the plugin-specific fields reachable as `Record.Field`:
 
@@ -433,9 +435,8 @@ pip install volatility3
 #    (Windows plugins need symbol-server egress; banners works offline.)
 
 # 2. Backend (real)
-./scripts/deploy-kusto.sh -y
-./scripts/apply-kusto-schema.sh
-./scripts/ingest-kusto.sh            # l2t + zeek + evtx + volatility
+dxdfir deploy                        # emulator + schema
+dxdfir ingest                        # l2t + zeek + evtx + volatility
 
 # 3. Check
 #    CarCoverage() in the mitre database

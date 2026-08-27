@@ -40,7 +40,7 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
         │
         └── dependencies/                             # Operator-supplied tools (EvtxECmd)
         │
-        └── processed/                                # Everything ingest-kusto.sh loads
+        └── processed/                                # Everything `dxdfir ingest` loads
             └── linux_logs/                           # Linux Distro logs (not wired into the backend)
             │   └── syslog/                           # Global System Activity
             │   │

@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import subprocess
 
-# The disk lane already ships this image (scripts/lib + the signature lanes pin it).
+# The disk lane already ships this image (the plaso + signature lanes pin it).
 PLASO_IMAGE = "log2timeline/plaso:latest"
 
 # Formats dfVFS can open. Mirrors the retired disk-image.sh's sig_list_images().

@@ -6,9 +6,21 @@ dfir_deploy_adx_repo_root: "{{ role_path }}/../../../../.."
 dfir_deploy_adx_image: "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
 dfir_deploy_adx_container: "kusto-emulator"
 # Host address the port binds to AND the schema client connects to. The emulator
-# has NO auth, so keep it on localhost.
+# has NO auth, so keep it on localhost. Binding anywhere else is refused by the
+# preflight unless dfir_deploy_adx_expose is explicitly set to true.
 dfir_deploy_adx_host: "127.0.0.1"
 dfir_deploy_adx_port: 8080
+# Deliberate-effort gate for a non-local bind: the emulator speaks plaintext
+# HTTP with no authentication, so exposing it off-localhost exposes an
+# unauthenticated view of the evidence. Set true only on purpose.
+dfir_deploy_adx_expose: false
+# Attach the container to a bridge with IP masquerade disabled: published ports
+# keep working (inbound DNAT), but outbound traffic leaves with an unroutable
+# source and gets no reply — the container holds evidence and needs no egress.
+# Deliberately NOT `internal: true`, which blocks published ports in BOTH
+# directions (that mistake shipped once and made a UI unreachable on localhost).
+dfir_deploy_adx_isolated: true
+dfir_deploy_adx_network: "kusto-dfir-isolated"
 dfir_deploy_adx_memory: "4G"
 dfir_deploy_adx_schema_dir: "{{ dfir_deploy_adx_repo_root }}/kusto/schema"
 # Persistent (on-disk) databases require a /kustodata mount; default ephemeral,
