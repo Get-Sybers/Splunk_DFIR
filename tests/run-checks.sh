@@ -464,6 +464,16 @@ group "Versioning and documentation"
 # ------------------------------------------------------------------------------
 # One project version, stated in one form. Relabelling alpha -> beta touched a
 # dozen files by hand; this is what stops the next one leaving a stray behind.
+# The package must agree with itself: pyproject.toml and __init__.__version__
+# drift silently otherwise (the CLI prints the stale one).
+_pyproject_v=$(grep -m1 -oE '^version = "[0-9.]+"' python/pyproject.toml | grep -oE '[0-9.]+')
+_init_v=$(grep -m1 -oE '__version__ = "[0-9.]+"' python/get_sybers_dfir/__init__.py | grep -oE '[0-9.]+')
+if [[ -n "$_pyproject_v" && "$_pyproject_v" == "$_init_v" ]]; then
+    pass "pyproject version ($_pyproject_v) matches get_sybers_dfir.__version__"
+else
+    fail "version drift: pyproject=$_pyproject_v __init__=$_init_v"
+fi
+
 PROJECT_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' CHANGELOG.md 2>/dev/null | tr -d '#[] ')
 if [[ -n "$PROJECT_VERSION" ]]; then
     pass "project version from CHANGELOG: $PROJECT_VERSION"
