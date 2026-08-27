@@ -35,7 +35,29 @@ CLAUDE.md
 __pycache__/
 *.py[cod]
 
+# Tool caches (pytest writes a self-ignoring .gitignore into .pytest_cache, but
+# don't depend on that courtesy file)
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Packaging / build output
+build/
+dist/
+*.egg-info/
+
+# Ansible / editor droppings
+*.retry
+*.swp
+*~
+
 # Build / runtime artefacts
 err.log
 logs/
-*.egg-info/
