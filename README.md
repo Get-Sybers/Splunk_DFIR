@@ -98,9 +98,43 @@ cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
 `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
 
 The original `process-*.sh` scripts also ship under `scripts/` as the legacy layer;
-the `dxdfir` CLI and the collection are the supported front-end. The CLI needs
-`ansible-playbook` on `PATH` and the package installed with `pip install ./python`
-(which provides the `dxdfir` entry point and its one dependency, Typer).
+the `dxdfir` CLI and the collection are the supported front-end. Install the CLI with
+`pip install ./python` — it provides the `dxdfir` entry point plus its dependencies
+(Typer and **ansible-core**, so `ansible-playbook` ships alongside it and the CLI
+finds it automatically). `scripts/setup-environment.sh` does this for you — see
+[Quick Start](#quick-start).
+
+## Quick Start
+<a name="quick-start"></a>
+
+On a fresh Debian/Ubuntu host — installs Docker **and** the `dxdfir` CLI (with its
+`ansible-playbook`):
+
+```bash
+git clone https://github.com/Get-Sybers/DX_DFIR.git
+cd DX_DFIR
+./scripts/setup-environment.sh      # Docker + the dxdfir CLI; log out/in once for the docker group
+```
+
+Then deploy the backend and run the pipeline:
+
+```bash
+dxdfir deploy                       # Kusto emulator + schema (localhost-only, no auth; accepts the MS EULA)
+# drop evidence under data_store/raw/<type>/  (see data_store/README.md), then:
+dxdfir process zeek                 # process one source: zeek | evtx | volatility | plaso | signatures | velociraptor
+dxdfir ingest --only zeek           # load that source's output into the emulator
+dxdfir detect                       # sweep detections across whatever is present -> misc.Detections
+dxdfir --help                       # every command; `man dxdfir` for the manual
+```
+
+Query the results in KQL against the emulator at `127.0.0.1:8080` — the MITRE CAR
+functions (`CarProcess()`, `CarFlow()`, …) and `DetectionsLatest()`.
+
+Installing the CLI by hand instead of via the setup script (needs Python 3 + Docker):
+
+```bash
+pip install ./python                # provides dxdfir + ansible-core (ansible-playbook)
+```
 
 ## What Actually Works
 <a name="what-actually-works"></a>

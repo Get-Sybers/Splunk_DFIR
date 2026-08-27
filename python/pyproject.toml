@@ -4,12 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "get-sybers-dfir"
-version = "0.3.0"
+version = "0.3.1"
 description = "DX_DFIR forensic processing package (zeek, velociraptor, evtx, volatility, plaso, signatures) + dxdfir CLI"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "typer>=0.12",
+    # The CLI drives the get_sybers.dfir collection with ansible-playbook, so it
+    # ships with the package — installing the CLI installs a working ansible-playbook.
+    "ansible-core>=2.16",
 ]
 
 [project.scripts]
