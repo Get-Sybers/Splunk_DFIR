@@ -79,7 +79,9 @@ The analysis container images are catalogued in [Containers](/docs/Containers.md
 | Script | Description |
 |---|---|
 | `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
-| `save-docker-images.sh` | Pull / save / load the analysis Docker images for offline / air-gapped hosts. |
+| `save-docker-images.sh` | Save the built hardened `dfir/*` images (+ the two unbuildable pulls) as tarballs; `--load` / `--verify` restore them and assert the hardened inventory. |
+| `package-offline.sh` | Build ONE portable air-gap bundle: images, `dxdfir` CLI + deps as wheels, pinned collections, the repo, and `data_store/dependencies/` (YARA/Suricata/Hayabusa rulesets + binary, Volatility symbols, EvtxECmd) under a `MANIFEST.sha256`. |
+| `setup-offline.sh` | Set up from that bundle with zero network: manifest-verify everything, unpack the repo + detection dependencies, load images, install CLI/collections offline, finish with `dxdfir verify-images`. |
 
 The Splunk-era and KAPE PowerShell scripts were retired (git history and the frozen
 `deprecated` branch keep them).

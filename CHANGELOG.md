@@ -22,6 +22,14 @@ is `0`, anything may change without notice.
   263→93MB).
 
 ### Added
+- **Offline packaging** (`scripts/package-offline.sh` + `scripts/setup-offline.sh`):
+  one portable `dxdfir-offline-<ver>-<arch>.tar.gz` carrying the hardened
+  images, the CLI + deps as wheels, the pinned collections, the repo, and
+  `data_store/dependencies/` (signature rulesets, Hayabusa binary, Volatility
+  symbols, EvtxECmd) — set up on an air-gapped host with zero network:
+  manifest-verified first, `dxdfir verify-images` proves the loaded inventory
+  last. `save-docker-images.sh` now saves the built `dfir/*` images instead of
+  pulling them, and gained `--build` / `--verify`.
 - **Start-time image inventory guard** (`get_sybers_dfir.images` /
   `dxdfir verify-images`): each processor preflight refuses to run unless the
   tool image is a known hardened `dfir/*` image (label + uid 2000 + expected

@@ -78,12 +78,40 @@ The emulator cannot be built from source; `dfir_deploy_adx` confines it to
 localhost instead (a non-local bind is refused unless
 `dfir_deploy_adx_expose=true` is set deliberately).
 
-## Offline hosts
+## Offline / air-gapped hosts
 
-`save-docker-images.sh` saves the built `dfir/*` images plus the two pulled
-ones into `data_store/docker_images/`; `--load` restores them on an air-gapped
-host. The SOF-ELK stack (`docker/sof-elk/`, from-source build) is handled by
-`dfir_deploy_sofelk`.
+Two levels:
+
+**Images only** — `save-docker-images.sh` saves the built `dfir/*` images plus
+the two pulled ones into `data_store/docker_images/`:
+
+```bash
+scripts/save-docker-images.sh --build     # online: build the dfir/* images, then save all
+scripts/save-docker-images.sh --verify    # offline: load every tarball, then assert the hardened inventory
+```
+
+**Complete portable bundle** — `package-offline.sh` produces ONE artifact with
+everything an air-gapped host needs — the images, the `dxdfir` CLI + all Python
+deps as wheels, the pinned ansible collections, a clean archive of the repo, and
+a `MANIFEST.sha256` over all of it:
+
+```bash
+# online host:
+scripts/package-offline.sh --build            # -> dist/dxdfir-offline-<ver>-<arch>.tar.gz
+
+# air-gapped host (no network needed):
+tar -xzf dxdfir-offline-<ver>-<arch>.tar.gz
+cd dxdfir-offline-<ver>-<arch> && ./setup-offline.sh
+```
+
+`setup-offline.sh` verifies every checksum before doing anything, loads the
+images, installs the CLI from the bundled wheels (`pip --no-index`), installs
+the collections offline, and finishes by running `dxdfir verify-images` so the
+loaded inventory is confirmed to be the expected hardened set. Nothing reaches
+the network.
+
+The SOF-ELK stack (`docker/sof-elk/`, from-source build) is handled separately
+by `dfir_deploy_sofelk`.
 
 **Not containers:** **Hayabusa** ships as a self-contained Rust binary (no
 official image) — operator-supplied: download the pinned release into
