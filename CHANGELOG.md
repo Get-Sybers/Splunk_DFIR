@@ -7,7 +7,7 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
-## [0.4.0] — 2026-08-27
+## [0.4.0] - 2026-08-27
 
 ### Added
 - **Build-it-yourself hardened tool containers** (`docker/{yara,suricata,zeek,
@@ -34,16 +34,6 @@ is `0`, anything may change without notice.
   role with block/rescue diagnostics and check-mode support; molecule
   scenarios repaired and runnable via the containerised harness.
 
-### Changed
-- Plaso is built from pinned PyPI with the libyal stack compiled from source
-  (GIFT stable lags the `--output_fallback_hostname` the pipeline requires).
-- No third-party tool image is pulled at runtime; the proprietary Kusto
-  emulator (localhost-gated) and the stock .NET runtime (operator-supplied
-  EvtxECmd mode) are the only remaining pulls.
-- `data_store/.gitignore` prunes traversal (anchored skeleton whitelist);
-  `git status` 25s → 0.014s.
-
-### Added
 - The `dfir_deploy_adx` role now carries the retired shell deploy's remaining
   security properties: an isolated (masquerade-off, never `--internal`) docker
   network on by default (`dfir_deploy_adx_isolated`) with egress probed from
@@ -57,6 +47,15 @@ is `0`, anything may change without notice.
   memory via Volatility 3 `windows.vadyarascan` (matches carry PID context) →
   `memory.jsonl`. `--yara-sources` selects sources; the mount/scan invocations
   are pure, unit-tested helpers.
+
+### Changed
+- Plaso is built from pinned PyPI with the libyal stack compiled from source
+  (GIFT stable lags the `--output_fallback_hostname` the pipeline requires).
+- No third-party tool image is pulled at runtime; the proprietary Kusto
+  emulator (localhost-gated) and the stock .NET runtime (operator-supplied
+  EvtxECmd mode) are the only remaining pulls.
+- `data_store/.gitignore` prunes traversal (anchored skeleton whitelist);
+  `git status` 25s → 0.014s.
 
 ### Removed
 - The last data-pipeline shell scripts: `deploy-kusto.sh`,
