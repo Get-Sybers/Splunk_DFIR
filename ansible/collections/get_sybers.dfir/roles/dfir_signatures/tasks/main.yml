@@ -22,11 +22,8 @@
       tags: [always]
   tags: [always]
 
-# Pipeline selection is a decision — it sits on the include, never on an action.
-- name: "signatures | ADX pipeline"
-  ansible.builtin.include_tasks: adx.yml
-  when: dfir_signatures_pipeline == 'adx'
-
-- name: "signatures | SOF-ELK pipeline"
-  ansible.builtin.include_tasks: sofelk.yml
-  when: dfir_signatures_pipeline == 'sofelk'
+# The pipeline decision (adx|sofelk) is carried by the resolved
+# dfir_signatures_out_dir default — the tasks themselves are pipeline-agnostic,
+# so there is ONE task file to maintain instead of a drifting pair.
+- name: "signatures | process"
+  ansible.builtin.include_tasks: process.yml

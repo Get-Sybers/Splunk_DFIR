@@ -8,6 +8,9 @@ dfir_signatures_repo_root: "{{ role_path }}/../../../../.."
 
 dfir_signatures_adx_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/signatures"
 dfir_signatures_sofelk_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/sofelk/signatures"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_signatures_out_dir: "{{ dfir_signatures_adx_out_dir if dfir_signatures_pipeline == 'adx' else dfir_signatures_sofelk_out_dir }}"
 # Which detection lanes to run; empty = all (yara, suricata, hayabusa).
 dfir_signatures_lanes: []
 # Where the hayabusa lane stages disk-image EVTX extractions (empty => the evtx

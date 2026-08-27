@@ -73,6 +73,13 @@ argument_specs:
         type: str
         required: false
         description: "SOF-ELK-path output dir (delivered into SOF-ELK by dfir_ingest_sofelk)."
+      dfir_evtx_out_dir:
+        type: str
+        required: false
+        description: >-
+          Resolved output base for the selected pipeline (defaults to the
+          adx/sofelk out dir per dfir_evtx_pipeline); override to send
+          output to a custom location.
       dfir_evtx_use_bundled_image:
         type: bool
         required: false

@@ -9,6 +9,9 @@ dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
 dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/other_raw_data/WinEvt"
 dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
 dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_evtx_out_dir: "{{ dfir_evtx_adx_out_dir if dfir_evtx_pipeline == 'adx' else dfir_evtx_sofelk_out_dir }}"
 
 # Disk-image inputs (optional): a disk image (E01/raw/VMDK) or a directory of them.
 # When set, WindowsEventLogs (.evtx) are extracted with log2timeline/plaso

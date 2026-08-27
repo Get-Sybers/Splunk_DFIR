@@ -28,6 +28,13 @@ argument_specs:
         type: str
         required: false
         description: "SOF-ELK-path output dir (delivered into SOF-ELK by dfir_ingest_sofelk)."
+      dfir_volatility_out_dir:
+        type: str
+        required: false
+        description: >-
+          Resolved output base for the selected pipeline (defaults to the
+          adx/sofelk out dir per dfir_volatility_pipeline); override to send
+          output to a custom location.
       dfir_volatility_symbols_dir:
         type: str
         required: false

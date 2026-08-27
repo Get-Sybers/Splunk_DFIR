@@ -10,6 +10,9 @@ dfir_plaso_input_dir: "{{ dfir_plaso_repo_root }}/data_store/raw/disk_images"
 dfir_plaso_vm_dir: "{{ dfir_plaso_repo_root }}/data_store/raw/VM_files"
 dfir_plaso_adx_out_dir: "{{ dfir_plaso_repo_root }}/data_store/processed/log2timeline"
 dfir_plaso_sofelk_out_dir: "{{ dfir_plaso_repo_root }}/data_store/processed/sofelk/log2timeline"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_plaso_out_dir: "{{ dfir_plaso_adx_out_dir if dfir_plaso_pipeline == 'adx' else dfir_plaso_sofelk_out_dir }}"
 # The custom psort output module lives in the repo (dev-scripts), mounted into psort.
 dfir_plaso_module: "{{ dfir_plaso_repo_root }}/dev-scripts/plaso/l2t_json_dfir.py"
 dfir_plaso_image: "log2timeline/plaso"
