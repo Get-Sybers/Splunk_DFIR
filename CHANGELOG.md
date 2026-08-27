@@ -7,6 +7,21 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-26
+
+### Fixed
+- `dxdfir` CLI worked only where `ansible-playbook` happened to be on `PATH`.
+  `ansible-core` is now a declared dependency of the package and the CLI resolves the
+  `ansible-playbook` installed alongside it, so `dxdfir process`/`ingest`/`deploy`/`detect`
+  work on a clean install.
+- `scripts/setup-environment.sh` now installs the `dxdfir` CLI (into a dedicated venv),
+  not just Docker and the userland tools.
+
+### Added
+- Root `README.md` **Quick Start**: clone -> `setup-environment.sh` -> `dxdfir deploy`
+  -> `process` / `ingest` / `detect`.
+
+
 ## [0.3.0] - 2026-08-26
 
 ### Added

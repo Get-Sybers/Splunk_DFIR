@@ -93,6 +93,24 @@ def _need(tool: str) -> None:
         raise typer.Exit(127)
 
 
+def _ansible_playbook() -> str:
+    """Path to ansible-playbook. Prefer the one installed alongside this CLI (same
+    environment as sys.executable — ansible-core is a declared dependency of
+    get_sybers_dfir), so `dxdfir` works however it was installed (venv, pipx, system)
+    without ansible-playbook needing to be on PATH; fall back to PATH otherwise."""
+    cand = os.path.join(os.path.dirname(sys.executable), "ansible-playbook")
+    if os.path.isfile(cand) and os.access(cand, os.X_OK):
+        return cand
+    found = shutil.which("ansible-playbook")
+    if found:
+        return found
+    typer.secho(
+        "ansible-playbook not found. Install the CLI with its dependencies "
+        "(`pip install ./python` or `scripts/setup-environment.sh`) — ansible-core "
+        "ships with it.", fg=typer.colors.RED, err=True)
+    raise typer.Exit(127)
+
+
 # --------------------------------------------------------------------------- commands
 @app.command()
 def process(
@@ -105,7 +123,7 @@ def process(
     ),
 ) -> None:
     """Process one evidence source by driving its role (preflight → process → verify)."""
-    _need("ansible-playbook")
+    _ap = _ansible_playbook()
     repo = _repo_root(repo_root)
     name = source.value
     playbook = repo / _COLLECTION / "playbooks" / f"dfir-process-{name}.yml"
@@ -113,7 +131,7 @@ def process(
         typer.secho(f"no playbook for source '{name}': {playbook}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
     cmd = [
-        "ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook),
+        _ap, "-i", "localhost,", "-c", "local", str(playbook),
         "-e", f"dfir_{name}_pipeline={pipeline.value}",
         "-e", f"dfir_{name}_force={'true' if force else 'false'}",
     ]
@@ -134,13 +152,13 @@ def ingest(
     extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
 ) -> None:
     """Load processed output into the ADX (Kusto) emulator by driving dfir_ingest_adx."""
-    _need("ansible-playbook")
+    _ap = _ansible_playbook()
     repo = _repo_root(repo_root)
     playbook = repo / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml"
     if not playbook.is_file():
         typer.secho(f"ingest playbook not found: {playbook}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
-    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
+    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
     if only:
         cmd += ["-e", f"dfir_ingest_adx_only={only}"]
     if force:
@@ -169,13 +187,13 @@ def detect(
     (ADX tables + signature-lane JSONL) and runs only the registered detections
     whose target data is there; hits land uniformly tagged in misc.Detections.
     """
-    _need("ansible-playbook")
+    _ap = _ansible_playbook()
     repo = _repo_root(repo_root)
     playbook = repo / _COLLECTION / "playbooks" / "dfir-detect-adx.yml"
     if not playbook.is_file():
         typer.secho(f"detect playbook not found: {playbook}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
-    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
+    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
     if only:
         cmd += ["-e", f"dfir_detect_adx_only={only}"]
     if dry_run:
@@ -203,13 +221,13 @@ def deploy(
     ⚠️ Running this accepts Microsoft's EULA on your behalf (ACCEPT_EULA=Y); the
     emulator has no auth and is localhost-only by default.
     """
-    _need("ansible-playbook")
+    _ap = _ansible_playbook()
     repo = _repo_root(repo_root)
     playbook = repo / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml"
     if not playbook.is_file():
         typer.secho(f"deploy playbook not found: {playbook}", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
-    cmd = ["ansible-playbook", "-i", "localhost,", "-c", "local", str(playbook)]
+    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
     if persist:
         cmd += ["-e", "dfir_deploy_adx_persist=true"]
     if port is not None:

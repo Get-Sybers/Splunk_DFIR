@@ -52,7 +52,7 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 # lib/kusto-api.sh, unzip backs process-velociraptor.sh, tar backs the image
 # tarballs written by save-docker-images.sh. ca-certificates and gnupg are
 # needed to add the Docker repo itself.
-APT_DEPS=(ca-certificates curl gnupg unzip python3 tar)
+APT_DEPS=(ca-certificates curl gnupg unzip python3 python3-venv tar)
 REQUIRED_CMDS=(curl python3 unzip tar realpath readlink)
 
 ASSUME_YES=false
@@ -249,6 +249,22 @@ if [[ -d "$REPO_ROOT_DIR" ]]; then
 fi
 
 ################################################################################
+# Install the dxdfir CLI. A dedicated venv keeps it off the system Python (PEP 668)
+# and — this is the point — puts ansible-playbook right next to the dxdfir entry
+# point, which is exactly where the CLI resolves it (the CLI drives the Ansible
+# collection). ansible-core is a declared dependency, so this one install gives a
+# working `dxdfir process/ingest/deploy/detect`.
+################################################################################
+DXDFIR_VENV="${DXDFIR_VENV:-/opt/dxdfir/venv}"
+echo "🐍 Installing the dxdfir CLI into $DXDFIR_VENV ..."
+$SUDO python3 -m venv "$DXDFIR_VENV" || die "Failed to create the CLI venv (need python3-venv)."
+$SUDO "$DXDFIR_VENV/bin/pip" install --quiet --upgrade pip || die "pip upgrade in the CLI venv failed."
+$SUDO "$DXDFIR_VENV/bin/pip" install --quiet "$REPO_ROOT_DIR/python" \
+    || die "Failed to install the dxdfir CLI (and its ansible-core dependency)."
+$SUDO ln -sf "$DXDFIR_VENV/bin/dxdfir" /usr/local/bin/dxdfir
+echo "✅ dxdfir installed: $(/usr/local/bin/dxdfir --version 2>/dev/null || echo '/usr/local/bin/dxdfir')"
+
+################################################################################
 echo ""
 echo "🎉 Setup complete!"
 echo ""
@@ -262,4 +278,5 @@ echo "📦 To pre-seed the analysis images as tarballs for an offline host, run:
 echo "     scripts/save-docker-images.sh          (online host: pull + save)"
 echo "     scripts/save-docker-images.sh --load   (offline host: load tarballs)"
 echo ""
-echo "🚀 You can now run the DX_DFIR scripts!"
+echo "🚀 You can now run DX_DFIR — try:  dxdfir --help"
+echo "   (deploy the emulator, process evidence, ingest, sweep detections — see README.md)"
