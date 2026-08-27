@@ -43,7 +43,7 @@ dfir_evtx_hayabusa_rules: ""
 # How EvtxECmd is supplied — two modes:
 #   bundled  (default): the dfir/evtxecmd image (docker/evtxecmd) bakes EvtxECmd.dll
 #            + Maps/. Nothing to place by hand; build it once with
-#            `docker build -t dfir/evtxecmd:latest docker/evtxecmd`.
+#            `docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker`.
 #   operator: set dfir_evtx_use_bundled_image=false and drop the .NET EvtxECmd
 #            release (incl. Maps/) under dfir_evtx_evtxecmd_dir. EvtxECmd is MIT but
 #            we don't vendor it; the operator supplies the build.
