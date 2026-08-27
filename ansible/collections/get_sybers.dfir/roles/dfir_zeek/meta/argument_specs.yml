@@ -26,10 +26,17 @@ argument_specs:
         type: str
         required: false
         description: "SOF-ELK-path output dir (delivered into SOF-ELK by dfir_ingest_sofelk)."
+      dfir_zeek_out_dir:
+        type: str
+        required: false
+        description: >-
+          Resolved output base for the selected pipeline (defaults to the
+          adx/sofelk out dir per dfir_zeek_pipeline); override to send
+          output to a custom location.
       dfir_zeek_image:
         type: str
         required: false
-        default: "zeek/zeek"
+        default: "dfir/zeek:latest"
         description: "Zeek container image."
       dfir_zeek_python_path:
         type: str

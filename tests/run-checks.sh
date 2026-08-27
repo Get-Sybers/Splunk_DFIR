@@ -50,6 +50,69 @@ else
 fi
 
 # ------------------------------------------------------------------------------
+group "Collection requirements"
+# ------------------------------------------------------------------------------
+# requirements.yml is the single source of pinned Ansible dependencies. This
+# gate (which runs on every PR via CI) enforces the contract: it parses, every
+# collection is pinned to an exact version (never :latest, never a branch —
+# ANSIBLE-STANDARDS galaxy §2), every galaxy.yml dependency is covered by a
+# pin, and setup-environment.sh actually installs it.
+REQS="ansible/collections/get_sybers.dfir/requirements.yml"
+GALAXY="ansible/collections/get_sybers.dfir/galaxy.yml"
+if command -v python3 >/dev/null 2>&1 && [[ -f "$REQS" ]]; then
+    _req_out=$(python3 - "$REQS" "$GALAXY" <<'PY'
+import re, sys
+try:
+    import yaml
+except ImportError:
+    print("SKIP: python3-yaml not available"); sys.exit(0)
+reqs = yaml.safe_load(open(sys.argv[1]))
+problems = []
+pinned = {}
+for entry in (reqs or {}).get("collections", []):
+    name, ver = entry.get("name"), str(entry.get("version", ""))
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", ver):
+        problems.append(f"{name}: version '{ver}' is not an exact X.Y.Z pin")
+    pinned[name] = ver
+galaxy = yaml.safe_load(open(sys.argv[2]))
+for dep in (galaxy.get("dependencies") or {}):
+    if dep not in pinned:
+        problems.append(f"galaxy.yml dependency '{dep}' has no pinned entry in requirements.yml")
+print("\n".join(problems))
+PY
+)
+    if [[ "$_req_out" == SKIP:* ]]; then
+        skip "${_req_out#SKIP: }"
+    elif [[ -n "$_req_out" ]]; then
+        while IFS= read -r _line; do fail "requirements: $_line"; done <<< "$_req_out"
+    else
+        pass "requirements.yml pins are exact and cover every galaxy.yml dependency"
+    fi
+    if grep -q "requirements.yml" scripts/setup-environment.sh; then
+        pass "setup-environment.sh installs requirements.yml"
+    else
+        fail "setup-environment.sh does not install requirements.yml"
+    fi
+else
+    fail "missing $REQS"
+fi
+
+# ------------------------------------------------------------------------------
+group "Ansible lint"
+# ------------------------------------------------------------------------------
+# Production-profile ansible-lint over the collection (config: the collection's
+# .ansible-lint). Skipped when ansible-lint is not installed (CI installs it).
+if command -v ansible-lint >/dev/null 2>&1; then
+    if ansible-lint --profile production >/dev/null 2>&1; then
+        pass "ansible-lint (production profile) on the collection + container ansible"
+    else
+        fail "ansible-lint reported violations (run: ansible-lint --profile production)"
+    fi
+else
+    skip "ansible-lint not installed"
+fi
+
+# ------------------------------------------------------------------------------
 group "Repo-root path resolution"
 # ------------------------------------------------------------------------------
 # The now-deleted scripts/v2 shipped four scripts computing $SCRIPT_DIR/..
@@ -401,6 +464,16 @@ group "Versioning and documentation"
 # ------------------------------------------------------------------------------
 # One project version, stated in one form. Relabelling alpha -> beta touched a
 # dozen files by hand; this is what stops the next one leaving a stray behind.
+# The package must agree with itself: pyproject.toml and __init__.__version__
+# drift silently otherwise (the CLI prints the stale one).
+_pyproject_v=$(grep -m1 -oE '^version = "[0-9.]+"' python/pyproject.toml | grep -oE '[0-9.]+')
+_init_v=$(grep -m1 -oE '__version__ = "[0-9.]+"' python/get_sybers_dfir/__init__.py | grep -oE '[0-9.]+')
+if [[ -n "$_pyproject_v" && "$_pyproject_v" == "$_init_v" ]]; then
+    pass "pyproject version ($_pyproject_v) matches get_sybers_dfir.__version__"
+else
+    fail "version drift: pyproject=$_pyproject_v __init__=$_init_v"
+fi
+
 PROJECT_VERSION=$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+[^]]*\]' CHANGELOG.md 2>/dev/null | tr -d '#[] ')
 if [[ -n "$PROJECT_VERSION" ]]; then
     pass "project version from CHANGELOG: $PROJECT_VERSION"
@@ -479,7 +552,7 @@ done < <(grep -E '^!.*\*\*' data_store/.gitignore 2>/dev/null)
 # ------------------------------------------------------------------------------
 group "Secrets"
 # ------------------------------------------------------------------------------
-if git grep -InE '(BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,})' -- . >/dev/null 2>&1; then
+if git grep -InE '(BEGIN [A-Z ]*PRIVATE KEY|A[KS]IA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})' -- . >/dev/null 2>&1; then
     fail "possible secret material in the working tree"
 else
     pass "no secret patterns in tree"
@@ -496,10 +569,13 @@ lr = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
 bad = []
 for md in sorted(root.rglob("*.md")):
     rel = str(md.relative_to(root))
-    # Skip VCS internals and evidence corpora — data_store/ holds raw and
+    # Skip VCS internals, evidence corpora — data_store/ holds raw and
     # processed forensic samples (whole disk images, vendored OS docs), whose
-    # internal links are not this project's documentation to validate.
+    # internal links are not this project's documentation to validate — and
+    # third-party caches (ansible-lint installs the collection's pinned deps
+    # under .ansible/; their changelogs are not ours to validate).
     if ".git/" in str(md) or rel.startswith("data_store/"): continue
+    if "/.ansible/" in str(md) or rel.startswith(".ansible/"): continue
     for m in lr.finditer(md.read_text(errors="ignore")):
         t = m.group(1).split("#")[0].strip()
         if not t or t.startswith(("http://", "https://", "mailto:")): continue

@@ -1,0 +1,50 @@
+---
+# Pipeline-agnostic processing — identical for ADX and SOF-ELK; only the
+# output base differs, resolved into dfir_volatility_out_dir by defaults/main.yml
+# from dfir_volatility_pipeline. (SOF-ELK delivery into its watch dir is tracked
+# in #45.)
+#
+# The three steps run as one guarded unit: on any failure the rescue surfaces
+# the processor's own JSON summary and stderr as ONE clear diagnostic instead
+# of a raw traceback, then fails the play (no half-configured silence). In
+# check mode the command is skipped, so the gate on its output is too.
+- name: "volatility-process | process, verify and gate"
+  block:
+    - name: "volatility-process | process memory images into per-plugin JSONL"
+      ansible.builtin.command:
+        argv: >-
+            {{ ['python3', '-m', 'get_sybers_dfir.volatility', '--memory-dir', dfir_volatility_memory_dir, '--out-dir', dfir_volatility_out_dir,
+                '--symbols-dir', dfir_volatility_symbols_dir, '--renderer', dfir_volatility_renderer,
+                '--plugins-dir', dfir_volatility_plugins_dir, '--image', dfir_volatility_image]
+            + (['--symbols-online'] if dfir_volatility_symbols_online | bool else [])
+            + (['--force'] if dfir_volatility_force | bool else []) }}
+      environment:
+        PYTHONPATH: "{{ dfir_volatility_python_path }}"
+      register: dfir_volatility_run
+      changed_when: (dfir_volatility_run.stdout | from_json).processed | int > 0
+
+    - name: "volatility-process | verify per-plugin JSONL on disk"
+      ansible.builtin.find:
+        paths: "{{ dfir_volatility_out_dir }}"
+        patterns: "*.jsonl"
+        recurse: true
+      register: dfir_volatility_verify
+
+    # Per-plugin failures are NORMAL (Windows plugins error without symbols), so the
+    # gate is "some plugin produced output, or there were no images" — not failed==0.
+    - name: "volatility-process | assert output was produced for the images present"
+      when: dfir_volatility_run is not skipped
+      ansible.builtin.assert:
+        that:
+          - dfir_volatility_verify.matched | int > 0 or (dfir_volatility_run.stdout | from_json).images | int == 0
+        fail_msg: >-
+          volatility produced no JSONL at all though memory images were present (symbols
+          unavailable for every plugin?).
+        quiet: true
+  rescue:
+    - name: "volatility-process | surface processor diagnostics"
+      ansible.builtin.fail:
+        msg: >-
+          dfir_volatility processing failed.
+          Summary: {{ dfir_volatility_run.stdout | default('(no summary emitted)') | trim }}
+          Stderr: {{ dfir_volatility_run.stderr | default('') | trim | truncate(1000) }}

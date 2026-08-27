@@ -10,19 +10,19 @@
 # FETCHES the published release at build time, so the repo ships a recipe, not
 # someone else's build. See ./README.md for licensing and the LABELs below.
 #
-# Build (from the repo root or this dir):
-#   docker build -t dfir/evtxecmd:latest docker/evtxecmd
+# Build (context is docker/ so the shared hardening + runtime layers are in reach):
+#   docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker
 #
 # Pin the release (recommended — the default URL serves "latest", so an unpinned
 # build is not reproducible over time):
 #   docker build -t dfir/evtxecmd:latest \
-#     --build-arg EVTXECMD_SHA256=<sha256 of EvtxECmd.zip> docker/evtxecmd
+#     --build-arg EVTXECMD_SHA256=<sha256 of EvtxECmd.zip> -f docker/evtxecmd/Dockerfile docker
 #
-# Run (matches how get_sybers_dfir.evtx invokes it in bundled mode — WORKDIR holds
-# the DLL + Maps/, so EvtxECmd resolves its maps and needs no /evtxecmd mount):
+# Run (the pinned ENTRYPOINT is the embedded ansible run role; only
+# `dotnet /opt/evtxecmd/EvtxECmd.dll …` is allow-listed):
 #   docker run --rm -v "$PWD/in:/input:ro" -v "$PWD/out:/output" dfir/evtxecmd:latest \
-#     dotnet /opt/evtxecmd/EvtxECmd.dll -f /input/Security.evtx \
-#     --json /output --jsonf Security_EvtxECmd_Output.json
+#     -e '{"dfir_run_argv": ["dotnet", "/opt/evtxecmd/EvtxECmd.dll", "-f", "/input/Security.evtx",
+#          "--json", "/output", "--jsonf", "Security_EvtxECmd_Output.json"]}'
 
 ARG DOTNET_VERSION=9.0
 # Global so BOTH the fetch stage AND the final stage's provenance LABEL see the same
@@ -61,22 +61,37 @@ RUN set -eux; \
     # The Windows single-file .exe is dead weight in a Linux image — drop it.
     rm -f /opt/evtxecmd/EvtxECmd.exe
 
-# ---- the EvtxECmd image ----------------------------------------------------
-FROM mcr.microsoft.com/dotnet/runtime:${DOTNET_VERSION}
-ARG EVTXECMD_URL
-LABEL org.opencontainers.image.title="dfir/evtxecmd" \
-      org.opencontainers.image.description="Eric Zimmerman's EvtxECmd (.NET) baked into a dotnet runtime image for the DX_DFIR dfir_evtx role" \
-      org.opencontainers.image.source="https://github.com/EricZimmerman/evtx" \
-      org.opencontainers.image.licenses="MIT" \
-      com.get-sybers.evtxecmd.url="${EVTXECMD_URL}"
-
+# ---- the EvtxECmd image, ansible-hardened -----------------------------------
+FROM mcr.microsoft.com/dotnet/runtime:${DOTNET_VERSION} AS hardened
 # DLL + Maps/ live together in WORKDIR so EvtxECmd finds its maps by default.
 COPY --from=fetch /opt/evtxecmd /opt/evtxecmd
-WORKDIR /opt/evtxecmd
 
 # Fail the build if the runtime can't load the tool (wrong .NET major, bad copy).
 RUN dotnet /opt/evtxecmd/EvtxECmd.dll --help > /dev/null
 
-# No ENTRYPOINT: callers pass the full `dotnet /opt/evtxecmd/EvtxECmd.dll …`
-# command (identical to the operator-supplied path, just without the mount), which
-# keeps get_sybers_dfir.evtx's two modes one code path apart.
+COPY runtime /opt/dfir
+COPY hardening/harden.yml /tmp/hardening/harden.yml
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ansible-core; \
+    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
+    rm -rf /tmp/hardening
+
+FROM scratch
+COPY --from=hardened / /
+ARG EVTXECMD_URL
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    HOME=/home/dfir \
+    DOTNET_RUNNING_IN_CONTAINER=true DOTNET_EnableDiagnostics=0 \
+    ANSIBLE_ROLES_PATH=/opt/dfir/roles \
+    DFIR_ALLOWED_ARGV0=dotnet \
+    DFIR_ALLOWED_ARGV1=/opt/evtxecmd/EvtxECmd.dll
+WORKDIR /opt/evtxecmd
+USER 2000:2000
+ENTRYPOINT ["ansible-playbook", "-i", "localhost,", "-c", "local", "/opt/dfir/entrypoint.yml"]
+LABEL org.opencontainers.image.title="dfir/evtxecmd" \
+      org.opencontainers.image.description="Eric Zimmerman's EvtxECmd (.NET) for the DX_DFIR dfir_evtx role. Ansible-only execution (allow-listed run role, dotnet restricted to the baked DLL), uid0 renamed+locked, no sudo/su, no package manager, runs as uid 2000." \
+      org.opencontainers.image.source="https://github.com/EricZimmerman/evtx" \
+      org.opencontainers.image.licenses="MIT" \
+      com.get-sybers.evtxecmd.url="${EVTXECMD_URL}" \
+      com.get-sybers.hardened="true"

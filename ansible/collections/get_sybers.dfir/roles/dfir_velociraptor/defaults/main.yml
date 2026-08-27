@@ -9,6 +9,9 @@ dfir_velociraptor_repo_root: "{{ role_path }}/../../../../.."
 dfir_velociraptor_raw_dir: "{{ dfir_velociraptor_repo_root }}/data_store/raw/velociraptor"
 dfir_velociraptor_adx_out_dir: "{{ dfir_velociraptor_repo_root }}/data_store/processed/velociraptor"
 dfir_velociraptor_sofelk_out_dir: "{{ dfir_velociraptor_repo_root }}/data_store/processed/sofelk/velociraptor"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_velociraptor_out_dir: "{{ dfir_velociraptor_adx_out_dir if dfir_velociraptor_pipeline == 'adx' else dfir_velociraptor_sofelk_out_dir }}"
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_velociraptor_python_path: "{{ dfir_velociraptor_repo_root }}/python"
 dfir_velociraptor_force: false

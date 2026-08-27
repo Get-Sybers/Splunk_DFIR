@@ -181,6 +181,17 @@ classify_dir() { # group name  ->  path under $RAW
     echo "$RAW/other_raw_data"
 }
 
+# ".dmp" is ambiguous: tcpdump writes packet captures as .dmp (the nps-2009
+# net-*.dmp.gz files), Windows writes crash dumps. The name-based rule above
+# routes .dmp to memory/; once the BYTES exist, a capture magic wins and the
+# file is re-routed to pcaps/ so zeek/suricata find it (volatility can't parse
+# a capture anyway). Same magics as get_sybers_dfir.zeek.is_pcap.
+is_pcap_magic() { # path
+    local h; h="$(head -c4 "$1" 2>/dev/null | od -An -tx1 | tr -d ' \n')"
+    case "$h" in a1b2c3d4|d4c3b2a1|a1b23c4d|4d3cb2a1|0a0d0d0a) return 0 ;; esac
+    return 1
+}
+
 # Destination directory for a file: its type directory, then a per-group folder.
 #
 # Every download lands in its own group folder — data_store/raw/<type>/<group>/
@@ -283,6 +294,8 @@ sort_extracted() { # extract-root group archive-stem
     while IFS= read -r -d '' f; do
         rel="${f#"$root"/}"
         tdir="$(classify_dir "$group" "$(basename "$f")")/$group/$stem"
+        # content beats name for the ambiguous .dmp case (see is_pcap_magic)
+        [[ "$tdir" == "$RAW/memory/"* ]] && is_pcap_magic "$f" && tdir="$RAW/pcaps/$group/$stem"
         mkdir -p "$tdir/$(dirname "$rel")"
         mv -f "$f" "$tdir/$rel"
     done < <(find "$root" -type f -print0)
@@ -311,7 +324,14 @@ materialize() { # src group name
         *.gz)
             out="${name%.gz}"
             dest="$(group_dir "$group" "$out")"; mkdir -p "$dest"
-            gunzip -c "$src" > "$dest/$out" ;;
+            gunzip -c "$src" > "$dest/$out"
+            # content beats name for the ambiguous .dmp case (see is_pcap_magic);
+            # idempotency is carried by the .done marker, not the landing path
+            if [[ "$dest" == "$RAW/memory/"* ]] && is_pcap_magic "$dest/$out"; then
+                mkdir -p "$RAW/pcaps/$group"
+                mv -f "$dest/$out" "$RAW/pcaps/$group/$out"
+                rmdir "$dest" 2>/dev/null || true
+            fi ;;
         *)
             dest="$(group_dir "$group" "$name")"; mkdir -p "$dest"
             cp -f "$src" "$dest/$name" ;;   # already an artifact (not normally reached)

@@ -1,14 +1,18 @@
 """Hayabusa lane — Sigma-based Windows event-log detection -> native JSONL.
 
-Scans loose ``*.evtx`` under the raw tree, and (with ``/dev/fuse``) disk images
-mounted read-only in place. Disk-image EVTX **without** fuse now flows through the
-evtx pipeline instead: ``get_sybers_dfir.evtx --image-src`` extracts WindowsEventLogs
-with log2timeline/plaso (``imageexport``) and runs Hayabusa over them
-(``get_sybers_dfir.evtx.run_hayabusa``, which reuses ``scan_directory`` /
-``find_binary`` / ``tag_detections`` here) — so Hayabusa detection is part of evtx
-processing, not a separate image-mount step. (Hayabusa's ``-J`` JSON input yields 0
-detections on Plaso/evtx_dump JSON vs 792 natively, #1324, so real .evtx is required —
-which is why extraction, not JSON conversion, is the path.)
+Scans loose ``*.evtx`` under the raw tree AND disk images, standalone — no fuse
+mount and no prior processor run required. Disk-image EVTX come from the SHARED
+staged extraction (``imageexport.extract_staged``: log2timeline/plaso
+``image_export.py --artifact_filters WindowsEventLogs``): the stage defaults to the
+same location the evtx processor uses, so whichever lane runs first extracts and
+every later run — detection or processor — reuses the staged logs instead of
+re-processing the raw image. (Hayabusa's ``-J`` JSON input yields 0 detections on
+Plaso/evtx_dump JSON vs 792 natively, #1324, so real .evtx is required — which is
+why extraction, not JSON conversion, is the path.)
+
+The evtx pipeline's inline enrichment (``get_sybers_dfir.evtx.run_hayabusa``)
+reuses ``scan_directory`` / ``find_binary`` / ``tag_detections`` here — one
+Hayabusa implementation either way.
 
 Native Rust binary (no official image); operator-supplied. ``--fetch`` is accepted
 for parity with the bash script but not yet implemented here.
@@ -21,7 +25,8 @@ import os
 import subprocess
 import tempfile
 
-from . import have_fuse, list_images
+from .. import imageexport
+from . import list_images
 
 
 def tag_detections(text: str) -> list[dict]:
@@ -83,12 +88,22 @@ def scan_directory(hb_bin, scan_dir, rules_dir) -> str:
         return ""
 
 
+def default_stage_dir(repo_root: str) -> str:
+    """The disk-image EVTX stage shared with the evtx processor: the processor
+    defaults its stage to ``<out-dir>/_extracted_evtx`` under
+    ``data_store/processed/windows_logs`` — the SAME path, so an image staged by
+    either lane is never extracted twice."""
+    return os.path.join(repo_root, "data_store", "processed", "windows_logs",
+                        "_extracted_evtx")
+
+
 def run(*, output_dir, repo_root, fetch=False, force=False,
-        loose_dir=None, disk_dir=None, hb_dir=None, hb_bin=None, rules_dir=None,
-        scan_disk=True, **_ignored) -> dict:
+        loose_dir=None, disk_dir=None, stage_dir=None, plaso_image=None, vss=False,
+        hb_dir=None, hb_bin=None, rules_dir=None, scan_disk=True, **_ignored) -> dict:
     ds = os.path.join(repo_root, "data_store")
     loose_dir = loose_dir or os.path.join(ds, "raw")
     disk_dir = disk_dir or os.path.join(ds, "raw", "disk_images")
+    stage_dir = stage_dir or default_stage_dir(repo_root)
     hb_dir = hb_dir or os.path.join(ds, "dependencies", "hayabusa")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -109,11 +124,20 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     if _dir_has_evtx(loose_dir):
         raw += scan_directory(hb_bin, loose_dir, rules_dir)
 
-    # 2) disk images: mount read-only and scan in place (needs /dev/fuse)
-    if scan_disk and os.path.isdir(disk_dir):
-        images = list_images(disk_dir)
-        if images and not have_fuse():
-            res["note"] = "disk: /dev/fuse unavailable — mount-enable the host to scan images"
+    # 2) disk images: stage WindowsEventLogs out of each image (userspace, no fuse)
+    #    and scan the stage. Reuse-aware: an image the evtx processor (or a prior
+    #    detection run) already staged is not re-extracted — `force` here only
+    #    regenerates the timeline, never the extraction.
+    if scan_disk and os.path.isdir(disk_dir) and list_images(disk_dir):
+        extract = imageexport.extract_staged(
+            disk_dir, stage_dir,
+            plaso_image=plaso_image or imageexport.PLASO_IMAGE, vss=vss,
+        )
+        res["extract"] = {k: extract[k] for k in ("images", "extracted", "reused", "failed")}
+        if extract["failed"]:
+            res["note"] = f"disk: image_export failed on {extract['failed']} image(s)"
+        if _dir_has_evtx(stage_dir):
+            raw += scan_directory(hb_bin, stage_dir, rules_dir)
 
     if not raw.strip():
         res["note"] = res["note"] or "no detections (no EVTX reachable)"

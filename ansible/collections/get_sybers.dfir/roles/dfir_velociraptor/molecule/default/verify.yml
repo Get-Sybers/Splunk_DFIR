@@ -10,12 +10,16 @@
         paths: "{{ molecule_out }}"
         patterns: "*.json"
         recurse: true
-      register: produced
+      register: dfir_velociraptor_produced
 
     - name: "molecule-verify | assert the registry artefact was laid out"
       ansible.builtin.assert:
         that:
-          - produced.matched | int > 0
-          - produced.files | map(attribute='path') | map('basename') | select('search', '^Windows\\.Registry\\.RecentApps\\.json$') | list | length > 0
+          - dfir_velociraptor_produced.matched | int > 0
+          - >-
+            dfir_velociraptor_produced.files | map(attribute='path')
+            | map('basename')
+            | select('search', '^Windows\\.Registry\\.RecentApps\\.json$')
+            | list | length > 0
         fail_msg: "no Windows.Registry.RecentApps.json laid out from the fixture collection"
         quiet: true

@@ -1,3 +1,4 @@
+import json
 """Unit tests for the pure logic of the evtx processor (no docker/EvtxECmd needed)."""
 import os
 
@@ -96,28 +97,38 @@ def test_argv_operator_mode_mounts_release():
     assert argv[argv.index("-f") + 1] == "/input/Security.evtx"
 
 
-def test_argv_bundled_mode_has_no_release_mount():
+def test_argv_bundled_mode_uses_hardened_run_role():
+    """Bundled mode goes through the hardened image's ansible run role: pinned
+    entrypoint (image config), hardening flags, and the dotnet invocation handed
+    over as the run role's allow-listed argv."""
     argv = evtx.evtxecmd_argv(
         "/raw/HOST01/Security.evtx", "/out/HOST01",
         "Security_EvtxECmd_Output.json", "Security_EvtxECmd_Output.xml",
         "dfir/evtxecmd:latest",
     )
-    # no /evtxecmd mount, no -w; the baked-in DLL path is used
-    assert "-w" not in argv
-    assert not any(str(a).endswith(":/evtxecmd:ro") for a in argv)
-    assert evtx.BUNDLED_DLL in argv
-    assert argv[argv.index("dotnet") + 1] == evtx.BUNDLED_DLL
-    # input/output mounts are still there
+    assert argv[:3] == ["docker", "run", "--rm"]
+    for flag in ("--cap-drop", "--security-opt", "--network"):
+        assert flag in argv
     assert "/raw/HOST01:/input:ro" in argv
     assert "/out/HOST01:/output" in argv
+    assert not any(str(a).endswith(":/evtxecmd:ro") for a in argv)
+    extra = json.loads(argv[argv.index("-e") + 1])
+    tool = extra["dfir_run_argv"]
+    assert tool[:2] == ["dotnet", evtx.BUNDLED_DLL]
+    assert tool[tool.index("-f") + 1] == "/input/Security.evtx"
 
 
-def test_argv_modes_differ_only_by_mount_and_dll():
+def test_argv_modes_drive_the_same_tool_invocation():
+    """Operator mode runs dotnet directly (with the hardening flags); bundled
+    mode hands the same tool argv to the image's run role."""
     common = ("/raw/x/S.evtx", "/out/x", "S.json", "S.xml")
     op = evtx.evtxecmd_argv(*common, "img", evtxecmd_dir="/d", dll_rel="EvtxECmd.dll")
     bd = evtx.evtxecmd_argv(*common, "img")
-    # both drive the same tool args after the image name
-    assert op[op.index("-f"):] == bd[bd.index("-f"):]
+    bundled_tool = json.loads(bd[bd.index("-e") + 1])["dfir_run_argv"]
+    assert op[op.index("-f"):] == bundled_tool[bundled_tool.index("-f"):]
+    # operator mode carries the hardening flags too
+    for flag in ("--cap-drop", "--security-opt", "--network"):
+        assert flag in op
 
 
 def test_has_records_bom_only_is_empty(tmp_path):

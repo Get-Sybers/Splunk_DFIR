@@ -16,11 +16,11 @@
               and Details.RuleTitle == "DFIR_DETECT_MOLECULE"
             | count
         return_content: true
-      register: probe
+      register: dfir_detect_adx_probe
 
     - name: "molecule-verify | assert the tagged hit landed"
       ansible.builtin.assert:
         that:
-          - (probe.json.Tables[0].Rows[0][0] | int) >= 1
+          - (dfir_detect_adx_probe.json.Tables[0].Rows[0][0] | int) >= 1
         fail_msg: "the molecule fixture hit was not found in misc.Detections"
         quiet: true

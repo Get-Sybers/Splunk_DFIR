@@ -8,8 +8,24 @@ dfir_signatures_repo_root: "{{ role_path }}/../../../../.."
 
 dfir_signatures_adx_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/signatures"
 dfir_signatures_sofelk_out_dir: "{{ dfir_signatures_repo_root }}/data_store/processed/sofelk/signatures"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_signatures_out_dir: "{{ dfir_signatures_adx_out_dir if dfir_signatures_pipeline == 'adx' else dfir_signatures_sofelk_out_dir }}"
 # Which detection lanes to run; empty = all (yara, suricata, hayabusa).
 dfir_signatures_lanes: []
+# Where the hayabusa lane stages disk-image EVTX extractions (empty => the evtx
+# processor's own stage, data_store/processed/windows_logs/_extracted_evtx —
+# images already staged by either lane are reused, never re-extracted).
+dfir_signatures_stage_dir: ""
+# Include Volume Shadow Copies when staging disk images for the hayabusa lane.
+dfir_signatures_vss: false
+# YARA sources to run (comma list of files,disk,memory); empty = all.
+dfir_signatures_yara_sources: ""
+# Per-pcap Suricata tuning file (INI template; empty => the processor's default,
+# data_store/dependencies/suricata-tuning.conf). Written as an editable template
+# on first run; while template-only or invalid, HOME_NET is auto-detected per
+# pcap and recorded into it. Tuning is reset per pcap — nothing carries over.
+dfir_signatures_suricata_tuning_file: ""
 # --fetch provisions rules/binaries when online (never in an air-gapped run).
 dfir_signatures_fetch: false
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.

@@ -14,7 +14,7 @@ Selected by `dfir_evtx_use_bundled_image` (default **bundled**):
   [`docker/evtxecmd`](/docker/evtxecmd)) bakes `EvtxECmd.dll` **and `Maps/`** onto a
   .NET runtime. Build it once and forget it — no files to place by hand:
   ```bash
-  docker build -t dfir/evtxecmd:latest docker/evtxecmd
+  docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker
   ```
 - **Operator-supplied.** Set `dfir_evtx_use_bundled_image=false` and drop the .NET
   EvtxECmd release (incl. `Maps/`) under `dfir_evtx_evtxecmd_dir`. Download it from

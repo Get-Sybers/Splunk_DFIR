@@ -1,0 +1,53 @@
+---
+# Pipeline-agnostic processing — identical for ADX and SOF-ELK; only the
+# output base differs, resolved into dfir_signatures_out_dir by defaults/main.yml
+# from dfir_signatures_pipeline. (SOF-ELK delivery into its watch dir is tracked
+# in #45.)
+#
+# The three steps run as one guarded unit: on any failure the rescue surfaces
+# the processor's own JSON summary and stderr as ONE clear diagnostic instead
+# of a raw traceback, then fails the play (no half-configured silence). In
+# check mode the command is skipped, so the gate on its output is too.
+- name: "signatures-process | process, verify and gate"
+  block:
+    - name: "signatures-process | run the detection lanes into JSONL"
+      ansible.builtin.command:
+        argv: >-
+            {{ ['python3', '-m', 'get_sybers_dfir.signatures', '--output-dir', dfir_signatures_out_dir, '--repo-root', dfir_signatures_repo_root]
+            + (dfir_signatures_lanes | map('regex_replace', '^', '--only=') | list)
+            + (['--stage-dir', dfir_signatures_stage_dir] if dfir_signatures_stage_dir | length > 0 else [])
+            + (['--vss'] if dfir_signatures_vss | bool else [])
+            + (['--yara-sources', dfir_signatures_yara_sources] if dfir_signatures_yara_sources | length > 0 else [])
+            + (['--tuning-file', dfir_signatures_suricata_tuning_file] if dfir_signatures_suricata_tuning_file | length > 0 else [])
+            + (['--fetch'] if dfir_signatures_fetch | bool else [])
+            + (['--force'] if dfir_signatures_force | bool else []) }}
+      environment:
+        PYTHONPATH: "{{ dfir_signatures_python_path }}"
+      register: dfir_signatures_run
+      changed_when: (dfir_signatures_run.stdout | from_json).processed | int > 0
+
+    - name: "signatures-process | verify detection JSONL on disk"
+      ansible.builtin.find:
+        paths: "{{ dfir_signatures_out_dir }}"
+        patterns: "*.jsonl"
+        recurse: true
+      register: dfir_signatures_verify
+
+    # A lane with no rules/inputs legitimately produces nothing, so the gate tolerates a
+    # zero-detection run (processed == 0); real Suricata failures are surfaced.
+    - name: "signatures-process | assert no lane failed and output matches what ran"
+      when: dfir_signatures_run is not skipped
+      ansible.builtin.assert:
+        that:
+          - (dfir_signatures_run.stdout | from_json).failed | int == 0
+          - dfir_signatures_verify.matched | int > 0 or (dfir_signatures_run.stdout | from_json).processed | int == 0
+        fail_msg: >-
+          a signature lane reported failures, or produced detections that are not on disk.
+        quiet: true
+  rescue:
+    - name: "signatures-process | surface processor diagnostics"
+      ansible.builtin.fail:
+        msg: >-
+          dfir_signatures processing failed.
+          Summary: {{ dfir_signatures_run.stdout | default('(no summary emitted)') | trim }}
+          Stderr: {{ dfir_signatures_run.stderr | default('') | trim | truncate(1000) }}

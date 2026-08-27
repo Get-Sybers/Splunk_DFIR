@@ -24,6 +24,8 @@ import subprocess
 import sys
 import tempfile
 
+from . import container
+
 _PCAP_MAGIC = {"a1b2c3d4", "d4c3b2a1", "a1b23c4d", "4d3cb2a1", "0a0d0d0a"}
 _PCAP_EXTS = (".pcap", ".pcapng", ".cap")
 
@@ -70,21 +72,26 @@ def _already_done(output_dir: str) -> bool:
         return False
 
 
+def zeek_argv(pcap_dir: str, rel: str, temp_dir: str, image: str) -> list[str]:
+    """The ``docker run`` argv for one zeek pass — the hardened dfir/zeek image
+    (ansible-only execution, allow-listed argv, no caps, no network); zeek
+    writes its logs to the mounted /logs cwd. Pure."""
+    return container.ansible_run(
+        image,
+        ["zeek", "-C", "-r", f"/pcap/{rel}",
+         "LogAscii::use_json=T",
+         "LogAscii::json_timestamps=JSON::TS_ISO8601"],
+        mounts=[f"{pcap_dir}:/pcap:ro", f"{temp_dir}:/logs"],
+        chdir="/logs",
+    )
+
+
 def _run_zeek(pcap_dir: str, rel: str, temp_dir: str, image: str) -> None:
     """Run zeek in a container over one capture, writing JSON logs into temp_dir."""
-    subprocess.run(
-        [
-            "docker", "run", "--rm",
-            "-v", f"{pcap_dir}:/pcap:ro",
-            "-v", f"{temp_dir}:/logs",
-            "--workdir", "/logs",
-            image,
-            "zeek", "-C", "-r", f"/pcap/{rel}",
-            "LogAscii::use_json=T",
-            "LogAscii::json_timestamps=JSON::TS_ISO8601",
-        ],
-        check=True,
-    )
+    # ansible-playbook narrates on stdout; capture it so OUR stdout stays the
+    # machine-readable summary. Failures still raise with the output attached.
+    subprocess.run(zeek_argv(pcap_dir, rel, temp_dir, image),
+                   capture_output=True, check=True)
 
 
 def _collect(temp_dir: str, output_dir: str) -> list[str]:
@@ -100,7 +107,7 @@ def _collect(temp_dir: str, output_dir: str) -> list[str]:
     return outputs
 
 
-def process(pcap_dir: str, out_dir: str, image: str = "zeek/zeek", force: bool = False) -> dict:
+def process(pcap_dir: str, out_dir: str, image: str = "dfir/zeek:latest", force: bool = False) -> dict:
     """Process every capture under pcap_dir into out_dir/<capture>/. Idempotent."""
     pcap_dir = os.path.realpath(pcap_dir)
     out_dir = os.path.realpath(out_dir)
@@ -115,6 +122,8 @@ def process(pcap_dir: str, out_dir: str, image: str = "zeek/zeek", force: bool =
             skipped += 1
             continue
         temp_dir = tempfile.mkdtemp()
+        # the hardened image runs as uid 2000 and writes its logs here
+        os.chmod(temp_dir, 0o777)
         try:
             _run_zeek(pcap_dir, rel, temp_dir, image)
             outputs = _collect(temp_dir, output_dir)
@@ -142,14 +151,20 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="get_sybers_dfir.zeek", description="PCAPs -> Zeek JSON logs")
     ap.add_argument("--pcap-dir", required=True, help="directory tree of captures to process")
     ap.add_argument("--out-dir", required=True, help="output dir; one folder per capture is created")
-    ap.add_argument("--image", default="zeek/zeek", help="zeek container image (default zeek/zeek)")
+    ap.add_argument("--image", default="dfir/zeek:latest",
+                    help="zeek container image (default: the hardened dfir/zeek:latest — "
+                         "build with the dfir-build-images playbook)")
     ap.add_argument("--force", action="store_true", help="reprocess captures that already have output")
     args = ap.parse_args(argv)
 
     summary = process(args.pcap_dir, args.out_dir, image=args.image, force=args.force)
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
-    return 1 if summary["failed"] and not summary["processed"] else 0
+    # Fail only when the run produced nothing AND nothing was already done: inputs
+    # that can never produce output (e.g. a Volatility plugin unsupported by this
+    # image) are retried on every run, and must not flip an otherwise-complete,
+    # idempotent re-run (processed=0, everything else skipped) into a failure.
+    return 1 if summary["failed"] and not summary["processed"] and not summary["skipped"] else 0
 
 
 if __name__ == "__main__":

@@ -24,7 +24,7 @@ disable it without deleting it.
 **How they're loaded:** the lane generates an index file of
 `include "/rules/<relative-path>"` lines — one per discovered rule file — and
 compiles that single index. Your rules directory is bind-mounted **read-only**
-at `/rules` inside the `blacktop/yara` container, so nested layouts survive
+at `/rules` inside the hardened `dfir/yara` container, so nested layouts survive
 intact; the index itself goes to a temp file outside the tree, so the rules
 directory may be read-only.
 
@@ -68,7 +68,7 @@ into `yara-rules/detectraptor/detectraptor.yar` (~10,700 rules). The merge is
 required: upstream publishes each set for a separate Velociraptor artifact and
 freely repeats rule identifiers across files, but this lane compiles one index —
 so duplicates are dropped first-wins, and rules needing module features the
-`blacktop/yara` build lacks (`telfhash`) are skipped. Per-rule `meta` blocks
+`dfir/yara` build lacks (`telfhash`) are skipped. Per-rule `meta` blocks
 (author, `source_url`, `license_url`) are kept byte-for-byte.
 
 - **Idempotent** — an existing `detectraptor.yar` is left alone; delete it or
@@ -102,7 +102,7 @@ EICAR-style test file there to prove a rule fires.
   discarded — you just get 0 matches). Pre-check a new rule:
   ```bash
   docker run --rm -v "$PWD/data_store/dependencies/yara-rules":/rules:ro \
-      blacktop/yara /rules/mine/my_malware.yar /dev/null
+      dfir/yara:latest -e '{"dfir_run_argv": ["yara", "/rules/mine/my_malware.yar", "/dev/null"]}'
   ```
 - Duplicate rule identifiers across files are a compile error (memory source) —
   namespace your rule names.
@@ -120,7 +120,7 @@ takes the *first* one it finds — keep it shallow.
 **How it's loaded:** the rules directory is mounted read-only at `/rules` and the
 file is passed with `suricata -S`, which loads it **exclusively** — the container
 image's bundled rules are ignored. If no `suricata.rules` exists, the lane falls
-back to `jasonish/suricata`'s bundled rules and says so.
+back to the `dfir/suricata` package defaults and says so.
 
 Multiple rule sources therefore have to be merged into that one file:
 
@@ -151,7 +151,7 @@ jq -r 'select(.event_type=="alert") | .alert.signature' \
   output or silent zero alerts. Test first:
   ```bash
   docker run --rm -v "$PWD/data_store/dependencies/suricata-rules":/rules:ro \
-      jasonish/suricata suricata -T -S /rules/suricata.rules
+      dfir/suricata:latest -e '{"dfir_run_argv": ["suricata", "-T", "-S", "/rules/suricata.rules"]}'
   ```
 - Every rule needs a **unique `sid`** (use ≥ 1000000 for local rules) —
   duplicates are rejected at load.
@@ -161,29 +161,76 @@ jq -r 'select(.event_type=="alert") | .alert.signature' \
 - A PCAP with an existing non-empty `.eve.jsonl` is skipped — delete the output
   (or pass `--force`) after changing rules.
 
-### Tuning (HOME_NET and friends)
+### Tuning (the consolidated variables and the per-PCAP template)
 
 `HOME_NET` is Suricata's primary tuning variable: ET/Sigma-style rules key their
 direction off `$HOME_NET` / `$EXTERNAL_NET`, so a `HOME_NET` matching the
-capture's real internal range is what makes directional rules fire. The Python
-lane (`python -m get_sybers_dfir.signatures`) exposes:
+capture's real internal range is what makes directional rules fire.
+
+**The consolidated variable registry.** Every `vars.*` variable the stock
+suricata.yaml defines lives in one registry (`suricata.SURICATA_VARS`) — its
+kind (address/port group), stock default, and how the lane automates it. The
+tuning template is generated from that registry, so the file itself carries the
+full table. **Every var automates**, from the traffic each host sends and
+receives on ports:
+
+| Variable | Derived from |
+|---|---|
+| `home_net` / `external_net` | private supernets observed (RFC1918 + CGNAT + link-local; RFC1918 default when none appear) / its complement |
+| `http/smtp/dns/sql/telnet/aim/dc_servers`, `dnp3/modbus/enip_server` | the flow's *receiving* side (dest IP) where the flow shows parser evidence (its app-layer protocol) or well-known-port evidence (25/465/587 SMTP, 53 DNS, 1433/1434/3306/5432/1521 SQL, 23 telnet, 5190 AIM, 88/464 Kerberos→DC, 20000/502/44818 SCADA), scoped home-side — except `aim_servers`, whose stock default is `$EXTERNAL_NET`, so external-side |
+| `dnp3/modbus/enip_client` | the same evidence, taken from the flow's *initiating* side (src IP), home-scoped |
+| `http_ports`, `ssh_ports`, `ftp_ports`, `modbus_ports`, `dnp3_ports` | ports the protocol was *actually spoken* on — flow `app_proto` included, so HTTP on 8080 is caught |
+| `oracle/geneve/vxlan/teredo_ports` | no Suricata parser exists — the well-known ports that actually carried traffic (the observed subset) |
+| `shellcode_ports` | `!$HTTP_PORTS` once `http_ports` is derived (`file_data_ports` follows by reference) |
+
+A var with nothing observed keeps its stock default, and a derivation that
+would enumerate half the capture (>16 ports, >32 IPs) is dropped in favour of
+the default. Port-based evidence is a heuristic — any traffic to the service's
+well-known port counts — so review the recorded sections where precision
+matters; that is exactly what the editable file is for.
+
+**The tuning template.** Per-capture tuning lives in an operator-editable INI
+file, by default `data_store/dependencies/suricata-tuning.conf`
+(`dfir_signatures_suricata_tuning_file` / `--tuning-file`):
+
+- The **first run writes the template** (comments only). While the file holds no
+  real sections — or is not valid INI — the lane **auto-detects** the vars above
+  (one default-vars pass first) and **records** them as a section per capture.
+- **Edit the recorded sections** and re-run with `--force` to apply your values.
+  Any consolidated var is a valid key; an unknown key marks the file invalid
+  (a typo would otherwise be silently ignored):
+
+  ```ini
+  [case1_capture.pcap]              ; the capture's summary key (path folded)
+  home_net = [192.168.0.0/16]
+  http_ports = [80,8080]
+  dns_servers = [192.168.0.10]
+  sets =                            ; anything beyond the vars, one per line
+      stream.reassembly.depth=3mb
+
+  [global]                          ; applies to captures without a section
+  home_net = [10.0.0.0/8]
+  ```
+
+- An **invalid file** (broken INI, an unknown key, whitespace inside an address
+  group) falls back to auto-detect; the broken file is kept beside the fresh
+  one as `*.invalid`, never lost.
+- Tuning is **reset for every capture** — a value derived from or configured
+  for one pcap never carries into the next. Each capture's decision (values and
+  source: `cli`/`file`/`auto`) is echoed in the run summary under `tuning`.
+
+CLI overrides still exist and beat the file for every capture:
 
 ```bash
 # set it explicitly (EXTERNAL_NET defaults to its complement)
 --home-net '[10.0.0.0/8,192.168.0.0/16]'   [--external-net '[1.2.3.0/24]']
 
-# or derive it per-PCAP from that PCAP's own traffic (a cheap first pass)
---auto-home-net
-
-# any other Suricata variable, repeatable
+# any other Suricata variable, repeatable (appended to file entries too)
 --suricata-set vars.port-groups.HTTP_PORTS=8080
 ```
 
-`--auto-home-net` runs Suricata once with defaults, reads the src/dest IPs from
-its EVE flow records, and re-runs with `HOME_NET` set to the private supernets
-that actually appeared (RFC1918 + CGNAT + link-local); it falls back to the
-RFC1918 default when a capture shows no private address. It is ignored when
-`--home-net` is given explicitly.
+(`--auto-home-net` is accepted for compatibility; auto-detection is now the
+default whenever neither `--home-net` nor a tuning-file entry covers a capture.)
 
 ## Hayabusa (Sigma over Windows Event Logs)
 

@@ -13,48 +13,77 @@
 #
 # Deny-by-default means the next format nobody thought of is covered too.
 #
+# STRUCTURE. Every re-include below is ANCHORED to an exact path, including the
+# skeleton DIRECTORIES: a directory that is ignored and has no negation inside
+# is pruned — git never descends into it. The old `!*/` form re-enabled descent
+# into EVERY directory, so `git status` walked the entire evidence tree
+# (terabytes, tens of seconds) on each run. It also means an evidence dir can
+# never smuggle a file in via a name-based re-include: nothing inside a corpus
+# directory is even looked at. Adding a new skeleton file = add its directory
+# chain and the file here, tracked and reviewed like any other change.
+#
 # This is a safety net, not a guarantee. Check `git status` before committing.
 
 # Ignore everything under data_store/ ...
 *
 
-# ... but descend into subdirectories, so the skeleton is preserved ...
-!*/
-
-# ... except fetched tool caches under dependencies/ (not committed — provisioned
-# by --fetch). hayabusa ships an embedded git repo under rules/, which git would
-# otherwise offer to add as a submodule.
-/dependencies/hayabusa/
-
-# ... and keep only these.
+# ... and re-include ONLY the exact skeleton, directory chains first.
 #
 # This file only (anchored) — NOT a bare `!.gitignore`, which un-ignores every
-# nested .gitignore in the evidence (imaged filesystems carry hundreds).
+# nested .gitignore in the evidence (imaged filesystems carry hundreds). The
+# same goes for `!.gitkeep` / `!README.md`: only the exact skeleton paths are
+# re-included, never names.
 !/.gitignore
-# Empty .gitkeep placeholders (empty by convention, so harmless even if one turns
-# up in evidence).
-!.gitkeep
-
-# Documentation READMEs — anchored to their EXACT paths (leading `/`), NOT by name.
-# A bare `!README.md` un-ignores every README.md in the tree, including ones that
-# are part of the forensic evidence (iOS/Android app bundles, test corpora, …) and
-# may carry secrets. Only these three skeleton READMEs are re-included.
 !/README.md
-!/dependencies/evtxecmd/README.md
-!/processed/velociraptor/README.md
 
-# ------------------------------------------------------------------------------
-# Removed: !dependencies/SuperMem/**
-#
-# That rule was carried over from the old blocklist without checking whether it
-# still applied. It does not: SuperMem's files were deleted from the repository
-# in dc58d8c (2025-09-10) and nothing has been tracked under that path since.
-#
-# Leaving it was an unbounded `**` hole in a deny-by-default file, aimed at a
-# directory for a MEMORY FORENSICS tool — so anything a future operator dropped
-# or generated there, including memory-derived output, would have been
-# committable. Exactly the failure mode this file was rewritten to close.
-#
-# If SuperMem is ever vendored again, add a narrow rule for the specific files
-# and record it in THIRD_PARTY_NOTICES.md.
-# ------------------------------------------------------------------------------
+!/dependencies/
+!/dependencies/evtxecmd/
+!/dependencies/evtxecmd/.gitkeep
+!/dependencies/evtxecmd/README.md
+# NOTE: /dependencies/hayabusa/ (fetched tool cache, embeds a git repo under
+# rules/) needs no special rule any more — like every other unlisted directory
+# it is ignored and pruned outright.
+
+!/docker_images/
+!/docker_images/.gitkeep
+
+!/processed/
+!/processed/csv/
+!/processed/csv/.gitkeep
+!/processed/json/
+!/processed/json/.gitkeep
+!/processed/linux_logs/
+!/processed/linux_logs/.gitkeep
+!/processed/log2timeline/
+!/processed/log2timeline/.gitkeep
+!/processed/software_logs/
+!/processed/software_logs/.gitkeep
+!/processed/velociraptor/
+!/processed/velociraptor/README.md
+!/processed/windows_logs/
+!/processed/windows_logs/hostname1/
+!/processed/windows_logs/hostname1/.gitkeep
+!/processed/windows_logs/hostname2/
+!/processed/windows_logs/hostname2/.gitkeep
+!/processed/windows_logs/hostname3/
+!/processed/windows_logs/hostname3/.gitkeep
+!/processed/zeek/
+!/processed/zeek/.gitkeep
+!/processed/zimmerman/
+!/processed/zimmerman/.gitkeep
+
+!/raw/
+!/raw/VM_files/
+!/raw/VM_files/.gitkeep
+!/raw/disk_images/
+!/raw/disk_images/.gitkeep
+!/raw/memory/
+!/raw/memory/.gitkeep
+!/raw/other_raw_data/
+!/raw/other_raw_data/.gitkeep
+!/raw/other_raw_data/WinEvt/
+!/raw/other_raw_data/WinEvt/.gitkeep
+!/raw/other_raw_data/sql/
+!/raw/other_raw_data/sql/.gitkeep
+!/raw/pcaps/
+!/raw/pcaps/.gitkeep

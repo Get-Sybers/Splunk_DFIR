@@ -28,6 +28,8 @@ on:
       - "python/get_sybers_dfir/cli.py"
       - "python/pyproject.toml"
       - "docker/evtxecmd/**"
+      - "docker/hardening/**"
+      - "docker/runtime/**"
       - "ansible/collections/get_sybers.dfir/roles/dfir_deploy_adx/**"
       - "ansible/collections/get_sybers.dfir/playbooks/dfir-deploy-adx.yml"
       - "tests/smoke-test.sh"
@@ -65,7 +67,7 @@ jobs:
       # The evtx lane runs EvtxECmd from the bundled image; build it once here
       # (the smoke test asserts its presence and fails loudly if absent).
       - name: Build the bundled EvtxECmd image
-        run: docker build -t dfir/evtxecmd:latest docker/evtxecmd
+        run: docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker
 
       - name: Run the pipeline smoke test
         run: ./tests/smoke-test.sh

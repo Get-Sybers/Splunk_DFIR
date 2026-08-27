@@ -5,7 +5,7 @@
   vars:
     dfir_ingest_adx_python_path: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
   tasks:
-    - name: "molecule-verify | query the emulator for the loaded probe record"
+    - name: "molecule-verify | query the emulator for the loaded dfir_ingest_adx_probe record"
       ansible.builtin.uri:
         url: "http://127.0.0.1:8080/v1/rest/query"
         method: POST
@@ -15,11 +15,11 @@
           csl: >-
             VelociraptorJson | where Record.Marker == "DFIR_INGEST_MOLECULE" | count
         return_content: true
-      register: probe
+      register: dfir_ingest_adx_probe
 
-    - name: "molecule-verify | assert the probe record landed"
+    - name: "molecule-verify | assert the dfir_ingest_adx_probe record landed"
       ansible.builtin.assert:
         that:
-          - (probe.json.Tables[0].Rows[0][0] | int) >= 1
-        fail_msg: "the molecule probe record was not found in host.VelociraptorJson"
+          - (dfir_ingest_adx_probe.json.Tables[0].Rows[0][0] | int) >= 1
+        fail_msg: "the molecule dfir_ingest_adx_probe record was not found in host.VelociraptorJson"
         quiet: true

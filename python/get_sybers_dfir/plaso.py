@@ -35,19 +35,15 @@ import re
 import subprocess
 import sys
 
-_IMAGE = "log2timeline/plaso"
+from . import container
 
-# psort wrapper: import the custom output module (so psort discovers it), then run
-# psort with our argv. The two paths are passed as argv — never spliced into source.
-_PSORT_WRAPPER = (
-    "import importlib.util, sys\n"
-    "spec = importlib.util.spec_from_file_location('l2t_json_dfir', '/opt/l2t_json_dfir.py')\n"
-    "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)\n"
-    "from plaso.scripts.psort import Main\n"
-    "sys.argv = ['psort.py', '--status_view', 'none', '-o', 'l2t_json_dfir',\n"
-    "            '--output_fallback_hostname', '-w', sys.argv[1], sys.argv[2]]\n"
-    "sys.exit(Main())\n"
-)
+_IMAGE = "dfir/plaso:latest"
+
+# psort runs through the image's BAKED wrapper (/opt/dfir/psort_wrapper.py —
+# the only python entry the hardened plaso image allow-lists): it imports the
+# mounted custom output module so psort discovers it, then hands psort the
+# remaining argv verbatim.
+_PSORT_WRAPPER_PATH = "/opt/dfir/psort_wrapper.py"
 
 _DESCRIPTOR_HEADER = b"# Disk DescriptorFile"
 
@@ -294,33 +290,35 @@ def run_plaso(mount_dir, src_rel, name, out_dir, module_path, image=_IMAGE) -> d
     log = os.path.join(logs_dir, f"{name}.log")
 
     with open(log, "w") as logfh:
-        # 1) parse image -> .plaso
+        # 1) parse image -> .plaso (hardened image: ansible-only execution,
+        #    allow-listed argv, no caps, no network)
         subprocess.run(
-            [
-                "docker", "run", "--rm",
-                "-v", f"{os.path.realpath(mount_dir)}:/data:ro",
-                "-v", f"{os.path.realpath(out_dir)}:/output",
+            container.ansible_run(
                 image,
-                "log2timeline.py", "--status_view", "none", "--partitions", "all",
-                "--vss-stores", "all",
-                "--storage-file", f"/output/plaso/{name}.plaso", f"/data/{src_rel}",
-            ],
+                ["log2timeline.py", "--status_view", "none", "--partitions", "all",
+                 "--vss-stores", "all",
+                 "--storage-file", f"/output/plaso/{name}.plaso", f"/data/{src_rel}"],
+                mounts=[f"{os.path.realpath(mount_dir)}:/data:ro",
+                        f"{os.path.realpath(out_dir)}:/output"],
+            ),
             stdout=logfh, stderr=subprocess.STDOUT, check=False,
         )
     if not (os.path.isfile(plaso_db) and os.path.getsize(plaso_db) > 0):
         return {"source": src_rel, "ok": False, "error": "log2timeline produced no .plaso"}
 
     with open(log, "a") as logfh:
-        # 2) render .plaso -> json_line via the custom output module
+        # 2) render .plaso -> json_line via the custom output module, through the
+        #    image's baked psort wrapper (the only python entry it allow-lists)
         subprocess.run(
-            [
-                "docker", "run", "--rm",
-                "-v", f"{os.path.realpath(out_dir)}:/output",
-                "-v", f"{os.path.realpath(module_path)}:/opt/l2t_json_dfir.py:ro",
-                "--entrypoint", "python3", image,
-                "-c", _PSORT_WRAPPER,
-                f"/output/jsonl/.{name}.raw", f"/output/plaso/{name}.plaso",
-            ],
+            container.ansible_run(
+                image,
+                ["python3", _PSORT_WRAPPER_PATH, "/opt/l2t_json_dfir.py",
+                 "--status_view", "none", "-o", "l2t_json_dfir",
+                 "--output_fallback_hostname",
+                 "-w", f"/output/jsonl/.{name}.raw", f"/output/plaso/{name}.plaso"],
+                mounts=[f"{os.path.realpath(out_dir)}:/output",
+                        f"{os.path.realpath(module_path)}:/opt/l2t_json_dfir.py:ro"],
+            ),
             stdout=logfh, stderr=subprocess.STDOUT, check=False,
         )
     if not (os.path.isfile(raw) and os.path.getsize(raw) > 0):
@@ -409,7 +407,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vm-dir", default="", help="VMware VM exports (one folder per VM)")
     ap.add_argument("--out-dir", required=True, help="output dir (jsonl/, plaso/, logs/ created within)")
     ap.add_argument("--module", required=True, help="path to the l2t_json_dfir.py output module")
-    ap.add_argument("--image", default=_IMAGE, help="log2timeline/plaso container image")
+    ap.add_argument("--image", default=_IMAGE,
+                    help="plaso container image (default: the hardened dfir/plaso:latest — "
+                         "build with the dfir-build-images playbook)")
     ap.add_argument("--force", action="store_true", help="reprocess images that already have output")
     args = ap.parse_args(argv)
 
@@ -419,7 +419,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
-    return 1 if summary["failed"] and not summary["processed"] else 0
+    # Fail only when the run produced nothing AND nothing was already done: inputs
+    # that can never produce output (e.g. a Volatility plugin unsupported by this
+    # image) are retried on every run, and must not flip an otherwise-complete,
+    # idempotent re-run (processed=0, everything else skipped) into a failure.
+    return 1 if summary["failed"] and not summary["processed"] and not summary["skipped"] else 0
 
 
 if __name__ == "__main__":

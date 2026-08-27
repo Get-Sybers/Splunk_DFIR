@@ -9,7 +9,7 @@ never the whole filesystem.
 It ports ``sig_extract_artifacts`` from the retired shell lane library
 (``scripts/signatures/lib/disk-image.sh``, the Hayabusa lane's extractor) — same
 container, same flags — so the evtx and signature lanes source disk-image EVTX the
-one proven way. Reusing the already-shipped ``log2timeline/plaso`` image keeps the
+one proven way. Reusing the pipeline's own hardened ``dfir/plaso`` image keeps the
 .NET evtxecmd image free of a dfVFS/pytsk3 stack.
 
 ``image_export_argv`` is pure (no I/O) so the container invocation is unit-testable
@@ -20,11 +20,16 @@ from __future__ import annotations
 import os
 import subprocess
 
-# The disk lane already ships this image (the plaso + signature lanes pin it).
-PLASO_IMAGE = "log2timeline/plaso:latest"
+from . import container
 
-# Formats dfVFS can open. Mirrors the retired disk-image.sh's sig_list_images().
-IMAGE_EXTS = (".e01", ".ex01", ".raw", ".img", ".dd", ".vmdk", ".001", ".aff4")
+# The pipeline's own hardened plaso image (built by the dfir-build-images playbook).
+PLASO_IMAGE = "dfir/plaso:latest"
+
+# Formats dfVFS can open. Supersets the retired disk-image.sh's sig_list_images()
+# with the VHD/VHDX/QCOW2 formats the plaso processor also accepts, so every image
+# the timeline lane can parse is also reachable for artefact extraction.
+IMAGE_EXTS = (".e01", ".ex01", ".raw", ".img", ".dd", ".vmdk", ".001", ".aff4",
+              ".vhd", ".vhdx", ".qcow2")
 
 
 def discover_images(path: str) -> list[str]:
@@ -95,3 +100,47 @@ def extract(image, out_dir, *, artifact_filters=("WindowsEventLogs",),
         for name in files:
             written.append(os.path.join(root, name))
     return sorted(written)
+
+
+def extract_staged(image_src, stage_dir, *, artifact_filters=("WindowsEventLogs",),
+                   exts=(".evtx",), plaso_image=PLASO_IMAGE, vss=False,
+                   force=False) -> dict:
+    """Pull the named artefacts out of every disk image at ``image_src`` into
+    ``stage_dir/<image_stem>/`` — one persistent, reusable stage per image.
+
+    This is THE shared extraction step: the evtx processor and the Hayabusa
+    detection lane both stage through here with the same default ``stage_dir``,
+    so whichever runs first pays the extraction cost and every later run —
+    processor or detection — reuses the staged files instead of re-processing
+    the raw image.
+
+    Idempotent: an image whose stage subdir already holds a file matching
+    ``exts`` is skipped unless ``force`` (extraction is the slow part).
+    Returns {image_src, stage_dir, images, extracted, reused, failed, results}.
+    """
+    stage_dir = os.path.realpath(stage_dir)
+    images = discover_images(image_src)
+    summary = {"image_src": os.path.realpath(image_src), "stage_dir": stage_dir,
+               "images": len(images), "extracted": 0, "reused": 0, "failed": 0,
+               "results": []}
+    lowered = tuple(e.lower() for e in exts)
+    for img in images:
+        stem = os.path.splitext(os.path.basename(img))[0]
+        dest = os.path.join(stage_dir, stem)
+        have = [os.path.join(r, f) for r, _d, fs in os.walk(dest) for f in fs
+                if f.lower().endswith(lowered)] if os.path.isdir(dest) else []
+        if have and not force:
+            summary["reused"] += 1
+            summary["results"].append({"image": img, "files": len(have), "reused": True})
+            continue
+        try:
+            written = extract(img, dest, artifact_filters=artifact_filters,
+                              plaso_image=plaso_image, vss=vss)
+        except subprocess.CalledProcessError:
+            summary["failed"] += 1
+            summary["results"].append({"image": img, "error": "image_export failed"})
+            continue
+        got = [f for f in written if f.lower().endswith(lowered)]
+        summary["extracted"] += len(got)
+        summary["results"].append({"image": img, "files": len(got)})
+    return summary

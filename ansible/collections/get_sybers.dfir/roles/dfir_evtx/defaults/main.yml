@@ -9,20 +9,26 @@ dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
 dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/other_raw_data/WinEvt"
 dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
 dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dfir_evtx_out_dir: "{{ dfir_evtx_adx_out_dir if dfir_evtx_pipeline == 'adx' else dfir_evtx_sofelk_out_dir }}"
 
 # Disk-image inputs (optional): a disk image (E01/raw/VMDK) or a directory of them.
 # When set, WindowsEventLogs (.evtx) are extracted with log2timeline/plaso
 # image_export.py into the stage dir and processed alongside dfir_evtx_evtx_dir, so
 # the lane consumes images directly. Empty (default) => loose .evtx only.
 dfir_evtx_image_src: ""
-# Where --image-src extractions land (empty => <out-dir>/_extracted_evtx). Per-image
-# subdirs, reused across runs (an image whose logs are already staged is not re-pulled).
-dfir_evtx_stage_dir: ""
+# Where --image-src extractions land. Per-image subdirs, reused across runs (an
+# image whose logs are already staged is not re-pulled). Pinned to ONE canonical
+# stage for BOTH pipelines — the same default the dfir_signatures hayabusa lane
+# uses — so the adx run, the sofelk run and the detection lane all share the
+# extraction instead of each re-pulling the image.
+dfir_evtx_stage_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs/_extracted_evtx"
 # Include Volume Shadow Copies when extracting from a disk image.
 dfir_evtx_vss: false
 # Container providing image_export.py for disk-image extraction (already shipped for
 # the disk/signature lanes).
-dfir_evtx_plaso_image: "log2timeline/plaso:latest"
+dfir_evtx_plaso_image: "dfir/plaso:latest"
 
 # Hayabusa (Sigma detection) over the same .evtx this lane collects — loose or
 # image-extracted. Enrichment: a missing binary or zero detections is a note, not a
@@ -37,7 +43,7 @@ dfir_evtx_hayabusa_rules: ""
 # How EvtxECmd is supplied — two modes:
 #   bundled  (default): the dfir/evtxecmd image (docker/evtxecmd) bakes EvtxECmd.dll
 #            + Maps/. Nothing to place by hand; build it once with
-#            `docker build -t dfir/evtxecmd:latest docker/evtxecmd`.
+#            `docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker`.
 #   operator: set dfir_evtx_use_bundled_image=false and drop the .NET EvtxECmd
 #            release (incl. Maps/) under dfir_evtx_evtxecmd_dir. EvtxECmd is MIT but
 #            we don't vendor it; the operator supplies the build.

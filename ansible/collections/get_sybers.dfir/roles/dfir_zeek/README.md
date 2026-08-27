@@ -12,7 +12,7 @@ per capture happens inside Python). One folder of `*.json` per capture.
 | `dfir_zeek_pcap_dir` | `<repo>/data_store/raw/pcaps` | Capture tree to process (recursed). |
 | `dfir_zeek_adx_out_dir` | `<repo>/data_store/processed/zeek` | ADX-path output. |
 | `dfir_zeek_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/zeek` | SOF-ELK-path output. |
-| `dfir_zeek_image` | `zeek/zeek` | Zeek container image. |
+| `dfir_zeek_image` | `dfir/zeek:latest` | The hardened in-repo Zeek image (`playbooks/dfir-build-images.yml`). |
 | `dfir_zeek_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
 | `dfir_zeek_force` | `false` | Reprocess captures that already have output. |
 
@@ -29,4 +29,4 @@ ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=adx
 ## Testing
 `molecule test` — converges against a fixture capture, converges again asserting
 zero changes (idempotence), and verifies a `conn.json` was produced. Needs Docker
-and the `zeek/zeek` image.
+and the `dfir/zeek` image (built by `dfir_images`).

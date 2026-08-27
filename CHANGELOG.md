@@ -7,6 +7,42 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-08-27
+
+### Added
+- **Build-it-yourself hardened tool containers** (`docker/{yara,suricata,zeek,
+  volatility,plaso,evtxecmd}`), Splunk-docker posture: ansible is the
+  container's only execution path (pinned `ansible-playbook` ENTRYPOINT running
+  the embedded allow-listed run role, `docker/runtime`); interpreters are
+  pinned to baked wrappers; the uid-0 account is renamed `ansible` and locked;
+  sudo/su and package managers removed; every setuid bit stripped; tools run as
+  uid 2000. Hardening is applied by ansible inside every build
+  (`docker/hardening/harden.yml`) and squashed.
+- `dfir_images` role + `dfir-build-images.yml` playbook: builds every image and
+  verifies the hardening contract statically and from inside the running
+  container; molecule scenario proves a non-allow-listed argv is refused.
+- Runtime breakout mitigations on every processor `docker run`
+  (`get_sybers_dfir.container`): `--cap-drop ALL`,
+  `--security-opt no-new-privileges`, `--network none`; Volatility ISF symbol
+  fetch is an explicit opt-in (`--symbols-online` /
+  `dfir_volatility_symbols_online`).
+- Suricata per-pcap tuning template with the consolidated `SURICATA_VARS`
+  registry; every stock suricata.yaml var auto-derived from each capture's own
+  traffic and recorded for the operator.
+- ansible-lint (production profile) gate; `requirements.yml` wired into
+  setup-environment and enforced in CI; pipeline-agnostic `process.yml` per
+  role with block/rescue diagnostics and check-mode support; molecule
+  scenarios repaired and runnable via the containerised harness.
+
+### Changed
+- Plaso is built from pinned PyPI with the libyal stack compiled from source
+  (GIFT stable lags the `--output_fallback_hostname` the pipeline requires).
+- No third-party tool image is pulled at runtime; the proprietary Kusto
+  emulator (localhost-gated) and the stock .NET runtime (operator-supplied
+  EvtxECmd mode) are the only remaining pulls.
+- `data_store/.gitignore` prunes traversal (anchored skeleton whitelist);
+  `git status` 25s → 0.014s.
+
 ### Added
 - The `dfir_deploy_adx` role now carries the retired shell deploy's remaining
   security properties: an isolated (masquerade-off, never `--internal`) docker

@@ -40,7 +40,7 @@ import os
 import subprocess
 import sys
 
-from . import imageexport
+from . import container, imageexport
 from .signatures import hayabusa as _hb
 
 # Operator-supplied mode: a stock .NET runtime image mounts the operator's release.
@@ -101,34 +101,33 @@ def out_names(evtx_file: str) -> tuple[str, str]:
 
 def evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image, *,
                   evtxecmd_dir=None, dll_rel=None, bundled_dll=BUNDLED_DLL):
-    """The `docker run` argv for one EvtxECmd container run. Two modes, one shape:
+    """The `docker run` argv for one EvtxECmd container run. Two modes:
 
+    - bundled image (``evtxecmd_dir`` falsy): the hardened dfir/evtxecmd image —
+      ansible-only execution whose run role allow-lists exactly
+      ``dotnet <bundled_dll>``; the DLL + Maps/ are baked in.
     - operator-supplied (``evtxecmd_dir`` given): mount the release read-only at
-      ``/evtxecmd`` and run ``dotnet /evtxecmd/<dll_rel>`` — the historic path.
-    - bundled image (``evtxecmd_dir`` falsy): the DLL + Maps/ are baked into
-      ``image`` at ``bundled_dll``'s dir (its WORKDIR), so no mount, and the DLL
-      path is fixed.
+      ``/evtxecmd`` into a stock .NET runtime and run ``dotnet /evtxecmd/<dll_rel>``
+      directly — the historic path, still with every hardening flag (no caps,
+      no-new-privileges, no network).
 
     Pure (no I/O) so the argv is unit-testable without docker.
     """
-    argv = [
-        "docker", "run", "--rm",
-        "-v", f"{os.path.dirname(evtx_file)}:/input:ro",
-        "-v", f"{dest_dir}:/output",
-    ]
-    if evtxecmd_dir:
-        argv += ["-v", f"{os.path.realpath(evtxecmd_dir)}:/evtxecmd:ro", "-w", "/evtxecmd"]
-        dll = f"/evtxecmd/{dll_rel}"
-    else:
-        dll = bundled_dll
-    argv += [
-        image,
-        "dotnet", dll,
+    tool = [
+        "dotnet", f"/evtxecmd/{dll_rel}" if evtxecmd_dir else bundled_dll,
         "-f", f"/input/{os.path.basename(evtx_file)}",
         "--json", "/output", "--jsonf", json_out,
         "--xml", "/output", "--xmlf", xml_out,
     ]
-    return argv
+    mounts = [f"{os.path.dirname(evtx_file)}:/input:ro", f"{dest_dir}:/output"]
+    if evtxecmd_dir:
+        return [
+            "docker", "run", "--rm", *container.run_flags(),
+            "-v", mounts[0], "-v", mounts[1],
+            "-v", f"{os.path.realpath(evtxecmd_dir)}:/evtxecmd:ro", "-w", "/evtxecmd",
+            image, *tool,
+        ]
+    return container.ansible_run(image, tool, mounts=mounts)
 
 
 def _run_evtxecmd(evtx_file, dest_dir, json_out, xml_out, image, *,
@@ -193,6 +192,21 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
     if image is None:
         image = _BUNDLED_IMAGE if bundled else _DOTNET_IMAGE
     dll_rel = None if bundled else locate_dll(evtxecmd_dir)
+    if not bundled and dll_rel is not None:
+        # The container runs with every capability dropped (no DAC override),
+        # so the mounted release must be world-readable. It's a tool build, not
+        # evidence — normalise it best-effort.
+        for cur, dirs, fnames in os.walk(evtxecmd_dir):
+            for name in dirs + fnames:
+                try:
+                    path = os.path.join(cur, name)
+                    os.chmod(path, os.stat(path).st_mode | 0o055)
+                except OSError:
+                    pass
+        try:
+            os.chmod(evtxecmd_dir, os.stat(evtxecmd_dir).st_mode | 0o055)
+        except OSError:
+            pass
     files = discover(evtx_dir)
 
     summary = {
@@ -228,6 +242,11 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
             continue
         os.makedirs(dest_dir, exist_ok=True)
         try:
+            # the hardened image writes as uid 2000
+            os.chmod(dest_dir, 0o777)
+        except OSError:
+            pass
+        try:
             _run_evtxecmd(evtx, dest_dir, json_out, xml_out, image,
                           evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel)
         except subprocess.CalledProcessError:
@@ -258,33 +277,15 @@ def extract_images(image_src, stage_dir, *, plaso_image=imageexport.PLASO_IMAGE,
     ``stage_dir/<image_stem>/``, so ``process()`` can then run over ``stage_dir`` as if
     the logs had been supplied loose. Per-image subdirs keep hosts separated.
 
-    Idempotent: an image whose stage subdir already holds ``.evtx`` is skipped unless
-    ``force`` (re-extraction is the slow part). Returns a summary of what was extracted.
+    Thin wrapper over :func:`imageexport.extract_staged` — the SAME staged
+    extraction the Hayabusa detection lane reuses, so an image staged by either
+    is never extracted twice. Idempotent: an image whose stage subdir already
+    holds ``.evtx`` is skipped unless ``force`` (re-extraction is the slow part).
     """
-    stage_dir = os.path.realpath(stage_dir)
-    images = imageexport.discover_images(image_src)
-    summary = {"image_src": os.path.realpath(image_src), "stage_dir": stage_dir,
-               "images": len(images), "extracted": 0, "reused": 0, "failed": 0,
-               "results": []}
-    for img in images:
-        stem = os.path.splitext(os.path.basename(img))[0]
-        dest = os.path.join(stage_dir, stem)
-        have = [os.path.join(r, f) for r, _d, fs in os.walk(dest) for f in fs
-                if f.lower().endswith(".evtx")] if os.path.isdir(dest) else []
-        if have and not force:
-            summary["reused"] += 1
-            summary["results"].append({"image": img, "evtx": len(have), "reused": True})
-            continue
-        try:
-            written = imageexport.extract(img, dest, plaso_image=plaso_image, vss=vss)
-        except subprocess.CalledProcessError:
-            summary["failed"] += 1
-            summary["results"].append({"image": img, "error": "image_export failed"})
-            continue
-        evtx = [f for f in written if f.lower().endswith(".evtx")]
-        summary["extracted"] += len(evtx)
-        summary["results"].append({"image": img, "evtx": len(evtx)})
-    return summary
+    return imageexport.extract_staged(
+        image_src, stage_dir, artifact_filters=("WindowsEventLogs",),
+        exts=(".evtx",), plaso_image=plaso_image, vss=vss, force=force,
+    )
 
 
 def run_hayabusa(sources, out_dir, *, hb_dir=None, hb_bin=None, rules_dir=None,
@@ -423,7 +424,11 @@ def main(argv: list[str] | None = None) -> int:
     if summary.get("error"):
         sys.stderr.write(summary["error"] + "\n")
         return 2
-    return 1 if summary["failed"] and not summary["processed"] else 0
+    # Fail only when the run produced nothing AND nothing was already done: inputs
+    # that can never produce output (e.g. a Volatility plugin unsupported by this
+    # image) are retried on every run, and must not flip an otherwise-complete,
+    # idempotent re-run (processed=0, everything else skipped) into a failure.
+    return 1 if summary["failed"] and not summary["processed"] and not summary["skipped"] else 0
 
 
 if __name__ == "__main__":

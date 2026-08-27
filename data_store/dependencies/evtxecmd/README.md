@@ -2,7 +2,7 @@
 
 > **You usually don't need this directory.** The `dfir_evtx` role defaults to the
 > **bundled** [`dfir/evtxecmd`](/docker/evtxecmd) image, which bakes `EvtxECmd.dll`
-> + `Maps/` for you — `docker build -t dfir/evtxecmd:latest docker/evtxecmd`. This
+> + `Maps/` for you — `docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker`. This
 > dir is the **operator-supplied** fallback, used only when you run with
 > `dfir_evtx_use_bundled_image=false`.
 

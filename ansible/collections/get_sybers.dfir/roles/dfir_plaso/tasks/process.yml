@@ -1,0 +1,51 @@
+---
+# Pipeline-agnostic processing — identical for ADX and SOF-ELK; only the
+# output base differs, resolved into dfir_plaso_out_dir by defaults/main.yml
+# from dfir_plaso_pipeline. (SOF-ELK delivery into its watch dir is tracked
+# in #45.)
+#
+# The three steps run as one guarded unit: on any failure the rescue surfaces
+# the processor's own JSON summary and stderr as ONE clear diagnostic instead
+# of a raw traceback, then fails the play (no half-configured silence). In
+# check mode the command is skipped, so the gate on its output is too.
+- name: "plaso-process | process, verify and gate"
+  block:
+    - name: "plaso-process | process disk images / VM exports into Plaso JSONL"
+      ansible.builtin.command:
+        argv: >-
+            {{ ['python3', '-m', 'get_sybers_dfir.plaso', '--input-dir', dfir_plaso_input_dir, '--vm-dir', dfir_plaso_vm_dir,
+                '--out-dir', dfir_plaso_out_dir, '--module', dfir_plaso_module, '--image', dfir_plaso_image]
+            + (['--force'] if dfir_plaso_force | bool else []) }}
+      environment:
+        PYTHONPATH: "{{ dfir_plaso_python_path }}"
+      register: dfir_plaso_run
+      changed_when: (dfir_plaso_run.stdout | from_json).processed | int > 0
+
+    - name: "plaso-process | verify enriched JSONL on disk"
+      ansible.builtin.find:
+        paths: "{{ dfir_plaso_out_dir }}/jsonl"
+        patterns: "*.jsonl"
+        recurse: false
+      register: dfir_plaso_verify
+
+    # Per-image failures (a weird image yielding 0 events) are tolerated by the shell;
+    # the gate is "some timeline was produced, or there were no sources" — an ambiguous
+    # VM descriptor is a warning, not a failure.
+    - name: "plaso-process | assert a timeline was produced for the sources present"
+      when: dfir_plaso_run is not skipped
+      ansible.builtin.assert:
+        that:
+          - >-
+            dfir_plaso_verify.matched | int > 0 or
+            ((dfir_plaso_run.stdout | from_json).processed | int +
+             (dfir_plaso_run.stdout | from_json).skipped | int) == 0
+        fail_msg: >-
+          plaso produced no JSONL at all though disk images / VM exports were present.
+        quiet: true
+  rescue:
+    - name: "plaso-process | surface processor diagnostics"
+      ansible.builtin.fail:
+        msg: >-
+          dfir_plaso processing failed.
+          Summary: {{ dfir_plaso_run.stdout | default('(no summary emitted)') | trim }}
+          Stderr: {{ dfir_plaso_run.stderr | default('') | trim | truncate(1000) }}
