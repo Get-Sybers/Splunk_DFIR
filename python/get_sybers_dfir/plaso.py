@@ -1,6 +1,6 @@
 """Plaso processor — disk images / VM exports -> enriched Plaso JSON Lines.
 
-Faithful port of the retired ``process-log2timeline-Dynamic.sh``. For each forensic
+For each forensic
 image (and each VMware VM export) it runs the Plaso two-step in the
 ``log2timeline/plaso`` container:
 

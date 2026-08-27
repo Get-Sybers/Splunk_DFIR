@@ -24,7 +24,7 @@ Copy this file into the container and run, e.g.:
 
   psort.py -o l2t_json_dfir --output_fallback_hostname -w out.jsonl storage.plaso
 
-(loaded via a small import wrapper; see scripts/process-log2timeline-Dynamic.sh).
+(loaded via a small import wrapper; see the plaso lane).
 
 Upstreaming: the hostname/username half of this is proposed to Plaso itself so
 the built-in JSON output resolves them like the dynamic output already does.

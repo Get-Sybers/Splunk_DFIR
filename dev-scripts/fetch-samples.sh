@@ -19,10 +19,10 @@
 #
 # WHERE THINGS LAND: routed by FILE TYPE, then isolated in a per-group folder:
 #
-#     data_store/raw/disk_images/<group>/   process-log2timeline-Dynamic.sh
-#     data_store/raw/memory/<group>/        process-volatility.sh
-#     data_store/raw/pcaps/<group>/         process-zeek-ALL.sh
-#     data_store/raw/other_raw_data/WinEvt/<group>/  process-evtx-EvtxECmd.sh
+#     data_store/raw/disk_images/<group>/   the plaso lane
+#     data_store/raw/memory/<group>/        the volatility lane
+#     data_store/raw/pcaps/<group>/         the zeek lane
+#     data_store/raw/other_raw_data/WinEvt/<group>/  the evtx lane
 #     data_store/raw/other_raw_data/<group>/         no processor yet (mobile, apk, …)
 #
 #   Type is decided per file by its content/name (a single scenario group can
@@ -42,7 +42,7 @@
 #   .vmdk, …) are downloaded straight into the type directory and verified in
 #   place — there is only ever one copy. Every segment of a multi-volume EWF set
 #   is its own manifest row and lands flat in the same directory, which is
-#   exactly what libewf/plaso needs: process-log2timeline-Dynamic.sh processes
+#   exactly what libewf/plaso needs: the plaso lane processes
 #   the .E01 and libewf pulls in the rest.
 #
 #   Compressed samples (.pcap.gz, .dmp.gz, *.mddramimage.zip) can't be consumed

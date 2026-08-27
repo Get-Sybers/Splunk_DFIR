@@ -47,12 +47,12 @@ data_store/
 `process-*.sh` script:
 
 ```bash
-dxdfir process plaso        # disk images / VM exports   (or ./scripts/process-log2timeline-Dynamic.sh)
-dxdfir process zeek         # pcaps                       (or ./scripts/process-zeek-ALL.sh)
-dxdfir process evtx         # Windows event logs          (or ./scripts/process-evtx-EvtxECmd.sh)
-dxdfir process volatility   # memory                      (or ./scripts/process-volatility.sh)
-dxdfir process velociraptor # Velociraptor collections    (or ./scripts/process-velociraptor.sh)
-dxdfir process signatures   # yara / suricata / hayabusa  (or ./scripts/process-signatures.sh)
+dxdfir process plaso        # disk images / VM exports
+dxdfir process zeek         # pcaps
+dxdfir process evtx         # Windows event logs
+dxdfir process volatility   # memory
+dxdfir process velociraptor # Velociraptor collections
+dxdfir process signatures   # yara / suricata / hayabusa
 ```
 
 Add `--pipeline sofelk` to target the SOF-ELK backend instead of ADX (output

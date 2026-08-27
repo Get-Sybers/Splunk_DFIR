@@ -1,6 +1,6 @@
 """Zeek processor — PCAPs → Zeek JSON logs.
 
-Faithful port of the retired ``process-zeek-ALL.sh``: discover captures anywhere
+Discover captures anywhere
 under a pcap tree (magic bytes first, extension as fallback), run the ``zeek/zeek``
 container per capture with ``LogAscii::use_json=T`` + ISO-8601 timestamps, and
 rename each ``*.log`` (Zeek keeps the extension even for JSON) to ``*.json`` under

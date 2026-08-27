@@ -387,7 +387,7 @@ PY
     done
 fi
 if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is missing"; else
-    # Zeek is JSON now (process-zeek-ALL.sh: LogAscii::use_json=T). BEHAVIOURAL:
+    # Zeek is JSON now (the zeek lane: LogAscii::use_json=T). BEHAVIOURAL:
     # run the real loader against fixtures and assert the ROUTING — conn.json to
     # the typed ZeekConn table, every other log to the generic Zeek table, and
     # conn.json NOT double-loaded into the generic table. Routing is the contract

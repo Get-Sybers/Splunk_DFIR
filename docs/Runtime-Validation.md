@@ -158,7 +158,7 @@ from the Security one:
 
 ### The Zeek JSON reconciliation
 
-`process-zeek-ALL.sh` emits JSON (`LogAscii::use_json=T`), but the loader still
+the zeek lane emits JSON (`LogAscii::use_json=T`), but the loader still
 expected TSV with `#fields` headers — the two stages had drifted and could not
 run end to end. Fixed by mapping `conn.json` into the typed `ZeekConn` table by
 **JSON path** (`$['id.orig_h']`, immune to Zeek field reordering — so the old
@@ -177,7 +177,7 @@ and Sysmon branches (one row each).
 ### Plaso — `host.L2tCsv` (real)
 
 `psteal --output-format dynamic` with the 23-field list in
-`process-log2timeline-Dynamic.sh`. The emitted CSV **header order matches the
+the plaso lane. The emitted CSV **header order matches the
 `--fields` list and the `L2tCsvMapping` ordinals exactly** (verified column by
 column), so the ordinal mapping is correct:
 
@@ -262,7 +262,7 @@ seconds (`2025-01-01T10:14:29.1234567+00:00`).
 ### Volatility 3 — `memory.VolatilityJson` (real tool, mixed data)
 
 Memory is processed with **Volatility 3**
-(`process-volatility.sh`). Its `-r json` renderer emits one JSON *array* of row
+(the volatility lane). Its `-r json` renderer emits one JSON *array* of row
 objects per plugin, with tree-plugin descendants nested under `__children`.
 
 - **Real:** Volatility 3 ran on the 511 MB `pat-2009-12-05.winddramimage` and
@@ -423,13 +423,13 @@ PAM session events are the auth evidence that is present.
 python3 -m venv /tmp/plaso-venv && . /tmp/plaso-venv/bin/activate && pip install plaso
 #    fetch three small images (see samples-manifest.tsv) into
 #    data_store/raw/disk_images/, then run psteal with the exact --fields from
-#    process-log2timeline-Dynamic.sh (the script itself uses the Docker image,
+#    the plaso lane (the script itself uses the Docker image,
 #    which is blocked here; native psteal takes the same arguments).
 
 # 1b. Memory (real tool) — Volatility 3 also installs from PyPI
 pip install volatility3
 #    fetch a small memory image (e.g. drives-nps-2009-patents *dramimage) into
-#    data_store/raw/memory/, then: ./scripts/process-volatility.sh
+#    data_store/raw/memory/, then: ./scripts/the volatility lane
 #    (Windows plugins need symbol-server egress; banners works offline.)
 
 # 2. Backend (real)

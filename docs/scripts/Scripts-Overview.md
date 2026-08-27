@@ -17,17 +17,15 @@ collectors running the EZ Tools** (replacing the removed KAPE automation).
 
 ## Processing scripts
 
-Each processor reads evidence from `data_store/raw/<type>/` and writes
-ingest-ready output to `data_store/processed/<tool>/`. All are container-first and
-resolve their own path, so they can be run from anywhere.
+Per-source processing runs through the **`dxdfir` CLI** (`dxdfir process <source>`),
+which drives the `get_sybers.dfir` roles and the `get_sybers_dfir` Python processors
+(see [How It Runs](/README.md#how-it-runs)); each is also runnable as
+`python -m get_sybers_dfir.<source>`. The retired per-source `process-*.sh` scripts
+have been removed — their behaviour lives in those processors. The one processing
+script that remains is the signature orchestrator:
 
 | Script | Reads | Produces |
 |---|---|---|
-| `process-log2timeline-Dynamic.sh` | disk images (E01/VMDK/raw) | Plaso `.plaso` → **JSON Lines** (`psort -o json_line`), split into **one `L2t<Parser>` table per top-level parser** (`scripts/lib/l2t-split.py`); events enriched with hostname / disk id / volume id. |
-| `process-zeek-ALL.sh` | PCAPs | Zeek **JSON** logs, ISO-8601 timestamps — typed `conn` (`network.ZeekConn`) + a generic table for every other log type (`network.Zeek`). |
-| `process-volatility.sh` | memory images | **Volatility 3** (containerised, `sk4la/volatility3`) → one JSONL file per plugin via a custom `jsonl_dfir` renderer. Ships custom plugins `dfir_processes` (psscan → full path/parent/DLLs) and `dfir_registry` (RECmd-style keys from RAM). |
-| `process-evtx-EvtxECmd.sh` | Windows Event Logs (`.evtx`) | EvtxECmd → JSON (`host.EvtxEcmdJson`). ⚠️ needs operator-supplied EvtxECmd. |
-| `process-velociraptor.sh` | Velociraptor offline-collector output (EZ Tools) | JSON for `host.VelociraptorJson` (RECmd registry, etc.). |
 | `process-signatures.sh` | pcaps / files / images / EVTX | Signature/detection lanes — see **Signature detection** below. |
 
 ### Signature detection (`process-signatures.sh`)
@@ -82,10 +80,9 @@ The Splunk-era and KAPE PowerShell scripts were retired (git history and the fro
 
 ## Self-cleanup
 
-The docker-using processors (`process-evtx`, `process-log2timeline`,
-`process-zeek`, `process-signatures`) run a `prune_dangling` trap on exit that
-removes docker layers left dangling when a pulled `:latest` tag moves — only
-untagged, unreferenced images; tool images and live containers are untouched.
+`process-signatures.sh` runs a `prune_dangling` trap on exit that removes docker
+layers left dangling when a pulled `:latest` tag moves — only untagged, unreferenced
+images; tool images and live containers are untouched.
 
 ---
 
@@ -105,7 +102,7 @@ Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
 
 ```bash
 ./scripts/deploy-kusto.sh
-./scripts/process-zeek-ALL.sh
+dxdfir process zeek
 ./scripts/ingest-kusto.sh --only zeek
 ```
 

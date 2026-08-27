@@ -11,7 +11,7 @@
 # database rather than persisting one — see docs/Kusto-Port.md.
 #
 # ⚠️ ZEEK STAGING
-#    process-zeek-ALL.sh writes JSON Lines (Zeek's LogAscii::use_json=T), so
+#    the zeek lane writes JSON Lines (Zeek's LogAscii::use_json=T), so
 #    conn.json is ingested as-is by JSON path mapping — no header stripping, no
 #    ordinal guard, immune to Zeek field reordering. Every OTHER log type is
 #    wrapped {LogType, SourceFile, Record} by zeek_generic_prepare and loaded
@@ -149,7 +149,7 @@ push_to_container() {
 # staged_name <file>
 #
 # The container stage is flat, so the name must encode the whole relative path.
-# Using bare basename LOSES EVIDENCE: process-evtx-EvtxECmd.sh writes one
+# Using bare basename LOSES EVIDENCE: the evtx lane writes one
 # "<channel>_EvtxECmd_Output.json" per host directory, so three hosts all
 # produce "Security_EvtxECmd_Output.json". Copying them by basename means the
 # last one wins, the earlier hosts are never ingested, and the survivor is
@@ -219,7 +219,7 @@ fi
 # Zeek generic hook — wrap every non-conn log with its constant columns.
 # ------------------------------------------------------------------------------
 
-# prepare hook: process-zeek-ALL.sh emits JSON Lines per log type. conn.json is
+# prepare hook: the zeek lane emits JSON Lines per log type. conn.json is
 # handled by the typed ZeekConn source and is SKIPPED here (rc 1) so it is not
 # double-loaded. Every other log is wrapped {LogType, SourceFile, Record} JSON
 # Lines — LogType from the filename (dns.json -> "dns"), SourceFile from the path

@@ -1,6 +1,6 @@
 """Volatility 3 processor — memory images -> per-plugin JSON Lines.
 
-Faithful port of the retired ``process-volatility.sh``: run a fixed set of
+Run a fixed set of
 Volatility 3 plugins over each memory image with the custom ``jsonl_dfir`` renderer
 (one flat JSON object per TreeGrid node — one process/connection/artefact per line),
 writing ``<plugin>.jsonl`` per image. ingest-kusto.sh wraps each line as

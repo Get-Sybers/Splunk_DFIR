@@ -1,6 +1,6 @@
 """Velociraptor processor — lay out offline-collector ZIPs for ingestion.
 
-Faithful port of the retired ``process-velociraptor.sh``: unpack each collection
+Unpack each collection
 ZIP and lay its per-artefact ``results/<Artefact>.json`` (JSON Lines) out flat under
 one folder per collection, where ``ingest-kusto.sh`` expects it. The ingest hook
 does the ``{Artefact, SourceFile, Record}`` shaping; here we only copy verbatim.

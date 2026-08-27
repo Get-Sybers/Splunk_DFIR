@@ -45,10 +45,10 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
-| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ `process-velociraptor.sh` (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
+| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ the velociraptor lane (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
 | [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
-| [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ `process-volatility.sh` | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
-| [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ `process-log2timeline-Dynamic.sh` | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
+| [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ the volatility lane | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
+| [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
 | Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tText`/`L2tUtmp` | ✅ (`user_session` utmp+ssh, `process` cron) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
 | [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `process-signatures.sh` (yara.sh) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
@@ -267,8 +267,8 @@ and the ingest sources into a descriptor table.
   - huge benefit is I was able to pass the "datetime" field l2t outputs in as the timeline `_time` value — the same field now drives `Timestamp` in `host.L2tCsv`.
 
 ### Dynamic Scripts Testing
-✅ Test `process-log2timeline-Dynamic.sh` for processing **single and all E01 images**.
-✅ Test `process-zeek-ALL.sh`.
+✅ Test the plaso lane for processing **single and all E01 images**.
+✅ Test the zeek lane.
 ✅ VMware VM export support added to log2timeline processing — lightly tested.
 
 ### log2timeline Processing

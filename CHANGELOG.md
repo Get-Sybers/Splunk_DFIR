@@ -7,6 +7,14 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Removed
+- The retired per-source `process-*.sh` scripts (`process-zeek-ALL.sh`,
+  `process-evtx-EvtxECmd.sh`, `process-volatility.sh`,
+  `process-log2timeline-Dynamic.sh`, `process-velociraptor.sh`) and the dead
+  `process-log2timeline-JSON_Line.sh` — their behaviour lives in the
+  `get_sybers_dfir` processors (`dxdfir process <source>`). The signature lanes
+  (`process-signatures.sh`) and the deploy/apply/ingest scripts remain.
+
 ## [0.3.1] - 2026-08-26
 
 ### Fixed

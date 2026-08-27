@@ -35,7 +35,7 @@
 #     had just given them. Capital X applies +x to directories and to files
 #     that are already executable, leaving the .sh files runnable and data
 #     files alone.
-#   - unzip is installed, not merely hoped for. process-velociraptor.sh hard
+#   - unzip is installed, not merely hoped for. the velociraptor lane hard
 #     exits without it and the old script never mentioned it.
 #
 # Usage: scripts/setup-environment.sh [--yes] [--help]
@@ -49,7 +49,7 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 # Userland tools the processing scripts shell out to. curl and python3 back
-# lib/kusto-api.sh, unzip backs process-velociraptor.sh, tar backs the image
+# lib/kusto-api.sh, unzip backs the velociraptor lane, tar backs the image
 # tarballs written by save-docker-images.sh. ca-certificates and gnupg are
 # needed to add the Docker repo itself.
 APT_DEPS=(ca-certificates curl gnupg unzip python3 python3-venv tar)
@@ -188,7 +188,7 @@ fi
 ################################################################################
 # Install the userland tools the processing scripts need.
 #
-# The old script installed none of these. process-velociraptor.sh exits on a
+# The old script installed none of these. the velociraptor lane exits on a
 # missing unzip, and lib/kusto-api.sh exits on a missing curl or python3 —
 # each one an error the analyst hit halfway through an ingest instead of here.
 MISSING_DEPS=()
