@@ -258,33 +258,15 @@ def extract_images(image_src, stage_dir, *, plaso_image=imageexport.PLASO_IMAGE,
     ``stage_dir/<image_stem>/``, so ``process()`` can then run over ``stage_dir`` as if
     the logs had been supplied loose. Per-image subdirs keep hosts separated.
 
-    Idempotent: an image whose stage subdir already holds ``.evtx`` is skipped unless
-    ``force`` (re-extraction is the slow part). Returns a summary of what was extracted.
+    Thin wrapper over :func:`imageexport.extract_staged` — the SAME staged
+    extraction the Hayabusa detection lane reuses, so an image staged by either
+    is never extracted twice. Idempotent: an image whose stage subdir already
+    holds ``.evtx`` is skipped unless ``force`` (re-extraction is the slow part).
     """
-    stage_dir = os.path.realpath(stage_dir)
-    images = imageexport.discover_images(image_src)
-    summary = {"image_src": os.path.realpath(image_src), "stage_dir": stage_dir,
-               "images": len(images), "extracted": 0, "reused": 0, "failed": 0,
-               "results": []}
-    for img in images:
-        stem = os.path.splitext(os.path.basename(img))[0]
-        dest = os.path.join(stage_dir, stem)
-        have = [os.path.join(r, f) for r, _d, fs in os.walk(dest) for f in fs
-                if f.lower().endswith(".evtx")] if os.path.isdir(dest) else []
-        if have and not force:
-            summary["reused"] += 1
-            summary["results"].append({"image": img, "evtx": len(have), "reused": True})
-            continue
-        try:
-            written = imageexport.extract(img, dest, plaso_image=plaso_image, vss=vss)
-        except subprocess.CalledProcessError:
-            summary["failed"] += 1
-            summary["results"].append({"image": img, "error": "image_export failed"})
-            continue
-        evtx = [f for f in written if f.lower().endswith(".evtx")]
-        summary["extracted"] += len(evtx)
-        summary["results"].append({"image": img, "evtx": len(evtx)})
-    return summary
+    return imageexport.extract_staged(
+        image_src, stage_dir, artifact_filters=("WindowsEventLogs",),
+        exts=(".evtx",), plaso_image=plaso_image, vss=vss, force=force,
+    )
 
 
 def run_hayabusa(sources, out_dir, *, hb_dir=None, hb_bin=None, rules_dir=None,

@@ -35,7 +35,9 @@ argument_specs:
         type: str
         required: false
         description: >-
-          Where dfir_evtx_image_src extractions land (default <out-dir>/_extracted_evtx).
+          Where dfir_evtx_image_src extractions land (default
+          data_store/processed/windows_logs/_extracted_evtx — one canonical stage
+          shared by both pipelines and the dfir_signatures hayabusa lane).
           Per-image subdirs; an image already staged is not re-extracted.
       dfir_evtx_vss:
         type: bool

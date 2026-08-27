@@ -4,7 +4,7 @@
 # watch dir is tracked in #45.
 - name: "signatures-sofelk | run the detection lanes into JSONL"
   ansible.builtin.command:
-    argv: "{{ ['python3', '-m', 'get_sybers_dfir.signatures', '--output-dir', dfir_signatures_sofelk_out_dir, '--repo-root', dfir_signatures_repo_root] + (dfir_signatures_lanes | map('regex_replace', '^(.+)$', '--only=\\1') | list) + (['--fetch'] if dfir_signatures_fetch | bool else []) + (['--force'] if dfir_signatures_force | bool else []) }}"
+    argv: "{{ ['python3', '-m', 'get_sybers_dfir.signatures', '--output-dir', dfir_signatures_sofelk_out_dir, '--repo-root', dfir_signatures_repo_root] + (dfir_signatures_lanes | map('regex_replace', '^(.+)$', '--only=\\1') | list) + (['--stage-dir', dfir_signatures_stage_dir] if dfir_signatures_stage_dir | length > 0 else []) + (['--vss'] if dfir_signatures_vss | bool else []) + (['--yara-sources', dfir_signatures_yara_sources] if dfir_signatures_yara_sources | length > 0 else []) + (['--tuning-file', dfir_signatures_suricata_tuning_file] if dfir_signatures_suricata_tuning_file | length > 0 else []) + (['--fetch'] if dfir_signatures_fetch | bool else []) + (['--force'] if dfir_signatures_force | bool else []) }}"
   environment:
     PYTHONPATH: "{{ dfir_signatures_python_path }}"
   register: dfir_signatures_sofelk_run
