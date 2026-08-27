@@ -209,7 +209,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
-    return 1 if summary["failed"] and not summary["processed"] else 0
+    # Fail only when the run produced nothing AND nothing was already done: inputs
+    # that can never produce output (e.g. a Volatility plugin unsupported by this
+    # image) are retried on every run, and must not flip an otherwise-complete,
+    # idempotent re-run (processed=0, everything else skipped) into a failure.
+    return 1 if summary["failed"] and not summary["processed"] and not summary["skipped"] else 0
 
 
 if __name__ == "__main__":

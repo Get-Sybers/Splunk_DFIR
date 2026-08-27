@@ -49,3 +49,19 @@ ansible-playbook playbooks/dfir-process-evtx.yml -e dfir_evtx_pipeline=adx
 ansible-playbook playbooks/dfir-process-plaso.yml -e dfir_plaso_pipeline=adx
 ansible-playbook playbooks/dfir-process-signatures.yml -e dfir_signatures_pipeline=adx
 ```
+
+## Testing (molecule)
+
+Every role ships a molecule scenario (`roles/<role>/molecule/default/`,
+delegated driver — the role runs its own tool containers). Run them without
+installing molecule on the host via the containerised harness:
+
+```bash
+./tests/run-molecule.sh                    # default set (see script header)
+./tests/run-molecule.sh dfir_zeek          # one role
+```
+
+Scenarios that need operator-supplied fixtures (a sample `.evtx` + EvtxECmd
+release, a disk image, a memory image) read them from `MOLECULE_SAMPLE_*` /
+`MOLECULE_EVTXECMD_DIR` env vars and are skipped with a note when absent —
+see the script header for the full list.
