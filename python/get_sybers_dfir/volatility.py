@@ -33,10 +33,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
-_IMAGE = "sk4la/volatility3:latest"
+from . import container
+
+_IMAGE = "dfir/volatility:latest"
 
 # The plugins run per image — kept to the ones the analysis backend uses (process
 # tree, network, command lines, injected code). Order preserved from the shell.
@@ -63,7 +67,10 @@ _MEMORY_EXTS = (
     ".bin", ".dump", ".vmsn", ".crash",
 )
 
-# import the renderer, then hand the CLI its argv (renderer discovered on import).
+# Native runs import the renderer, then hand the CLI its argv (renderer
+# discovered on import). Container runs use the image's BAKED wrapper instead
+# (/opt/dfir/vol_wrapper.py — the only python entry the hardened image
+# allow-lists), which does the same import-then-run with argv passed through.
 _WRAPPER = (
     "import importlib.util, sys\n"
     "spec = importlib.util.spec_from_file_location('jsonl_dfir_renderer', sys.argv[1])\n"
@@ -73,6 +80,7 @@ _WRAPPER = (
     "            '-r', 'jsonl_dfir', '-f', sys.argv[4], sys.argv[5]]\n"
     "CommandLine().run()\n"
 )
+_VOL_WRAPPER_PATH = "/opt/dfir/vol_wrapper.py"
 
 
 def is_memory_image(name: str) -> bool:
@@ -115,39 +123,77 @@ def _valid_jsonl(path: str) -> bool:
         return False
 
 
-def _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image, native):
-    """Run one plugin over one image, JSONL to out_path (stdout captured; stderr dropped)."""
-    with open(out_path, "w") as out:
-        if native:
-            env = dict(os.environ, VOLATILITY3_SYMBOL_DIRECTORIES=symbols_dir)
+def vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
+             out_mount, symbols_online=False):
+    """The ``docker run`` argv for one plugin pass on the hardened
+    dfir/volatility image: python is restricted to the baked wrapper, the
+    plugin's JSONL is written by the run role to the mounted out dir, and the
+    container has no network unless ``symbols_online`` (ISF symbol fetch) is
+    explicitly requested. Pure."""
+    return container.ansible_run(
+        image,
+        ["python3", _VOL_WRAPPER_PATH, "/opt/jsonl_dfir_renderer.py",
+         "-q", "-p", "/plugins", "-s", "/symbols", "-r", "jsonl_dfir",
+         "-f", f"/mem/{os.path.basename(img)}", plugin],
+        mounts=[f"{os.path.dirname(img)}:/mem:ro",
+                f"{os.path.realpath(symbols_dir)}:/symbols",
+                f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
+                f"{os.path.realpath(plugins_dir)}:/plugins:ro",
+                f"{out_mount}:/volout"],
+        stdout_file="/volout/out.jsonl",
+        network=symbols_online,
+    )
+
+
+def _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image,
+             native, symbols_online=False):
+    """Run one plugin over one image, JSONL to out_path."""
+    if native:
+        env = dict(os.environ, VOLATILITY3_SYMBOL_DIRECTORIES=symbols_dir)
+        with open(out_path, "w") as out:
             subprocess.run(
                 [native, "-c", _WRAPPER, renderer, plugins_dir, symbols_dir, img, plugin],
                 stdout=out, stderr=subprocess.DEVNULL, env=env, check=False,
             )
+        return
+    # Hardened container: the in-image run role writes the plugin's stdout to
+    # the mounted temp dir (ansible narrates on the container's own stdout, so
+    # capturing that would mix play output into the JSONL).
+    out_mount = tempfile.mkdtemp()
+    try:
+        os.chmod(out_mount, 0o777)   # written by the container's uid 2000
+        subprocess.run(
+            vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
+                     out_mount, symbols_online),
+            capture_output=True, check=False,
+        )
+        produced = os.path.join(out_mount, "out.jsonl")
+        if os.path.isfile(produced):
+            shutil.move(produced, out_path)
         else:
-            subprocess.run(
-                [
-                    "docker", "run", "--rm",
-                    "-v", f"{os.path.dirname(img)}:/mem:ro",
-                    "-v", f"{os.path.realpath(symbols_dir)}:/symbols",
-                    "-v", f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
-                    "-v", f"{os.path.realpath(plugins_dir)}:/plugins:ro",
-                    "--entrypoint", "python3", image,
-                    "-c", _WRAPPER,
-                    "/opt/jsonl_dfir_renderer.py", "/plugins", "/symbols",
-                    f"/mem/{os.path.basename(img)}", plugin,
-                ],
-                stdout=out, stderr=subprocess.DEVNULL, check=False,
-            )
+            open(out_path, "w").close()
+    finally:
+        shutil.rmtree(out_mount, ignore_errors=True)
 
 
 def process(memory_dir, out_dir, symbols_dir, renderer, plugins_dir,
-            image=_IMAGE, plugins=None, native=None, force=False) -> dict:
-    """Run the plugin set over every image under memory_dir. Idempotent per plugin."""
+            image=_IMAGE, plugins=None, native=None, force=False,
+            symbols_online=False) -> dict:
+    """Run the plugin set over every image under memory_dir. Idempotent per plugin.
+
+    ``symbols_online`` allows the container network access for ISF symbol fetch
+    (the ONE legitimate network need); default is fully offline — pre-seed
+    ``symbols_dir`` or expect Windows plugins to produce nothing on first use.
+    """
     memory_dir = os.path.realpath(memory_dir)
     out_dir = os.path.realpath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(symbols_dir, exist_ok=True)
+    try:
+        # the container's uid-2000 volatility caches fetched symbols here
+        os.chmod(symbols_dir, 0o777)
+    except OSError:
+        pass
     plugins = plugins or DEFAULT_PLUGINS
     images = discover(memory_dir)
 
@@ -162,7 +208,8 @@ def process(memory_dir, out_dir, symbols_dir, renderer, plugins_dir,
             if not force and _valid_jsonl(out_path):
                 skipped += 1
                 continue
-            _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image, native)
+            _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir,
+                     image, native, symbols_online)
             if _valid_jsonl(out_path):
                 processed += 1
                 per_image["produced"].append(plugin)
@@ -200,12 +247,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vol-native", default=None, help="native volatility executable (skip container)")
     ap.add_argument("--plugins", default=None, help="comma-separated plugin override (default: the CAR set)")
     ap.add_argument("--force", action="store_true", help="rerun plugins that already have valid output")
+    ap.add_argument("--symbols-online", action="store_true",
+                    help="allow the container network access for ISF symbol fetch — the "
+                         "one legitimate network need; default is fully offline "
+                         "(pre-seed --symbols-dir instead)")
     args = ap.parse_args(argv)
 
     plugins = [p.strip() for p in args.plugins.split(",") if p.strip()] if args.plugins else None
     summary = process(
         args.memory_dir, args.out_dir, args.symbols_dir, args.renderer, args.plugins_dir,
         image=args.image, plugins=plugins, native=args.vol_native, force=args.force,
+        symbols_online=args.symbols_online,
     )
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")

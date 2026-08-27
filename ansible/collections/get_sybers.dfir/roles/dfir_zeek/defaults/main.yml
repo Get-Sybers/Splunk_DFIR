@@ -12,7 +12,8 @@ dfir_zeek_sofelk_out_dir: "{{ dfir_zeek_repo_root }}/data_store/processed/sofelk
 # Resolved output base for the selected pipeline — consumed by
 # tasks/process.yml. Override directly to send output to a custom location.
 dfir_zeek_out_dir: "{{ dfir_zeek_adx_out_dir if dfir_zeek_pipeline == 'adx' else dfir_zeek_sofelk_out_dir }}"
-dfir_zeek_image: "zeek/zeek"
+# The hardened in-repo image (build with playbooks/dfir-build-images.yml).
+dfir_zeek_image: "dfir/zeek:latest"
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_zeek_python_path: "{{ dfir_zeek_repo_root }}/python"
 dfir_zeek_force: false

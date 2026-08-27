@@ -37,10 +37,11 @@ import shutil
 import subprocess
 import tempfile
 
+from .. import container
 from . import clean_name, have_fuse, list_images
 
-_YARA_IMAGE = "blacktop/yara:latest"
-_VOL_IMAGE = "sk4la/volatility3:latest"
+_YARA_IMAGE = "dfir/yara:latest"
+_VOL_IMAGE = "dfir/volatility:latest"
 _STRING_RE = re.compile(r"^0x([0-9a-fA-F]+):(\$[^:]*):\s?(.*)$")
 
 
@@ -186,37 +187,35 @@ def unmount_image(state: list[tuple[str, str]], mount_dir: str) -> None:
 
 # --- memory source: Volatility 3 windows.vadyarascan -------------------------
 
-# Import the jsonl_dfir renderer, then hand the CLI its argv (renderers are
-# discovered on import). Same wrapper shape as get_sybers_dfir.volatility, plus
-# vadyarascan's --yara-file; every path arrives via argv, none is spliced into
-# Python source.
-_VAD_WRAPPER = (
-    "import importlib.util, sys\n"
-    "spec = importlib.util.spec_from_file_location('jsonl_dfir_renderer', sys.argv[1])\n"
-    "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)\n"
-    "from volatility3.cli import CommandLine\n"
-    "sys.argv = ['vol', '-q', '-s', sys.argv[2], '-r', 'jsonl_dfir', '-f', sys.argv[3],\n"
-    "            'windows.vadyarascan.VadYaraScan', '--yara-file', sys.argv[4]]\n"
-    "CommandLine().run()\n"
-)
+# vadyarascan runs on the hardened dfir/volatility image through its BAKED
+# wrapper (/opt/dfir/vol_wrapper.py — the only python entry the image
+# allow-lists), which imports the mounted jsonl_dfir renderer then hands the
+# CLI the remaining argv verbatim.
+_VOL_WRAPPER_PATH = "/opt/dfir/vol_wrapper.py"
 
 
 def vadyarascan_argv(mem: str, symbols_dir: str, renderer: str, rules_file: str,
-                     vol_image: str = _VOL_IMAGE) -> list[str]:
-    """The ``docker run`` argv for one vadyarascan pass over one memory image.
-    The image's directory is mounted read-only; the symbols dir is writable (the
-    ISF cache lives there). Pure (no I/O beyond path normalisation)."""
-    return [
-        "docker", "run", "--rm",
-        "-v", f"{os.path.dirname(mem)}:/mem:ro",
-        "-v", f"{os.path.realpath(symbols_dir)}:/symbols",
-        "-v", f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
-        "-v", f"{os.path.realpath(rules_file)}:/rules/combined.yar:ro",
-        "--entrypoint", "python3", vol_image,
-        "-c", _VAD_WRAPPER,
-        "/opt/jsonl_dfir_renderer.py", "/symbols",
-        f"/mem/{os.path.basename(mem)}", "/rules/combined.yar",
-    ]
+                     vol_image: str = _VOL_IMAGE, out_mount: str = "/tmp",
+                     symbols_online: bool = False) -> list[str]:
+    """The ``docker run`` argv for one vadyarascan pass over one memory image on
+    the hardened dfir/volatility image (ansible-only execution, python
+    restricted to the baked wrapper, no caps, no network unless
+    ``symbols_online``). The in-image run role writes the scan's JSONL to the
+    mounted ``out_mount``. Pure (no I/O beyond path normalisation)."""
+    return container.ansible_run(
+        vol_image,
+        ["python3", _VOL_WRAPPER_PATH, "/opt/jsonl_dfir_renderer.py",
+         "-q", "-s", "/symbols", "-r", "jsonl_dfir",
+         "-f", f"/mem/{os.path.basename(mem)}",
+         "windows.vadyarascan.VadYaraScan", "--yara-file", "/rules/combined.yar"],
+        mounts=[f"{os.path.dirname(mem)}:/mem:ro",
+                f"{os.path.realpath(symbols_dir)}:/symbols",
+                f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
+                f"{os.path.realpath(rules_file)}:/rules/combined.yar:ro",
+                f"{out_mount}:/volout"],
+        stdout_file="/volout/out.jsonl",
+        network=symbols_online,
+    )
 
 
 def combine_rules(rule_paths: list[str]) -> str:
@@ -259,28 +258,40 @@ def _scan_dir(scan_dir, rules_dir, index_path, source, base, image) -> list[dict
     if not files:
         return []
     listf = tempfile.NamedTemporaryFile("w", delete=False)
+    out_mount = tempfile.mkdtemp()
     try:
         for f in files:
             listf.write(f"/scan/{os.path.relpath(f, scan_dir)}\n")
         listf.close()
-        script = (
-            'while IFS= read -r f; do [ -n "$f" ] && '
-            'yara -w -s -N /index.yar "$f"; done < /list.txt'
+        # NamedTemporaryFile is 0600; the hardened container reads it as uid 2000
+        os.chmod(listf.name, 0o644)
+        os.chmod(out_mount, 0o777)   # written by the container's uid 2000
+        # The hardened image's run role only allows `yara` and its BAKED
+        # per-file scan script (/opt/dfir/scan-list.sh) — the loop lives in the
+        # image, no shell command is injected from here. The role writes the
+        # scan's stdout to the mounted out dir.
+        subprocess.run(
+            container.ansible_run(
+                image,
+                ["/opt/dfir/scan-list.sh"],
+                mounts=[f"{os.path.realpath(rules_dir)}:/rules:ro",
+                        f"{os.path.realpath(scan_dir)}:/scan:ro",
+                        f"{os.path.realpath(index_path)}:/index.yar:ro",
+                        f"{listf.name}:/list.txt:ro",
+                        f"{out_mount}:/yaraout"],
+                stdout_file="/yaraout/raw.txt",
+            ),
+            capture_output=True, check=False,
         )
-        proc = subprocess.run(
-            [
-                "docker", "run", "--rm", "--entrypoint", "sh",
-                "-v", f"{os.path.realpath(rules_dir)}:/rules:ro",
-                "-v", f"{os.path.realpath(scan_dir)}:/scan:ro",
-                "-v", f"{os.path.realpath(index_path)}:/index.yar:ro",
-                "-v", f"{listf.name}:/list.txt:ro",
-                image, "-c", script,
-            ],
-            capture_output=True, text=True, check=False,
-        )
-        return parse_yara_text(proc.stdout, source, "/scan/", base)
+        raw_path = os.path.join(out_mount, "raw.txt")
+        raw = ""
+        if os.path.isfile(raw_path):
+            with open(raw_path, encoding="utf-8", errors="replace") as fh:
+                raw = fh.read()
+        return parse_yara_text(raw, source, "/scan/", base)
     finally:
         os.unlink(listf.name)
+        shutil.rmtree(out_mount, ignore_errors=True)
 
 
 def _note(res: dict, note: str) -> None:
@@ -329,6 +340,8 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     idxf = tempfile.NamedTemporaryFile("w", suffix=".yar", delete=False)
     idxf.write(build_index(rules, rules_dir))
     idxf.close()
+    # NamedTemporaryFile is 0600; the hardened container reads it as uid 2000
+    os.chmod(idxf.name, 0o644)
     index_path = idxf.name
     os.chmod(index_path, 0o644)  # readable however the container's user maps
 
@@ -401,17 +414,28 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
             failed_mems = []
             try:
                 for mem in mems:
-                    proc = subprocess.run(
-                        vadyarascan_argv(mem, symbols_dir, renderer,
-                                         combined.name, vol_image),
-                        capture_output=True, text=True, check=False,
-                    )
-                    if proc.returncode != 0:
-                        res["failed"] += 1
-                        failed_mems.append(os.path.basename(mem))
-                        continue
-                    matches += parse_vadyarascan(
-                        proc.stdout, os.path.relpath(mem, memory_dir))
+                    # the hardened image's run role writes the scan JSONL to the
+                    # mounted out dir (the container's own stdout is ansible)
+                    out_mount = tempfile.mkdtemp()
+                    try:
+                        os.chmod(out_mount, 0o777)
+                        proc = subprocess.run(
+                            vadyarascan_argv(mem, symbols_dir, renderer,
+                                             combined.name, vol_image,
+                                             out_mount=out_mount),
+                            capture_output=True, text=True, check=False,
+                        )
+                        produced_path = os.path.join(out_mount, "out.jsonl")
+                        if proc.returncode != 0 or not os.path.isfile(produced_path):
+                            res["failed"] += 1
+                            failed_mems.append(os.path.basename(mem))
+                            continue
+                        with open(produced_path, encoding="utf-8",
+                                  errors="replace") as fh:
+                            matches += parse_vadyarascan(
+                                fh.read(), os.path.relpath(mem, memory_dir))
+                    finally:
+                        shutil.rmtree(out_mount, ignore_errors=True)
             finally:
                 os.unlink(combined.name)
             _write(out, matches)

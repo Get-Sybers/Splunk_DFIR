@@ -36,7 +36,7 @@ argument_specs:
       dfir_zeek_image:
         type: str
         required: false
-        default: "zeek/zeek"
+        default: "dfir/zeek:latest"
         description: "Zeek container image."
       dfir_zeek_python_path:
         type: str

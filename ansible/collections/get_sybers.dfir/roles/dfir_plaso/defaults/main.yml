@@ -15,7 +15,8 @@ dfir_plaso_sofelk_out_dir: "{{ dfir_plaso_repo_root }}/data_store/processed/sofe
 dfir_plaso_out_dir: "{{ dfir_plaso_adx_out_dir if dfir_plaso_pipeline == 'adx' else dfir_plaso_sofelk_out_dir }}"
 # The custom psort output module lives in the repo (dev-scripts), mounted into psort.
 dfir_plaso_module: "{{ dfir_plaso_repo_root }}/dev-scripts/plaso/l2t_json_dfir.py"
-dfir_plaso_image: "log2timeline/plaso"
+# The hardened in-repo image (build with playbooks/dfir-build-images.yml).
+dfir_plaso_image: "dfir/plaso:latest"
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_plaso_python_path: "{{ dfir_plaso_repo_root }}/python"
 dfir_plaso_force: false

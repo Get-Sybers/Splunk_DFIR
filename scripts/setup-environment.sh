@@ -289,6 +289,9 @@ else
     echo "✅ Docker group permissions should already be active."
 fi
 echo ""
+echo "🐳 Build the hardened tool containers (everything the pipeline runs):"
+echo "     ansible-playbook ansible/collections/get_sybers.dfir/playbooks/dfir-build-images.yml"
+echo ""
 echo "📦 To pre-seed the analysis images as tarballs for an offline host, run:"
 echo "     scripts/save-docker-images.sh          (online host: pull + save)"
 echo "     scripts/save-docker-images.sh --load   (offline host: load tarballs)"

@@ -26,6 +26,15 @@ Deploy + load roles: **`dfir_deploy_adx`** (emulator + schema), **`dfir_ingest_a
 into SOF-ELK's watch dir), **`dfir_deploy_sofelk`** (builds the from-source SOF-ELK
 stack — `docker/sof-elk/`). `dxdfir deploy` / `dxdfir ingest` drive the ADX pair.
 
+**`dfir_images`** builds every tool container the processors run — hardened,
+from in-repo Dockerfiles, with ansible as the container's only execution path
+(Splunk-docker posture: pinned `ansible-playbook` ENTRYPOINT + embedded
+allow-listed run role, uid 0 renamed `ansible` and locked, no sudo/su, no
+package managers, tool runs as uid 2000) — and verifies the contract per build.
+Nothing third-party is pulled at runtime except the proprietary Kusto emulator.
+Run `playbooks/dfir-build-images.yml` once per host (and after `docker/`
+changes); see [the role README](roles/dfir_images/README.md).
+
 Analysis role: **`dfir_detect_adx`** — the detection orchestrator
 (`get_sybers_dfir.detect`). It surveys which processed data is actually present
 (ADX tables + signature-lane JSONL outputs), runs only the registered detections
@@ -83,4 +92,5 @@ recorded here rather than half-implemented.
 | Testing in CI/CD | `ansible-lint` (production profile, config in `.ansible-lint`) + the repo harness run on every push/PR; molecule scenarios run the roles for real (`tests/run-molecule.sh`), idempotence included. |
 | Cross-platform conditionals | **Principle implemented, mechanics inapplicable:** the practice's point — one adaptable unit instead of near-identical copies — is exactly the shared `process.yml` + resolved `dfir_<role>_out_dir`, applied to the adx\|sofelk axis. OS-family `when` ladders have no surface: targets are tool containers on a Linux analysis host, single-platform by design. |
 | Vault / secrets | **No secrets exist in the collection by design** — verified: no credentials anywhere (SOF-ELK included), every published port binds `127.0.0.1`, and a non-localhost emulator bind is refused by preflight unless `dfir_deploy_adx_expose=true` is set deliberately. The practice's pre-commit secret hook is replaced by a CI-time pattern scan (private keys, AWS/GitHub/GitLab/Slack tokens) in the repo harness — a deliberate adaptation, because commits land via the GitHub API here, so pre-commit hooks would never execute; CI is the only enforceable choke point. If a credentialled backend is ever added, its secrets go through Ansible Vault, never defaults. |
+| Hardened execution containers | Every tool container is built in-repo by `dfir_images` with ansible as its only execution path (allow-listed run role), uid0 renamed+locked, no escalation/installers, non-root runtime; every `docker run` adds `--cap-drop ALL --security-opt no-new-privileges --network none` (volatility symbol fetch is the one explicit opt-in). |
 | Monitor, log, audit | Repo-root `ansible.cfg` appends every run to `logs/ansible.log` and enables `ansible.posix.profile_tasks` for per-task timing; every processor emits a machine-readable JSON summary that the roles gate on. The log captures task output, which includes evidence-derived metadata (paths, resolved hostnames, artefact names) — it is therefore treated like evidence: gitignored (only `logs/.gitkeep` is tracked) and never leaves the analysis host. |

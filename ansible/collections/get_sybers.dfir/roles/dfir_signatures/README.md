@@ -102,5 +102,6 @@ Python unit tests cover the pure parsing logic (YARA text → match JSONL incl.
 strings/offsets, `vadyarascan` → match JSONL, disk-mount/vadyarascan argv
 construction and `mmls` offset parsing, Suricata EVE filtering/annotation,
 Hayabusa tagging, binary discovery). The **Molecule** scenario runs the **yara lane
-live** against a fixture rule + matching sample (needs the `blacktop/yara` image):
+live** against a fixture rule + matching sample (needs the hardened `dfir/yara`
+image — `playbooks/dfir-build-images.yml`):
 converge → idempotence → verify the recorded match.

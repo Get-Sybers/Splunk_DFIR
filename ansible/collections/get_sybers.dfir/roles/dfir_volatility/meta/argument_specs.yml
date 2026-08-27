@@ -50,12 +50,20 @@ argument_specs:
       dfir_volatility_image:
         type: str
         required: false
-        default: "sk4la/volatility3:latest"
+        default: "dfir/volatility:latest"
         description: "Volatility 3 container image."
       dfir_volatility_python_path:
         type: str
         required: false
         description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_volatility_symbols_online:
+        type: bool
+        required: false
+        default: false
+        description: >-
+          Allow the container network access for ISF symbol fetch (the one
+          legitimate network need). Default fully offline — pre-seed the
+          symbols dir instead.
       dfir_volatility_force:
         type: bool
         required: false

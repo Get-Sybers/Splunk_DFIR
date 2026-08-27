@@ -46,8 +46,8 @@ argument_specs:
       dfir_plaso_image:
         type: str
         required: false
-        default: "log2timeline/plaso"
-        description: "log2timeline/plaso container image."
+        default: "dfir/plaso:latest"
+        description: "The hardened in-repo Plaso image (build with playbooks/dfir-build-images.yml)."
       dfir_plaso_python_path:
         type: str
         required: false

@@ -1,0 +1,8 @@
+---
+- name: "run | verify the hardening contract instead of running a tool"
+  ansible.builtin.include_tasks: verify.yml
+  when: dfir_run_verify | bool
+
+- name: "run | execute the allow-listed tool"
+  ansible.builtin.include_tasks: execute.yml
+  when: not dfir_run_verify | bool

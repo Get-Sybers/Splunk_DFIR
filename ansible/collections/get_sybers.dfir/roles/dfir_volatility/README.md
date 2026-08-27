@@ -17,7 +17,8 @@ action** (one container run per plugin per image happens inside Python). One
 | `dfir_volatility_symbols_dir` | `<repo>/data_store/dependencies/volatility3-symbols` | Volatility 3 kernel-symbol cache (passed as `--symbols-dir`). |
 | `dfir_volatility_renderer` | `<repo>/dev-scripts/volatility/jsonl_dfir_renderer.py` | Custom JSONL renderer. |
 | `dfir_volatility_plugins_dir` | `<repo>/dev-scripts/volatility/plugins` | Custom plugins (`dfir_processes`, `dfir_registry`). |
-| `dfir_volatility_image` | `sk4la/volatility3:latest` | Volatility 3 container image. |
+| `dfir_volatility_image` | `dfir/volatility:latest` | The hardened in-repo Volatility 3 image (`playbooks/dfir-build-images.yml`). |
+| `dfir_volatility_symbols_online` | `false` | Allow container network access for ISF symbol fetch — the one legitimate network need; pre-seed the symbols dir instead. |
 | `dfir_volatility_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
 | `dfir_volatility_force` | `false` | Rerun plugins that already have valid output. |
 

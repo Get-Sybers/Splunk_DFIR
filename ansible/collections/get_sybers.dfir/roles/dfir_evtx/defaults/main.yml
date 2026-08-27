@@ -28,7 +28,7 @@ dfir_evtx_stage_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_log
 dfir_evtx_vss: false
 # Container providing image_export.py for disk-image extraction (already shipped for
 # the disk/signature lanes).
-dfir_evtx_plaso_image: "log2timeline/plaso:latest"
+dfir_evtx_plaso_image: "dfir/plaso:latest"
 
 # Hayabusa (Sigma detection) over the same .evtx this lane collects — loose or
 # image-extracted. Enrichment: a missing binary or zero detections is a note, not a

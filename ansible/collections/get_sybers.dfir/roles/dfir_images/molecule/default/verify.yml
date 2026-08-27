@@ -1,0 +1,51 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "molecule-verify | refuse a non-allow-listed invocation"
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - --cap-drop
+          - ALL
+          - --security-opt
+          - no-new-privileges
+          - --network
+          - none
+          - dfir/yara:latest
+          - -e
+          - '{"dfir_run_argv": ["cat", "/etc/passwd"]}'
+      register: dfir_images_refusal
+      changed_when: false
+      failed_when: false
+
+    - name: "molecule-verify | assert the run role refused it"
+      ansible.builtin.assert:
+        that:
+          - dfir_images_refusal.rc != 0
+          - "'refused' in (dfir_images_refusal.stdout + dfir_images_refusal.stderr)"
+        fail_msg: >-
+          the yara image executed a non-allow-listed argv — the embedded run
+          role must refuse anything but yara / its baked scan script.
+        quiet: true
+
+    - name: "molecule-verify | an allow-listed invocation still works"
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - --cap-drop
+          - ALL
+          - --security-opt
+          - no-new-privileges
+          - --network
+          - none
+          - dfir/yara:latest
+          - -e
+          - '{"dfir_run_argv": ["yara", "--version"]}'
+      register: dfir_images_allowed
+      changed_when: false

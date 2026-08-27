@@ -79,8 +79,8 @@ scripts/save-docker-images.sh --load
 ```
 
 The images managed are:
-- `log2timeline/plaso:latest` — Timeline analysis tools
-- `zeek/zeek:latest` — Network traffic analysis
+- `dfir/*` hardened tool images — built in-repo by
+  `ansible-playbook playbooks/dfir-build-images.yml` (see docs/Containers.md)
 - `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` — the Kusto
   emulator (analysis backend)
 

@@ -103,10 +103,10 @@ group "Ansible lint"
 # Production-profile ansible-lint over the collection (config: the collection's
 # .ansible-lint). Skipped when ansible-lint is not installed (CI installs it).
 if command -v ansible-lint >/dev/null 2>&1; then
-    if (cd ansible/collections/get_sybers.dfir && ansible-lint --profile production >/dev/null 2>&1); then
-        pass "ansible-lint (production profile) on get_sybers.dfir"
+    if ansible-lint --profile production >/dev/null 2>&1; then
+        pass "ansible-lint (production profile) on the collection + container ansible"
     else
-        fail "ansible-lint reported violations (run: cd ansible/collections/get_sybers.dfir && ansible-lint)"
+        fail "ansible-lint reported violations (run: ansible-lint --profile production)"
     fi
 else
     skip "ansible-lint not installed"

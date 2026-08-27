@@ -1,0 +1,30 @@
+---
+argument_specs:
+  main:
+    short_description: "Build + verify the ansible-hardened dfir/* tool images."
+    description:
+      - >-
+        Builds every runtime tool container from its in-repo Dockerfile (context
+        docker/, one directory per image), each of which runs the shared ansible
+        hardening playbook (docker/hardening/harden.yml) inside the build and
+        squashes the result: fixed non-root user, no setuid/setgid binaries, no
+        package manager or pip, no shell unless the tool's invocation needs one.
+        After each build the role asserts the hardening contract (USER 2000:2000
+        and the com.get-sybers.hardened label). Nothing in the pipeline pulls a
+        third-party tool image at runtime; the one exception is the Kusto
+        emulator (proprietary, unbuildable) handled by dfir_deploy_adx.
+    options:
+      dfir_images_context:
+        type: str
+        required: false
+        description: "The docker/ build context holding <name>/Dockerfile dirs and hardening/harden.yml."
+      dfir_images_set:
+        type: list
+        elements: str
+        required: false
+        description: "Images to build (dir under docker/ = dfir/<name> tag). Default: the full runtime set."
+      dfir_images_force:
+        type: bool
+        required: false
+        default: false
+        description: "Rebuild images that already exist (docker layer cache still applies)."

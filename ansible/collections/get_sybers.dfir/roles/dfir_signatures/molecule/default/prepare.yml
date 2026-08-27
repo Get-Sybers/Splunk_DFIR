@@ -1,6 +1,7 @@
 ---
 # Builds a self-contained fake repo_root under /tmp with a YARA rule + a matching
-# sample, so the yara lane runs live (needs the blacktop/yara image). The suricata /
+# sample, so the yara lane runs live (needs the hardened dfir/yara image — build
+# with playbooks/dfir-build-images.yml). The suricata /
 # hayabusa lanes need their own rules/binary and are exercised by unit tests.
 - name: Prepare
   hosts: localhost
