@@ -43,8 +43,7 @@ data_store/
 **1. Place raw evidence** in the matching `raw/` subdirectory above.
 
 **2. Process it.** The `dxdfir` CLI is the front-end (see
-[How It Runs](/README.md#how-it-runs)); each source also has a legacy
-`process-*.sh` script:
+[How It Runs](/README.md#how-it-runs)):
 
 ```bash
 dxdfir process plaso        # disk images / VM exports

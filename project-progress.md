@@ -16,10 +16,10 @@ The pipeline has been rebuilt as a three-layer stack: the **`dxdfir` CLI** →
 the **`get_sybers.dfir` Ansible collection** (one role per source) → the
 **`get_sybers_dfir` Python package**, driving two backends via
 `--pipeline adx|sofelk` (ADX / Kusto emulator + SOF-ELK). All ten roles, the CLI
-and the from-source SOF-ELK stack exist on `dev`; the one open box is **per-source
-retirement of the `process-*.sh` scripts**. The tables below track the
-processing / ingest layer (still named by the `process-*.sh` scripts the roles
-wrap) — see [How It Runs](/README.md#how-it-runs) and #46.
+and the from-source SOF-ELK stack exist on `dev`; the per-source `process-*.sh`
+scripts have been retired (removed) — their behaviour lives in the
+`get_sybers_dfir` processors. The tables below track the processing / ingest layer
+by source — see [How It Runs](/README.md#how-it-runs).
 
 A note on what the ticks mean, because the previous version of this board was
 generous with them:
@@ -161,8 +161,7 @@ Things that are broken or unsafe right now.
 
 ### Documentation
 - Align the docs with the #45/#46 rewrite — present the `dxdfir` CLI + collection
-  as the front-end and frame the `process-*.sh` scripts as the legacy layer being
-  retired (in progress).
+  as the front-end; the retired `process-*.sh` scripts have been removed (done).
 
 ---
 
