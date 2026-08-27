@@ -15,9 +15,12 @@ dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk
 # image_export.py into the stage dir and processed alongside dfir_evtx_evtx_dir, so
 # the lane consumes images directly. Empty (default) => loose .evtx only.
 dfir_evtx_image_src: ""
-# Where --image-src extractions land (empty => <out-dir>/_extracted_evtx). Per-image
-# subdirs, reused across runs (an image whose logs are already staged is not re-pulled).
-dfir_evtx_stage_dir: ""
+# Where --image-src extractions land. Per-image subdirs, reused across runs (an
+# image whose logs are already staged is not re-pulled). Pinned to ONE canonical
+# stage for BOTH pipelines — the same default the dfir_signatures hayabusa lane
+# uses — so the adx run, the sofelk run and the detection lane all share the
+# extraction instead of each re-pulling the image.
+dfir_evtx_stage_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs/_extracted_evtx"
 # Include Volume Shadow Copies when extracting from a disk image.
 dfir_evtx_vss: false
 # Container providing image_export.py for disk-image extraction (already shipped for

@@ -5,13 +5,14 @@ argument_specs:
     description:
       - >-
         Runs the signature engines over the evidence and writes one <lane>/ folder of
-        detection JSONL under the output dir. YARA runs over loose files, disk images
-        (mounted read-only in place — needs /dev/fuse + ewfmount/ntfs-3g on the host;
-        nothing is extracted) and memory images (Volatility 3 windows.vadyarascan);
-        Suricata over PCAPs; Hayabusa over loose Windows Event Logs (disk-image EVTX
-        flows through the evtx lane's targeted extraction). A source whose host
-        prerequisites are missing notes it and produces nothing.
-        Idempotent: a lane whose output already exists is skipped.
+        detection JSONL under the output dir. Standalone — no processor run is needed
+        first. YARA covers loose files, disk images (mounted read-only; needs
+        /dev/fuse) and memory (Volatility vadyarascan); Suricata covers every capture
+        the zeek processor discovers (magic-first); Hayabusa covers loose Windows
+        Event Logs AND disk images via the staged image_export extraction it shares
+        with the evtx processor (extracted once, reused by both). A source whose host
+        prerequisites are missing notes it and produces nothing. Idempotent: a lane
+        whose output already exists is skipped.
     options:
       dfir_signatures_pipeline:
         type: str
@@ -33,6 +34,34 @@ argument_specs:
         required: false
         default: []
         description: "Lanes to run; empty = all. Any of: yara, suricata, hayabusa."
+      dfir_signatures_stage_dir:
+        type: str
+        required: false
+        default: ""
+        description: >-
+          Where the hayabusa lane stages disk-image EVTX extractions. Empty => the
+          evtx processor's stage (data_store/processed/windows_logs/_extracted_evtx),
+          so images staged by either lane are reused, never re-extracted.
+      dfir_signatures_vss:
+        type: bool
+        required: false
+        default: false
+        description: "Include Volume Shadow Copies when staging disk images (hayabusa lane)."
+      dfir_signatures_yara_sources:
+        type: str
+        required: false
+        default: ""
+        description: "YARA sources to run, comma list of files,disk,memory; empty = all."
+      dfir_signatures_suricata_tuning_file:
+        type: str
+        required: false
+        default: ""
+        description: >-
+          Per-pcap Suricata tuning file (INI; empty => the processor's default,
+          data_store/dependencies/suricata-tuning.conf). Written as an editable
+          template on first run; while it holds no real sections — or is not valid —
+          HOME_NET is auto-detected per pcap and the derived values are recorded
+          into it for the operator to edit. Tuning is reset per pcap.
       dfir_signatures_fetch:
         type: bool
         required: false

@@ -23,6 +23,13 @@ def main(argv: list[str] | None = None) -> int:
                          "signatures/detectraptor.py); the other lanes still record a "
                          "note when their deps are missing")
     ap.add_argument("--force", action="store_true", help="regenerate outputs that already exist")
+    # Hayabusa disk-image staging (shared with the evtx processor's stage).
+    ap.add_argument("--stage-dir", help="where disk-image EVTX extractions land for the "
+                    "hayabusa lane (default: the evtx processor's stage, "
+                    "data_store/processed/windows_logs/_extracted_evtx — already-staged "
+                    "images are reused, not re-extracted).")
+    ap.add_argument("--vss", action="store_true",
+                    help="also extract from Volume Shadow Copies when staging disk images")
     # YARA source selection (the shell lane's YARA_SOURCES).
     ap.add_argument("--yara-sources",
                     help="comma list of yara sources to run: files,disk,memory "
@@ -34,11 +41,18 @@ def main(argv: list[str] | None = None) -> int:
                     "Applies to every pcap; EXTERNAL_NET defaults to its complement.")
     ap.add_argument("--external-net", help="Suricata EXTERNAL_NET (default: !$HOME_NET).")
     ap.add_argument("--auto-home-net", action="store_true",
-                    help="derive HOME_NET per-pcap from its own traffic (a cheap default-vars "
-                         "pass first). Ignored if --home-net is given.")
+                    help="accepted for compatibility; per-pcap HOME_NET auto-detection is "
+                         "now the default whenever neither --home-net nor a tuning-file "
+                         "entry covers a pcap (see --tuning-file).")
     ap.add_argument("--suricata-set", action="append", metavar="KEY=VALUE",
                     help="raw Suricata --set tuning entry, repeatable (e.g. "
                          "vars.port-groups.HTTP_PORTS=8080).")
+    ap.add_argument("--tuning-file",
+                    help="per-pcap Suricata tuning file (INI template; default "
+                         "data_store/dependencies/suricata-tuning.conf). Written as an "
+                         "editable template on first run; while template-only or "
+                         "invalid, the automatable vars are auto-detected per pcap and "
+                         "recorded into it. Tuning resets per pcap.")
     args = ap.parse_args(argv)
 
     lanes = tuple(args.only) if args.only else LANES
@@ -47,6 +61,10 @@ def main(argv: list[str] | None = None) -> int:
         "external_net": args.external_net,
         "auto_home_net": args.auto_home_net,
         "extra_sets": args.suricata_set or [],
+        "tuning_file": args.tuning_file,
+    }, "hayabusa": {
+        "stage_dir": args.stage_dir,
+        "vss": args.vss,
     }}
     if args.yara_sources:
         srcs = tuple(s.strip() for s in args.yara_sources.split(",") if s.strip())

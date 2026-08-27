@@ -5,15 +5,20 @@ hayabusa}.sh`` lanes and ``lib/disk-image.sh``). Runs the three signature engine
 over the evidence and lands their native events as ingest-ready JSON Lines under
 ``<output_dir>/<lane>/``:
 
-    yara       loose files, disk images (mounted read-only in place, never
-               extracted) and process memory (Volatility 3 windows.vadyarascan)
-    suricata   PCAPs -> Suricata EVE alerts (+context event types)
-    hayabusa   Windows Event Logs (.evtx) -> Sigma detection timeline
+    yara       loose files + disk images (mounted read-only, needs /dev/fuse) +
+               memory (Volatility windows.vadyarascan)
+    suricata   captures (magic-first discovery, same as the zeek processor)
+               -> Suricata EVE alerts (+context event types)
+    hayabusa   Windows Event Logs -> Sigma detection timeline: loose .evtx AND
+               disk images (staged image_export extraction, shared with the
+               evtx processor — no fuse needed, extracted once, reused)
 
-Each lane is a standalone runner (run one, or all via :func:`process`). Container-first
-(YARA, Suricata) or native binary (Hayabusa). Disk-image mounting needs ``/dev/fuse``
-(an LXC device-cgroup restriction blocks it by default); a lane that can't mount says
-so and moves on — nothing is extracted for the YARA lane.
+Each lane is a standalone runner (run one, or all via :func:`process`) — no lane
+requires a processor to have run first, and a lane never re-does raw processing a
+prior processor/detection run already staged. Container-first (YARA, Suricata) or
+native binary (Hayabusa). Only the YARA disk source still needs ``/dev/fuse``
+(mount-only by policy — it never extracts files out of images); when the host
+can't mount it says so and moves on.
 
 The heavy lifting (docker, mounting, the native binary) lives in the lane runners;
 the parsing logic (yara text output, EVE filtering, detection tagging) is factored
@@ -34,14 +39,11 @@ def clean_name(path: str, base_dir: str) -> str:
 
 
 def list_images(root: str) -> list[str]:
-    """Every disk image under root (by the common container extensions), sorted."""
-    exts = (".e01", ".raw", ".img", ".dd", ".vmdk", ".001", ".aff4")
-    found = []
-    for cur, _dirs, files in os.walk(root):
-        for name in files:
-            if name.lower().endswith(exts):
-                found.append(os.path.join(cur, name))
-    return sorted(found)
+    """Every disk image under root, sorted. Delegates to the shared
+    ``imageexport`` discovery so the detection lanes see exactly the image
+    formats the processors do (E01/Ex01/raw/img/dd/VMDK/001/AFF4/VHD/VHDX/QCOW2)."""
+    from .. import imageexport
+    return imageexport.discover_images(root)
 
 
 def have_fuse() -> bool:
