@@ -50,6 +50,54 @@ else
 fi
 
 # ------------------------------------------------------------------------------
+group "Collection requirements"
+# ------------------------------------------------------------------------------
+# requirements.yml is the single source of pinned Ansible dependencies. This
+# gate (which runs on every PR via CI) enforces the contract: it parses, every
+# collection is pinned to an exact version (never :latest, never a branch —
+# ANSIBLE-STANDARDS galaxy §2), every galaxy.yml dependency is covered by a
+# pin, and setup-environment.sh actually installs it.
+REQS="ansible/collections/get_sybers.dfir/requirements.yml"
+GALAXY="ansible/collections/get_sybers.dfir/galaxy.yml"
+if command -v python3 >/dev/null 2>&1 && [[ -f "$REQS" ]]; then
+    _req_out=$(python3 - "$REQS" "$GALAXY" <<'PY'
+import re, sys
+try:
+    import yaml
+except ImportError:
+    print("SKIP: python3-yaml not available"); sys.exit(0)
+reqs = yaml.safe_load(open(sys.argv[1]))
+problems = []
+pinned = {}
+for entry in (reqs or {}).get("collections", []):
+    name, ver = entry.get("name"), str(entry.get("version", ""))
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", ver):
+        problems.append(f"{name}: version '{ver}' is not an exact X.Y.Z pin")
+    pinned[name] = ver
+galaxy = yaml.safe_load(open(sys.argv[2]))
+for dep in (galaxy.get("dependencies") or {}):
+    if dep not in pinned:
+        problems.append(f"galaxy.yml dependency '{dep}' has no pinned entry in requirements.yml")
+print("\n".join(problems))
+PY
+)
+    if [[ "$_req_out" == SKIP:* ]]; then
+        skip "${_req_out#SKIP: }"
+    elif [[ -n "$_req_out" ]]; then
+        while IFS= read -r _line; do fail "requirements: $_line"; done <<< "$_req_out"
+    else
+        pass "requirements.yml pins are exact and cover every galaxy.yml dependency"
+    fi
+    if grep -q "requirements.yml" scripts/setup-environment.sh; then
+        pass "setup-environment.sh installs requirements.yml"
+    else
+        fail "setup-environment.sh does not install requirements.yml"
+    fi
+else
+    fail "missing $REQS"
+fi
+
+# ------------------------------------------------------------------------------
 group "Ansible lint"
 # ------------------------------------------------------------------------------
 # Production-profile ansible-lint over the collection (config: the collection's

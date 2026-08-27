@@ -265,6 +265,21 @@ $SUDO ln -sf "$DXDFIR_VENV/bin/dxdfir" /usr/local/bin/dxdfir
 echo "✅ dxdfir installed: $(/usr/local/bin/dxdfir --version 2>/dev/null || echo '/usr/local/bin/dxdfir')"
 
 ################################################################################
+# Install the collection's pinned Ansible dependencies (requirements.yml — never
+# :latest, never a branch). They go to a fixed shared path that the repo-root
+# ansible.cfg puts on collections_path, so every user's runs resolve the same
+# pinned versions: community.docker (the deploy roles) and ansible.posix (the
+# profile_tasks audit-timing callback).
+################################################################################
+DXDFIR_COLLECTIONS="${DXDFIR_COLLECTIONS:-/opt/dxdfir/collections}"
+echo "📚 Installing pinned Ansible collections into $DXDFIR_COLLECTIONS ..."
+$SUDO "$DXDFIR_VENV/bin/ansible-galaxy" collection install \
+    -r "$REPO_ROOT_DIR/ansible/collections/get_sybers.dfir/requirements.yml" \
+    -p "$DXDFIR_COLLECTIONS" --force \
+    || die "Failed to install the pinned Ansible collections (requirements.yml)."
+echo "✅ Collections installed: $("$DXDFIR_VENV/bin/ansible-galaxy" collection list -p "$DXDFIR_COLLECTIONS" 2>/dev/null | grep -cE '^[a-z]' || echo '?') pinned"
+
+################################################################################
 echo ""
 echo "🎉 Setup complete!"
 echo ""

@@ -3,3 +3,7 @@
 collections:
   - name: community.docker
     version: "3.10.3"
+  # ansible.cfg enables the ansible.posix.profile_tasks callback for per-task
+  # timing on every run — a runtime dependency, not a nice-to-have.
+  - name: ansible.posix
+    version: "2.1.0"
