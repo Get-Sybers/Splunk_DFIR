@@ -1,17 +1,28 @@
 """YARA lane — scan a ruleset against evidence.
 
 Sources (default all three):
-  files   loose files                          -> matches.jsonl   (implemented)
-  disk    disk images mounted read-only in place (ewfmount+ntfs-3g via FUSE) ->
-          disk.jsonl      -- NOT YET PORTED: records a note only; the working
-          implementation is in scripts/signatures/yara.sh
-  memory  process memory via Volatility 3 (windows.vadyarascan) -> memory.jsonl
-                          -- NOT YET PORTED: note only; see yara.sh
+  files   loose files                                              -> matches.jsonl
+  disk    disk images MOUNTED read-only, scanned in place          -> disk.jsonl
+          (ewfmount for E01 -> raw, then ntfs-3g on the first NTFS partition —
+          both FUSE, so ``/dev/fuse`` must exist on the host; nothing is ever
+          extracted out of an image — a host that can't mount records a note)
+  memory  process memory, THROUGH Volatility 3                     -> memory.jsonl
+          (``windows.vadyarascan`` with the ``jsonl_dfir`` renderer — matches
+          carry PID/process context)
 
-YARA has no JSON output and the container's recursive scan hangs, so the file scan
-loops per-file inside ONE container (per-file scans print strings) and the stable text
-form is parsed here. Each match is a self-describing JSON object. parse_vadyarascan()
-exists (and is unit-tested) for when the memory source is wired up.
+YARA has no JSON output and the container's recursive scan hangs, so file/disk scans
+loop per-file inside ONE container (per-file scans print strings) and the stable text
+form is parsed here. Each match is a self-describing JSON object:
+
+    {"tool":"yara","source":"<file|disk|memory>","rule":"<name>","target":"...",
+     "strings":[{"id":"$s1","offset":21,"data":"MZ"}...], "pid":123,"process":"..."}
+
+The mount/scan invocations are built by pure helpers (``ewfmount_argv``,
+``mmls_argv``/``parse_mmls_offset``, ``ntfs3g_argv``, ``vadyarascan_argv``) so the
+logic is unit-testable without FUSE, docker or evidence; ``mount_image`` /
+``unmount_image`` orchestrate them. For the memory source all rule files are
+concatenated into one file for Volatility's ``--yara-file`` (naive concat — rule
+names must be unique across files).
 
 Rules are operator-supplied under data_store/dependencies/yara-rules. ``--fetch``
 provisions the DetectRaptor ruleset (pinned + sha256-verified, merged into
@@ -22,12 +33,14 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 
 from . import clean_name, have_fuse, list_images
 
 _YARA_IMAGE = "blacktop/yara:latest"
+_VOL_IMAGE = "sk4la/volatility3:latest"
 _STRING_RE = re.compile(r"^0x([0-9a-fA-F]+):(\$[^:]*):\s?(.*)$")
 
 
@@ -89,6 +102,134 @@ def parse_vadyarascan(lines: str, mem: str) -> list[dict]:
     return out
 
 
+# --- disk source: read-only image mounting (ewfmount + ntfs-3g, both FUSE) ---
+
+def ewfmount_argv(image: str, mount_dir: str) -> list[str]:
+    """Expose an E01/Ex01 as a raw device file (``<mount_dir>/ewf1``). Pure."""
+    return ["ewfmount", image, mount_dir]
+
+
+def mmls_argv(raw: str) -> list[str]:
+    """TSK partition listing (allocated only) for the NTFS-offset probe. Pure."""
+    return ["mmls", "-a", raw]
+
+
+def parse_mmls_offset(text: str) -> int:
+    """Byte offset of the first NTFS/"basic data"/0x07 partition in ``mmls -a``
+    output (start sector * 512), or 0 for a partitionless volume. Pure — mirrors
+    the awk in the retired disk-image.sh."""
+    for line in text.splitlines():
+        low = line.lower()
+        if "ntfs" not in low and "basic data" not in low and "0x07" not in low:
+            continue
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        try:
+            return int(parts[2], 10) * 512
+        except ValueError:
+            continue
+    return 0
+
+
+def ntfs3g_argv(raw: str, mount_dir: str, offset: int) -> list[str]:
+    """Mount the NTFS filesystem at byte ``offset`` of ``raw`` read-only, with
+    Windows-style ADS naming. Pure."""
+    return ["ntfs-3g", "-o", f"ro,offset={offset},streams_interface=windows",
+            raw, mount_dir]
+
+
+def mount_image(image: str, mount_dir: str) -> list[tuple[str, str]] | None:
+    """Mount a disk image read-only at ``mount_dir``. E01/Ex01 go through ewfmount
+    (into a temp dir) first; the first NTFS partition (mmls) is then ntfs-3g-mounted
+    — Windows images, which is what most Windows YARA targets need.
+
+    Returns the unmount state for :func:`unmount_image` on success, None on failure
+    (with everything already unwound)."""
+    image = os.path.realpath(image)
+    os.makedirs(mount_dir, exist_ok=True)
+    state: list[tuple[str, str]] = []
+    raw = image
+    if image.lower().endswith((".e01", ".ex01")):
+        ewfdir = tempfile.mkdtemp()
+        proc = subprocess.run(ewfmount_argv(image, ewfdir),
+                              capture_output=True, check=False)
+        if proc.returncode != 0:
+            shutil.rmtree(ewfdir, ignore_errors=True)
+            return None
+        state.append(("ewf", ewfdir))
+        raw = os.path.join(ewfdir, "ewf1")
+    probe = subprocess.run(mmls_argv(raw), capture_output=True, text=True, check=False)
+    offset = parse_mmls_offset(probe.stdout)
+    proc = subprocess.run(ntfs3g_argv(raw, mount_dir, offset),
+                          capture_output=True, check=False)
+    if proc.returncode == 0:
+        state.append(("ntfs", mount_dir))
+        return state
+    unmount_image(state, mount_dir)
+    return None
+
+
+def unmount_image(state: list[tuple[str, str]], mount_dir: str) -> None:
+    """Unwind :func:`mount_image` — newest mount first, ewf temp dirs removed."""
+    for kind, path in reversed(state):
+        if subprocess.run(["fusermount", "-u", path],
+                          capture_output=True, check=False).returncode != 0:
+            subprocess.run(["umount", path], capture_output=True, check=False)
+        if kind == "ewf":
+            shutil.rmtree(path, ignore_errors=True)
+    try:
+        os.rmdir(mount_dir)
+    except OSError:
+        pass
+
+
+# --- memory source: Volatility 3 windows.vadyarascan -------------------------
+
+# Import the jsonl_dfir renderer, then hand the CLI its argv (renderers are
+# discovered on import). Same wrapper shape as get_sybers_dfir.volatility, plus
+# vadyarascan's --yara-file; every path arrives via argv, none is spliced into
+# Python source.
+_VAD_WRAPPER = (
+    "import importlib.util, sys\n"
+    "spec = importlib.util.spec_from_file_location('jsonl_dfir_renderer', sys.argv[1])\n"
+    "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)\n"
+    "from volatility3.cli import CommandLine\n"
+    "sys.argv = ['vol', '-q', '-s', sys.argv[2], '-r', 'jsonl_dfir', '-f', sys.argv[3],\n"
+    "            'windows.vadyarascan.VadYaraScan', '--yara-file', sys.argv[4]]\n"
+    "CommandLine().run()\n"
+)
+
+
+def vadyarascan_argv(mem: str, symbols_dir: str, renderer: str, rules_file: str,
+                     vol_image: str = _VOL_IMAGE) -> list[str]:
+    """The ``docker run`` argv for one vadyarascan pass over one memory image.
+    The image's directory is mounted read-only; the symbols dir is writable (the
+    ISF cache lives there). Pure (no I/O beyond path normalisation)."""
+    return [
+        "docker", "run", "--rm",
+        "-v", f"{os.path.dirname(mem)}:/mem:ro",
+        "-v", f"{os.path.realpath(symbols_dir)}:/symbols",
+        "-v", f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
+        "-v", f"{os.path.realpath(rules_file)}:/rules/combined.yar:ro",
+        "--entrypoint", "python3", vol_image,
+        "-c", _VAD_WRAPPER,
+        "/opt/jsonl_dfir_renderer.py", "/symbols",
+        f"/mem/{os.path.basename(mem)}", "/rules/combined.yar",
+    ]
+
+
+def combine_rules(rule_paths: list[str]) -> str:
+    """All rule files concatenated for Volatility's single ``--yara-file`` (naive
+    concat, so rule names must be unique across files — same contract as the
+    retired shell lane)."""
+    parts = []
+    for path in rule_paths:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            parts.append(fh.read())
+    return "\n".join(parts)
+
+
 def _rule_files(rules_dir: str) -> list[str]:
     found = []
     for cur, _dirs, files in os.walk(rules_dir):
@@ -142,16 +283,25 @@ def _scan_dir(scan_dir, rules_dir, index_path, source, base, image) -> list[dict
         os.unlink(listf.name)
 
 
+def _note(res: dict, note: str) -> None:
+    res["note"] = f"{res['note']}; {note}" if res["note"] else note
+
+
 def run(*, output_dir, repo_root, fetch=False, force=False,
         sources=("files", "disk", "memory"),
         rules_dir=None, files_target=None, disk_dir=None, memory_dir=None,
-        image=_YARA_IMAGE, **_ignored) -> dict:
+        disk_subpath=None, mount_base="/mnt/dfir-sig",
+        symbols_dir=None, renderer=None,
+        image=_YARA_IMAGE, vol_image=_VOL_IMAGE, **_ignored) -> dict:
     """Run the selected YARA sources. Returns {lane, produced, skipped, failed}."""
     ds = os.path.join(repo_root, "data_store")
     rules_dir = rules_dir or os.path.join(ds, "dependencies", "yara-rules")
     files_target = files_target or os.path.join(ds, "raw", "other_raw_data")
     disk_dir = disk_dir or os.path.join(ds, "raw", "disk_images")
     memory_dir = memory_dir or os.path.join(ds, "raw", "memory")
+    symbols_dir = symbols_dir or os.path.join(ds, "dependencies", "volatility3-symbols")
+    renderer = renderer or os.path.join(
+        repo_root, "dev-scripts", "volatility", "jsonl_dfir_renderer.py")
     os.makedirs(output_dir, exist_ok=True)
 
     res = {"lane": "yara", "sources": list(sources), "produced": 0, "skipped": 0,
@@ -180,6 +330,7 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     idxf.write(build_index(rules, rules_dir))
     idxf.close()
     index_path = idxf.name
+    os.chmod(index_path, 0o644)  # readable however the container's user maps
 
     if "files" in sources:
         out = os.path.join(output_dir, "matches.jsonl")
@@ -196,18 +347,77 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
         if not force and os.path.exists(out):
             res["skipped"] += 1
         elif not have_fuse():
-            note = "disk: /dev/fuse unavailable — mount-enable the host or point files at raw"
-            res["note"] = f"{res['note']}; {note}" if res["note"] else note
+            # This lane never extracts files out of images — either the host
+            # allows FUSE (lxc.cgroup2.devices.allow: c 10:229 rwm + a /dev/fuse
+            # mount entry) or the disk source stands down. No output file is
+            # written, so the source runs for real once mounting is enabled.
+            _note(res, "disk: /dev/fuse unavailable — cannot mount images here; "
+                       "mount-enable the host (nothing is extracted from images)")
         else:
-            note = "disk: mounting supported but requires ewfmount/ntfs-3g at runtime"
-            res["note"] = f"{res['note']}; {note}" if res["note"] else note
+            images = list_images(disk_dir) if os.path.isdir(disk_dir) else []
+            matches: list[dict] = []
+            unmountable = []
+            for i, img in enumerate(images):
+                mnt = os.path.join(mount_base, f"y{i}")
+                state = mount_image(img, mnt)
+                if state is None:
+                    unmountable.append(os.path.basename(img))
+                    continue
+                try:
+                    scanroot = mnt
+                    if disk_subpath and os.path.isdir(os.path.join(mnt, disk_subpath)):
+                        scanroot = os.path.join(mnt, disk_subpath)
+                    matches += _scan_dir(scanroot, rules_dir, index_path, "disk",
+                                         os.path.basename(img), image)
+                finally:
+                    unmount_image(state, mnt)
+            _write(out, matches)
+            res["produced"] += len(matches)
+            if unmountable:
+                _note(res, "disk: not mountable Windows volumes (skipped): "
+                           + ", ".join(unmountable))
 
     if "memory" in sources:
         out = os.path.join(output_dir, "memory.jsonl")
         if not force and os.path.exists(out):
             res["skipped"] += 1
-        # the memory source needs the Volatility image + symbols at runtime; the
-        # vadyarascan parse is covered by parse_vadyarascan (unit-tested).
+        else:
+            # Reuse the volatility processor's image discovery (its extension set
+            # covers the shell lane's list plus the corpus-specific *dramimage).
+            from ..volatility import discover as _discover_memory
+            mems = _discover_memory(memory_dir) if os.path.isdir(memory_dir) else []
+            os.makedirs(symbols_dir, exist_ok=True)
+            try:
+                os.chmod(symbols_dir, 0o777)  # the container writes its ISF cache here
+            except OSError:
+                pass
+            combined = tempfile.NamedTemporaryFile("w", suffix=".yar", delete=False)
+            combined.write(combine_rules(rules))
+            combined.close()
+            # NamedTemporaryFile is 0600; the Volatility container runs as a
+            # non-root user and must be able to read the mounted rules file.
+            os.chmod(combined.name, 0o644)
+            matches = []
+            failed_mems = []
+            try:
+                for mem in mems:
+                    proc = subprocess.run(
+                        vadyarascan_argv(mem, symbols_dir, renderer,
+                                         combined.name, vol_image),
+                        capture_output=True, text=True, check=False,
+                    )
+                    if proc.returncode != 0:
+                        res["failed"] += 1
+                        failed_mems.append(os.path.basename(mem))
+                        continue
+                    matches += parse_vadyarascan(
+                        proc.stdout, os.path.relpath(mem, memory_dir))
+            finally:
+                os.unlink(combined.name)
+            _write(out, matches)
+            res["produced"] += len(matches)
+            if failed_mems:
+                _note(res, "memory: vadyarascan failed on: " + ", ".join(failed_mems))
 
     try:
         os.unlink(index_path)

@@ -5,10 +5,12 @@ argument_specs:
     description:
       - >-
         Runs the signature engines over the evidence and writes one <lane>/ folder of
-        detection JSONL under the output dir. As ported to Python here: YARA over loose
-        files, Suricata over PCAPs, Hayabusa over loose Windows Event Logs. Disk-image
-        and memory YARA and disk-image Hayabusa are not yet ported (they live in
-        scripts/process-signatures.sh); such a source notes it and produces nothing.
+        detection JSONL under the output dir. YARA runs over loose files, disk images
+        (mounted read-only in place — needs /dev/fuse + ewfmount/ntfs-3g on the host;
+        nothing is extracted) and memory images (Volatility 3 windows.vadyarascan);
+        Suricata over PCAPs; Hayabusa over loose Windows Event Logs (disk-image EVTX
+        flows through the evtx lane's targeted extraction). A source whose host
+        prerequisites are missing notes it and produces nothing.
         Idempotent: a lane whose output already exists is skipped.
     options:
       dfir_signatures_pipeline:

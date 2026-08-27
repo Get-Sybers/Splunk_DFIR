@@ -18,8 +18,8 @@ merged file lands under ``data_store/dependencies/yara-rules/`` (deny-by-default
 gitignored) and is re-fetchable from the pin.
 
 CAUTION: the sets are largely YARA-Forge extracts, so the merged file repeats rule
-names from the YARA-Forge packages. Do not put both in one rules dir (e.g. the
-bash ``yara.sh --fetch`` starter) — the lane's single index would fail to compile.
+names from the YARA-Forge packages. Do not put both in one rules dir (e.g. a
+downloaded YARA-Forge release) — the lane's single index would fail to compile.
 
 Stdlib only (urllib, gzip, hashlib), like the rest of the signatures package.
 
@@ -73,8 +73,8 @@ ASSETS: dict[str, tuple[str, str, bool]] = {
 }
 
 # NOT fetched: yara/yara-rules-full.yar (20 MB) — it IS the YARA-Forge "full"
-# package, which the bash yara.sh --fetch already provisions; fetching it here
-# would only duplicate (and collide with) the targeted sets above.
+# package (available directly from YARA-Forge releases); fetching it here would
+# only duplicate (and collide with) the targeted sets above.
 
 _MERGED_NAME = "detectraptor.yar"
 _RULE_START = re.compile(r"(?m)^(?:private\s+)?rule\s+([A-Za-z0-9_]+)")
