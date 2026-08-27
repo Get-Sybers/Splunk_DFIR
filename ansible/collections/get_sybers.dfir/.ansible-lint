@@ -1,0 +1,15 @@
+---
+profile: production
+
+# The collection's task names use the Get-Sybers house prefix
+# "<role>-<stage> | lowercase description"; the leading-uppercase idiom is
+# deliberately not applied to the prefixed form.
+skip_list:
+  - name[casing]
+
+# community.docker is a runtime dependency (pinned in requirements.yml); the
+# lint environment is ansible-core only, so its modules are mocked for
+# resolution.
+mock_modules:
+  - community.docker.docker_container
+  - community.docker.docker_compose_v2

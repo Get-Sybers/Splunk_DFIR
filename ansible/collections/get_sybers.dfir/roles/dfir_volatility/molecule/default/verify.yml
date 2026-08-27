@@ -5,21 +5,21 @@
   vars:
     molecule_out: /tmp/dfir_volatility_molecule/out
   tasks:
-    - name: "molecule-verify | find the produced per-plugin JSONL"
+    - name: "molecule-verify | find the dfir_volatility_produced per-plugin JSONL"
       ansible.builtin.find:
         paths: "{{ molecule_out }}"
         patterns: "*.jsonl"
         recurse: true
-      register: produced
+      register: dfir_volatility_produced
 
     # banners.Banners is NOT a safe canary: it scans for LINUX kernel banners, so
     # a Windows memory image legitimately produces nothing from it. The honest
-    # gate is that the plugin set produced SOME JSONL from the sample.
-    - name: "molecule-verify | assert the plugin set produced output"
+    # gate is that the plugin set dfir_volatility_produced SOME JSONL from the sample.
+    - name: "molecule-verify | assert the plugin set dfir_volatility_produced output"
       ansible.builtin.assert:
         that:
-          - produced.matched | int > 0
+          - dfir_volatility_produced.matched | int > 0
         fail_msg: >-
-          no plugin JSONL produced from the sample memory image (symbols
+          no plugin JSONL dfir_volatility_produced from the sample memory image (symbols
           unavailable for every plugin, or the image is unreadable)
         quiet: true

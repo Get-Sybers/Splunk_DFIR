@@ -50,6 +50,21 @@ else
 fi
 
 # ------------------------------------------------------------------------------
+group "Ansible lint"
+# ------------------------------------------------------------------------------
+# Production-profile ansible-lint over the collection (config: the collection's
+# .ansible-lint). Skipped when ansible-lint is not installed (CI installs it).
+if command -v ansible-lint >/dev/null 2>&1; then
+    if (cd ansible/collections/get_sybers.dfir && ansible-lint --profile production >/dev/null 2>&1); then
+        pass "ansible-lint (production profile) on get_sybers.dfir"
+    else
+        fail "ansible-lint reported violations (run: cd ansible/collections/get_sybers.dfir && ansible-lint)"
+    fi
+else
+    skip "ansible-lint not installed"
+fi
+
+# ------------------------------------------------------------------------------
 group "Repo-root path resolution"
 # ------------------------------------------------------------------------------
 # The now-deleted scripts/v2 shipped four scripts computing $SCRIPT_DIR/..
@@ -496,10 +511,13 @@ lr = re.compile(r'\[[^\]]*\]\(([^)]+)\)')
 bad = []
 for md in sorted(root.rglob("*.md")):
     rel = str(md.relative_to(root))
-    # Skip VCS internals and evidence corpora — data_store/ holds raw and
+    # Skip VCS internals, evidence corpora — data_store/ holds raw and
     # processed forensic samples (whole disk images, vendored OS docs), whose
-    # internal links are not this project's documentation to validate.
+    # internal links are not this project's documentation to validate — and
+    # third-party caches (ansible-lint installs the collection's pinned deps
+    # under .ansible/; their changelogs are not ours to validate).
     if ".git/" in str(md) or rel.startswith("data_store/"): continue
+    if "/.ansible/" in str(md) or rel.startswith(".ansible/"): continue
     for m in lr.finditer(md.read_text(errors="ignore")):
         t = m.group(1).split("#")[0].strip()
         if not t or t.startswith(("http://", "https://", "mailto:")): continue
