@@ -47,7 +47,7 @@ def test_repo_root_explicit(tmp_path):
 def test_process_builds_playbook_command(tmp_path):
     repo = _fake_repo(tmp_path)
     with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
-            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, [
             "process", "zeek", "--pipeline", "adx", "--force",
             "--repo-root", str(repo), "-e", "dfir_zeek_pcap_dir=/x",
@@ -73,7 +73,7 @@ def test_process_unknown_source_rejected(tmp_path):
 def test_ingest_drives_the_role(tmp_path):
     repo = _fake_repo(tmp_path)
     with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
-            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, ["ingest", "--only", "zeek", "--force", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
     cmd = m.call_args.args[0]
@@ -87,7 +87,7 @@ def test_ingest_drives_the_role(tmp_path):
 def test_deploy_drives_the_role(tmp_path):
     repo = _fake_repo(tmp_path)
     with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
-            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, ["deploy", "--persist", "--port", "8090", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
     cmd = m.call_args.args[0]
@@ -100,6 +100,6 @@ def test_deploy_drives_the_role(tmp_path):
 def test_failing_command_propagates_exit_code(tmp_path):
     repo = _fake_repo(tmp_path)
     with mock.patch.object(cli.subprocess, "call", return_value=3), \
-            mock.patch.object(cli.shutil, "which", return_value="/usr/bin/ansible-playbook"):
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, ["ingest", "--repo-root", str(repo)])
     assert r.exit_code == 3
