@@ -290,16 +290,17 @@ def run_plaso(mount_dir, src_rel, name, out_dir, module_path, image=_IMAGE) -> d
     log = os.path.join(logs_dir, f"{name}.log")
 
     with open(log, "w") as logfh:
-        # 1) parse image -> .plaso (hardened image: ansible-only execution,
-        #    allow-listed argv, no caps, no network)
+        # 1) parse image -> .plaso (minimal hardened image:
+        #    tool argv passed directly, no caps, no network, read-only rootfs)
         subprocess.run(
-            container.ansible_run(
+            container.run(
                 image,
                 ["log2timeline.py", "--status_view", "none", "--partitions", "all",
                  "--vss-stores", "all",
                  "--storage-file", f"/output/plaso/{name}.plaso", f"/data/{src_rel}"],
                 mounts=[f"{os.path.realpath(mount_dir)}:/data:ro",
                         f"{os.path.realpath(out_dir)}:/output"],
+                workdir="/tmp",
             ),
             stdout=logfh, stderr=subprocess.STDOUT, check=False,
         )
@@ -310,7 +311,7 @@ def run_plaso(mount_dir, src_rel, name, out_dir, module_path, image=_IMAGE) -> d
         # 2) render .plaso -> json_line via the custom output module, through the
         #    image's baked psort wrapper (the only python entry it allow-lists)
         subprocess.run(
-            container.ansible_run(
+            container.run(
                 image,
                 ["python3", _PSORT_WRAPPER_PATH, "/opt/l2t_json_dfir.py",
                  "--status_view", "none", "-o", "l2t_json_dfir",
@@ -318,6 +319,7 @@ def run_plaso(mount_dir, src_rel, name, out_dir, module_path, image=_IMAGE) -> d
                  "-w", f"/output/jsonl/.{name}.raw", f"/output/plaso/{name}.plaso"],
                 mounts=[f"{os.path.realpath(out_dir)}:/output",
                         f"{os.path.realpath(module_path)}:/opt/l2t_json_dfir.py:ro"],
+                workdir="/tmp",
             ),
             stdout=logfh, stderr=subprocess.STDOUT, check=False,
         )

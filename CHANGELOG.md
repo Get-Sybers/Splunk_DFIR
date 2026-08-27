@@ -7,6 +7,29 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Changed
+- **Container posture reworked from the ansible-run-role model to a minimal /
+  attack-surface-reduction model** — stronger against both container escape and
+  a supply-chain-compromised tool. The runtime images no longer ship ansible or
+  an in-container allow-list; each is stripped to the tool (tool-as-ENTRYPOINT),
+  with no shell or python except where the tool needs them (yara keeps sh;
+  volatility/plaso keep python). Build-time ansible hardening is kept (removed
+  from the final image): uid 0 renamed `ansible` and locked, sudo/su and
+  package managers/pip removed, setuid stripped, runs as uid 2000. Every
+  processor `docker run` now adds `--read-only --tmpfs /tmp --pids-limit 512`
+  on top of `--cap-drop ALL --security-opt no-new-privileges --network none`.
+  Images shrank substantially (yara 66→40MB, suricata 209→55MB, evtxecmd
+  263→93MB).
+
+### Added
+- **Start-time image inventory guard** (`get_sybers_dfir.images` /
+  `dxdfir verify-images`): each processor preflight refuses to run unless the
+  tool image is a known hardened `dfir/*` image (label + uid 2000 + expected
+  name); the audit flags any unexpected `dfir/*` image on the host — something
+  added to the namespace that should not be there. The role verifies each build
+  with a shell-free `docker export` scan.
+
+
 ## [0.4.0] - 2026-08-27
 
 ### Added

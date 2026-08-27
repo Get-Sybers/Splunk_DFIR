@@ -256,6 +256,29 @@ def validate(
     _run(["bash", str(checks)], cwd=repo)
 
 
+@app.command(name="verify-images")
+def verify_images() -> None:
+    """Audit the hardened dfir/* tool-image inventory.
+
+    Fails if any expected tool image is missing or un-hardened (no
+    com.get-sybers.hardened label / not uid 2000), or if an UNEXPECTED dfir/*
+    image is present — something added to the namespace that should not be. The
+    processors also run the per-image form of this at start, so a substituted
+    image never processes evidence.
+    """
+    from . import images
+    result = images.audit()
+    if result["ok"]:
+        typer.secho(
+            f"✅ image inventory clean — {len(result['checked'])} hardened tool "
+            "images present, nothing unexpected.", fg=typer.colors.GREEN)
+        return
+    typer.secho("❌ image inventory violations:", fg=typer.colors.RED, err=True)
+    for v in result["violations"]:
+        typer.secho(f"   • {v}", fg=typer.colors.RED, err=True)
+    raise typer.Exit(1)
+
+
 # Where each source reads its evidence from (relative to data_store/raw), and the
 # file types that count as evidence there — mirrors the roles' input-dir defaults.
 _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {

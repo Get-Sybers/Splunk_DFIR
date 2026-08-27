@@ -26,3 +26,18 @@
     PYTHONPATH: "{{ dfir_zeek_python_path }}"
   register: dfir_zeek_import
   changed_when: false
+
+# Supply-chain guard: refuse to start unless the tool image about to run is a
+# KNOWN hardened dfir/* image (label + uid 2000 + expected name). A substituted
+# or un-hardened image stops the lane before any evidence is touched. A non-dfir
+# image (operator-supplied .NET runtime) is out of scope and passes.
+- name: "zeek-preflight | the tool image(s) are known hardened dfir/* images"
+  ansible.builtin.command:
+    argv: ["python3", "-m", "get_sybers_dfir.images", "--require", "{{ item }}"]
+  environment:
+    PYTHONPATH: "{{ dfir_zeek_python_path }}"
+  loop:
+    - "{{ dfir_zeek_image }}"
+  register: dfir_zeek_image_guard
+  changed_when: false
+  when: item is match('^dfir/')

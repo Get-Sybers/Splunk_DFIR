@@ -33,10 +33,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 
 from . import container
 
@@ -80,7 +78,6 @@ _WRAPPER = (
     "            '-r', 'jsonl_dfir', '-f', sys.argv[4], sys.argv[5]]\n"
     "CommandLine().run()\n"
 )
-_VOL_WRAPPER_PATH = "/opt/dfir/vol_wrapper.py"
 
 
 def is_memory_image(name: str) -> bool:
@@ -124,30 +121,28 @@ def _valid_jsonl(path: str) -> bool:
 
 
 def vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
-             out_mount, symbols_online=False):
-    """The ``docker run`` argv for one plugin pass on the hardened
-    dfir/volatility image: python is restricted to the baked wrapper, the
-    plugin's JSONL is written by the run role to the mounted out dir, and the
-    container has no network unless ``symbols_online`` (ISF symbol fetch) is
-    explicitly requested. Pure."""
-    return container.ansible_run(
+             symbols_online=False):
+    """The ``docker run`` argv for one plugin pass on the minimal hardened
+    dfir/volatility image: the baked wrapper (python3 /opt/dfir/vol_wrapper.py)
+    is the ENTRYPOINT, so only the renderer path + CLI args are passed; the
+    plugin's JSONL goes to stdout. No caps, read-only rootfs, and no network
+    unless ``symbols_online`` (ISF symbol fetch) is requested. Pure."""
+    return container.run(
         image,
-        ["python3", _VOL_WRAPPER_PATH, "/opt/jsonl_dfir_renderer.py",
+        ["/opt/jsonl_dfir_renderer.py",
          "-q", "-p", "/plugins", "-s", "/symbols", "-r", "jsonl_dfir",
          "-f", f"/mem/{os.path.basename(img)}", plugin],
         mounts=[f"{os.path.dirname(img)}:/mem:ro",
                 f"{os.path.realpath(symbols_dir)}:/symbols",
                 f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
-                f"{os.path.realpath(plugins_dir)}:/plugins:ro",
-                f"{out_mount}:/volout"],
-        stdout_file="/volout/out.jsonl",
+                f"{os.path.realpath(plugins_dir)}:/plugins:ro"],
         network=symbols_online,
     )
 
 
 def _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image,
              native, symbols_online=False):
-    """Run one plugin over one image, JSONL to out_path."""
+    """Run one plugin over one image, JSONL to out_path (stdout captured)."""
     if native:
         env = dict(os.environ, VOLATILITY3_SYMBOL_DIRECTORIES=symbols_dir)
         with open(out_path, "w") as out:
@@ -156,24 +151,12 @@ def _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image,
                 stdout=out, stderr=subprocess.DEVNULL, env=env, check=False,
             )
         return
-    # Hardened container: the in-image run role writes the plugin's stdout to
-    # the mounted temp dir (ansible narrates on the container's own stdout, so
-    # capturing that would mix play output into the JSONL).
-    out_mount = tempfile.mkdtemp()
-    try:
-        os.chmod(out_mount, 0o777)   # written by the container's uid 2000
+    with open(out_path, "w") as out:
         subprocess.run(
             vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
-                     out_mount, symbols_online),
-            capture_output=True, check=False,
+                     symbols_online),
+            stdout=out, stderr=subprocess.DEVNULL, check=False,
         )
-        produced = os.path.join(out_mount, "out.jsonl")
-        if os.path.isfile(produced):
-            shutil.move(produced, out_path)
-        else:
-            open(out_path, "w").close()
-    finally:
-        shutil.rmtree(out_mount, ignore_errors=True)
 
 
 def process(memory_dir, out_dir, symbols_dir, renderer, plugins_dir,

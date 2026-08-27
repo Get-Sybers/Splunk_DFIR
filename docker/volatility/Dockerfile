@@ -1,15 +1,12 @@
 # syntax=docker/dockerfile:1
 #
-# dfir/volatility — Volatility 3 from PyPI (pinned) with yara-python for
-# windows.vadyarascan, Splunk-style posture: ansible IS the container's only
-# execution path (pinned ENTRYPOINT running the embedded allow-listed run
-# role). python3 may only execute the baked vol_wrapper.py — `python3 -c` or an
-# arbitrary script can never run. uid 0 renamed `ansible` and locked, sudo/su,
-# pip and package managers gone, runs as uid 2000.
+# dfir/volatility — minimal hardened Volatility 3. Volatility IS python, so
+# python is irreducible; ansible (build-time hardener) and every shell are
+# removed. The wrapper imports the mounted jsonl_dfir renderer then runs the
+# CLI; it is the pinned ENTRYPOINT (python3 /opt/dfir/vol_wrapper.py).
 #
 # Symbol fetch (first use of Windows plugins) needs outbound network — the
-# processor keeps every run on --network none unless explicitly allowed
-# (dfir_volatility_symbols_online / --symbols-online).
+# processor keeps every run on --network none unless --symbols-online is set.
 #
 #   docker build -t dfir/volatility:latest -f docker/volatility/Dockerfile docker
 ARG BASE=python:3.12-slim
@@ -24,23 +21,20 @@ RUN set -eux; \
       "volatility3==${VOLATILITY_VERSION}" \
       "yara-python==${YARA_PYTHON_VERSION}" \
       ansible-core
-COPY runtime /opt/dfir
 COPY volatility/vol_wrapper.py /opt/dfir/vol_wrapper.py
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
     ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
-    rm -rf /tmp/hardening
+    rm -rf /usr/local/bin/ansible* /usr/local/lib/python3*/site-packages/ansible* \
+           /etc/ansible /root/.ansible /tmp/hardening \
+           /bin/sh /bin/dash /bin/bash /bin/rbash /usr/bin/sh /usr/bin/dash /usr/bin/bash /usr/bin/rbash
 
 FROM scratch
 COPY --from=hardened / /
 ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
-    HOME=/home/dfir \
-    PYTHONDONTWRITEBYTECODE=1 \
-    ANSIBLE_ROLES_PATH=/opt/dfir/roles \
-    DFIR_ALLOWED_ARGV0=vol:python3 \
-    DFIR_ALLOWED_ARGV1=/opt/dfir/vol_wrapper.py
+    HOME=/tmp XDG_CACHE_HOME=/tmp/.cache PYTHONDONTWRITEBYTECODE=1
 USER 2000:2000
-ENTRYPOINT ["ansible-playbook", "-i", "localhost,", "-c", "local", "/opt/dfir/entrypoint.yml"]
+ENTRYPOINT ["python3", "/opt/dfir/vol_wrapper.py"]
 LABEL org.opencontainers.image.title="dfir/volatility" \
-      org.opencontainers.image.description="Volatility 3 (pinned PyPI) + yara-python for the DX_DFIR volatility lane and vadyarascan. Ansible-only execution (allow-listed run role, python restricted to the baked wrapper), uid0 renamed+locked, no sudo/su, no pip, runs as uid 2000." \
+      org.opencontainers.image.description="Minimal hardened Volatility 3 (+ yara-python) for the DX_DFIR volatility lane and vadyarascan: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, runs as uid 2000 (python is irreducible)." \
       com.get-sybers.hardened="true"

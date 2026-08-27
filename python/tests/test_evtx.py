@@ -87,48 +87,49 @@ def test_argv_operator_mode_mounts_release():
         "mcr.microsoft.com/dotnet/runtime:9.0",
         evtxecmd_dir="/deps/evtxecmd", dll_rel="EvtxECmd.dll",
     )
-    # the release is mounted read-only and run from that workdir
-    assert "-v" in argv and "/deps/evtxecmd:/evtxecmd:ro" in argv
-    assert argv[argv.index("-w") + 1] == "/evtxecmd"
-    assert "dotnet" in argv and "/evtxecmd/EvtxECmd.dll" in argv
-    # input dir mounted from the log's parent; output from dest_dir
-    assert "/raw/HOST01:/input:ro" in argv
-    assert "/out/HOST01:/output" in argv
+    # hardened docker run + the operator release mounted read-only; the stock
+    # runtime has no ENTRYPOINT so the full dotnet argv is passed
+    assert argv[:3] == ["docker", "run", "--rm"]
+    for flag in ("--cap-drop", "--security-opt", "--read-only", "--network"):
+        assert flag in argv
+    assert "/deps/evtxecmd:/evtxecmd:ro" in argv
+    assert "/raw/HOST01:/input:ro" in argv and "/out/HOST01:/output" in argv
+    assert argv[argv.index("dotnet") + 1] == "/evtxecmd/EvtxECmd.dll"
     assert argv[argv.index("-f") + 1] == "/input/Security.evtx"
 
 
-def test_argv_bundled_mode_uses_hardened_run_role():
-    """Bundled mode goes through the hardened image's ansible run role: pinned
-    entrypoint (image config), hardening flags, and the dotnet invocation handed
-    over as the run role's allow-listed argv."""
+def test_argv_bundled_mode_passes_only_flags():
+    """The minimal dfir/evtxecmd image's ENTRYPOINT is `dotnet <dll>`, so the
+    bundled invocation passes ONLY the flags (no dotnet/dll, no release mount)."""
     argv = evtx.evtxecmd_argv(
         "/raw/HOST01/Security.evtx", "/out/HOST01",
         "Security_EvtxECmd_Output.json", "Security_EvtxECmd_Output.xml",
         "dfir/evtxecmd:latest",
     )
     assert argv[:3] == ["docker", "run", "--rm"]
-    for flag in ("--cap-drop", "--security-opt", "--network"):
+    for flag in ("--cap-drop", "--security-opt", "--read-only", "--network"):
         assert flag in argv
-    assert "/raw/HOST01:/input:ro" in argv
-    assert "/out/HOST01:/output" in argv
+    assert "dotnet" not in argv
     assert not any(str(a).endswith(":/evtxecmd:ro") for a in argv)
-    extra = json.loads(argv[argv.index("-e") + 1])
-    tool = extra["dfir_run_argv"]
-    assert tool[:2] == ["dotnet", evtx.BUNDLED_DLL]
-    assert tool[tool.index("-f") + 1] == "/input/Security.evtx"
+    assert "/raw/HOST01:/input:ro" in argv and "/out/HOST01:/output" in argv
+    # the image name is followed by the tool flags
+    tail = argv[argv.index("dfir/evtxecmd:latest") + 1:]
+    assert tail[:2] == ["-f", "/input/Security.evtx"]
+    assert "--jsonf" in tail
 
 
 def test_argv_modes_drive_the_same_tool_invocation():
-    """Operator mode runs dotnet directly (with the hardening flags); bundled
-    mode hands the same tool argv to the image's run role."""
+    """Operator mode runs `dotnet <dll> <flags>`; bundled mode's ENTRYPOINT is
+    `dotnet <dll>` and passes the same `<flags>`. The flag tail matches."""
     common = ("/raw/x/S.evtx", "/out/x", "S.json", "S.xml")
     op = evtx.evtxecmd_argv(*common, "img", evtxecmd_dir="/d", dll_rel="EvtxECmd.dll")
     bd = evtx.evtxecmd_argv(*common, "img")
-    bundled_tool = json.loads(bd[bd.index("-e") + 1])["dfir_run_argv"]
-    assert op[op.index("-f"):] == bundled_tool[bundled_tool.index("-f"):]
-    # operator mode carries the hardening flags too
-    for flag in ("--cap-drop", "--security-opt", "--network"):
-        assert flag in op
+    op_flags = op[op.index("-f"):]
+    bd_flags = bd[bd.index("-f"):]
+    assert op_flags == bd_flags
+    for a in (op, bd):
+        for flag in ("--cap-drop", "--security-opt", "--read-only", "--network"):
+            assert flag in a
 
 
 def test_has_records_bom_only_is_empty(tmp_path):

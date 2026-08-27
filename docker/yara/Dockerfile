@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 #
-# dfir/yara — YARA from Debian's pinned package, Splunk-style posture: ansible
-# IS the container's only execution path. The ENTRYPOINT is pinned to the
-# embedded run role (docker/runtime), which allow-lists exactly two argv[0]s:
-# `yara` and the baked per-file scan script. uid 0 is renamed `ansible` and
-# locked, sudo/su and package managers are gone, the tool runs as uid 2000.
+# dfir/yara — minimal hardened YARA. The image is stripped to yara + its
+# per-file scan loop; ansible (the build-time hardener) and python are removed
+# from the final image. A shell REMAINS only because the scan loop needs it —
+# it is the tool's own invocation, not a general-purpose interpreter — and it
+# is the pinned ENTRYPOINT (docker/yara/scan-list.sh, reads /list.txt).
 #
 #   docker build -t dfir/yara:latest -f docker/yara/Dockerfile docker
 ARG BASE=debian:trixie-slim
@@ -13,23 +13,22 @@ FROM ${BASE} AS hardened
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends yara ansible-core
-COPY runtime /opt/dfir
-# --chmod: the exec bit must come from the build, not the checkout — commits
-# made through the GitHub API cannot carry file modes, so the repo copy is 644.
-COPY --chmod=0755 yara/scan-list.sh /opt/dfir/scan-list.sh
+COPY yara/scan-list.sh /opt/dfir/scan-list.sh
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
+    chmod 0755 /opt/dfir/scan-list.sh; \
     ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
-    rm -rf /tmp/hardening
+    # remove the build-time hardener and everything the tool doesn't need,
+    # keeping only sh/dash for the scan loop
+    rm -rf /usr/bin/ansible* /usr/lib/python3/dist-packages/ansible* \
+           /etc/ansible /root/.ansible /tmp/hardening \
+           /usr/bin/python3* /usr/lib/python3* /usr/bin/bash /bin/bash /usr/bin/perl*
 
 FROM scratch
 COPY --from=hardened / /
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    HOME=/home/dfir \
-    ANSIBLE_ROLES_PATH=/opt/dfir/roles \
-    DFIR_ALLOWED_ARGV0=yara:/opt/dfir/scan-list.sh
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/tmp
 USER 2000:2000
-ENTRYPOINT ["ansible-playbook", "-i", "localhost,", "-c", "local", "/opt/dfir/entrypoint.yml"]
+ENTRYPOINT ["/opt/dfir/scan-list.sh"]
 LABEL org.opencontainers.image.title="dfir/yara" \
-      org.opencontainers.image.description="YARA for the DX_DFIR signatures lane. Ansible-only execution (allow-listed run role), uid0 renamed+locked, no sudo/su, no setuid, no package manager, runs as uid 2000." \
+      org.opencontainers.image.description="Minimal hardened YARA for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no python, runs as uid 2000; sh kept only for the tool's own scan loop." \
       com.get-sybers.hardened="true"

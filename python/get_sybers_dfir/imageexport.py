@@ -55,20 +55,20 @@ def image_export_argv(image, out_dir, *, artifact_filters=("WindowsEventLogs",),
     ``--partitions all`` so a multi-partition Windows image is fully searched;
     ``--vss_stores none`` by default (skip shadow copies — set ``vss`` to include them).
 
-    Matches the retired disk-image.sh's invocation exactly. Pure (no I/O).
+    Runs on the minimal hardened dfir/plaso image (no caps, no network,
+    read-only rootfs); image_export.py is the tool argv (plaso has no single
+    ENTRYPOINT). Pure (no I/O).
     """
-    argv = [
-        "docker", "run", "--rm",
-        "-v", f"{os.path.dirname(image)}:/data:ro",
-        "-v", f"{out_dir}:/out",
+    return container.run(
         plaso_image,
-        "image_export.py", "-q", "--partitions", "all",
-        "--vss_stores", "all" if vss else "none",
-        "--artifact_filters", ",".join(artifact_filters),
-        "-w", "/out",
-        f"/data/{os.path.basename(image)}",
-    ]
-    return argv
+        ["image_export.py", "-q", "--partitions", "all",
+         "--vss_stores", "all" if vss else "none",
+         "--artifact_filters", ",".join(artifact_filters),
+         "-w", "/out",
+         f"/data/{os.path.basename(image)}"],
+        mounts=[f"{os.path.dirname(image)}:/data:ro", f"{out_dir}:/out"],
+        workdir="/tmp",
+    )
 
 
 def extract(image, out_dir, *, artifact_filters=("WindowsEventLogs",),

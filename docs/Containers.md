@@ -21,28 +21,51 @@ ansible-playbook ansible/collections/get_sybers.dfir/playbooks/dfir-build-images
 | `dfir/plaso` | Plaso timelining + `image_export` (dfVFS) | GIFT stable PPA (`docker/plaso/`) |
 | `dfir/evtxecmd` | Windows Event Logs (EvtxECmd) | fetched EZ release, baked (`docker/evtxecmd/`) |
 
-The `dfir_images` role builds each one and **verifies the hardening contract**
-per build — statically and from inside the running container.
+The `dfir_images` role builds each one and **verifies the minimal-posture
+contract** per build — the static image config plus a shell-free
+`docker export` scan proving the removed binaries (and, for the tool-only
+images, the shell and python) are absent.
 
-## The hardening posture (Splunk-docker style)
+A start-time **inventory guard** then refuses to process against anything but a
+known hardened image: each processor preflight asserts the image it will run is
+a hardened `dfir/*` image, and `dxdfir verify-images` audits the whole `dfir/*`
+namespace for missing, un-hardened, or **unexpected** images (something added
+that shouldn't be).
 
-Applied by ansible *inside every build* (`docker/hardening/harden.yml`) and
-squashed:
+## The hardening posture (minimal / attack-surface reduction)
 
-- **ansible is the container's only execution path** — the ENTRYPOINT is pinned
-  to `ansible-playbook` running the embedded run role (`docker/runtime`), which
-  **allow-lists argv[0]** per image; interpreters (python3/dotnet) are further
-  pinned to the baked wrapper/DLL, so `python3 -c …` can never run
+Chosen for the strongest resistance to container escape AND to a
+supply-chain-compromised tool: strip each image to the tool itself, and confine
+every run hard. ansible does the hardening *at build time*
+(`docker/hardening/harden.yml`) and is then **removed from the final image** —
+it never ships at runtime.
+
+- the tool is the image **ENTRYPOINT**; there is no ansible, no run-role, no
+  orchestration layer in the runtime image
 - the **uid-0 account is renamed `ansible`**, password-locked, nologin — no
   `root` login name exists; **sudo/su/pkexec** and the account-manipulation
   suite are removed; every setuid/setgid bit is stripped
 - **no package manager, no pip** — nothing installable at runtime
+- **no shell and no python** except where the tool irreducibly needs them:
+  `dfir/yara` keeps `sh` (its per-file scan loop *is* a shell script);
+  `dfir/volatility` and `dfir/plaso` keep python (the tools *are* python).
+  `dfir/zeek`, `dfir/suricata`, `dfir/evtxecmd` carry neither.
 - the tool runs as the fixed unprivileged user (`USER 2000:2000`)
 
-Runtime adds the other half on every `docker run` the processors issue:
-`--cap-drop ALL --security-opt no-new-privileges --network none`
-(Volatility ISF symbol fetch is the one explicit opt-in:
-`dfir_volatility_symbols_online` / `--symbols-online`).
+Runtime confinement is what actually contains both threats (an attacker with
+code execution does not need an on-image shell), applied on every `docker run`
+the processors issue: `--cap-drop ALL --security-opt no-new-privileges
+--read-only --tmpfs /tmp --pids-limit 512 --network none`. Evidence is mounted
+read-only, output read-write, the root filesystem is immutable. The single
+network exception is Volatility ISF symbol fetch
+(`dfir_volatility_symbols_online` / `--symbols-online`).
+
+Why not keep a shell out of a "belt and braces" instinct? Removing the shell
+does not stop an attacker who already has code execution (the premise of a
+compromised tool) — they issue syscalls directly — and adding an in-container
+orchestrator to police it only enlarges the supply-chain and execution surface.
+So the design minimises what is present and confines what runs, rather than
+policing a large image from inside.
 
 ## Pulled (unbuildable) images
 

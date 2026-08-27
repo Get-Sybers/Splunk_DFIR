@@ -119,24 +119,20 @@ def test_vadyarascan_argv_mounts_and_wrapper_args(tmp_path):
     sym = tmp_path / "symbols"; sym.mkdir()
     ren = tmp_path / "r.py"; ren.write_text("")
     rules = tmp_path / "combined.yar"; rules.write_text("rule X { condition: true }")
-    argv = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules), "vol:img",
-                                 out_mount="/scratch/out")
-    assert argv[:3] == ["docker", "run", "--rm"]
-    for flag in ("--cap-drop", "--security-opt"):
+    argv = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules), "vol:img")
+    for flag in ("--cap-drop", "--security-opt", "--read-only"):
         assert flag in argv
     assert "--network" in argv                                   # offline by default
     assert f"{mem.parent}:/mem:ro" in argv                       # image dir read-only
     assert f"{sym}:/symbols" in argv                             # symbols writable (ISF cache)
     assert f"{rules}:/rules/combined.yar:ro" in argv
-    assert "/scratch/out:/volout" in argv
     assert "vol:img" in argv
-    extra = json.loads(argv[argv.index("-e") + 1])
-    tool = extra["dfir_run_argv"]
-    # python restricted to the baked wrapper; scan JSONL written by the role
-    assert tool[:3] == ["python3", "/opt/dfir/vol_wrapper.py",
-                        "/opt/jsonl_dfir_renderer.py"]
-    assert "windows.vadyarascan.VadYaraScan" in tool
-    assert extra["dfir_run_stdout_file"] == "/volout/out.jsonl"
+    # the baked wrapper is the ENTRYPOINT, so the argv after the image is the
+    # renderer path + vol CLI args, ending in the plugin + --yara-file
+    tail = argv[argv.index("vol:img") + 1:]
+    assert tail[0] == "/opt/jsonl_dfir_renderer.py"
+    assert "windows.vadyarascan.VadYaraScan" in tail
+    assert tail[tail.index("--yara-file") + 1] == "/rules/combined.yar"
     # symbols_online lifts the network isolation for ISF fetch
     online = yara.vadyarascan_argv(str(mem), str(sym), str(ren), str(rules),
                                    "vol:img", symbols_online=True)
@@ -233,15 +229,14 @@ def test_suricata_argv_carries_sets_and_rules(tmp_path):
     rules = tmp_path / "r"; rules.mkdir(); rf = rules / "suricata.rules"; rf.write_text("")
     argv = suricata.suricata_argv(str(pcap), "/out", str(rules), str(rf), "img",
                                   sets=["vars.address-groups.HOME_NET=[10.0.0.0/8]"])
-    # hardened invocation: flags + the tool argv handed to the image's run role
-    for flag in ("--cap-drop", "--security-opt", "--network"):
+    # minimal hardened docker run: confinement flags + suricata args (suricata
+    # is the image ENTRYPOINT, so no "suricata" token in argv)
+    for flag in ("--cap-drop", "--security-opt", "--read-only", "--network"):
         assert flag in argv
-    tool = json.loads(argv[argv.index("-e") + 1])["dfir_run_argv"]
-    assert tool[0] == "suricata"
-    assert "-r" in tool and "/pcaps/c.pcap" in tool
-    assert tool[tool.index("-S") + 1] == "/rules/suricata.rules"
-    i = tool.index("--set")
-    assert tool[i + 1] == "vars.address-groups.HOME_NET=[10.0.0.0/8]"
+    tail = argv[argv.index("img") + 1:]
+    assert "-r" in tail and "/pcaps/c.pcap" in tail
+    assert tail[tail.index("-S") + 1] == "/rules/suricata.rules"
+    assert tail[tail.index("--set") + 1] == "vars.address-groups.HOME_NET=[10.0.0.0/8]"
 
 
 def test_collect_ips_from_eve_stream():
@@ -610,3 +605,56 @@ def test_derive_vars_scope_excludes_wrong_side():
     got = suricata.derive_vars(eve)
     assert "SQL_SERVERS" not in got
     assert "AIM_SERVERS" not in got
+
+
+# ---- tool-image inventory guard --------------------------------------------
+def test_check_config_flags_root_and_missing_label():
+    from get_sybers_dfir import images
+    assert images.check_config(None) == ["image not present"]
+    assert images.check_config({"User": "0:0", "Labels": {}})  # root + no label -> problems
+    good = {"User": "2000:2000", "Labels": {"com.get-sybers.hardened": "true"}}
+    assert images.check_config(good) == []
+    assert any("uid" in p for p in images.check_config(
+        {"User": "", "Labels": {"com.get-sybers.hardened": "true"}}))
+
+
+def test_require_refuses_unknown_dfir_image(monkeypatch):
+    from get_sybers_dfir import images
+    # a non-dfir image is out of scope, never inspected
+    monkeypatch.setattr(images, "_inspect", lambda i: (_ for _ in ()).throw(AssertionError("inspected")))
+    images.require("mcr.microsoft.com/dotnet/runtime:9.0")
+    # an unknown dfir/* repo is refused before inspection
+    import pytest
+    with pytest.raises(RuntimeError, match="not a known DX_DFIR tool image"):
+        images.require("dfir/evil:latest")
+
+
+def test_require_refuses_unhardened_known_image(monkeypatch):
+    from get_sybers_dfir import images
+    monkeypatch.setattr(images, "_inspect",
+                        lambda i: {"User": "0:0", "Labels": {}})
+    import pytest
+    with pytest.raises(RuntimeError, match="not hardened"):
+        images.require("dfir/zeek:latest")
+
+
+def test_require_passes_hardened_known_image(monkeypatch):
+    from get_sybers_dfir import images
+    monkeypatch.setattr(images, "_inspect",
+                        lambda i: {"User": "2000:2000",
+                                   "Labels": {"com.get-sybers.hardened": "true"}})
+    images.require("dfir/zeek:latest")   # no raise
+
+
+def test_audit_flags_unexpected_and_missing(monkeypatch):
+    from get_sybers_dfir import images
+    hardened = {"User": "2000:2000", "Labels": {"com.get-sybers.hardened": "true"}}
+    monkeypatch.setattr(images, "_inspect", lambda i: hardened)
+    # host has all expected + a rogue dfir image + an allowed non-tool one
+    monkeypatch.setattr(images, "_list_dfir_images",
+                        lambda: list(images.HARDENED_IMAGES)
+                        + ["dfir/rogue:latest", "dfir/sof-elk:test"])
+    result = images.audit()
+    assert not result["ok"]
+    assert any("dfir/rogue" in v and "unexpected" in v for v in result["violations"])
+    assert not any("sof-elk" in v for v in result["violations"])   # allow-listed
