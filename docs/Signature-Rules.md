@@ -1,13 +1,14 @@
 # Adding Your Own Signature Rules (YARA & Suricata)
 
-The signature lanes (`scripts/signatures/`, ported to
-`python/get_sybers_dfir/signatures/`) load operator-supplied rules from
-`data_store/dependencies/`. There is **no registration step** — drop the files in
-the right directory and run the lane; discovery is recursive.
+The signature lanes (`python/get_sybers_dfir/signatures/`, run as
+`python -m get_sybers_dfir.signatures` or via the `dfir_signatures` role) load
+operator-supplied rules from `data_store/dependencies/`. There is **no
+registration step** — drop the files in the right directory and run the lane;
+discovery is recursive.
 
 Outputs land in `data_store/processed/signatures/<lane>/` as self-describing
 JSONL. Lane basics are in
-[Scripts-Overview](/docs/scripts/Scripts-Overview.md#signature-detection-process-signaturessh).
+[Scripts-Overview](/docs/scripts/Scripts-Overview.md#signature-detection-get_sybers_dfirsignatures).
 
 ---
 
@@ -18,21 +19,17 @@ subdirectories are fine, the lane walks the whole tree.
 
 **What loads:** every `*.yar` / `*.yara` file (extension is case-insensitive).
 Files whose basename starts with `_` are skipped — prefix a file with `_` to
-disable it without deleting it. (The shell lane's exclusion only covers
-`_*.yar`, so use the `.yar` extension for disabled files to be safe in both
-lanes.)
+disable it without deleting it.
 
 **How they're loaded:** the lane generates an index file of
 `include "/rules/<relative-path>"` lines — one per discovered rule file — and
 compiles that single index. Your rules directory is bind-mounted **read-only**
 at `/rules` inside the `blacktop/yara` container, so nested layouts survive
-intact. The Python lane writes the index to a temp file outside the tree; the
-shell lane (`scripts/signatures/yara.sh`) writes a transient `_dfir_index.yar`
-*into* the rules directory, so that directory must be writable when using the
-shell lane.
+intact; the index itself goes to a temp file outside the tree, so the rules
+directory may be read-only.
 
-For the **memory** source (shell lane, Volatility `vadyarascan`) all rule files
-are concatenated into one file — so **rule names must be unique across every
+For the **memory** source (Volatility `vadyarascan`) all rule files are
+concatenated into one file — so **rule names must be unique across every
 file** or compilation fails.
 
 ```bash
@@ -40,13 +37,14 @@ file** or compilation fails.
 mkdir -p data_store/dependencies/yara-rules/mine
 cp my_malware.yar data_store/dependencies/yara-rules/mine/
 
-# run just the YARA lane
-./scripts/process-signatures.sh --only yara
+# run just the YARA lane (--yara-sources files,disk,memory narrows the sources)
+python3 -m get_sybers_dfir.signatures --only yara \
+    --output-dir data_store/processed/signatures --repo-root .
 ```
 
-`--fetch` downloads a YARA-Forge starter set **only when the directory has no
-rules yet** — your own rules suppress it. The Python lane's `--fetch` provisions
-[DetectRaptor](https://github.com/mgreen27/DetectRaptor) instead — see below.
+`--fetch` provisions the pinned
+[DetectRaptor](https://github.com/mgreen27/DetectRaptor) ruleset **only when the
+directory has no rules yet** — your own rules suppress it. See below.
 
 ### DetectRaptor content
 
@@ -75,9 +73,9 @@ so duplicates are dropped first-wins, and rules needing module features the
 
 - **Idempotent** — an existing `detectraptor.yar` is left alone; delete it or
   `--force` (module CLI) to refresh. The lane's `--fetch` also stands down when
-  the tree already has *any* rules, exactly like the shell lane's starter.
-- **Do not combine with YARA-Forge packages** (e.g. the shell `yara.sh --fetch`
-  starter) in one rules dir — DetectRaptor's sets are largely YARA-Forge
+  the tree already has *any* rules — your own rules always win.
+- **Do not combine with YARA-Forge packages** (e.g. a downloaded YARA-Forge
+  release) in one rules dir — DetectRaptor's sets are largely YARA-Forge
   extracts, and duplicate identifiers fail the whole single-index compile.
 - **Advancing the pin:** bump `_PIN` in
   `python/get_sybers_dfir/signatures/detectraptor.py`, run
@@ -116,9 +114,8 @@ EICAR-style test file there to prove a rule fires.
 ## Suricata
 
 **Where:** a **single file named exactly `suricata.rules`**, anywhere under
-`data_store/dependencies/suricata-rules/`. The lane takes the *first* one it
-finds (the Python lane walks the whole tree; the shell lane looks at most two
-levels deep — keep it shallow).
+`data_store/dependencies/suricata-rules/`. The lane walks the whole tree and
+takes the *first* one it finds — keep it shallow.
 
 **How it's loaded:** the rules directory is mounted read-only at `/rules` and the
 file is passed with `suricata -S`, which loads it **exclusively** — the container
@@ -131,12 +128,13 @@ Multiple rule sources therefore have to be merged into that one file:
 mkdir -p data_store/dependencies/suricata-rules
 cat et-open.rules my-local.rules > data_store/dependencies/suricata-rules/suricata.rules
 
-./scripts/process-signatures.sh --only suricata
+python3 -m get_sybers_dfir.signatures --only suricata \
+    --output-dir data_store/processed/signatures --repo-root .
 ```
 
-`--fetch` runs `suricata-update` (ET Open) into the directory — again only when
-no `suricata.rules` is already present. To combine ET Open with your own rules,
-`--fetch` first, then append yours to the fetched file.
+To provision ET Open while online, run `suricata-update` (or download the ET Open
+tarball) into the directory yourself, then append your own rules to the one
+`suricata.rules` file.
 
 **Verify:** the lane reports the ruleset it chose (if it says it's using the
 image's bundled rules, your file wasn't found). Then check the per-PCAP EVE
@@ -194,4 +192,4 @@ Hayabusa runs inside the **evtx pipeline** (`python -m get_sybers_dfir.evtx
 extracted from a disk image via `--image-src`. Sigma rules live under
 `data_store/dependencies/hayabusa/rules/` (or `--hayabusa-rules`); detections are
 written to `<out-dir>/hayabusa/timeline.jsonl`. See
-[Scripts-Overview](/docs/scripts/Scripts-Overview.md#signature-detection-process-signaturessh).
+[Scripts-Overview](/docs/scripts/Scripts-Overview.md#signature-detection-get_sybers_dfirsignatures).

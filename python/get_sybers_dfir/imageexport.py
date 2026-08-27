@@ -6,10 +6,11 @@ image with Plaso's ``image_export.py`` (dfVFS, userspace, E01-capable) — the d
 ``WindowsEventLogs`` copies just ``winevt\\Logs\\*.evtx``, a triage-style collection,
 never the whole filesystem.
 
-It is the Python twin of ``scripts/signatures/lib/disk-image.sh:sig_extract_artifacts``
-(the Hayabusa lane's extractor) — same container, same flags — so the evtx and
-signature lanes source disk-image EVTX the one proven way. Reusing the already-shipped
-``log2timeline/plaso`` image keeps the .NET evtxecmd image free of a dfVFS/pytsk3 stack.
+It ports ``sig_extract_artifacts`` from the retired shell lane library
+(``scripts/signatures/lib/disk-image.sh``, the Hayabusa lane's extractor) — same
+container, same flags — so the evtx and signature lanes source disk-image EVTX the
+one proven way. Reusing the already-shipped ``log2timeline/plaso`` image keeps the
+.NET evtxecmd image free of a dfVFS/pytsk3 stack.
 
 ``image_export_argv`` is pure (no I/O) so the container invocation is unit-testable
 without docker.
@@ -22,7 +23,7 @@ import subprocess
 # The disk lane already ships this image (scripts/lib + the signature lanes pin it).
 PLASO_IMAGE = "log2timeline/plaso:latest"
 
-# Formats dfVFS can open. Mirrors sig_list_images() in disk-image.sh.
+# Formats dfVFS can open. Mirrors the retired disk-image.sh's sig_list_images().
 IMAGE_EXTS = (".e01", ".ex01", ".raw", ".img", ".dd", ".vmdk", ".001", ".aff4")
 
 
@@ -49,7 +50,7 @@ def image_export_argv(image, out_dir, *, artifact_filters=("WindowsEventLogs",),
     ``--partitions all`` so a multi-partition Windows image is fully searched;
     ``--vss_stores none`` by default (skip shadow copies — set ``vss`` to include them).
 
-    Matches disk-image.sh's invocation exactly. Pure (no I/O).
+    Matches the retired disk-image.sh's invocation exactly. Pure (no I/O).
     """
     argv = [
         "docker", "run", "--rm",
