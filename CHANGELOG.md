@@ -7,6 +7,23 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Added
+- **`tests/car-runthrough.sh`** — the promotion gate for CAR correctness at the
+  ADX level across EVERY lane: asserts expected field VALUES (not just
+  presence) per CAR source, round-trip fidelity (each normalized field == its
+  native source field), per-artefact identity (every row carries a non-empty
+  SourceFile — never data compiled together), roll-up no-fabrication (union ==
+  sum of sources), and that no-producer sources (velociraptor: Srum/RECmd) stay
+  empty. Proven green (56/0) on a clean run: host Sysmon + Windows Security,
+  network Zeek, memory Volatility (7 objects), timeline Plaso.
+
+### Fixed
+- The `dxdfir` CLI now declares the Python docker SDK (`requests`, `docker`) as
+  dependencies — `dxdfir deploy`/`ingest` drive community.docker and failed on a
+  clean install (and would have failed from the offline wheel bundle, which is
+  built from these declared deps).
+
+
 ### Changed
 - **Container posture reworked from the ansible-run-role model to a minimal /
   attack-surface-reduction model** — stronger against both container escape and

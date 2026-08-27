@@ -13,6 +13,11 @@ dependencies = [
     # The CLI drives the get_sybers.dfir collection with ansible-playbook, so it
     # ships with the package — installing the CLI installs a working ansible-playbook.
     "ansible-core>=2.16",
+    # `dxdfir deploy` / `ingest` drive community.docker, whose modules import the
+    # Python docker SDK (requests + docker); without these a clean install (and
+    # the offline wheel bundle) cannot bring the emulator up.
+    "requests>=2.31",
+    "docker>=7.0",
 ]
 
 [project.scripts]
