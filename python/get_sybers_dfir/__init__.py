@@ -6,4 +6,4 @@ actions; the playbook holds the decisions. See docs/CAR-Extraction-Rules.md and
 epic #46.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
