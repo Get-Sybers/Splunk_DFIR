@@ -67,235 +67,119 @@ while IFS= read -r f; do
 done < <(find scripts -name "*.sh" -type f | sort)
 
 # ------------------------------------------------------------------------------
-group "Shared container lifecycle (lib/docker-lifecycle.sh)"
+group "ADX deploy (dfir_deploy_adx role + get_sybers_dfir.deploy)"
 # ------------------------------------------------------------------------------
-# The deploy routes its container lifecycle through one library. Each lesson
-# here was paid for by a shipped defect (several on the retired Splunk path);
-# they are asserted ONCE, on the lib — and the deploy must actually route
-# through the lib instead of growing new inline copies, which is how the two
-# deploys of the Splunk era drifted apart.
-DL_LIB=scripts/lib/docker-lifecycle.sh
-if [[ ! -f "$DL_LIB" ]]; then fail "$DL_LIB is missing"; else
-    # NOT --internal: that blocks published ports in both directions and
-    # shipped once as an unreachable Splunk UI. Continuation-aware — the
-    # create is written `docker network create \` with flags on the next
-    # line, which a single-line grep can never match.
-    if grep -Pzoq 'docker network create(\s|\\\n)+[^\n]*--internal' "$DL_LIB" 2>/dev/null; then
-        fail "lib creates an --internal network — that blocks published ports"
-    else
-        pass "lib network is not --internal (continuations checked)"
-    fi
-    if grep -q 'enable_ip_masquerade=false' "$DL_LIB" 2>/dev/null; then
-        pass "lib disables IP masquerade for isolation"
-    else
-        fail "lib has no egress control on the isolated network"
-    fi
-    # find -delete refuses a non-empty directory (and -maxdepth 1 never
-    # descends to empty it first), so a -delete purge cannot remove nested
-    # data at all — Kusto's /kustodata/dbs/<db>/... is exactly that shape.
-    # Comments are stripped before the grep: the function's own comment names
-    # both forms, which once satisfied this check while the code regressed.
-    if sed -n '/^dl_purge_dir_contents()/,/^}/p' "$DL_LIB" | grep -v '^[[:space:]]*#' \
-       | grep -q -- '-exec rm -rf'; then
-        pass "lib purge uses -exec rm -rf (find -delete cannot remove nested dirs)"
-    else
-        fail "lib purge cannot remove nested directories"
-    fi
-    # BEHAVIOURAL: the purge really empties nested content, spares .gitkeep,
-    # and reports failure honestly when the delete (and its sudo escalation)
-    # fail — the swallowed-failure version printed success over surviving data.
-    if ( set +e
-         # shellcheck source=../scripts/lib/docker-lifecycle.sh disable=SC2317
-         source "$DL_LIB" 2>/dev/null
-         _d=$(mktemp -d) || exit 1
-         mkdir -p "$_d/dbs/host/md"; echo x > "$_d/dbs/host/md/meta.bin"; touch "$_d/.gitkeep"
-         dl_purge_dir_contents "$_d" >/dev/null 2>&1 || exit 1
-         [[ ! -e "$_d/dbs" ]] || exit 1                         # nested content gone
-         [[ -e "$_d/.gitkeep" ]] || exit 1                      # .gitkeep spared
-         find() { return 1; }; sudo() { return 1; }
-         mkdir -p "$_d/dbs"
-         dl_purge_dir_contents "$_d" >/dev/null 2>&1 && exit 1  # must report failure
-         command rm -rf "$_d"; exit 0 ) 2>/dev/null; then
-        pass "lib purge empties nested dirs, spares .gitkeep, reports failure honestly"
-    else
-        fail "lib purge misbehaves on nested content, .gitkeep, or a failed delete"
-    fi
-    # BEHAVIOURAL: readiness must detect a container that died mid-startup
-    # (rc 2) rather than polling a corpse until timeout, and must enforce the
-    # timeout on WALL-CLOCK time (rc 1) — counting only the sleeps once let a
-    # 900s timeout run ~30 minutes, because each probe can block for seconds.
-    if ( set +e
-         # shellcheck source=../scripts/lib/docker-lifecycle.sh disable=SC2317
-         source "$DL_LIB" 2>/dev/null
-         docker() {
-             [[ "$*" == *'.State.Running'* ]] && { echo "false"; return 0; }
-             echo "1"; return 0
-         }
-         dl_wait_ready cid 5 1 true >/dev/null 2>&1
-         [[ $? -eq 2 ]] || exit 1
-         docker() { [[ "$*" == *'.State.Running'* ]] && { echo "true"; return 0; }; echo ""; }
-         _slowprobe() { sleep 2; return 1; }
-         _t0=$SECONDS
-         dl_wait_ready cid 3 1 _slowprobe >/dev/null 2>&1
-         [[ $? -eq 1 ]] || exit 1
-         (( SECONDS - _t0 <= 6 )) || exit 1                     # wall-clock, not sleep-count
-         exit 0 ) 2>/dev/null; then
-        pass "lib readiness detects a died container and enforces wall-clock timeout"
-    else
-        fail "lib readiness misses a died container or overruns its timeout"
-    fi
-fi
-
-# The deploy must route through the lib, not re-grow inline copies.
-for _dep in scripts/deploy-kusto.sh; do
-    _b=$(basename "$_dep")
-    if grep -q 'source .*lib/docker-lifecycle.sh' "$_dep" 2>/dev/null; then
-        pass "$_b sources the lifecycle lib"
-    else
-        fail "$_b does not source lib/docker-lifecycle.sh"
-        continue
-    fi
-    for _fn in dl_replace_container dl_ensure_isolated_network dl_wait_ready \
-               dl_verify_egress_blocked dl_assert_port_bindings; do
-        if grep -q "^[[:space:]]*$_fn " "$_dep" 2>/dev/null; then
-            pass "$_b calls $_fn"
-        else
-            fail "$_b does not call $_fn"
-        fi
-    done
-    # `docker logs -f` never exits on its own; only the lib may background it,
-    # and the deploy must stop it on every exit path.
-    if grep -q 'trap dl_stop_log_stream EXIT' "$_dep" 2>/dev/null; then
-        pass "$_b traps dl_stop_log_stream for early exits"
-    else
-        fail "$_b never stops its background log stream on early exits"
-    fi
-    if grep -qE 'docker logs -f.*&[[:space:]]*$' "$_dep" 2>/dev/null; then
-        fail "$_b backgrounds docker logs -f outside the lib"
-    else
-        pass "$_b has no unmanaged log stream"
-    fi
-    # Direct network creation would bypass the lib's --internal detection and
-    # masquerade handling.
-    if grep -q 'docker network create' "$_dep" 2>/dev/null; then
-        fail "$_b creates a network directly instead of via the lib"
-    else
-        pass "$_b creates no network outside the lib"
-    fi
-    # The closing banner must state the VERIFIED verdict, not a guess.
-    if grep -q 'DL_ISOLATION_VERDICT' "$_dep" 2>/dev/null; then
-        pass "$_b reports the runtime isolation verdict"
-    else
-        fail "$_b does not report the isolation verdict"
-    fi
-done
-
-# Every script that empties a data/index directory must use the lib's honest
-# purge — and carry no inline deletion that could bring the old defects back.
-# The call grep is line-anchored so a comment naming the function cannot
-# satisfy it.
-for _s in scripts/deploy-kusto.sh; do
-    _b=$(basename "$_s")
-    if grep -qE 'rm -rf|find .*-delete' "$_s" 2>/dev/null; then
-        fail "$_b deletes directories inline instead of via dl_purge_dir_contents"
-    elif grep -qE '^[[:space:]]*(if ! )?dl_purge_dir_contents ' "$_s" 2>/dev/null; then
-        pass "$_b purges directories via the lib"
-    else
-        fail "$_b has no directory purge — expected a dl_purge_dir_contents call"
-    fi
-done
-# ------------------------------------------------------------------------------
-# Kusto emulator deploy (stage 1 of the port).
-#
 # The emulator has NO authentication and speaks plaintext HTTP, so the same
-# mistakes cost more here than on the Splunk path. These assert the lessons
-# already paid for did in fact carry across.
-# ------------------------------------------------------------------------------
-if [[ ! -f scripts/deploy-kusto.sh ]]; then fail "scripts/deploy-kusto.sh is missing"; else
-    # Network mechanism, log-stream handling and the purge are asserted on the
-    # shared lib (lifecycle group above). Here: the Kusto-specific choices.
-    #
-    # Readiness must be a real health check against the ENGINE — the probe
-    # handed to the shared dl_wait_ready must be kusto_reachable, which asks
-    # for `.show version` (asserted in the kusto-api checks below). Grepping
-    # logs is what let a dead Splunk report success.
-    if grep -qE 'dl_wait_ready .* kusto_reachable' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh polls the engine (kusto_reachable) rather than grepping logs"
+# mistakes cost more here than anywhere else. The retired shell deploy earned
+# these guarantees defect by defect; the framework (the role plus the Python
+# schema applier) must keep every one of them.
+ROLE_DEPLOY=ansible/collections/get_sybers.dfir/roles/dfir_deploy_adx
+if [[ ! -d "$ROLE_DEPLOY" ]]; then fail "$ROLE_DEPLOY is missing"; else
+    # Localhost by default — with no auth, the bind address is the only control.
+    if grep -q '^dfir_deploy_adx_host: "127.0.0.1"' "$ROLE_DEPLOY/defaults/main.yml" 2>/dev/null; then
+        pass "role binds to localhost by default"
     else
-        fail "deploy-kusto.sh does not verify the engine actually answers"
+        fail "dfir_deploy_adx_host no longer defaults to 127.0.0.1 — the emulator has no auth"
     fi
-    # The emulator has NO auth and speaks plaintext HTTP, so the safe defaults
-    # the Splunk deploy earned must hold here too.
-    if grep -q 'KUSTO_BIND_ADDR:-127.0.0.1' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "kusto binds to localhost by default"
+    # The published port must carry the bind address; a bare port binds 0.0.0.0.
+    if grep -q '"{{ dfir_deploy_adx_host }}:{{ dfir_deploy_adx_port }}:8080"' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "role publishes an address-qualified port"
     else
-        fail "deploy-kusto.sh does not default to 127.0.0.1 — the emulator has no auth"
+        fail "the role's port mapping is not address-qualified (would bind 0.0.0.0)"
     fi
-    if grep -q 'KUSTO_ISOLATED:-1' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "kusto network isolation on by default"
+    # ... and the REAL bindings are read back — Docker's published-port rules
+    # sit ahead of the host firewall, so the -p mapping is not taken on faith.
+    if grep -q 'docker_container_info' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null \
+       && grep -q "0.0.0.0" "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "role reads the real port bindings back"
     else
-        fail "deploy-kusto.sh does not default to an isolated network"
+        fail "the role does not verify the published bindings"
     fi
-    if grep -q 'KUSTO_REPLACE:-always' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "kusto redeploy is the default (KUSTO_REPLACE=always)"
+    # Binding an unauthenticated engine off-localhost must take deliberate
+    # effort (the shell deploy demanded typing 'expose'; the role demands an
+    # explicit second variable).
+    if grep -q 'dfir_deploy_adx_expose | bool' "$ROLE_DEPLOY/tasks/preflight.yml" 2>/dev/null; then
+        pass "role gates a non-local bind behind dfir_deploy_adx_expose"
     else
-        fail "deploy-kusto.sh does not default to replacing the container"
+        fail "the role binds non-locally without friction — it has no auth"
     fi
-    if grep -qE '^[[:space:]]+-p [0-9]+:[0-9]+' scripts/deploy-kusto.sh 2>/dev/null; then
-        fail "deploy-kusto.sh publishes a port without a bind address (binds 0.0.0.0)"
+    # Egress isolation on by default: a masquerade-off bridge, NOT --internal
+    # (an internal network blocks published ports in both directions — that
+    # shipped once and made a UI unreachable on localhost).
+    if grep -q '^dfir_deploy_adx_isolated: true' "$ROLE_DEPLOY/defaults/main.yml" 2>/dev/null; then
+        pass "network isolation on by default"
     else
-        pass "kusto published ports are address-qualified"
+        fail "dfir_deploy_adx_isolated no longer defaults to true"
     fi
-    # Binding an unauthenticated engine off-localhost must take deliberate effort.
-    if grep -q "Type 'expose' to continue" scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh gates non-local binding behind a confirmation"
+    if grep -q 'enable_ip_masquerade: "false"' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "isolated network disables IP masquerade"
     else
-        fail "deploy-kusto.sh binds non-locally without friction — it has no auth"
+        fail "the isolated network has no egress control"
     fi
-    # apply must resolve persist from the CONTAINER, with an explicit override —
-    # deploy's flag cannot reach a fresh shell. Parse-level: --volatile accepted,
-    # and a dry run exits 0 without contacting anything.
-    if grep -qF -- '--volatile' scripts/apply-kusto-schema.sh 2>/dev/null; then
-        pass "apply-kusto-schema.sh accepts --volatile"
+    # Comments are stripped first — the network task's own comment names the
+    # forbidden form, which would otherwise trip (or satisfy) a bare grep.
+    if grep -v '^[[:space:]]*#' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null | grep -q 'internal: true'; then
+        fail "the role creates an --internal network — that blocks published ports"
     else
-        fail "apply-kusto-schema.sh has no --volatile override for auto-detected persist"
+        pass "isolated network is not --internal"
     fi
-    if ./scripts/apply-kusto-schema.sh --dry-run >/dev/null 2>&1; then
-        pass "apply-kusto-schema.sh --dry-run exits 0"
+    # ... and isolation is VERIFIED from inside the container, not assumed —
+    # masquerade-off breaks return traffic rather than dropping packets, so a
+    # host with its own forwarding rules can still leak.
+    if grep -q '/dev/tcp/' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "role probes egress from inside the container"
     else
-        fail "apply-kusto-schema.sh --dry-run fails"
+        fail "the role never verifies that isolation actually holds"
     fi
-    # Every script sourcing the lib must run the tool preflight, or a missing
-    # python3 sends the literal body {"db":,"csl":} — a helper existed for this
-    # and was called by NOTHING, the same promised-never-wired class as the
-    # ignoreFirstRecord comment.
-    for _s in scripts/deploy-kusto.sh scripts/apply-kusto-schema.sh scripts/ingest-kusto.sh; do
-        if grep -q '^kusto_require_tools$' "$_s" 2>/dev/null; then
-            pass "$(basename "$_s") runs the tool preflight"
+    # EULA: the role sets ACCEPT_EULA=Y, so the acceptance must be stated where
+    # the operator can see it — the role docs AND the CLI verb that drives it.
+    if grep -q 'ACCEPT_EULA: "Y"' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "role sets ACCEPT_EULA explicitly (visible, not buried)"
+    else
+        fail "ACCEPT_EULA is not set in deploy.yml — the emulator will not start"
+    fi
+    for _f in "$ROLE_DEPLOY/README.md" python/get_sybers_dfir/cli.py; do
+        if grep -qi 'EULA' "$_f" 2>/dev/null; then
+            pass "$(basename "$_f") discloses the EULA acceptance"
         else
-            fail "$(basename "$_s") never calls kusto_require_tools"
+            fail "$_f no longer warns that deploying accepts Microsoft's EULA"
         fi
     done
-
-    # Ephemeral must stay the default: Microsoft advises against persisting.
-    if grep -qE '^KUSTO_PERSIST="\$\{KUSTO_PERSIST:-0\}"' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh defaults to ephemeral storage, per Microsoft's guidance"
+    # Ephemeral by default: Microsoft advises against persisting emulator data.
+    if grep -q '^dfir_deploy_adx_persist: false' "$ROLE_DEPLOY/defaults/main.yml" 2>/dev/null; then
+        pass "role defaults to ephemeral storage, per Microsoft's guidance"
     else
-        fail "deploy-kusto.sh defaults to persisting, which Microsoft advises against"
+        fail "the role defaults to persisting, which Microsoft advises against"
     fi
-    if grep -qF -- '--purge-only' scripts/deploy-kusto.sh 2>/dev/null; then
-        pass "deploy-kusto.sh accepts --purge-only"
+    # Readiness must ask the ENGINE a real question — the ingest client's --ping
+    # (which sends `.show version`; asserted behaviourally in the client group
+    # below). Grepping logs is what let a dead Splunk report success.
+    if grep -q -- '--ping' "$ROLE_DEPLOY/tasks/deploy.yml" 2>/dev/null; then
+        pass "role readiness polls the engine (ingest --ping)"
     else
-        fail "deploy-kusto.sh has no --purge-only"
+        fail "the role does not verify the engine actually answers"
+    fi
+    # The schema applier: volatile databases by default, --persist the explicit
+    # opt-in, and a --dry-run that exits 0 without contacting anything.
+    if grep -q '\] volatile' python/get_sybers_dfir/deploy.py 2>/dev/null \
+       && grep -q '"--persist"' python/get_sybers_dfir/deploy.py 2>/dev/null; then
+        pass "schema applier creates volatile databases unless --persist is given"
+    else
+        fail "get_sybers_dfir.deploy lost the volatile-default / --persist split"
+    fi
+    if PYTHONPATH=python python3 -m get_sybers_dfir.deploy --schema-dir kusto/schema --dry-run >/dev/null 2>&1; then
+        pass "get_sybers_dfir.deploy --dry-run exits 0"
+    else
+        fail "get_sybers_dfir.deploy --dry-run fails"
     fi
 fi
 
 # ------------------------------------------------------------------------------
-# Kusto schema and ingestion (stages 2-4).
+group "Kusto schema and ingestion (kusto/schema + get_sybers_dfir.ingest)"
 # ------------------------------------------------------------------------------
 if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
-    # Every schema file must name its target database, or apply-kusto-schema.sh
-    # silently skips it and the tables never exist.
+    # Every schema file must name its target database, or the schema applier
+    # (get_sybers_dfir.deploy) cannot route it and the tables never exist.
     for f in kusto/schema/[1-9]*.kql; do
         [[ -f "$f" ]] || continue
         if grep -qE '^// Database:[[:space:]]*[A-Za-z_]' "$f"; then
@@ -386,34 +270,31 @@ PY
         fi
     done
 fi
-if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is missing"; else
-    # Zeek is JSON now (the zeek lane: LogAscii::use_json=T). BEHAVIOURAL:
-    # run the real loader against fixtures and assert the ROUTING — conn.json to
-    # the typed ZeekConn table, every other log to the generic Zeek table, and
-    # conn.json NOT double-loaded into the generic table. Routing is the contract
-    # the JSON cutover has to keep; a path mapping needs no column-order guard
-    # (that risk was TSV-ordinal only), so what is worth testing changed with it.
-    _zt=$(mktemp -d)
-    mkdir -p "$_zt/zeek/case"
-    _conn='{"ts":"2025-01-01T00:00:00Z","uid":"C1","id.orig_h":"10.0.0.1","id.orig_p":1,"id.resp_h":"10.0.0.2","id.resp_p":2,"proto":"tcp","conn_state":"SF"}'
-    _dns='{"ts":"2025-01-01T00:00:01Z","uid":"C2","id.orig_h":"10.0.0.1","id.resp_h":"10.0.0.2","query":"evil.example","qtype_name":"A"}'
-    _route_ok=1
-    _zrun() { PROCESSED_DIR="$_zt" ./scripts/ingest-kusto.sh --only zeek --dry-run 2>&1; }
-    printf '%s\n' "$_conn" > "$_zt/zeek/case/conn.json"
-    printf '%s\n' "$_dns"  > "$_zt/zeek/case/dns.json"
-    _out=$(_zrun)
-    # Count the "would ingest" lines only — the "📄" label lines also name the
-    # target table, so matching those would double-count. conn.json ingests once
-    # into ZeekConn; the generic Zeek table gets exactly the one non-conn log.
-    _nconn=$(printf '%s\n' "$_out" | grep -c 'would ingest.*network\.ZeekConn')
-    _ngen=$(printf '%s\n'  "$_out" | grep -c 'would ingest.*network\.Zeek$')
-    [[ "$_nconn" -eq 1 ]] || _route_ok=0        # conn -> ZeekConn, once
-    [[ "$_ngen"  -eq 1 ]] || _route_ok=0        # dns  -> generic Zeek, not double-loaded
-    rm -rf "$_zt"
-    if [[ $_route_ok -eq 1 ]]; then
+if [[ ! -f python/get_sybers_dfir/ingest/__init__.py ]]; then fail "the ingest module is missing"; else
+    # Zeek is JSON (the zeek lane: LogAscii::use_json=T). BEHAVIOURAL: assert
+    # the ROUTING the JSON cutover has to keep — conn.json to the typed
+    # ZeekConn table, every other log wrapped into the generic Zeek table, and
+    # conn.json NOT double-loaded (zeek_wrap skips it for the generic pass).
+    if PYTHONPATH=python python3 - <<'PY' >/dev/null 2>&1
+import json, os, tempfile
+from get_sybers_dfir.ingest import SOURCES, prepare
+conn = [s for s in SOURCES if s["key"] == "zeek" and s["glob"] == "conn.json"]
+assert conn and conn[0]["table"] == "ZeekConn" and conn[0]["wrap"] is None
+gen = [s for s in SOURCES if s["key"] == "zeek" and s["glob"] == "*.json"]
+assert gen and gen[0]["table"] == "Zeek" and gen[0]["wrap"] == "zeek"
+with tempfile.TemporaryDirectory() as d:
+    cp, dp = os.path.join(d, "conn.json"), os.path.join(d, "dns.json")
+    open(cp, "w").write('{"uid":"C1"}\n')
+    open(dp, "w").write('{"query":"evil.example"}\n')
+    assert prepare.zeek_wrap(cp, "zeek/case/conn.json") is None   # typed table's job
+    got = [json.loads(x) for x in prepare.zeek_wrap(dp, "zeek/case/dns.json")]
+    assert got == [{"LogType": "dns", "SourceFile": "zeek/case/dns.json",
+                    "Record": {"query": "evil.example"}}]
+PY
+    then
         pass "Zeek routing: conn.json -> ZeekConn, other logs -> generic Zeek, no double-load"
     else
-        fail "Zeek routing is wrong — see the conn/other JSON fixtures in this check"
+        fail "Zeek routing is wrong — the conn/generic split or the wrap shape regressed"
     fi
     # The JSON cutover: ZeekConn must map by PATH (immune to Zeek field reorder),
     # including Zeek's dotted id keys. A leftover ordinal mapping would silently
@@ -423,60 +304,96 @@ if [[ ! -f scripts/ingest-kusto.sh ]]; then fail "scripts/ingest-kusto.sh is mis
     else
         fail "ZeekConn no longer maps the dotted id.* JSON paths — check ZeekConnMapping"
     fi
-    # psteal writes a header row; without this it is ingested as data.
-    if grep -q 'ignoreFirstRecord=true' scripts/ingest-kusto.sh 2>/dev/null; then
-        pass "ingest drops the Plaso CSV header row"
+    # BEHAVIOURAL: the Plaso l2t fan-out (which replaced the CSV header lane —
+    # no header row to drop any more) must split records into per-parser L2t*
+    # tables, convert the µs-epoch timestamp, and leave a zero timestamp UNSET
+    # rather than writing 1970.
+    if PYTHONPATH=python python3 - <<'PY' >/dev/null 2>&1
+import json, os, tempfile
+from get_sybers_dfir.ingest import prepare
+with tempfile.TemporaryDirectory() as d:
+    src = os.path.join(d, "img.jsonl")
+    with open(src, "w") as w:
+        w.write(json.dumps({"parser": "filestat", "timestamp": 1735689600000000}) + "\n")
+        w.write(json.dumps({"parser": "winreg/appcompatcache", "timestamp": 0}) + "\n")
+    out = prepare.split_l2t(src, "img.raw", d, "p")
+    assert set(out) == {"L2tFilestat", "L2tWinreg"}
+    r1 = json.loads(open(out["L2tFilestat"]).read())
+    assert r1["Timestamp"].startswith("2025-01-01T00:00:00")
+    r2 = json.loads(open(out["L2tWinreg"]).read())
+    assert "Timestamp" not in r2 and r2["Parser"] == "winreg/appcompatcache"
+PY
+    then
+        pass "l2t fan-out: per-parser tables, µs timestamps converted, zero left unset"
     else
-        fail "ingest does not set ignoreFirstRecord — header rows become data"
+        fail "the l2t fan-out (split_l2t) regressed — tables, timestamps, or zero handling"
     fi
     # Staging by bare basename silently drops evidence: per-host EvtxECmd output
-    # collides on the channel name, so only the last host survives.
-    if grep -qE '\$\(basename "\$f"\)' scripts/ingest-kusto.sh 2>/dev/null; then
-        fail "ingest stages by bare basename — per-host files collide and are lost"
+    # collides on the channel name, so only the last host survives. BEHAVIOURAL:
+    # two files with the same basename must stage under different names.
+    if PYTHONPATH=python python3 - <<'PY' >/dev/null 2>&1
+from get_sybers_dfir.ingest.prepare import staged_name
+a = staged_name("hostA/Security_EvtxECmd_Output.json")
+b = staged_name("hostB/Security_EvtxECmd_Output.json")
+assert a != b
+PY
+    then
+        pass "staging names are path-derived, so per-host files cannot collide"
     else
-        pass "ingest stages by full relative path, so per-host files cannot collide"
+        fail "staging collides on the bare basename — per-host files are lost"
     fi
-    # Both staging areas hold copies of the evidence; Ctrl-C must not leak them.
-    if grep -q 'trap cleanup_staging' scripts/ingest-kusto.sh 2>/dev/null; then
-        pass "ingest cleans up staging on interrupt"
+    # Both staging areas hold copies of the evidence; an interrupt must not
+    # leak them. Host staging must live in a TemporaryDirectory context
+    # (cleaned even when an exception/Ctrl-C unwinds), and the in-container
+    # stage must be removed after the run.
+    if grep -q 'with tempfile.TemporaryDirectory' python/get_sybers_dfir/ingest/__init__.py 2>/dev/null \
+       && grep -q '"rm", "-rf", CONTAINER_STAGE' python/get_sybers_dfir/ingest/__init__.py 2>/dev/null; then
+        pass "ingest staging is context-managed on the host and removed in the container"
     else
-        fail "ingest leaves full evidence copies behind if interrupted"
+        fail "ingest can leave evidence copies behind in a staging area"
     fi
 fi
-if [[ ! -f scripts/lib/kusto-api.sh ]]; then fail "scripts/lib/kusto-api.sh is missing"; else
-    # The REST API returns HTTP 200 with an error document, so curl's exit code
-    # proves nothing. This is the only thing standing between a failed schema
-    # apply and a success message.
-    # Behavioural, not a name grep. The original asserted that the string
-    # "kusto_failed" appeared in the file that DEFINES kusto_failed, so it could
-    # not fail. This actually calls it against the response shapes that matter.
-    if ( set +e
-         # shellcheck source=../scripts/lib/kusto-api.sh
-         source scripts/lib/kusto-api.sh 2>/dev/null
-         kusto_failed "" || exit 1                                    # no response
-         kusto_failed '<html>502</html>' || exit 1                    # not Kusto
-         kusto_failed '{"error":{"message":"x"}}' || exit 1           # error envelope
-         kusto_failed '{"Tables":[{"Columns":[{"ColumnName":"Result"}],"Rows":[["Failed"]]}]}' || exit 1
-         kusto_failed '{"Tables":[{"Columns":[{"ColumnName":"n"}],"Rows":[[7]]}]}' && exit 1
-         exit 0 ) >/dev/null 2>&1; then
-        pass "kusto_failed detects empty, non-Kusto, envelope and in-table failures"
+if [[ ! -f python/get_sybers_dfir/ingest/kusto.py ]]; then fail "python/get_sybers_dfir/ingest/kusto.py is missing"; else
+    # The REST API returns HTTP 200 with an error document, so transport
+    # success proves nothing. failed() is the only thing standing between a
+    # failed schema apply and a success message — call it against the response
+    # shapes that matter, don't grep for its name.
+    if PYTHONPATH=python python3 - <<'PY' >/dev/null 2>&1
+from get_sybers_dfir.ingest.kusto import failed
+assert failed("")                                              # no response
+assert failed("<html>502</html>")                              # not Kusto at all
+assert failed('{"error":{"message":"x"}}')                     # error envelope
+assert failed('{"Tables":[{"Columns":[{"ColumnName":"Result"}],"Rows":[["Failed"]]}]}')
+assert not failed('{"Tables":[{"Columns":[{"ColumnName":"n"}],"Rows":[[7]]}]}')
+PY
+    then
+        pass "failed() detects empty, non-Kusto, envelope and in-table failures"
     else
-        fail "kusto_failed misses a failure shape — see tests for which"
+        fail "failed() misses a failure shape — see the check for which"
     fi
-    # kusto_scalar must route '.' commands to /mgmt. Sending them to /query is
-    # rejected by Kusto and made every schema verification report zero.
-    if grep -A4 'kusto_scalar()' scripts/lib/kusto-api.sh 2>/dev/null | grep -q 'kusto_mgmt'; then
-        pass "kusto_scalar routes control commands to the management endpoint"
+    # Kusto routes by request type: '.' commands to /v1/rest/mgmt, KQL to
+    # /v1/rest/query — a '.' command on the query endpoint is rejected (that
+    # once made every schema verification report zero). And the reachability
+    # probe every deploy/ingest leans on must ask the engine a real question
+    # (`.show version`) — accepting any listener once let a proxy block page
+    # pass for a running Kusto. BEHAVIOURAL, via a captured _post.
+    if PYTHONPATH=python python3 - <<'PY' >/dev/null 2>&1
+from get_sybers_dfir.ingest.kusto import KustoClient
+calls = []
+client = KustoClient()
+client._post = lambda path, db, csl: (
+    calls.append((path, csl)) or '{"Tables":[{"Columns":[],"Rows":[[1]]}]}')
+client.mgmt("db", ".show tables")
+client.query("db", "T | count")
+assert client.reachable() is True
+assert calls[0][0] == "/v1/rest/mgmt"
+assert calls[1][0] == "/v1/rest/query"
+assert calls[2] == ("/v1/rest/mgmt", ".show version")
+PY
+    then
+        pass "client routes mgmt vs query correctly; reachable() asks for .show version"
     else
-        fail "kusto_scalar sends '.' commands to the query endpoint — always fails"
-    fi
-    # kusto_reachable is the readiness probe both deploy and apply lean on. It
-    # must ask the engine a real question — `grep -q .` once accepted a proxy
-    # block page as a running Kusto.
-    if sed -n '/^kusto_reachable()/,/^}/p' scripts/lib/kusto-api.sh 2>/dev/null | grep -q '\.show version'; then
-        pass "kusto_reachable asks the engine for .show version"
-    else
-        fail "kusto_reachable does not query the engine — reachability degrades to a port check"
+        fail "client endpoint routing or the reachability probe regressed"
     fi
 fi
 # ------------------------------------------------------------------------------

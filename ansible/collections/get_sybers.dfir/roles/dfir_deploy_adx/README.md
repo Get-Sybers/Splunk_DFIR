@@ -2,9 +2,11 @@
 
 Deploy the **ADX (Kusto) emulator** and apply the schema (databases, tables,
 ingestion mappings, MITRE CAR functions). The role asserts inputs, runs a preflight
-(docker, the schema dir + `00-databases.kql`, the module), pulls + runs the
-`kustainer` container (localhost-only, ephemeral by default), waits for the engine,
-then creates the databases and applies every `kusto/schema/*.kql`.
+(the localhost-bind gate, docker, the schema dir + `00-databases.kql`, the module),
+pulls + runs the `kustainer` container (localhost-only, egress-isolated, ephemeral
+by default), reads the published port bindings back and probes egress from inside
+the container, waits for the engine, then creates the databases and applies every
+`kusto/schema/*.kql`.
 
 The container is stood up with `community.docker`; the schema side is the
 `get_sybers_dfir.deploy` helper.
@@ -22,6 +24,9 @@ unsuitable for production.
 | `dfir_deploy_adx_container` | `kusto-emulator` | Container name. |
 | `dfir_deploy_adx_host` | `127.0.0.1` | Bind address + schema-client connect host (keep on localhost). |
 | `dfir_deploy_adx_port` | `8080` | Host port → emulator 8080. |
+| `dfir_deploy_adx_expose` | `false` | Required (in addition to `_host`) to bind off-localhost — the preflight refuses otherwise. |
+| `dfir_deploy_adx_isolated` | `true` | Attach to a masquerade-off bridge so the container gets no useful egress; verified after deploy. |
+| `dfir_deploy_adx_network` | `kusto-dfir-isolated` | Isolated network name. |
 | `dfir_deploy_adx_memory` | `4G` | Container memory limit. |
 | `dfir_deploy_adx_schema_dir` | `<repo>/kusto/schema` | The `.kql` schema files. |
 | `dfir_deploy_adx_persist` | `false` | Persistent (on-disk) databases; needs a `/kustodata` mount. |

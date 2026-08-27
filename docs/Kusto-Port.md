@@ -94,7 +94,8 @@ Splunk at least has authentication. The emulator has **none at all**:
 
 Plaintext HTTP, no auth, no encryption at rest, on a container holding
 evidence. The localhost binding is mandatory, not a default to be overridden
-casually — `deploy-kusto.sh` requires typing `expose` to bind anywhere else,
+casually — the deploy (`dxdfir deploy`, the `dfir_deploy_adx` role) refuses
+any other bind address unless `dfir_deploy_adx_expose=true` is set as well,
 because that binding is the only control there is.
 
 ## Concept mapping
@@ -163,9 +164,9 @@ later stage is needed to get value from an earlier one.
 
 | Stage | Deliverable | Gated on |
 |:--|:---|:---|
-| **1** | ✅ `scripts/deploy-kusto.sh` — container lifecycle, isolation, readiness, both-direction reachability check | — |
-| **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `scripts/apply-kusto-schema.sh` | 1 |
-| **3** | ✅ `scripts/ingest-kusto.sh` — Plaso, EvtxECmd, Zeek (conn typed + all other logs generic), Volatility 3 and Velociraptor wired | 2 |
+| **1** | ✅ the `dfir_deploy_adx` role (`dxdfir deploy`) — container lifecycle, isolation, readiness, both-direction reachability check | — |
+| **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `get_sybers_dfir.deploy` (same role) | 1 |
+| **3** | ✅ `get_sybers_dfir.ingest` (`dxdfir ingest`, the `dfir_ingest_adx` role) — Plaso, EvtxECmd, Zeek (conn typed + all other logs generic), Volatility 3 and Velociraptor wired | 2 |
 | **4** | ✅ `kusto/schema/40-mitre.kql` — **all 9** CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
@@ -218,21 +219,21 @@ Stated plainly so it is not mistaken for working:
 
 ### Stage 1 detail
 
-`deploy-kusto.sh` routes its container lifecycle through
-`scripts/lib/docker-lifecycle.sh`, which encodes several defects' worth of
-hard-won behaviour (much of it paid for on the retired Splunk path):
+The `dfir_deploy_adx` role delegates the container lifecycle to
+`community.docker` (idempotent converge instead of a hand-rolled replace
+policy) and keeps the hard-won behaviour the retired shell deploy paid for
+(much of it on the retired Splunk path):
 
-- refuses to collide with an existing container; polls by **container ID**, not
-  name
-- detects a container that dies during startup instead of waiting out the clock
-- verifies **both directions** — that the container has no useful egress, *and*
-  that the endpoint actually answers. Checking only egress is what once shipped
-  an unreachable UI
-- stops its own background log stream before printing diagnostics
-- `--purge` / `--purge-only` distinction
+- localhost-only publish, with the real port bindings **read back** after
+  start — Docker's port rules sit ahead of the host firewall
+- an isolated (masquerade-off, never `--internal`) network by default, with
+  egress **probed from inside the container** rather than assumed
+- verifies **both directions** — no useful egress, *and* the endpoint actually
+  answers. Checking only egress is what once shipped an unreachable UI
 
 Readiness is a real health check: instead of grepping container logs for a
-magic string, poll the management endpoint with `.show version`.
+magic string, the role polls the engine with `.show version` (the ingest
+client's `--ping`).
 
 ## What this does not change
 
@@ -250,8 +251,8 @@ records KAPE's:
 - **"Provided *as-is*, without any support or warranties"**
 - **"generally unsuitable for production workloads"**
 - The licence terms prohibit benchmarking
-- `ACCEPT_EULA=Y` auto-accepts on your behalf — `deploy-kusto.sh` and the
-  README both say so
+- `ACCEPT_EULA=Y` auto-accepts on your behalf — `dxdfir deploy`, the role
+  README and the top-level README all say so
 
 All of this is recorded in `THIRD_PARTY_NOTICES.md`. Treat commercial use as
 an open question, exactly as with KAPE Solo.

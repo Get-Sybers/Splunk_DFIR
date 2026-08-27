@@ -19,9 +19,6 @@ def _fake_repo(tmp_path: Path) -> Path:
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
     (tmp_path / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml").write_text("---\n")
     (tmp_path / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml").write_text("---\n")
-    (tmp_path / "scripts").mkdir()
-    for s in ("ingest-kusto.sh", "deploy-kusto.sh", "apply-kusto-schema.sh"):
-        (tmp_path / "scripts" / s).write_text("#!/bin/bash\n")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "run-checks.sh").write_text("#!/bin/bash\n")
     return tmp_path

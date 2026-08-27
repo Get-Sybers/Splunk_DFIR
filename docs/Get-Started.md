@@ -81,20 +81,26 @@ dxdfir process evtx
   commercial-use restriction.
 - See [Scripts-Overview](/docs/scripts/Scripts-Overview.md) for the pipeline layers.
 
-### Step 6: Deploy the Kusto emulator
+### Step 6: Deploy the Kusto emulator + schema
 ```bash
-DX_DFIR/scripts/deploy-kusto.sh
+dxdfir deploy
 ```
 - Starts the **Azure Data Explorer Kusto emulator** in Docker — the real Kusto
-  engine, entirely local. No Azure, no account, no cloud.
+  engine, entirely local (no Azure, no account, no cloud) — waits for the
+  engine to answer, then creates the databases (`host`, `network`, `memory`,
+  `misc`, `mitre`), typed tables, ingestion mappings, and the MITRE CAR
+  functions from `kusto/schema/`. Idempotent — safe to re-run. It drives the
+  `dfir_deploy_adx` role; `ansible-playbook playbooks/dfir-deploy-adx.yml`
+  works too.
 - ⚠️ This sets `ACCEPT_EULA=Y`, **accepting Microsoft's Software License Terms
   on your behalf.** The emulator is provided *as-is*, without support or
   warranties, and Microsoft documents it as generally unsuitable for
   production workloads.
 - ⚠️ **The emulator has NO authentication and speaks plaintext HTTP.** It is
-  published on `127.0.0.1` only; binding anywhere else requires typing
-  `expose`. It also runs on an isolated network with no usable egress, and the
-  deploy verifies both directions after start.
+  published on `127.0.0.1` only; any other bind address is refused unless
+  `dfir_deploy_adx_expose=true` is set as well. It also runs on an isolated
+  (masquerade-off) network with no usable egress, and the deploy reads the
+  port bindings back and probes egress from inside the container after start.
 
 **Ephemeral by default — and that is the recommended mode.** Microsoft advises
 against persisting emulator data outside the container (version compatibility,
@@ -102,42 +108,23 @@ no extent merging). `data_store/processed/` is the source of truth here, so the
 intended workflow is redeploy + re-ingest, which is cheap:
 
 ```bash
-./scripts/deploy-kusto.sh                 # ephemeral database (default)
-./scripts/deploy-kusto.sh --persist       # opt in to a host-dir database, with the caveats above
-./scripts/deploy-kusto.sh --purge         # delete container + persisted data, then redeploy
-./scripts/deploy-kusto.sh --purge-only    # delete and STOP — no redeploy
-./scripts/deploy-kusto.sh --help          # all options
+dxdfir deploy                              # ephemeral, volatile databases (default)
+dxdfir deploy --persist                    # opt in to on-disk databases, with the caveats above
+docker rm -f kusto-emulator                # ephemeral: removing the container IS the purge
+dxdfir deploy --port 8081                  # non-default port
+dxdfir deploy -e dfir_deploy_adx_memory=8G # any role variable via -e
 ```
 
-**Unattended deploys**
+Role variables (`-e KEY=VALUE`, repeatable): see the
+[`dfir_deploy_adx` README](/ansible/collections/get_sybers.dfir/roles/dfir_deploy_adx/README.md)
+for the full table (image, container, host/port, memory, isolation, persist).
 
-| Variable | Default | Purpose |
-|:---|:---|:---|
-| `KUSTO_MEMORY` | `4G` | Container memory limit (Microsoft recommends ≥4G) |
-| `KUSTO_READY_TIMEOUT` | `900` | Seconds to wait for the engine (first pull is multi-GB) |
-| `KUSTO_BIND_ADDR` | `127.0.0.1` | Host address to publish on — **think hard before widening** |
-| `KUSTO_PORT` | `8080` | Host port |
-| `KUSTO_PERSIST` | `0` | `1` mounts `data_store/kusto` at `/kustodata` |
-| `KUSTO_ISOLATED` | `1` | `1` = masquerade-disabled bridge, no usable egress |
-| `KUSTO_REPLACE` | `always` | `always` \| `ask` \| `never` |
-| `KUSTO_CONTAINER` | `kusto-emulator` | Container name |
-| `KUSTO_NETWORK` | `kusto-dfir-isolated` | Isolated network name |
-
-### Step 7: Apply the schema
+### Step 7: Ingest processed evidence
 ```bash
-DX_DFIR/scripts/apply-kusto-schema.sh
+dxdfir ingest
 ```
-- Creates the databases (`host`, `network`, `memory`, `misc`, `mitre`), typed
-  tables, ingestion mappings, and the MITRE CAR functions from
-  `kusto/schema/`. Idempotent — safe to re-run.
-- Detects from the running container whether `/kustodata` is mounted and picks
-  persist/volatile to match; `--persist` / `--volatile` override.
-
-### Step 8: Ingest processed evidence
-```bash
-DX_DFIR/scripts/ingest-kusto.sh
-```
-- Loads `data_store/processed/` into the emulator: Plaso `json_line` fanned out
+- Loads `data_store/processed/` into the emulator (the `dfir_ingest_adx` role /
+  `get_sybers_dfir.ingest`): Plaso `json_line` fanned out
   into per-parser `host.L2t<Parser>` tables, EvtxECmd JSON → `host.EvtxEcmdJson`,
   Zeek `conn` → `network.ZeekConn` (every other Zeek log → the generic
   `network.Zeek`), Volatility JSONL → `memory.VolatilityJson`, and Velociraptor
@@ -146,12 +133,13 @@ DX_DFIR/scripts/ingest-kusto.sh
   **upstream** collection path — the Velociraptor offline collectors running the
   EZ Tools (the KAPE replacement) aren't built yet, so in practice there is
   usually no processed Velociraptor data to load.
-- Ingestion is additive with no fishbucket: re-running duplicates rows. To
-  start clean, redeploy (ephemeral default) and re-ingest.
+- An in-DB ledger makes re-runs idempotent (already-loaded files are skipped;
+  `--force` re-ingests). The ledger lives in the ephemeral database, so a
+  redeploy resets ledger and data together.
 - `--only l2t|zeek|evtx|volatility|velociraptor` limits to one source;
   `--dry-run` lists without contacting anything.
 
-### Step 9: Query
+### Step 8: Query
 
 Connect any Kusto client to `http://127.0.0.1:8080` (for example
 [Kusto.Explorer](https://learn.microsoft.com/en-us/kusto/tools/kusto-explorer)

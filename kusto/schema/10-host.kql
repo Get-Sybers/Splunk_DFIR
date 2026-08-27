@@ -33,10 +33,11 @@
 //   Record       the whole Plaso event, incl. the the plaso lane
 //                enrichments (Record.image_hostname / disk_id / volume_id / …)
 //
-// ingest-kusto.sh splits each json_line by top-level parser, wraps each event
-// {SourceImage, Timestamp, Parser, Record}, and CREATES L2t<Parser> + its mapping
-// on demand — so a parser not pre-declared here (a mac/android/browser parser on
-// some image) still lands in its own table. Only the CAR-referenced tables are
+// The ingest loader (get_sybers_dfir.ingest) splits each json_line by top-level
+// parser, wraps each event {SourceImage, Timestamp, Parser, Record}, and CREATES
+// L2t<Parser> + its mapping on demand — so a parser not pre-declared here (a
+// mac/android/browser parser on some image) still lands in its own table. Only
+// the CAR-referenced tables are
 // pre-declared below, so the CAR functions resolve on an empty deploy; the shared
 // L2tMapping is applied to every table (all have identical shape).
 //=============================================================================
@@ -51,7 +52,7 @@
 
 // The "L2tMapping" JSON ingestion mapping (SourceImage/Timestamp/Parser/Record
 // paths, identical for every L2t table) is created on demand by
-// ingest-kusto.sh's run_l2t, alongside each L2t<Parser> table — so the same
+// the ingest loader's l2t driver, alongside each L2t<Parser> table — so the same
 // definition covers both the tables above and any parser-table created at
 // ingest time, and there is no per-table mapping to keep in lockstep here.
 
@@ -139,7 +140,7 @@ L2tAll() {
 // drops columns. Access is Record.FieldName in KQL.
 //
 // Artefact and SourceFile are per-file constants .ingest cannot inject, so
-// ingest-kusto.sh's velociraptor_prepare hook wraps each collected record as
+// the ingest loader's velociraptor wrap rewrites each collected record as
 // {Artefact, SourceFile, Record} (Artefact from the filename, SourceFile from
 // the path) and the mapping below reads all three — the same shape the
 // Volatility loader uses. Artefact is what CarRegistry() filters on.

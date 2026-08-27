@@ -151,8 +151,8 @@ history.
 
 ### Azure Data Explorer Kusto emulator — read before commercial use
 
-The Kusto emulator is the analysis backend, deployed by
-`scripts/deploy-kusto.sh`. It is **not vendored** — the image is pulled from
+The Kusto emulator is the analysis backend, deployed by `dxdfir deploy`
+(the `dfir_deploy_adx` role). It is **not vendored** — the image is pulled from
 Microsoft's registry — so this is a constraint on you rather than on this
 code.
 
@@ -166,7 +166,8 @@ is not optimised for that.
 
 Three consequences worth stating plainly:
 
-1. **`ACCEPT_EULA=Y` is set on your behalf** by `deploy-kusto.sh`. You are
+1. **`ACCEPT_EULA=Y` is set on your behalf** by the deploy (`dxdfir deploy` /
+   the `dfir_deploy_adx` role). You are
    accepting Microsoft's Software License Terms by running it. Read them if
    that matters for your engagement.
 2. **Whether "unsuitable for production" bars use in paid DFIR work is a
@@ -177,8 +178,8 @@ Three consequences worth stating plainly:
    cluster, to which the same KQL schema applies.
 3. The emulator has **no security features at all** — no authentication, no
    access control, plaintext HTTP, no encryption at rest. That is a documented
-   property, not a misconfiguration. `deploy-kusto.sh` binds it to localhost
-   and requires an explicit confirmation to do otherwise; see
+   property, not a misconfiguration. The deploy binds it to localhost
+   and requires an explicit override variable to do otherwise; see
    [docs/Kusto-Port.md](/docs/Kusto-Port.md).
 
 Kusto Query Language itself, and the CAR mappings in `kusto/schema/`, are this

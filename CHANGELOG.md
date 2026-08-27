@@ -8,6 +8,13 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Added
+- The `dfir_deploy_adx` role now carries the retired shell deploy's remaining
+  security properties: an isolated (masquerade-off, never `--internal`) docker
+  network on by default (`dfir_deploy_adx_isolated`) with egress probed from
+  inside the container after start, a read-back assertion that no port is bound
+  to the wildcard address, and a preflight gate that refuses a non-local bind
+  unless `dfir_deploy_adx_expose=true` is set as well (the Ansible equivalent
+  of the shell's "type `expose`" prompt).
 - The YARA lane's **disk** and **memory** sources are now in the Python processor
   (`get_sybers_dfir.signatures.yara`): disk images mounted read-only in place
   (ewfmount → ntfs-3g, FUSE; nothing extracted) → `disk.jsonl`, and process
@@ -16,6 +23,20 @@ is `0`, anything may change without notice.
   are pure, unit-tested helpers.
 
 ### Removed
+- The last data-pipeline shell scripts: `deploy-kusto.sh`,
+  `apply-kusto-schema.sh`, `ingest-kusto.sh` and `scripts/lib/`
+  (`docker-lifecycle.sh`, `kusto-api.sh`, `l2t-split.py`). The framework fully
+  implements them — `dxdfir deploy` (the `dfir_deploy_adx` role +
+  `get_sybers_dfir.deploy`) and `dxdfir ingest` (the `dfir_ingest_adx` role +
+  `get_sybers_dfir.ingest`, whose `prepare.split_l2t` superseded `l2t-split.py`).
+  The smoke test now deploys its throwaway emulator through `dxdfir deploy`,
+  and the check harness asserts the localhost-bind, EULA-disclosure, isolation,
+  ephemeral-default, readiness, endpoint-routing, Zeek-routing, l2t fan-out and
+  staging-hygiene guarantees against the role and the Python modules instead of
+  the deleted scripts. Not carried over: `KUSTO_REPLACE` (the role converges
+  idempotently; remove the container for a fresh ephemeral instance) and
+  `--purge`/`--purge-only` (ephemeral default — `docker rm -f kusto-emulator`
+  is the purge).
 - The retired per-source `process-*.sh` scripts (`process-zeek-ALL.sh`,
   `process-evtx-EvtxECmd.sh`, `process-volatility.sh`,
   `process-log2timeline-Dynamic.sh`, `process-velociraptor.sh`) and the dead

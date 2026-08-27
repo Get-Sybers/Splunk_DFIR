@@ -1,16 +1,15 @@
 """Load ``data_store/processed`` into the ADX (Kusto) emulator.
 
-Port of ``scripts/ingest-kusto.sh``. Each source's files are shaped (constant-column
-wrapping — see :mod:`.prepare`), copied INTO the emulator container (it reads from
-its own filesystem, not the host's), and loaded with a batched ``.ingest into``.
-Plaso l2t has its own driver: one json_line file fans out into several
-``L2t<Parser>`` tables.
+Each source's files are shaped (constant-column wrapping — see :mod:`.prepare`),
+copied INTO the emulator container (it reads from its own filesystem, not the
+host's), and loaded with a batched ``.ingest into``. Plaso l2t has its own driver:
+one json_line file fans out into several ``L2t<Parser>`` tables.
 
-The shell ingest is additive (no fishbucket) — re-running duplicates rows. To make
-the role idempotent, a tiny in-DB **ledger** (``host._DfirIngestLedger``) records
-the sha1 of every source file loaded; a file already in the ledger is skipped unless
-``force`` is set. The ledger lives in the (ephemeral) database, so a redeploy wipes
-the ledger and the data together — they never drift.
+A bare ``.ingest`` is additive (no fishbucket) — re-running would duplicate rows.
+To make the role idempotent, a tiny in-DB **ledger** (``host._DfirIngestLedger``)
+records the sha1 of every source file loaded; a file already in the ledger is
+skipped unless ``force`` is set. The ledger lives in the (ephemeral) database, so a
+redeploy wipes the ledger and the data together — they never drift.
 """
 from __future__ import annotations
 

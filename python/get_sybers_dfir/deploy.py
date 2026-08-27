@@ -1,8 +1,8 @@
 """Deploy helper — create the databases and apply the Kusto schema.
 
-Port of ``scripts/apply-kusto-schema.sh``. The container itself is stood up by the
-``dfir_deploy_adx`` role (``community.docker.docker_container``); this module does the
-schema side against the running engine:
+The container itself is stood up by the ``dfir_deploy_adx`` role
+(``community.docker.docker_container``); this module does the schema side against
+the running engine:
 
   1. parse the database names from ``00-databases.kql`` (the .kql stays the single
      source of truth; names are bracket-quoted because ``network`` is a reserved word).

@@ -11,10 +11,11 @@
 # What it does, against a THROWAWAY emulator (its own container + port, torn down
 # on exit — never touches a dev emulator on 8080):
 #
-#   deploy kustainer -> apply schema -> process pinned Sysmon .evtx through the
-#   real evtx lane (EvtxECmd) -> ingest -> assert each Sysmon-sourced CAR object
-#   returns rows AND its EvtxPayload-derived fields are populated with the
-#   expected values.
+#   deploy kustainer + schema via the FRAMEWORK (`dxdfir deploy` -> the
+#   dfir_deploy_adx role) -> process pinned Sysmon .evtx through the real evtx
+#   lane (EvtxECmd) -> ingest -> assert each Sysmon-sourced CAR object returns
+#   rows AND its EvtxPayload-derived fields are populated with the expected
+#   values.
 #
 # Fixtures: the `sysmon-attack-samples` group in dev-scripts/samples-manifest.tsv
 # (real Sysmon telemetry from sbousseaden/EVTX-ATTACK-SAMPLES, sha256-pinned, a
@@ -50,19 +51,21 @@ fail() { FAIL=$((FAIL+1)); echo "    ✗ $1"; }
 die()  { echo "❌ $*" >&2; exit 1; }
 section() { echo; echo "── $1"; }
 
-# kusto-api.sh computes KUSTO_BASE at SOURCE TIME from KUSTO_HOST/KUSTO_PORT (its
-# own header warns about this) — so these must be set BEFORE the source, or every
-# kusto_* call would target the default :8080 (a running dev emulator) instead of
-# our throwaway on :$SMOKE_PORT. That exact slip made this test read the wrong DB
-# in its first draft and pass by luck.
-export KUSTO_HOST=127.0.0.1
-export KUSTO_PORT="$SMOKE_PORT"
-export KUSTO_CONTAINER="$SMOKE_CONTAINER"
-# shellcheck source=/dev/null
-source scripts/lib/kusto-api.sh
 # In-repo run: the get_sybers_dfir package is under python/ (a deployed install
 # would already be importable). Mirrors dfir_evtx_python_path in the role.
 export PYTHONPATH="$REPO_ROOT/python${PYTHONPATH:+:$PYTHONPATH}"
+# The query helper reads this — every assertion targets the throwaway emulator
+# on :$SMOKE_PORT, never the default :8080 (a running dev emulator). Its shell
+# predecessor got exactly that wrong once and passed by luck.
+export SMOKE_PORT
+
+# The framework front-end: the installed `dxdfir` if present, else the in-repo
+# module (PYTHONPATH is already set; typer + ansible-playbook must exist either way).
+if command -v dxdfir >/dev/null 2>&1; then
+    DXDFIR=(dxdfir)
+else
+    DXDFIR=(python3 -m get_sybers_dfir.cli)
+fi
 
 cleanup() {
     rm -rf "$OUT_DIR" "$PROC_DIR"
@@ -75,6 +78,29 @@ cleanup() {
 trap cleanup EXIT
 
 # --- scalar assertion helper -------------------------------------------------
+# kusto_scalar <db> <csl> — first cell of the primary result, via the framework's
+# own client (get_sybers_dfir.ingest.kusto). Control commands (leading '.') go to
+# /v1/rest/mgmt, KQL to /v1/rest/query — Kusto rejects a '.' command on the query
+# endpoint, so the routing lives here, not in each call site.
+kusto_scalar() {
+    python3 - "$1" "$2" <<'PY'
+import json, os, sys
+from get_sybers_dfir.ingest.kusto import KustoClient, failed
+db, csl = sys.argv[1], sys.argv[2]
+client = KustoClient(host="127.0.0.1", port=int(os.environ["SMOKE_PORT"]))
+resp = client.mgmt(db, csl) if csl.lstrip().startswith(".") else client.query(db, csl)
+if failed(resp):
+    sys.exit(1)
+try:
+    rows = (json.loads(resp).get("Tables") or [{}])[0].get("Rows") or []
+except (json.JSONDecodeError, ValueError):
+    sys.exit(1)
+if not rows or not rows[0]:
+    sys.exit(1)
+print(rows[0][0])
+PY
+}
+
 # assert_ge <db> <csl-returning-a-number> <min> <description>
 assert_ge() {
     local db="$1" csl="$2" min="$3" desc="$4" got
@@ -93,9 +119,11 @@ section "Preflight (fail loudly — never skip)"
 command -v docker >/dev/null 2>&1 || die "docker not found. This test RUNS the pipeline; it cannot be skipped."
 docker info >/dev/null 2>&1 || die "docker daemon not reachable."
 command -v python3 >/dev/null 2>&1 || die "python3 not found."
+"${DXDFIR[@]}" --version >/dev/null 2>&1 \
+    || die "the dxdfir CLI does not run — install it (pip install ./python; it brings typer + ansible-core)."
 docker image inspect dfir/evtxecmd:latest >/dev/null 2>&1 \
     || die "image dfir/evtxecmd:latest missing — build it: docker build -t dfir/evtxecmd:latest docker/evtxecmd"
-pass "docker, python3, and dfir/evtxecmd:latest present"
+pass "docker, python3, the dxdfir CLI, and dfir/evtxecmd:latest present"
 
 # =============================================================================
 section "Fixtures (sha256-pinned Sysmon .evtx)"
@@ -111,17 +139,23 @@ n_fix=$(find "$FIXTURE_DIR" -iname '*.evtx' 2>/dev/null | wc -l)
 pass "$n_fix Sysmon .evtx fixtures present and verified"
 
 # =============================================================================
-section "Deploy throwaway emulator ($SMOKE_CONTAINER on :$SMOKE_PORT)"
-KUSTO_CONTAINER="$SMOKE_CONTAINER" KUSTO_PORT="$SMOKE_PORT" KUSTO_BIND_ADDR=127.0.0.1 \
-    ./scripts/deploy-kusto.sh --ephemeral >/dev/null 2>&1 \
-    || die "deploy-kusto.sh failed."
-# deploy already waits for readiness, but re-confirm the query endpoint answers.
-kusto_reachable || die "emulator did not become reachable on :$SMOKE_PORT."
-pass "emulator up and answering"
-
-section "Apply schema"
-KUSTO_HOST=127.0.0.1 KUSTO_PORT="$SMOKE_PORT" ./scripts/apply-kusto-schema.sh --volatile >/dev/null 2>&1 \
-    || die "apply-kusto-schema.sh failed."
+section "Deploy throwaway emulator + schema ($SMOKE_CONTAINER on :$SMOKE_PORT) via the framework"
+# The role CONVERGES an existing container rather than force-replacing it, so a
+# stale throwaway from an earlier run must go first — the test's contract is a
+# fresh, EMPTY (ephemeral, volatile-schema) emulator.
+docker rm -f "$SMOKE_CONTAINER" >/dev/null 2>&1 || true
+# `dxdfir deploy` drives dfir_deploy_adx: container up (localhost-only,
+# egress-isolated), engine readiness, databases + schema, apply asserted clean.
+DEPLOY_LOG="$OUT_DIR/dxdfir-deploy.log"
+if ! "${DXDFIR[@]}" deploy --port "$SMOKE_PORT" \
+        -e "dfir_deploy_adx_container=$SMOKE_CONTAINER" >"$DEPLOY_LOG" 2>&1; then
+    tail -40 "$DEPLOY_LOG" >&2
+    die "dxdfir deploy failed (full log above)."
+fi
+# The role already waited for readiness; re-confirm the engine answers HERE.
+python3 -m get_sybers_dfir.ingest --ping --host 127.0.0.1 --port "$SMOKE_PORT" >/dev/null 2>&1 \
+    || die "emulator did not become reachable on :$SMOKE_PORT."
+pass "emulator deployed and answering (dfir_deploy_adx via dxdfir)"
 assert_has mitre ".show functions | where Name startswith 'Car' | count" "CAR functions created"
 
 # =============================================================================
