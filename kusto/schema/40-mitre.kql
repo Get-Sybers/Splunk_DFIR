@@ -147,7 +147,10 @@ CarFlow_Zeek() {
         ["flags"]    = History,   // `flags` is a KQL reserved word — must be bracket-quoted
         start_time   = Ts,
         end_time     = iff(isnotnull(DurationSec), datetime_add('microsecond', tolong(DurationSec * 1000000), Ts), datetime(null)),
-        packet_count = coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0)
+        // Zeek omits the packet counters on some rows — a null stays null rather
+        // than fabricating a 0-packet flow. Only sum when at least one is present.
+        packet_count = iff(isnull(OrigPktsN) and isnull(RespPktsN), long(null),
+                           coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0))
 }
 
 // Sysmon 3 (NetworkConnect) — the connection AS MADE, with the initiating process
@@ -208,13 +211,20 @@ CarFlow_Srum() {
     database("host").VelociraptorJson
     | where Artefact matches regex @"(?i)srum"
     | where isnotempty(tostring(coalesce(Record.BytesSent, Record.BytesReceived, Record.["Bytes Sent"], Record.["Bytes Received"])))
+    // The collection dir is Collection-<host>-<timestamp> (Velociraptor offline
+    // collector naming; the host may itself contain dashes) — extract just the
+    // host. Fallback chains coalesce over tostring() so a present-but-EMPTY JSON
+    // value ("" is non-null as dynamic) falls through to the next candidate.
+    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
     | extend
         Timestamp    = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
         action       = "message",
-        image_path   = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-        user         = tostring(coalesce(Record.UserName, Record.Sid, Record.User, Record.UserId)),
+        image_path   = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
+        user         = coalesce(tostring(Record.UserName), tostring(Record.Sid), tostring(Record.User), tostring(Record.UserId)),
         start_time   = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-        hostname     = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+        hostname     = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
+        fqdn         = iff(_vhost contains ".", _vhost, "")
+    | project-away _vhost
 }
 
 .create-or-alter function
@@ -240,30 +250,52 @@ CarFlow() {
 with (docstring = "CAR 'user_session' from Windows Security logons (native fields + CAR fields)", folder = "CAR/user_session")
 CarUserSession_Security() {
     database("host").EvtxEcmdJson
-    | where EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+    // Channel guard: these EventIds are Security-channel events; the numbers are
+    // reused by other providers, so pin the channel (non-destructive on real data —
+    // EvtxECmd stamps Channel "Security" on every one of these).
+    | where Channel has "Security" and EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
+    // 4778/4779 (RDP session reconnect/disconnect) carry AccountName / LogonID /
+    // ClientAddress instead of the 4624-family's TargetUserName / TargetLogonId /
+    // IpAddress — coalesce per field. EvtxPayload returns "" (never null) for a
+    // missing key, so the fallback is iff(isempty(...)), not coalesce().
     | extend _lt = toint(EvtxPayload(Payload, "LogonType")),
-             _ip = EvtxPayload(Payload, "IpAddress"),
+             _ip0 = EvtxPayload(Payload, "IpAddress"),
+             _cip = EvtxPayload(Payload, "ClientAddress"),
              _port = EvtxPayload(Payload, "IpPort"),
-             _tuser = EvtxPayload(Payload, "TargetUserName")
+             _tuser0 = EvtxPayload(Payload, "TargetUserName"),
+             _auser = EvtxPayload(Payload, "AccountName"),
+             _tlid = EvtxPayload(Payload, "TargetLogonId"),
+             _alid = EvtxPayload(Payload, "LogonID")
+    | extend _ip = iff(isempty(_ip0), _cip, _ip0),
+             _tuser = iff(isempty(_tuser0), _auser, _tuser0)
     | extend
         Timestamp = TimeCreated,
         action    = case(EventId in (4634, 4647), "logout",
                          EventId == 4778, "reconnect",
-                         EventId == 4779, "remote",
+                         // 4779 is a session DISCONNECT — the session ended from the
+                         // user's side. CAR has no "disconnect" action, so "logout"
+                         // is the nearest honest label (was: "remote", wrong).
+                         EventId == 4779, "logout",
                          EventId == 4624 and _lt == 10, "rdp",
                          EventId == 4624 and _lt == 7,  "unlock",
                          EventId == 4624 and _lt == 2,  "interactive",
                          EventId == 4624 and _lt == 3,  "remote",
-                         EventId in (4624, 4625), "login",
+                         EventId == 4624, "login",
+                         // 4648 = a logon USING explicit credentials — a login.
+                         EventId == 4648, "login",
+                         // 4625 is a FAILED logon — not a "login" in the CAR action
+                         // vocabulary. action stays empty; the native EventId still
+                         // identifies the failure.
                          ""),
         user      = iff(isempty(_tuser), UserName, _tuser),
-        logon_id  = EvtxPayload(Payload, "TargetLogonId"),
+        logon_id  = iff(isempty(_tlid), _alid, _tlid),
         hostname  = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        src_ip    = iff(_ip in ("-", "::1", "127.0.0.1", ""), "", _ip),
+        // "LOCAL" is 4778/4779's ClientAddress for a console session — not an IP.
+        src_ip    = iff(_ip in ("-", "::1", "127.0.0.1", "LOCAL", ""), "", _ip),
         src_port  = iff(_port in ("-", "0", ""), int(null), toint(_port)),
         dest_ip   = "",
         dest_port = int(null)
-    | project-away _lt, _ip, _port, _tuser
+    | project-away _lt, _ip0, _cip, _ip, _port, _tuser0, _auser, _tuser, _tlid, _alid
 }
 
 // Linux utmp/wtmp (Plaso, typed). login_type: 6/7 -> login, 8 -> logout; BOOT_TIME
@@ -284,7 +316,8 @@ CarUserSession_Utmp() {
         src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
         src_port  = int(null),
         dest_ip   = "",
-        dest_port = int(null)
+        dest_port = int(null),
+        SourceFile = SourceImage    // per-artefact identity for the roll-up
     | project-away _lt, _ip
 }
 
@@ -304,7 +337,8 @@ CarUserSession_Ssh() {
         src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
         src_port  = toint(Record.port),
         dest_ip   = "",
-        dest_port = int(null)
+        dest_port = int(null),
+        SourceFile = SourceImage    // per-artefact identity for the roll-up
     | project-away _ip
 }
 
@@ -392,7 +426,9 @@ CarProcess_Sysmon() {
 with (docstring = "CAR 'process' from Security 4688/4689 (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Security() {
     database("host").EvtxEcmdJson
-    | where EventId in (4688, 4689)
+    // Channel guard: 4688/4689 are Security-channel events; the numbers are reused
+    // by other providers, so pin the channel (non-destructive on real data).
+    | where Channel has "Security" and EventId in (4688, 4689)
     | extend
         _NewName   = EvtxPayload(Payload, "NewProcessName"),
         _Name4689  = EvtxPayload(Payload, "ProcessName"),
@@ -410,8 +446,13 @@ CarProcess_Security() {
         command_line      = iff(EventId == 4688, EvtxPayload(Payload, "CommandLine"), ""),
         pid               = iff(EventId == 4688, tolong(_NewPid), tolong(_EvPid)),
         ppid              = iff(EventId == 4688, tolong(_EvPid), long(null)),
-        user              = iff(isempty(_SubjName), UserName,
-                                iff(isempty(_SubjDom), _SubjName, strcat(_SubjDom, @"\", _SubjName))),
+        // "-" is the Security channel's placeholder for an absent value — treat it
+        // as empty everywhere rather than fabricating a "-\name" (or bare "-")
+        // identity. XP-era 4688s carry "-" in every user field; those rows honestly
+        // have no user.
+        user              = iff(isempty(_SubjName) or _SubjName == "-",
+                                iff(UserName in ("-", @"-\-"), "", UserName),
+                                iff(isempty(_SubjDom) or _SubjDom == "-", _SubjName, strcat(_SubjDom, @"\", _SubjName))),
         sid               = EvtxPayload(Payload, "SubjectUserSid"),
         md5_hash          = "",
         sha1_hash         = "",
@@ -455,32 +496,57 @@ CarProcess_Memory() {
 
 // Plaso Windows execution artefacts (prefetch, amcache, appcompatcache, userassist,
 // bam) — evidence a program ran, with image hostname and user from Plaso enrichment.
-// amcache's file SHA1 -> sha1_hash when present. The full Plaso Record stays.
+// The EXECUTED PROGRAM's path lives in a different Record field per parser — never
+// in Record.filename/display_name, which name the parsed ARTEFACT file itself (the
+// .pf file, the hive) and must not leak into exe/image_path:
+//   prefetch       -> Record.path_hints[0] (full path); Record.executable is the
+//                     bare name, kept as the exe fallback only
+//   appcompatcache -> Record.path            bam -> Record.path (+ the user SID in
+//                     Record.user_identifier -> sid)
+//   amcache        -> Record.full_path       userassist -> Record.value_name
+// amcache's Record.sha1 is the PROGRAM's SHA-1 -> sha1_hash (Record.sha1_hash would
+// be the parsed hive's own hash — deliberately not used). The full Plaso Record stays.
 .create-or-alter function
 with (docstring = "CAR 'process' from Plaso execution artefacts (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Plaso() {
     union
-        (database("host").L2tPrefetch),
+        // L2tPrefetch carries both windows:volume:creation (volume metadata, no
+        // program) and windows:prefetch:execution — only the latter is a run.
+        (database("host").L2tPrefetch
+         | where tostring(Record.data_type) == "windows:prefetch:execution"
+         | extend _art = "prefetch"),
         (database("host").L2tWinreg
-         | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam")
+         | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam"
+         | extend _art = case(Parser matches regex @"(?i)amcache",    "amcache",
+                              Parser matches regex @"(?i)userassist", "userassist",
+                              Parser matches regex @"(?i)bam",        "bam",
+                              Parser matches regex @"(?i)appcompatcache", "appcompatcache",
+                              "winreg"))
+    // prefetch has no full path on some Windows versions (path_hints empty) — the
+    // executable NAME is then the only identifier, so fall back to it.
+    | extend _prog = case(_art == "prefetch",   coalesce(tostring(Record.path_hints[0]), tostring(Record.executable)),
+                          _art == "amcache",    coalesce(tostring(Record.full_path), tostring(Record.filename)),
+                          _art == "userassist", tostring(Record.value_name),
+                          tostring(Record.path))
     | extend
         action            = "create",
-        exe               = tostring(coalesce(Record.executable, Record.path, Record.filename, Record.display_name)),
-        image_path        = tostring(Record.display_name),
+        exe               = _prog,
+        image_path        = _prog,
         parent_exe        = "",
         parent_image_path = "",
         command_line      = "",
         pid               = long(null),
         ppid              = long(null),
         user              = tostring(Record.username),
-        sid               = "",
+        sid               = iff(_art == "bam", tostring(Record.user_identifier), ""),
         md5_hash          = "",
-        sha1_hash         = tostring(coalesce(Record.sha1_hash, Record.sha1)),
+        sha1_hash         = tostring(Record.sha1),
         sha256_hash       = "",
         signer            = "",
         hostname          = tostring(Record.image_hostname),
         fqdn              = "",
         SourceFile        = SourceImage
+    | project-away _prog, _art
 }
 
 // Plaso Linux cron (syslog:cron:task_run) — command line, crond worker pid, user.
@@ -520,24 +586,29 @@ CarProcess_Srum() {
     database("host").VelociraptorJson
     | where Artefact matches regex @"(?i)srum"
     | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
+    // Collection dir is Collection-<host>-<timestamp> — extract just the host.
+    // Fallback chains coalesce over tostring() so a present-but-empty JSON value
+    // falls through (a dynamic "" is non-null and would mask the fallbacks).
+    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
     | extend
         Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
         action            = "create",
-        exe               = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
-        image_path        = tostring(coalesce(Record.ExeInfo, Record.AppId, Record.Application, Record.App)),
+        exe               = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
+        image_path        = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
         parent_exe        = "",
         parent_image_path = "",
         command_line      = "",
         pid               = long(null),
         ppid              = long(null),
-        user              = tostring(coalesce(Record.UserName, Record.User)),
+        user              = coalesce(tostring(Record.UserName), tostring(Record.User)),
         sid               = tostring(Record.Sid),
         md5_hash          = "",
         sha1_hash         = "",
         sha256_hash       = "",
         signer            = "",
-        hostname          = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-        fqdn              = ""
+        hostname          = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
+        fqdn              = iff(_vhost contains ".", _vhost, "")
+    | project-away _vhost
 }
 
 //=============================================================================
@@ -561,22 +632,34 @@ CarProcess() {
 // (NOT module_path — that is a module/driver-only field).
 //=============================================================================
 
-// Windows 7045 (System) / 4697 (Security) — service installed. ServiceName->name,
-// ImagePath->image_path, service account->user.
+// Windows 7045 (System) / 4697 (Security) — service installed. The two events name
+// their fields differently: 7045 carries ServiceName/ImagePath/AccountName, 4697
+// carries ServiceName/ServiceFileName/ServiceAccount — coalesce per field.
+// EvtxPayload returns "" (never null) for a missing key, so the fallbacks are
+// iff(isempty(...)), not coalesce(). Channel guard: 7045 lives in System, 4697 in
+// Security; the numbers are reused by other providers, so pin the channels.
 .create-or-alter function
 with (docstring = "CAR 'service' from Windows 7045/4697 (native fields + CAR fields)", folder = "CAR/service")
 CarService_Evtx() {
     database("host").EvtxEcmdJson
-    | where EventId in (7045, 4697)
+    | where (EventId == 7045 and Channel has "System")
+         or (EventId == 4697 and Channel has "Security")
+    | extend _img7045 = EvtxPayload(Payload, "ImagePath"),
+             _img4697 = EvtxPayload(Payload, "ServiceFileName"),
+             _acct7045 = EvtxPayload(Payload, "AccountName"),
+             _acct4697 = EvtxPayload(Payload, "ServiceAccount")
+    | extend _img = iff(isempty(_img7045), _img4697, _img7045),
+             _acct = iff(isempty(_acct7045), _acct4697, _acct7045)
     | extend
         Timestamp  = TimeCreated,
         action     = "create",
         name       = EvtxPayload(Payload, "ServiceName"),
-        image_path = EvtxPayload(Payload, "ImagePath"),
-        exe        = EvtxPayload(Payload, "ImagePath"),
-        user       = iff(isnotempty(EvtxPayload(Payload, "AccountName")), EvtxPayload(Payload, "AccountName"), UserName),
+        image_path = _img,
+        exe        = _img,
+        user       = iff(isempty(_acct), UserName, _acct),
         hostname   = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
         fqdn       = iff(Computer contains ".", Computer, "")
+    | project-away _img7045, _img4697, _acct7045, _acct4697, _img, _acct
 }
 
 // Volatility windows.svcscan (memory) — every registered service with its binary
@@ -607,25 +690,48 @@ CarService() { union isfuzzy=true CarService_Evtx, CarService_Memory }
 // read/write.
 //=============================================================================
 
-// Plaso filesystem (filestat/MFT/UsnJrnl) — MACB timeline. action from Plaso's
-// per-event timestamp_desc; create is tested first so overlaps resolve to it.
+// Plaso filesystem (filestat/MFT/UsnJrnl) — MACB timeline. The three artefacts
+// describe files DIFFERENTLY, so each union arm is marked and mapped per source:
+//   filestat — the parsed file IS the file: filename/display_name is the path,
+//              and Plaso's per-file hashes (when hashing was on) are the file's own
+//              hashes -> md5/sha1/sha256_hash.
+//   mft      — Record.filename is the parsed $MFT artefact itself; the file the
+//              entry DESCRIBES is Record.path_hints[0] (else Record.name).
+//   usnjrnl  — every event is stamped "Metadata Modification"; the real action is
+//              in the USN reason bits (FILE_CREATE 0x100 / FILE_DELETE 0x200 take
+//              precedence over the plain modify).
+// action from Plaso's timestamp_desc otherwise; create is tested first so overlaps
+// resolve to it.
 .create-or-alter function
 with (docstring = "CAR 'file' from Plaso filesystem (native fields + CAR fields)", folder = "CAR/file")
 CarFile_Plaso() {
-    union database("host").L2tFilestat, database("host").L2tMft, database("host").L2tUsnjrnl
-    | extend _td = tostring(Record.timestamp_desc), _fn = tostring(Record.filename), _dn = tostring(Record.display_name)
+    union (database("host").L2tFilestat | extend _art = "filestat"),
+          (database("host").L2tMft      | extend _art = "mft"),
+          (database("host").L2tUsnjrnl  | extend _art = "usnjrnl")
+    | extend _td = tostring(Record.timestamp_desc), _fn = tostring(Record.filename), _dn = tostring(Record.display_name),
+             _usn = tolong(Record.update_reason_flags)
     | extend
-        action    = case(_td matches regex @"(?i)creation|crtime|birth", "create",
+        action    = case(_art == "usnjrnl" and binary_and(_usn, 0x100) != 0, "create",
+                         _art == "usnjrnl" and binary_and(_usn, 0x200) != 0, "delete",
+                         _art == "usnjrnl", "modify",
+                         _td matches regex @"(?i)creation|crtime|birth", "create",
                          _td matches regex @"(?i)modification|mtime", "modify",
                          _td matches regex @"(?i)last access|atime", "read",
                          _td matches regex @"(?i)deletion|deleted", "delete", ""),
-        file_path = iff(isnotempty(_fn), _fn, replace_regex(_dn, @"^[A-Z0-9]+:", "")),
+        file_path = case(_art == "mft", coalesce(tostring(Record.path_hints[0]), tostring(Record.name), _fn),
+                         iff(isnotempty(_fn), _fn, replace_regex(_dn, @"^[A-Z0-9]+:", ""))),
+        // filestat only: the parsed file is the file, so its hashes are canonical.
+        // For mft/usnjrnl any hash would be the $MFT/$UsnJrnl artefact's own — omitted.
+        md5_hash    = iff(_art == "filestat", tostring(Record.md5_hash), ""),
+        sha1_hash   = iff(_art == "filestat", tostring(Record.sha1_hash), ""),
+        sha256_hash = iff(_art == "filestat", tostring(Record.sha256_hash), ""),
         hostname  = tostring(Record.image_hostname),
-        user      = tostring(Record.username)
+        user      = tostring(Record.username),
+        SourceFile = SourceImage    // per-artefact identity for the roll-up
     | extend
         file_name     = replace_regex(file_path, @"^.*[\\/]", ""),
         creation_time = iff(action == "create", Timestamp, datetime(null))
-    | project-away _td, _fn, _dn
+    | project-away _td, _fn, _dn, _usn, _art
 }
 
 // Sysmon 11 (FileCreate) / 23 (FileDelete) — file activity with the creating
@@ -690,19 +796,25 @@ with (docstring = "CAR 'registry' from Velociraptor RECmd (native fields + CAR f
 CarRegistry_Recmd() {
     database("host").VelociraptorJson
     | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
+    // Collection dir is Collection-<host>-<timestamp> — extract just the host, and
+    // only claim fqdn when the name actually is one (contains a dot), matching the
+    // Computer discipline used elsewhere. Fallback chains coalesce over tostring()
+    // so a present-but-empty JSON value ("" is non-null as dynamic) falls through.
+    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
     | extend
         Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
         action     = "edit",
-        key        = tostring(coalesce(Record.KeyPath, Record.Key)),
-        value      = tostring(coalesce(Record.ValueName, Record.Value)),
-        data       = tostring(coalesce(Record.ValueData, Record.Data)),
-        type       = tostring(coalesce(Record.ValueType, Record.Type)),
-        hive       = tostring(coalesce(Record.HivePath, Record.Hive)),
+        key        = coalesce(tostring(Record.KeyPath), tostring(Record.Key)),
+        value      = coalesce(tostring(Record.ValueName), tostring(Record.Value)),
+        data       = coalesce(tostring(Record.ValueData), tostring(Record.Data)),
+        type       = coalesce(tostring(Record.ValueType), tostring(Record.Type)),
+        hive       = coalesce(tostring(Record.HivePath), tostring(Record.Hive)),
         image_path = tostring(Record.ImagePath),
         pid        = tolong(Record.PID),
         user       = tostring(Record.User),
-        hostname   = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile),
-        fqdn       = extract(@"(?i)velociraptor/([^/]+)/", 1, SourceFile)
+        hostname   = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
+        fqdn       = iff(_vhost contains ".", _vhost, "")
+    | project-away _vhost
 }
 
 // Sysmon 12 (key add/delete), 13 (value set), 14 (rename) — the CHANGE as it
@@ -798,6 +910,11 @@ CarModule_Memory() {
         module_path  = tostring(Record.Path),
         image_path   = tostring(Record.Process),
         pid          = tolong(Record.PID),
+        // REPRESENTATION NOTE: Volatility 3 serialises Hex renderers as plain ints,
+        // so base_address is DECIMAL ("1213726720") while Sysmon's is 0x-hex
+        // ("0x00060000"). NOT normalised to hex here: x64 kernel addresses
+        // (0xFFFFF800...) exceed int64, so tohex(tolong(...)) would null exactly
+        // the rows that matter. Compare across sources via tolong()/parse.
         base_address = tostring(Record.Base)
 }
 
@@ -844,7 +961,7 @@ CarDriver_Memory() {
         action       = "load",
         module_name  = tostring(Record.Name),
         image_path   = tostring(Record.Path),
-        base_address = tostring(Record.Base)
+        base_address = tostring(Record.Base)   // decimal, not 0x-hex — see CarModule_Memory note
 }
 
 .create-or-alter function
@@ -898,7 +1015,7 @@ CarThread_Memory() {
         action            = iff(isnotempty(tostring(Record.ExitTime)), "terminate", "create"),
         tgt_pid           = tolong(Record.PID),
         tgt_tid           = tolong(Record.TID),
-        start_address     = tostring(Record.Win32StartAddress),
+        start_address     = tostring(Record.Win32StartAddress),   // decimal, not 0x-hex — see CarModule_Memory note
         start_module      = _sm,
         start_module_name = replace_regex(_sm, @"^.*[\\/]", "")
     | project-away _sm
