@@ -79,6 +79,8 @@
 !/raw/disk_images/.gitkeep
 !/raw/memory/
 !/raw/memory/.gitkeep
+!/raw/mobile/
+!/raw/mobile/.gitkeep
 !/raw/other_raw_data/
 !/raw/other_raw_data/.gitkeep
 !/raw/other_raw_data/WinEvt/
