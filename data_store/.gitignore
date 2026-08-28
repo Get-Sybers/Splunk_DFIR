@@ -37,6 +37,15 @@
 !/README.md
 
 !/dependencies/
+!/dependencies/.gitkeep
+!/dependencies/hayabusa/
+!/dependencies/hayabusa/.gitkeep
+!/dependencies/suricata-rules/
+!/dependencies/suricata-rules/.gitkeep
+!/dependencies/volatility3-symbols/
+!/dependencies/volatility3-symbols/.gitkeep
+!/dependencies/yara-rules/
+!/dependencies/yara-rules/.gitkeep
 !/dependencies/evtxecmd/
 !/dependencies/evtxecmd/.gitkeep
 !/dependencies/evtxecmd/README.md
@@ -48,6 +57,9 @@
 !/docker_images/.gitkeep
 
 !/processed/
+!/processed/.gitkeep
+!/processed/volatility/
+!/processed/volatility/.gitkeep
 !/processed/csv/
 !/processed/csv/.gitkeep
 !/processed/json/
@@ -61,6 +73,7 @@
 !/processed/velociraptor/
 !/processed/velociraptor/README.md
 !/processed/windows_logs/
+!/processed/windows_logs/.gitkeep
 !/processed/windows_logs/hostname1/
 !/processed/windows_logs/hostname1/.gitkeep
 !/processed/windows_logs/hostname2/
@@ -73,6 +86,7 @@
 !/processed/zimmerman/.gitkeep
 
 !/raw/
+!/raw/.gitkeep
 !/raw/VM_files/
 !/raw/VM_files/.gitkeep
 !/raw/disk_images/
