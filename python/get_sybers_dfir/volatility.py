@@ -25,8 +25,8 @@ Emits a machine-readable summary as JSON on stdout for an honest ``changed_when`
 
     python -m get_sybers_dfir.volatility --memory-dir RAW/memory --out-dir PROCESSED/volatility \
         --symbols-dir DEPENDENCIES/volatility3-symbols \
-        --renderer dev-scripts/volatility/jsonl_dfir_renderer.py \
-        --plugins-dir dev-scripts/volatility/plugins
+        --renderer third_party/piiat-mem/jsonl_dfir_renderer.py \
+        --plugins-dir third_party/piiat-mem/plugins
 """
 from __future__ import annotations
 

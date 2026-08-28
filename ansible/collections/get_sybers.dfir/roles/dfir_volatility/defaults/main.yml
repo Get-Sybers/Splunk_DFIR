@@ -15,9 +15,9 @@ dfir_volatility_out_dir: "{{ dfir_volatility_adx_out_dir if dfir_volatility_pipe
 # Kernel symbol cache (passed as --symbols-dir). Windows plugins fetch ISF tables from
 # the symbol servers on first use — pre-seed this on an isolated host.
 dfir_volatility_symbols_dir: "{{ dfir_volatility_repo_root }}/data_store/dependencies/volatility3-symbols"
-# Custom renderer + plugins live in the repo (dev-scripts), mounted into the run.
-dfir_volatility_renderer: "{{ dfir_volatility_repo_root }}/dev-scripts/volatility/jsonl_dfir_renderer.py"
-dfir_volatility_plugins_dir: "{{ dfir_volatility_repo_root }}/dev-scripts/volatility/plugins"
+# Custom renderer + plugins come from the PIIAT-Mem submodule (third_party/piiat-mem), mounted into the run.
+dfir_volatility_renderer: "{{ dfir_volatility_repo_root }}/third_party/piiat-mem/jsonl_dfir_renderer.py"
+dfir_volatility_plugins_dir: "{{ dfir_volatility_repo_root }}/third_party/piiat-mem/plugins"
 # The hardened in-repo image (build with playbooks/dfir-build-images.yml).
 dfir_volatility_image: "dfir/volatility:latest"
 # Allow the container network access for ISF symbol fetch — the ONE legitimate

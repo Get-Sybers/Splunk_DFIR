@@ -42,7 +42,7 @@ argument_specs:
       dfir_volatility_renderer:
         type: str
         required: false
-        description: "Path to the jsonl_dfir_renderer.py (dev-scripts/volatility)."
+        description: "Path to the jsonl_dfir_renderer.py (third_party/piiat-mem)."
       dfir_volatility_plugins_dir:
         type: str
         required: false

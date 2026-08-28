@@ -12,8 +12,10 @@
     source: build
     force_source: "{{ dfir_images_force | bool }}"
     build:
-      path: "{{ dfir_images_context }}"
-      dockerfile: "{{ dfir_images_name }}/Dockerfile"
+      # Most images build from the shared docker/ context; an image may override
+      # its context+dockerfile (e.g. volatility builds from the PIIAT-Mem submodule).
+      path: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).context | default(dfir_images_context, true) }}"
+      dockerfile: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).dockerfile | default(dfir_images_name ~ '/Dockerfile', true) }}"
 
 - name: "images-build | inspect dfir/{{ dfir_images_name }}"
   community.docker.docker_image_info:

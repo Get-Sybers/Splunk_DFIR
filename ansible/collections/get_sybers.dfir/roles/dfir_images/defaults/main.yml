@@ -21,3 +21,10 @@ dfir_images_set:
 
 # Rebuild even when an image already exists (docker build cache still applies).
 dfir_images_force: false
+
+# Per-image build context/dockerfile overrides. volatility is sourced from the
+# PIIAT-Mem submodule (its own docker/ context carries the shared harden.yml).
+dfir_images_build_overrides:
+  volatility:
+    context: "{{ dfir_images_repo_root }}/third_party/piiat-mem/docker"
+    dockerfile: "Dockerfile"
