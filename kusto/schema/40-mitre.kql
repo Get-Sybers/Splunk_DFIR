@@ -580,7 +580,10 @@ CarService_Evtx() {
 }
 
 // Volatility windows.svcscan (memory) — every registered service with its binary
-// (Binary, or hosting Dll for svchost) and owning PID. State/Start/Type stay native.
+// and owning PID. svcscan emits THREE binary columns: `Binary` (in-memory SCM
+// image path), `Binary (Registry)` (the registry ImagePath, present when the
+// in-memory one is null — e.g. stopped services), and `Dll` (the hosted DLL for
+// svchost services). Prefer them in that order. State/Start/Type stay native.
 .create-or-alter function
 with (docstring = "CAR 'service' from Volatility svcscan (memory) (native fields + CAR fields)", folder = "CAR/service")
 CarService_Memory() {
@@ -589,7 +592,7 @@ CarService_Memory() {
     | extend
         action     = "create",
         name       = tostring(Record.Name),
-        image_path = iff(isnotempty(tostring(Record.Binary)), tostring(Record.Binary), tostring(Record.Dll)),
+        image_path = tostring(coalesce(Record.Binary, Record.["Binary (Registry)"], Record.Dll)),
         pid        = tolong(Record.PID)
 }
 
@@ -632,7 +635,7 @@ with (docstring = "CAR 'file' from Sysmon 11/23 (native fields + CAR fields)", f
 CarFile_Sysmon() {
     database("host").EvtxEcmdJson
     | where Provider matches regex @"(?i)sysmon" and EventId in (11, 23)
-    | extend _target = EvtxPayload(Payload, "TargetFilename")
+    | extend _target = EvtxPayload(Payload, "TargetFilename"), _hashes = EvtxPayload(Payload, "Hashes")
     | extend
         Timestamp     = TimeCreated,
         action        = iff(EventId == 11, "create", "delete"),
@@ -641,10 +644,15 @@ CarFile_Sysmon() {
         image_path    = EvtxPayload(Payload, "Image"),
         pid           = tolong(EvtxPayload(Payload, "ProcessId")),
         user          = EvtxPayload(Payload, "User"),
+        // Sysmon 23 (FileDelete) carries the deleted file's Hashes — extract them
+        // into the canonical file hash fields, as CarProcess/Module/Driver do.
+        md5_hash      = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
+        sha1_hash     = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
+        sha256_hash   = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
         hostname      = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
         fqdn          = iff(Computer contains ".", Computer, ""),
         creation_time = iff(EventId == 11, TimeCreated, datetime(null))
-    | project-away _target
+    | project-away _target, _hashes
 }
 
 // Volatility windows.filescan (memory) — FILE_OBJECTs resident at capture (incl.
@@ -882,10 +890,12 @@ with (docstring = "CAR 'thread' from Volatility thrdscan (memory) (native fields
 CarThread_Memory() {
     database("memory").VolatilityJson
     | where Plugin == "windows.thrdscan"
-    | extend _sm = tostring(Record.Win32StartPath)
+    | extend _sm = tostring(coalesce(Record.Win32StartPath, Record.StartPath))
     | extend
         Timestamp         = todatetime(Record.CreateTime),
-        action            = "create",
+        // thrdscan surfaces exited threads too (ExitTime set) — those are a
+        // terminate, not a create.
+        action            = iff(isnotempty(tostring(Record.ExitTime)), "terminate", "create"),
         tgt_pid           = tolong(Record.PID),
         tgt_tid           = tolong(Record.TID),
         start_address     = tostring(Record.Win32StartAddress),
