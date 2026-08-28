@@ -14,6 +14,7 @@
       ansible.builtin.command:
         argv: >-
             {{ ['python3', '-m', 'get_sybers_dfir.plaso', '--input-dir', dfir_plaso_input_dir, '--vm-dir', dfir_plaso_vm_dir,
+               '--loose-dir', dfir_plaso_loose_dir,
                 '--out-dir', dfir_plaso_out_dir, '--module', dfir_plaso_module, '--image', dfir_plaso_image]
             + (['--force'] if dfir_plaso_force | bool else []) }}
       environment:

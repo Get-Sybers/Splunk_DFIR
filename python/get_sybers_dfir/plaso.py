@@ -241,6 +241,20 @@ def discover_vms(vm_dir: str) -> list[str]:
     )
 
 
+def discover_loose(loose_dir: str) -> list[str]:
+    """Immediate sub-folders of loose_dir (one per-host artefact tree each),
+    sorted. A loose source is a DIRECTORY of collected files (Linux /var/log
+    trees, mobile filesystem dumps, triage output) — log2timeline parses a
+    directory source natively (utmp/wtmp, syslog/auth/cron text, filestat, ...),
+    which is how the non-image OS families reach the timeline."""
+    if not os.path.isdir(loose_dir):
+        return []
+    return sorted(
+        os.path.join(loose_dir, d) for d in os.listdir(loose_dir)
+        if os.path.isdir(os.path.join(loose_dir, d))
+    )
+
+
 # ---- the Plaso two-step ----------------------------------------------------
 def _sanitize_host(value: str) -> str:
     value = re.sub(r"[^A-Za-z0-9._-]", "_", value or "")
@@ -339,10 +353,13 @@ def run_plaso(mount_dir, src_rel, name, out_dir, module_path, image=_IMAGE) -> d
     return {"source": src_rel, "ok": True, "host": host, "output": os.path.basename(final)}
 
 
-def process(input_dir, vm_dir, out_dir, module_path, image=_IMAGE, force=False) -> dict:
-    """Process every image under input_dir and every VM export under vm_dir."""
+def process(input_dir, vm_dir, out_dir, module_path, image=_IMAGE, force=False,
+            loose_dir="") -> dict:
+    """Process every image under input_dir, every VM export under vm_dir, and
+    every per-host loose-artefact tree under loose_dir."""
     input_dir = os.path.realpath(input_dir)
     vm_dir = os.path.realpath(vm_dir) if vm_dir else ""
+    loose_dir = os.path.realpath(loose_dir) if loose_dir else ""
     out_dir = os.path.realpath(out_dir)
     _ensure_writable(out_dir)
     for sub in ("plaso", "jsonl", "logs"):
@@ -350,6 +367,7 @@ def process(input_dir, vm_dir, out_dir, module_path, image=_IMAGE, force=False) 
 
     images = discover_images(input_dir) if os.path.isdir(input_dir) else []
     vms = discover_vms(vm_dir) if vm_dir else []
+    loose = discover_loose(loose_dir) if loose_dir else []
 
     processed = skipped = failed = warnings = 0
     results = []
@@ -385,6 +403,21 @@ def process(input_dir, vm_dir, out_dir, module_path, image=_IMAGE, force=False) 
             failed += 1
         results.append(res)
 
+    for tree in loose:
+        # one per-host tree: mount its PARENT and hand log2timeline the subdir
+        # as the source (a directory source — no image mounting involved).
+        tree_name = get_clean_filename(os.path.basename(tree))
+        if not force and _already_done(out_dir, tree_name):
+            skipped += 1
+            continue
+        res = run_plaso(os.path.dirname(tree), os.path.basename(tree), tree_name,
+                        out_dir, module_path, image)
+        if res["ok"]:
+            processed += 1
+        else:
+            failed += 1
+        results.append(res)
+
     return {
         "tool": "plaso",
         "input_dir": input_dir,
@@ -403,10 +436,13 @@ def process(input_dir, vm_dir, out_dir, module_path, image=_IMAGE, force=False) 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="get_sybers_dfir.plaso",
-        description="disk images / VM exports -> enriched Plaso JSON Lines",
+        description="disk images / VM exports / loose-artefact trees -> enriched Plaso JSON Lines",
     )
     ap.add_argument("--input-dir", required=True, help="disk-image tree (E01/raw/vmdk/vhd/...)")
     ap.add_argument("--vm-dir", default="", help="VMware VM exports (one folder per VM)")
+    ap.add_argument("--loose-dir", default="",
+                    help="loose-artefact trees (one folder per host: /var/log copies, "
+                         "mobile filesystem dumps, triage output) — parsed as directory sources")
     ap.add_argument("--out-dir", required=True, help="output dir (jsonl/, plaso/, logs/ created within)")
     ap.add_argument("--module", required=True, help="path to the l2t_json_dfir.py output module")
     ap.add_argument("--image", default=_IMAGE,
@@ -417,7 +453,7 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = process(
         args.input_dir, args.vm_dir, args.out_dir, args.module,
-        image=args.image, force=args.force,
+        image=args.image, force=args.force, loose_dir=args.loose_dir,
     )
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")

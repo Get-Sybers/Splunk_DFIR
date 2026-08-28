@@ -242,11 +242,61 @@ def run(host: str = "127.0.0.1", port: int = 8080) -> _Checker:
     else:
         c.skip("TIMELINE (host.L2t* filesystem tables empty)")
 
+    # -- LINUX / Unix (plaso loose-artefact or image sources) -----------------
+    # The Linux-facing CAR sources: wtmp/utmp logon records, sshd syslog logins,
+    # cron task runs. Exercised by processing per-host /var/log trees (the
+    # plaso lane's --loose-dir) or a Linux disk image.
+    if c.has_rows("mitre", "CarUserSession_Utmp() | count"):
+        c.section("LINUX — utmp/ssh/cron (host.L2tUtmp / L2tText)")
+        c.has("mitre", "CarUserSession_Utmp() | where action=='login' and isnotempty(user) | count",
+              "CarUserSession_Utmp: logins with a user")
+        c.zero("mitre", "CarUserSession_Utmp() | where action !in ('login','logout') | count",
+               "CarUserSession_Utmp: action in {login,logout}")
+        c.zero("mitre", "CarUserSession_Utmp() | where isnotempty(user) and user != tostring(Record.username) | count",
+               "CarUserSession_Utmp: user == Record.username (round-trip faithful)")
+        if c.has_rows("mitre", "CarUserSession_Ssh() | count"):
+            c.has("mitre", "CarUserSession_Ssh() | where isnotempty(user) and src_port > 0 | count",
+                  "CarUserSession_Ssh: user + client port populated")
+            c.zero("mitre", "CarUserSession_Ssh() | where action != 'login' | count",
+                   "CarUserSession_Ssh: every row is a login")
+        if c.has_rows("mitre", "CarProcess_Cron() | count"):
+            c.has("mitre", "CarProcess_Cron() | where isnotempty(command_line) and isnotempty(exe) | count",
+                  "CarProcess_Cron: command_line + exe populated")
+            c.zero("mitre", "CarProcess_Cron() | where isnotempty(command_line) and exe != extract(@'^(\\S+)', 1, command_line) | count",
+                   "CarProcess_Cron: exe == first token of command_line (round-trip faithful)")
+    else:
+        c.skip("LINUX (no utmp/wtmp evidence processed)")
+
     # -- NO-PRODUCER sources must be empty ------------------------------------
     c.section("NO-PRODUCER sources must be empty (no fabrication without velociraptor)")
     c.zero("mitre", "CarProcess_Srum() | count", "CarProcess_Srum empty (no velociraptor/SRUM producer)")
     c.zero("mitre", "CarFlow_Srum() | count", "CarFlow_Srum empty (no velociraptor/SRUM producer)")
     c.zero("mitre", "CarRegistry_Recmd() | count", "CarRegistry_Recmd empty (no velociraptor/RECmd producer)")
+
+    # -- OS-family coverage ----------------------------------------------------
+    # The validation aims to exercise the CAR model over every major OS family
+    # the corpus holds. Report what THIS emulator's data actually covered, so
+    # the release gate can require the full set rather than trusting one family
+    # to stand in for all of them.
+    c.section("OS-family coverage (what this run actually exercised)")
+    coverage = {
+        "Windows (event logs: Sysmon/Security)":
+            c.has_rows("host", "EvtxEcmdJson | count"),
+        "Windows (disk artefacts: MFT/prefetch/registry)":
+            c.has_rows("host", "union isfuzzy=true database('host').L2tMft, database('host').L2tPrefetch | count"),
+        "Windows (memory: Volatility)":
+            c.has_rows("memory", "VolatilityJson | count"),
+        "Linux/Unix (utmp/ssh/cron)":
+            c.has_rows("mitre", "CarUserSession_Utmp() | count"),
+        "macOS (utmpx/fseventsd)":
+            c.has_rows("host", "union isfuzzy=true database('host').L2tUtmpx, database('host').L2tFseventsd | count"),
+        "Network capture (Zeek)":
+            c.has_rows("network", "ZeekConn | count"),
+    }
+    for family, covered in coverage.items():
+        c.lines.append(f"    {'●' if covered else '○'} {family}")
+    c.os_families_covered = sum(coverage.values())
+    c.os_families_total = len(coverage)
 
     # -- ROLL-UP fidelity: union == sum of sources ----------------------------
     c.section("Roll-up unions fabricate nothing (union count == sum of sources)")

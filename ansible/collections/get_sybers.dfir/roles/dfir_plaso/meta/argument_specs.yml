@@ -24,6 +24,13 @@ argument_specs:
         type: str
         required: false
         description: "VMware VM export folders (one sub-folder per VM); optional."
+      dfir_plaso_loose_dir:
+        type: str
+        default: ""
+        description:
+          - Loose-artefact trees, one folder per host (/var/log copies, mobile
+            filesystem dumps, triage output), parsed by log2timeline as directory
+            sources. Empty disables loose sources (opt-in — trees can be large).
       dfir_plaso_adx_out_dir:
         type: str
         required: false

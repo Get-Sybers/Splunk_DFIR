@@ -8,6 +8,10 @@ dfir_plaso_repo_root: "{{ role_path }}/../../../../.."
 
 dfir_plaso_input_dir: "{{ dfir_plaso_repo_root }}/data_store/raw/disk_images"
 dfir_plaso_vm_dir: "{{ dfir_plaso_repo_root }}/data_store/raw/VM_files"
+# Loose-artefact trees (one folder per host: /var/log copies, mobile filesystem
+# dumps, triage output) — parsed by log2timeline as directory sources. Empty =
+# no loose sources (opt-in: loose trees can be very large).
+dfir_plaso_loose_dir: ""
 dfir_plaso_adx_out_dir: "{{ dfir_plaso_repo_root }}/data_store/processed/log2timeline"
 dfir_plaso_sofelk_out_dir: "{{ dfir_plaso_repo_root }}/data_store/processed/sofelk/log2timeline"
 # Resolved output base for the selected pipeline — consumed by

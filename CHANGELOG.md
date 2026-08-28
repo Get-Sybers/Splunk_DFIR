@@ -8,6 +8,19 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Added
+- **Plaso loose-artefact sources** (`--loose-dir` / `dfir_plaso_loose_dir`): one
+  folder per host (/var/log copies, mobile filesystem dumps, triage output),
+  parsed by log2timeline as directory sources — how the non-image OS families
+  reach the timeline. Opt-in (loose trees can be very large).
+- **Per-OS CAR validation**: `dxdfir verify-car` now asserts the Linux-facing
+  sources with expected values (utmp login/logout + user round-trip, sshd
+  logins with client port, cron command/exe round-trip) and reports an
+  **OS-family coverage summary** (Windows events/disk/memory, Linux/Unix,
+  macOS utmpx/fseventsd, network) so the release gate requires every family,
+  not one standing in for all. Proven 66/0 over: Windows XP + Security/Sysmon,
+  the 2020 Linux threat-analysis server logs (CentOS + Debian-style + pfSense;
+  84k cron runs, real attacker logins), the macOS 2019 tuck image, an Android
+  Nexus image, Volatility memory, and Zeek captures.
 - **`dxdfir verify-car`** (`get_sybers_dfir.carcheck`) — the promotion gate for
   CAR correctness at the ADX level across EVERY lane, ported to Python from the
   original shell harness: asserts expected field VALUES (not just presence) per
