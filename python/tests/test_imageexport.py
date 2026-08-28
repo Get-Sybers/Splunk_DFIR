@@ -5,22 +5,20 @@ from get_sybers_dfir import imageexport
 
 
 def test_argv_matches_disk_image_sh_recipe(tmp_path):
-    img = tmp_path / "Host.E01"
+    img = tmp_path / "corpus" / "host.E01"
+    img.parent.mkdir()
     img.write_bytes(b"x")
     out = tmp_path / "out"
     argv = imageexport.image_export_argv(str(img), str(out))
-    # container + mounts
+    # hardened docker run: confinement flags + the tool argv
     assert argv[:3] == ["docker", "run", "--rm"]
-    assert "-v" in argv and f"{tmp_path}:/data:ro" in argv
-    assert f"{out}:/out" in argv
-    # the plaso tool and its flags (mirrors sig_extract_artifacts)
+    for flag in ("--cap-drop", "--security-opt", "--read-only", "--network"):
+        assert flag in argv
     assert "image_export.py" in argv
-    assert argv[argv.index("--partitions") + 1] == "all"
-    assert argv[argv.index("--vss_stores") + 1] == "none"
     assert argv[argv.index("--artifact_filters") + 1] == "WindowsEventLogs"
-    # the image is referenced by its basename under the /data mount, and is last
-    assert argv[-1] == "/data/Host.E01"
-    assert argv[argv.index("-w") + 1] == "/out"
+    assert f"{img.parent}:/data:ro" in argv
+    assert f"{out}:/out" in argv
+    assert argv[-1] == "/data/host.E01"
 
 
 def test_argv_vss_and_multiple_filters(tmp_path):

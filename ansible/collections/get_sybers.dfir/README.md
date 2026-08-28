@@ -32,7 +32,7 @@ from in-repo Dockerfiles, with ansible as the container's only execution path
 allow-listed run role, uid 0 renamed `ansible` and locked, no sudo/su, no
 package managers, tool runs as uid 2000) — and verifies the contract per build.
 Nothing third-party is pulled at runtime except the proprietary Kusto emulator.
-Run `playbooks/dfir-build-images.yml` once per host (and after `docker/`
+A start-time **inventory guard** (`get_sybers_dfir.images`) refuses to process against anything but a known hardened `dfir/*` image — each processor preflight asserts the exact image it will run is hardened, and `dxdfir verify-images` audits the whole namespace for missing, un-hardened, or unexpected images (something added that shouldn't be). Run `playbooks/dfir-build-images.yml` once per host (and after `docker/`
 changes); see [the role README](roles/dfir_images/README.md).
 
 Analysis role: **`dfir_detect_adx`** — the detection orchestrator

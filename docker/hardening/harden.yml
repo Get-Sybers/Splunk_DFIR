@@ -2,10 +2,10 @@
 # In-image hardening — executed BY ANSIBLE INSIDE each dfir/* image build
 # (`ansible-playbook -c local`), then squashed into a fresh final stage.
 #
-# Posture (Splunk-docker style): ansible is not a build-time visitor, it IS the
-# container's only execution path. The final image keeps ansible-core and ships
-# a fixed ENTRYPOINT that runs the embedded, allow-listed run role
-# (docker/runtime) — only that role can run inside the container. Meanwhile:
+# BUILD-TIME hardener only: ansible strips the image here, then each Dockerfile
+# REMOVES ansible (and, where the tool doesn't need them, the shell and python)
+# in the same stage and squashes to a minimal final image whose ENTRYPOINT is
+# the tool itself. Ansible never ships in the runtime image. What this does:
 #
 #   - the uid-0 account is RENAMED to `ansible`, password-locked, nologin —
 #     there is no `root` login name and no way to become uid 0
@@ -14,8 +14,8 @@
 #   - package managers and pip are removed (nothing installable at runtime)
 #   - the tool runs as the fixed unprivileged user (USER 2000:2000)
 #
-# Contract verified after every build by the dfir_images role, from INSIDE the
-# container via the run role's verify mode.
+# Contract verified after every build by the dfir_images role (static image
+# config + a `docker export` scan proving the removed binaries are absent).
 #
 # Vars (passed with -e from each Dockerfile):
 #   harden_user            runtime user name         (default dfir)
@@ -111,6 +111,7 @@
         state: absent
       loop:
         - /var/lib/apt/lists
+        - /var/lib/dpkg
         - /var/cache/apt
         - /var/cache/debconf
         - /usr/share/doc
@@ -121,27 +122,16 @@
         - /var/log/apt
         - /var/log/dpkg.log
 
-    - name: "harden | remove package-manager binaries (nothing installable at runtime)"
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /usr/bin/apt
-        - /usr/bin/apt-get
-        - /usr/bin/apt-cache
-        - /usr/bin/apt-config
-        - /usr/bin/apt-mark
-        - /usr/bin/apt-key
-        - /usr/bin/dpkg
-        - /usr/bin/dpkg-deb
-        - /usr/bin/dpkg-query
-        - /usr/bin/dpkg-split
-        - /usr/bin/dpkg-trigger
-        - /usr/bin/dpkg-divert
-        - /usr/bin/dpkg-statoverride
-        - /usr/bin/dpkg-maintscript-helper
-        - /usr/bin/add-apt-repository
-        - /usr/bin/apt-add-repository
+    - name: "harden | remove ALL apt/dpkg binaries (glob — nothing installable)"
+      # a glob, not an explicit list: distros ship helpers that a hand-list
+      # misses (apt-cdrom, dpkg-realpath, …), and every one is a package-manager
+      # entry point.
+      ansible.builtin.shell:
+        cmd: >-
+          set -e;
+          rm -f /usr/bin/apt* /usr/bin/dpkg* /usr/bin/add-apt-repository
+          /usr/sbin/apt* 2>/dev/null || true
+      changed_when: true
       when: harden_remove_pkg_mgr | bool
 
     - name: "harden | remove pip so nothing can be installed into python at runtime"
@@ -163,14 +153,6 @@
         path: "{{ item }}"
         state: absent
       loop: "{{ harden_extra_remove }}"
-
-    - name: "harden | the runtime user owns its ansible tmp"
-      ansible.builtin.file:
-        path: "/home/{{ harden_user }}/.ansible/tmp"
-        state: directory
-        owner: "{{ harden_user }}"
-        group: "{{ harden_user }}"
-        mode: "0700"
 
     - name: "harden | record the hardening contract"
       ansible.builtin.copy:

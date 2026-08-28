@@ -1,64 +1,67 @@
 #!/bin/bash
 # ==============================================================================
-# Pre-seed the DX_DFIR analysis images as tarballs for offline hosts.
+# Save / load the DX_DFIR analysis images as tarballs for offline hosts.
 #
-# The processing scripts pull their images from a registry on first use, which
-# an air-gapped analysis host cannot do. This script is the online-side step:
-# pull each image and `docker save` it into data_store/docker_images/ so the
-# tarballs can be carried to the offline host, where `--load` (or the manual
-# `docker load -i` in the docs) brings them back.
+# The runtime tool images (dfir/*) are BUILT in-repo
+# (`ansible-playbook playbooks/dfir-build-images.yml`), not pulled — so this
+# script `docker save`s the local builds. Only the two images that cannot be
+# built from source are pulled first: the proprietary Kusto emulator and the
+# stock .NET runtime for evtxecmd's operator-supplied mode.
 #
-# Split out of setup-environment.sh, which now only prepares the host — image
-# management is a separate concern with its own online/offline lifecycle.
-#
-# The daemon is reached the same way as setup-environment.sh: prefer the
-# unprivileged socket, fall back to sudo, and say plainly when neither answers
-# rather than letting a bare `docker` fail mid-loop.
+# This is the image half of the offline lifecycle. For a complete portable
+# bundle (images + the dxdfir CLI wheels + the ansible collections + the repo),
+# use scripts/package-offline.sh, which calls this script.
 #
 # Usage:
-#   scripts/save-docker-images.sh              pull and save every image
-#   scripts/save-docker-images.sh --load       load every tarball already saved
+#   scripts/save-docker-images.sh              save every image to a tarball
+#   scripts/save-docker-images.sh --build      build the dfir/* images first, then save
+#   scripts/save-docker-images.sh --load       load every tarball in the image dir
+#   scripts/save-docker-images.sh --verify     load, then assert the hardened inventory
 #   scripts/save-docker-images.sh --list       show the images this manages
 #   scripts/save-docker-images.sh --help
+#
+# The image directory defaults to data_store/docker_images/ and is overridable
+# with $DXDFIR_IMAGE_DIR (the offline packager points it at the bundle staging).
 # ==============================================================================
 
 set -o pipefail
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
-DOCKER_TAR_DIR="$REPO_ROOT_DIR/data_store/docker_images"
+DOCKER_TAR_DIR="${DXDFIR_IMAGE_DIR:-$REPO_ROOT_DIR/data_store/docker_images}"
 
-# Docker images the processors run. Keep in step with the same list in
-# setup-environment.sh's documentation.
-# Everything the pipeline runs is now BUILT in-repo (hardened dfir/* images —
-# `ansible-playbook playbooks/dfir-build-images.yml`); this script saves those
-# builds plus the two images that cannot be built from source: the proprietary
-# Kusto emulator, and the stock .NET runtime for evtxecmd's operator-supplied
-# mode. Third-party tool images are gone from the runtime entirely.
-IMAGES=(
+# Runtime tool images — BUILT in-repo, never pulled.
+BUILT_IMAGES=(
     "dfir/yara:latest"
     "dfir/suricata:latest"
     "dfir/zeek:latest"
     "dfir/volatility:latest"
     "dfir/plaso:latest"
     "dfir/evtxecmd:latest"
+)
+# Unbuildable images — pulled from a registry (online side only).
+PULL_IMAGES=(
     "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
     "mcr.microsoft.com/dotnet/runtime:9.0"
 )
+ALL_IMAGES=("${BUILT_IMAGES[@]}" "${PULL_IMAGES[@]}")
 
 MODE="save"
+BUILD_FIRST=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --build) BUILD_FIRST=1 ;;
         --load) MODE="load" ;;
+        --verify) MODE="verify" ;;
         --list) MODE="list" ;;
         -h|--help)
-            sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
-            echo "❌ Unknown option: $1"
-            echo "   Usage: $0 [--load] [--list] [--help]"
+            echo "❌ Unknown option: $1" >&2
+            echo "   Usage: $0 [--build] [--load] [--verify] [--list] [--help]" >&2
             exit 1
             ;;
     esac
@@ -68,18 +71,17 @@ done
 die() { echo "❌ $*" >&2; exit 1; }
 
 if [[ "$MODE" == "list" ]]; then
-    echo "Images managed by this script:"
-    printf '   • %s\n' "${IMAGES[@]}"
-    echo "Tarball directory: $DOCKER_TAR_DIR"
+    echo "Built in-repo (docker save):"
+    printf '   • %s\n' "${BUILT_IMAGES[@]}"
+    echo "Pulled (unbuildable):"
+    printf '   • %s\n' "${PULL_IMAGES[@]}"
+    echo "Image directory: $DOCKER_TAR_DIR"
     exit 0
 fi
 
 ################################################################################
-# Resolve how to talk to the daemon.
-#
-# `command -v docker` only proves the CLI exists; the daemon may be stopped and
-# group membership does not apply until a new login session. Prefer the
-# unprivileged socket, fall back to an escalated one when sudo is available.
+# Resolve how to talk to the daemon: prefer the unprivileged socket, fall back
+# to sudo, say plainly when neither answers.
 DOCKER_CMD=""
 if docker info >/dev/null 2>&1; then
     DOCKER_CMD="docker"
@@ -91,15 +93,27 @@ fi
 
 image_to_filename() { echo "$1" | tr '/' '_' | tr ':' '_'; }
 
+# The hardened-inventory guard, used by --verify after a load.
+verify_inventory() {
+    local py="$REPO_ROOT_DIR/python"
+    if PYTHONPATH="$py" python3 -c "import get_sybers_dfir.images" 2>/dev/null; then
+        echo "🔒 Verifying the hardened image inventory..."
+        PYTHONPATH="$py" python3 -m get_sybers_dfir.images --audit >/dev/null \
+            && echo "✅ Inventory clean — all hardened tool images present, nothing unexpected." \
+            || die "Image inventory verification FAILED (see: python3 -m get_sybers_dfir.images --audit)."
+    else
+        echo "ℹ️  get_sybers_dfir not importable here; skipping the inventory guard (run 'dxdfir verify-images' after installing the CLI)."
+    fi
+}
+
 ################################################################################
-if [[ "$MODE" == "load" ]]; then
+if [[ "$MODE" == "load" || "$MODE" == "verify" ]]; then
     shopt -s nullglob
     TARBALLS=("$DOCKER_TAR_DIR"/*.tar)
     shopt -u nullglob
-    [[ ${#TARBALLS[@]} -gt 0 ]] || die "No tar balls found in $DOCKER_TAR_DIR"
+    [[ ${#TARBALLS[@]} -gt 0 ]] || die "No tarballs found in $DOCKER_TAR_DIR"
 
     echo "📦 Loading Docker images from $DOCKER_TAR_DIR:"
-    echo "───────────────────────────────────────────────────"
     failed=0
     for tarfile in "${TARBALLS[@]}"; do
         echo "📦 Loading ${tarfile##*/}..."
@@ -109,45 +123,52 @@ if [[ "$MODE" == "load" ]]; then
             echo "❌ Error loading ${tarfile##*/}"
             failed=$((failed + 1))
         fi
-        echo "───────────────────────────────────────────"
     done
-    if [[ $failed -gt 0 ]]; then
-        die "$failed tar ball(s) failed to load."
-    fi
+    [[ $failed -eq 0 ]] || die "$failed tarball(s) failed to load."
     echo "✨ Finished loading Docker images"
+    [[ "$MODE" == "verify" ]] && verify_inventory
     exit 0
 fi
 
 ################################################################################
-# MODE=save: pull each image and save it to a tarball.
-mkdir -p "$DOCKER_TAR_DIR"
-
-echo "📥 Pulling and saving Docker images to $DOCKER_TAR_DIR..."
-echo ""
-failed=0
-for image in "${IMAGES[@]}"; do
-    echo "🔄 Pulling $image..."
-    if ! $DOCKER_CMD pull "$image"; then
-        echo "❌ Failed to pull $image"
-        failed=$((failed + 1))
-        continue
-    fi
-    echo "✅ Pulled $image"
-
-    image_filename="$(image_to_filename "$image")"
-    echo "💾 Saving $image as $image_filename.tar..."
-    if $DOCKER_CMD save "$image" -o "$DOCKER_TAR_DIR/$image_filename.tar"; then
-        echo "✅ Saved $image_filename.tar"
-    else
-        echo "❌ Failed to save $image_filename.tar"
-        failed=$((failed + 1))
-    fi
-    echo ""
-done
-
-if [[ $failed -gt 0 ]]; then
-    die "$failed operation(s) failed."
+# MODE=save.
+if [[ "$BUILD_FIRST" -eq 1 ]]; then
+    echo "🐳 Building the hardened dfir/* images first..."
+    ( cd "$REPO_ROOT_DIR" && ansible-playbook \
+        ansible/collections/get_sybers.dfir/playbooks/dfir-build-images.yml \
+        -i localhost, -c local ) || die "Image build failed."
 fi
 
+mkdir -p "$DOCKER_TAR_DIR"
+echo "💾 Saving Docker images to $DOCKER_TAR_DIR..."
+echo ""
+failed=0
+
+# Built images: must already exist locally (never pulled).
+for image in "${BUILT_IMAGES[@]}"; do
+    if ! $DOCKER_CMD image inspect "$image" >/dev/null 2>&1; then
+        echo "❌ $image is not built. Run: ansible-playbook playbooks/dfir-build-images.yml (or pass --build)"
+        failed=$((failed + 1)); continue
+    fi
+    fn="$(image_to_filename "$image")"
+    echo "💾 Saving (built) $image -> $fn.tar"
+    $DOCKER_CMD save "$image" -o "$DOCKER_TAR_DIR/$fn.tar" \
+        && echo "✅ $fn.tar" || { echo "❌ save failed: $image"; failed=$((failed + 1)); }
+done
+
+# Pulled images: fetch then save.
+for image in "${PULL_IMAGES[@]}"; do
+    echo "🔄 Pulling $image..."
+    if ! $DOCKER_CMD pull "$image"; then
+        echo "❌ Failed to pull $image"; failed=$((failed + 1)); continue
+    fi
+    fn="$(image_to_filename "$image")"
+    echo "💾 Saving (pulled) $image -> $fn.tar"
+    $DOCKER_CMD save "$image" -o "$DOCKER_TAR_DIR/$fn.tar" \
+        && echo "✅ $fn.tar" || { echo "❌ save failed: $image"; failed=$((failed + 1)); }
+done
+
+[[ $failed -eq 0 ]] || die "$failed operation(s) failed."
+echo ""
 echo "🎉 All images saved to: $DOCKER_TAR_DIR"
-echo "   Carry these to the offline host and run: scripts/save-docker-images.sh --load"
+echo "   Load them on the offline host with: scripts/save-docker-images.sh --verify"

@@ -456,17 +456,20 @@ def suricata_argv(pcap, out_dir, rules_dir, rules_file, image, sets=None):
     dfir/suricata image (ansible-only execution, allow-listed argv, no caps, no
     network — offline replay needs none). ``sets`` are Suricata ``--set
     key=value`` tuning entries (HOME_NET etc. from ``var_sets``). Pure."""
-    tool = ["suricata", "-r", f"/pcaps/{os.path.basename(pcap)}",
-            "-l", "/out", "-k", "none"]
+    args = ["-r", f"/pcaps/{os.path.basename(pcap)}", "-l", "/out", "-k", "none"]
     if rules_file:
-        tool += ["-S", f"/rules/{os.path.basename(rules_file)}"]
+        args += ["-S", f"/rules/{os.path.basename(rules_file)}"]
     for entry in (sets or []):
-        tool += ["--set", entry]
-    return container.ansible_run(
-        image, tool,
+        args += ["--set", entry]
+    # suricata (the ENTRYPOINT) writes eve.json to the mounted -l /out; under the
+    # read-only rootfs it also touches /var/{run,log}/suricata -> tmpfs.
+    return container.run(
+        image, args,
         mounts=[f"{os.path.dirname(pcap)}:/pcaps:ro",
                 f"{os.path.realpath(rules_dir)}:/rules:ro",
                 f"{out_dir}:/out"],
+        tmpfs=["/var/run/suricata:rw,nosuid,nodev",
+               "/var/log/suricata:rw,nosuid,nodev"],
     )
 
 

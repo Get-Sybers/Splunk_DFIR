@@ -7,10 +7,16 @@ argument_specs:
         Builds every runtime tool container from its in-repo Dockerfile (context
         docker/, one directory per image), each of which runs the shared ansible
         hardening playbook (docker/hardening/harden.yml) inside the build and
-        squashes the result: fixed non-root user, no setuid/setgid binaries, no
-        package manager or pip, no shell unless the tool's invocation needs one.
-        After each build the role asserts the hardening contract (USER 2000:2000
-        and the com.get-sybers.hardened label). Nothing in the pipeline pulls a
+        squashes the result: uid 0 renamed 'ansible' and locked, sudo/su/pkexec
+        and the account-manipulation suite removed, every setuid/setgid bit
+        stripped, package managers and pip removed (nothing installable at
+        runtime), and the tool runs as a fixed non-root user (uid 2000). A shell
+        and python remain because ansible IS the container's only execution path
+        (its local connection needs them); attack surface is closed at the
+        entry, not by deletion — the pinned ansible ENTRYPOINT runs an
+        allow-listed run role, so a shell exists but nothing can invoke it.
+        After each build the role asserts the contract statically (USER 2000:2000,
+        pinned ENTRYPOINT, hardened label) AND from inside the running container. Nothing in the pipeline pulls a
         third-party tool image at runtime; the one exception is the Kusto
         emulator (proprietary, unbuildable) handled by dfir_deploy_adx.
     options:

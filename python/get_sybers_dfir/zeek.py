@@ -73,16 +73,16 @@ def _already_done(output_dir: str) -> bool:
 
 
 def zeek_argv(pcap_dir: str, rel: str, temp_dir: str, image: str) -> list[str]:
-    """The ``docker run`` argv for one zeek pass — the hardened dfir/zeek image
-    (ansible-only execution, allow-listed argv, no caps, no network); zeek
-    writes its logs to the mounted /logs cwd. Pure."""
-    return container.ansible_run(
+    """The ``docker run`` argv for one zeek pass on the minimal hardened
+    dfir/zeek image (zeek is the ENTRYPOINT; no caps, no network, read-only
+    rootfs); zeek writes its logs to the mounted /logs working dir. Pure."""
+    return container.run(
         image,
-        ["zeek", "-C", "-r", f"/pcap/{rel}",
+        ["-C", "-r", f"/pcap/{rel}",
          "LogAscii::use_json=T",
          "LogAscii::json_timestamps=JSON::TS_ISO8601"],
         mounts=[f"{pcap_dir}:/pcap:ro", f"{temp_dir}:/logs"],
-        chdir="/logs",
+        workdir="/logs",
     )
 
 

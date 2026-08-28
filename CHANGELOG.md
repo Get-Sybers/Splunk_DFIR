@@ -7,7 +7,85 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
-## [0.4.0] — 2026-08-27
+## [0.5.0] - 2026-08-28
+
+### Added
+- **Plaso loose-artefact sources** (`--loose-dir` / `dfir_plaso_loose_dir`): one
+  folder per host (/var/log copies, mobile filesystem dumps, triage output),
+  parsed by log2timeline as directory sources — how the non-image OS families
+  reach the timeline. Opt-in (loose trees can be very large).
+- **Per-OS CAR validation**: `dxdfir verify-car` now asserts the Linux-facing
+  sources with expected values (utmp login/logout + user round-trip, sshd
+  logins with client port, cron command/exe round-trip) and reports an
+  **OS-family coverage summary** (Windows events/disk/memory, Linux/Unix,
+  macOS utmpx/fseventsd, network) so the release gate requires every family,
+  not one standing in for all. Proven 66/0 over: Windows XP + Security/Sysmon,
+  the 2020 Linux threat-analysis server logs (CentOS + Debian-style + pfSense;
+  84k cron runs, real attacker logins), the macOS 2019 tuck image, an Android
+  Nexus image, Volatility memory, and Zeek captures.
+- **`dxdfir verify-car`** (`get_sybers_dfir.carcheck`) — the promotion gate for
+  CAR correctness at the ADX level across EVERY lane, ported to Python from the
+  original shell harness: asserts expected field VALUES (not just presence) per
+  CAR source, round-trip fidelity (each normalized field == its native source
+  field), per-artefact identity (every row carries a non-empty SourceFile —
+  never data compiled together), roll-up no-fabrication (union == sum of
+  sources), that no-producer sources (velociraptor: Srum/RECmd) stay empty, and
+  the Plaso-extraction guards (process exe is a program never a parsed
+  .pf/hive/$MFT; MFT names the file it describes; UsnJrnl deletes surface).
+  Proven green (59/0) on a clean run over host Sysmon + Windows Security,
+  network Zeek, memory Volatility (7 objects), and a Windows disk image
+  (prefetch/amcache/MFT/UsnJrnl). Replaces the retired `tests/car-runthrough.sh`.
+
+### Fixed
+- **CAR-model logic (from a Fable audit against the pinned Volatility 2.28.0 /
+  Plaso 20260720 field names)** — bugs a value run-through over Sysmon-dominated
+  evidence could not surface: `CarProcess_Plaso` mapped exe/image_path to the
+  parsed artefact's own path (a `.pf`/hive/`$MFT`) instead of the executed
+  program (H1/H2); `CarFile_Plaso` labelled every MFT row `\$MFT` (H3) and every
+  UsnJrnl row `modify`, hiding deletes (M3); `CarService_Evtx` read 7045's keys
+  for 4697 (M1); `CarUserSession_Security` read the wrong keys for 4778/4779
+  (M2); Sysmon-23 file hashes dropped (M5); svcscan `Binary (Registry)` skipped
+  (M6); amcache sha1 / BAM sid mis-sourced (M4/M7); plus identity/representation
+  fixes (SourceFile aliases, Velociraptor host/fqdn, packet_count null,
+  vocabulary calls for 4625/4648/4779). Also added provider/Channel guards.
+- The `dxdfir` CLI now declares the Python docker SDK (`requests`, `docker`) as
+  dependencies — `dxdfir deploy`/`ingest` drive community.docker and failed on a
+  clean install (and would have failed from the offline wheel bundle, which is
+  built from these declared deps).
+
+
+### Changed
+- **Container posture reworked from the ansible-run-role model to a minimal /
+  attack-surface-reduction model** — stronger against both container escape and
+  a supply-chain-compromised tool. The runtime images no longer ship ansible or
+  an in-container allow-list; each is stripped to the tool (tool-as-ENTRYPOINT),
+  with no shell or python except where the tool needs them (yara keeps sh;
+  volatility/plaso keep python). Build-time ansible hardening is kept (removed
+  from the final image): uid 0 renamed `ansible` and locked, sudo/su and
+  package managers/pip removed, setuid stripped, runs as uid 2000. Every
+  processor `docker run` now adds `--read-only --tmpfs /tmp --pids-limit 512`
+  on top of `--cap-drop ALL --security-opt no-new-privileges --network none`.
+  Images shrank substantially (yara 66→40MB, suricata 209→55MB, evtxecmd
+  263→93MB).
+
+### Added
+- **Offline packaging** (`scripts/package-offline.sh` + `scripts/setup-offline.sh`):
+  one portable `dxdfir-offline-<ver>-<arch>.tar.gz` carrying the hardened
+  images, the CLI + deps as wheels, the pinned collections, the repo, and
+  `data_store/dependencies/` (signature rulesets, Hayabusa binary, Volatility
+  symbols, EvtxECmd) — set up on an air-gapped host with zero network:
+  manifest-verified first, `dxdfir verify-images` proves the loaded inventory
+  last. `save-docker-images.sh` now saves the built `dfir/*` images instead of
+  pulling them, and gained `--build` / `--verify`.
+- **Start-time image inventory guard** (`get_sybers_dfir.images` /
+  `dxdfir verify-images`): each processor preflight refuses to run unless the
+  tool image is a known hardened `dfir/*` image (label + uid 2000 + expected
+  name); the audit flags any unexpected `dfir/*` image on the host — something
+  added to the namespace that should not be there. The role verifies each build
+  with a shell-free `docker export` scan.
+
+
+## [0.4.0] - 2026-08-27
 
 ### Added
 - **Build-it-yourself hardened tool containers** (`docker/{yara,suricata,zeek,
@@ -34,16 +112,6 @@ is `0`, anything may change without notice.
   role with block/rescue diagnostics and check-mode support; molecule
   scenarios repaired and runnable via the containerised harness.
 
-### Changed
-- Plaso is built from pinned PyPI with the libyal stack compiled from source
-  (GIFT stable lags the `--output_fallback_hostname` the pipeline requires).
-- No third-party tool image is pulled at runtime; the proprietary Kusto
-  emulator (localhost-gated) and the stock .NET runtime (operator-supplied
-  EvtxECmd mode) are the only remaining pulls.
-- `data_store/.gitignore` prunes traversal (anchored skeleton whitelist);
-  `git status` 25s → 0.014s.
-
-### Added
 - The `dfir_deploy_adx` role now carries the retired shell deploy's remaining
   security properties: an isolated (masquerade-off, never `--internal`) docker
   network on by default (`dfir_deploy_adx_isolated`) with egress probed from
@@ -57,6 +125,15 @@ is `0`, anything may change without notice.
   memory via Volatility 3 `windows.vadyarascan` (matches carry PID context) →
   `memory.jsonl`. `--yara-sources` selects sources; the mount/scan invocations
   are pure, unit-tested helpers.
+
+### Changed
+- Plaso is built from pinned PyPI with the libyal stack compiled from source
+  (GIFT stable lags the `--output_fallback_hostname` the pipeline requires).
+- No third-party tool image is pulled at runtime; the proprietary Kusto
+  emulator (localhost-gated) and the stock .NET runtime (operator-supplied
+  EvtxECmd mode) are the only remaining pulls.
+- `data_store/.gitignore` prunes traversal (anchored skeleton whitelist);
+  `git status` 25s → 0.014s.
 
 ### Removed
 - The last data-pipeline shell scripts: `deploy-kusto.sh`,

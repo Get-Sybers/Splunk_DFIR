@@ -5,34 +5,60 @@ verify it. No third-party tool image is pulled at runtime: yara, suricata,
 zeek, volatility, plaso and evtxecmd are all built from `docker/<name>/Dockerfile`
 by this role.
 
-## Hardening: the Splunk-docker posture
+## Hardening: minimal, attack-surface-reduction posture
 
-Ansible is not a build-time visitor here — **it is the container's only
-execution path**, the way the Splunk docker images work:
+Chosen for the strongest resistance to container escape AND to a
+supply-chain-compromised tool: each image is **stripped to the tool itself** and
+every run is confined hard. ansible does the hardening *at build time*
+([`docker/hardening/harden.yml`](/docker/hardening/harden.yml)) and is then
+**removed from the final image** — it never ships at runtime.
 
-- the image's ENTRYPOINT is **pinned to `ansible-playbook`** running the
-  embedded run role ([`docker/runtime`](/docker/runtime)); *only that role can
-  run inside the container*
-- the run role **allow-lists argv[0]** per image (baked `DFIR_ALLOWED_ARGV0`),
-  and where the tool is an interpreter (python3/dotnet) it also pins argv[1] to
-  the baked wrapper/DLL — `python3 -c …` or an arbitrary script can never run
-- the **uid-0 account is renamed `ansible`**, password-locked, nologin — there
-  is no `root` login name; **sudo/su/pkexec and the account-manipulation suite
-  are removed**, and every setuid/setgid bit is stripped
-- **no package manager, no pip** (nothing installable at runtime); caches,
-  docs, man pages purged; per-image extras stripped (zkg/zeekctl,
-  suricata-update)
-- the tool itself runs as the fixed unprivileged user (`USER 2000:2000`)
+- the tool is the image **ENTRYPOINT**; no ansible, no run-role, no
+  orchestration in the runtime image
+- **uid 0 renamed `ansible`** and locked; **sudo/su/pkexec** and the
+  account-manipulation suite removed; every setuid/setgid bit stripped
+- **no package manager, no pip** (nothing installable at runtime)
+- **no shell and no python** except where the tool needs them: `dfir/yara`
+  keeps `sh` (its scan loop is a shell script), `dfir/volatility` and
+  `dfir/plaso` keep python (the tools are python); `dfir/zeek`,
+  `dfir/suricata`, `dfir/evtxecmd` carry neither
+- the tool runs as **uid 2000**
 
-All of it is applied *by ansible inside the build*
-([`docker/hardening/harden.yml`](/docker/hardening/harden.yml)) and squashed.
-The role then verifies the contract twice per image: statically (USER,
-ENTRYPOINT, label) and **from inside the running container** via the run
-role's verify mode (`-e '{"dfir_run_verify": true}'`).
+The role verifies this twice per image: the static image config (USER, hardened
+label) and a shell-free `docker export | tar -t` scan proving the removed
+binaries — and, for the tool-only images, the shell and python — are absent.
 
-Runtime is the other half: the Python processors run every image with
-`--cap-drop ALL --security-opt no-new-privileges` and `--network none`
-(volatility gets an explicit opt-in for symbol fetch).
+Runtime confinement is what actually contains both threats (an attacker with
+code execution does not need an on-image shell): every processor `docker run`
+carries `--cap-drop ALL --security-opt no-new-privileges --read-only --tmpfs
+/tmp --pids-limit 512 --network none` (Volatility symbol fetch is the one
+`--symbols-online` opt-in).
+
+## What is removed vs. what remains (and why)
+
+Verify any image with a shell-free filesystem scan:
+`cid=$(docker create dfir/<tool>:latest); docker export "$cid" | tar -t | grep -E 'apt-get|dpkg|sudo|/pip|/sh$|python3'; docker rm -f "$cid"`.
+
+**Removed** (every image): package managers (`apt`/`apt-get`/`dpkg`), `pip`,
+`sudo`/`su`/`pkexec`, the account-manipulation suite, every setuid/setgid bit,
+and **ansible itself** (build-time only). The uid-0 account is renamed `ansible`
+and locked; the tool runs as uid 2000.
+
+**Kept only where the tool needs it**: `dfir/yara` keeps `sh` (its per-file
+scan loop is a shell script — the image ENTRYPOINT); `dfir/volatility` and
+`dfir/plaso` keep `python3` (the tools *are* python). `dfir/zeek`,
+`dfir/suricata` and `dfir/evtxecmd` carry **no shell and no python** at all.
+
+Why not strip the shell from *every* image on instinct? Removing it does not
+stop an attacker who already has code execution — the premise of a compromised
+tool — because they issue syscalls directly; and a compromised *allowed* tool
+is executed regardless of any in-container policing. So the design minimises
+what is present (fewer packages = smaller supply-chain surface) and confines
+what runs at the boundary (`--cap-drop ALL --security-opt no-new-privileges
+--read-only --network none`), rather than shipping an orchestrator to guard a
+large image from inside. An escape or exfiltration then needs a defect in the
+tool plus the kernel/runtime, against dropped capabilities and no network —
+not a convenient interpreter.
 
 ## The one deviation
 

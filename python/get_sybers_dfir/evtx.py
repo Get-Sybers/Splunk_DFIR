@@ -103,31 +103,34 @@ def evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image, *,
                   evtxecmd_dir=None, dll_rel=None, bundled_dll=BUNDLED_DLL):
     """The `docker run` argv for one EvtxECmd container run. Two modes:
 
-    - bundled image (``evtxecmd_dir`` falsy): the hardened dfir/evtxecmd image —
-      ansible-only execution whose run role allow-lists exactly
-      ``dotnet <bundled_dll>``; the DLL + Maps/ are baked in.
+    - bundled image (``evtxecmd_dir`` falsy): the minimal dfir/evtxecmd image
+      whose ENTRYPOINT is ``dotnet /opt/evtxecmd/EvtxECmd.dll`` (DLL + Maps/
+      baked in), so only the flags are passed.
     - operator-supplied (``evtxecmd_dir`` given): mount the release read-only at
       ``/evtxecmd`` into a stock .NET runtime and run ``dotnet /evtxecmd/<dll_rel>``
-      directly — the historic path, still with every hardening flag (no caps,
-      no-new-privileges, no network).
+      — both with every confinement flag (no caps, no-new-privileges, no
+      network, read-only rootfs).
 
     Pure (no I/O) so the argv is unit-testable without docker.
     """
-    tool = [
-        "dotnet", f"/evtxecmd/{dll_rel}" if evtxecmd_dir else bundled_dll,
+    args = [
         "-f", f"/input/{os.path.basename(evtx_file)}",
         "--json", "/output", "--jsonf", json_out,
         "--xml", "/output", "--xmlf", xml_out,
     ]
     mounts = [f"{os.path.dirname(evtx_file)}:/input:ro", f"{dest_dir}:/output"]
     if evtxecmd_dir:
-        return [
-            "docker", "run", "--rm", *container.run_flags(),
-            "-v", mounts[0], "-v", mounts[1],
-            "-v", f"{os.path.realpath(evtxecmd_dir)}:/evtxecmd:ro", "-w", "/evtxecmd",
-            image, *tool,
-        ]
-    return container.ansible_run(image, tool, mounts=mounts)
+        # operator-supplied release mounted into a stock .NET runtime (no
+        # ENTRYPOINT), so the full `dotnet <dll> ...` argv is passed; still with
+        # every confinement flag.
+        return container.run(
+            image, ["dotnet", f"/evtxecmd/{dll_rel}", *args],
+            mounts=[*mounts, f"{os.path.realpath(evtxecmd_dir)}:/evtxecmd:ro"],
+            workdir="/tmp",
+        )
+    # bundled minimal image: `dotnet <bundled_dll>` is the ENTRYPOINT, so only
+    # the flags are passed.
+    return container.run(image, args, mounts=mounts, workdir="/tmp")
 
 
 def _run_evtxecmd(evtx_file, dest_dir, json_out, xml_out, image, *,

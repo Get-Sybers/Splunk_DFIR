@@ -1,10 +1,9 @@
 ---
-# One image: build from docker/<name>/Dockerfile (context docker/, so the
-# shared hardening playbook and runtime role are in reach), then verify the
-# Splunk-style contract twice — statically (pinned ansible ENTRYPOINT, fixed
-# non-root USER, hardened label) and from INSIDE the running container via the
-# embedded run role's verify mode (uid 2000, uid0 renamed to ansible, no
-# sudo/su, no package manager, no pip).
+# One image: build from docker/<name>/Dockerfile (context docker/, so the shared
+# build-time hardening playbook is in reach), then verify the MINIMAL posture —
+# statically (fixed non-root USER, hardened label) and with a shell-free
+# `docker export` scan proving the escalation/installer binaries and (for the
+# tool-only images) the shell and python are actually absent.
 
 - name: "images-build | build the hardened image dfir/{{ dfir_images_name }}"
   community.docker.docker_image:
@@ -27,37 +26,49 @@
       - dfir_images_inspect.images | length == 1
       - dfir_images_inspect.images[0].Config.User == "2000:2000"
       - (dfir_images_inspect.images[0].Config.Labels or {})['com.get-sybers.hardened'] | default('') == 'true'
-      - (dfir_images_inspect.images[0].Config.Entrypoint or [])[0] | default('') == 'ansible-playbook'
-      - "'/opt/dfir/entrypoint.yml' in (dfir_images_inspect.images[0].Config.Entrypoint or [])"
     fail_msg: >-
-      dfir/{{ dfir_images_name }} does not satisfy the static hardening contract
-      (USER 2000:2000, com.get-sybers.hardened label, pinned ansible-playbook
-      ENTRYPOINT on /opt/dfir/entrypoint.yml).
+      dfir/{{ dfir_images_name }} fails the static contract (USER 2000:2000 +
+      com.get-sybers.hardened label).
     quiet: true
 
-- name: "images-build | verify the contract from inside dfir/{{ dfir_images_name }}"
-  ansible.builtin.command:
-    argv:
-      - docker
-      - run
-      - --rm
-      - --cap-drop
-      - ALL
-      - --security-opt
-      - no-new-privileges
-      - --network
-      - none
-      - "dfir/{{ dfir_images_name }}:latest"
-      - -e
-      - '{"dfir_run_verify": true}'
-  register: dfir_images_verify_run
+# Filesystem scan without needing a shell in the image: export the image as a
+# tar and list the member paths. The removed binaries must be absent; ansible
+# must be gone from every image; the tool-only images must also have no shell
+# or python.
+- name: "images-build | export the filesystem listing of dfir/{{ dfir_images_name }}"
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      # a never-executed command token, so `create` also works for the images
+      that have no ENTRYPOINT (plaso); the container is only exported, never run
+      cid=$(docker create dfir/{{ dfir_images_name }}:latest __export_only__);
+      docker export "$cid" | tar -t;
+      docker rm -f "$cid" >/dev/null
+  args:
+    executable: /bin/bash
+  register: dfir_images_fs
   changed_when: false
 
-- name: "images-build | assert the in-container verification reported OK"
+- name: "images-build | assert the removed surface is absent from dfir/{{ dfir_images_name }}"
   ansible.builtin.assert:
     that:
-      - "'DFIR-HARDEN-VERIFY-OK' in dfir_images_verify_run.stdout"
+      - "'usr/bin/apt-get' not in dfir_images_fs.stdout"
+      - "'usr/bin/dpkg' not in dfir_images_fs.stdout"
+      - "'usr/bin/sudo' not in dfir_images_fs.stdout"
+      - dfir_images_fs.stdout is not search('bin/pip[0-9.]*$', multiline=True)
+      - dfir_images_fs.stdout is not search('/ansible[-/]', multiline=True)
     fail_msg: >-
-      dfir/{{ dfir_images_name }} failed its own in-container hardening
-      verification (run role verify mode).
+      dfir/{{ dfir_images_name }} still ships a removed binary
+      (apt-get/dpkg/sudo/pip) or ansible.
     quiet: true
+
+- name: "images-build | assert no shell/python where the tool needs neither"
+  ansible.builtin.assert:
+    that:
+      - dfir_images_fs.stdout is not search('bin/(sh|bash|dash)$', multiline=True)
+      - dfir_images_fs.stdout is not search('bin/python3(\.[0-9]+)?$', multiline=True)
+    fail_msg: >-
+      dfir/{{ dfir_images_name }} still carries a shell or python though its tool
+      needs neither.
+    quiet: true
+  when: dfir_images_name in ['suricata', 'zeek', 'evtxecmd']
