@@ -7,6 +7,8 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-28
+
 ### Added
 - **Plaso loose-artefact sources** (`--loose-dir` / `dfir_plaso_loose_dir`): one
   folder per host (/var/log copies, mobile filesystem dumps, triage output),
