@@ -256,6 +256,22 @@ def validate(
     _run(["bash", str(checks)], cwd=repo)
 
 
+@app.command(name="verify-car")
+def verify_car(
+    host: str = typer.Option("127.0.0.1", help="Emulator host."),
+    port: int = typer.Option(8080, help="Emulator port."),
+) -> None:
+    """CAR run-through: assert EXPECTED FIELD VALUES at the ADX level for every lane.
+
+    The promotion gate for CAR correctness against a populated emulator — expected
+    values per source, round-trip fidelity (normalized == native), per-artefact
+    identity, roll-up no-fabrication, and no-producer sources empty. Run the
+    pipeline first (deploy -> process -> ingest).
+    """
+    from . import carcheck
+    raise typer.Exit(carcheck.main(["--host", host, "--port", str(port)]))
+
+
 @app.command(name="verify-images")
 def verify_images() -> None:
     """Audit the hardened dfir/* tool-image inventory.

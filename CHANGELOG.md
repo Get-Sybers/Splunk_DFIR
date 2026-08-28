@@ -8,16 +8,31 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Added
-- **`tests/car-runthrough.sh`** — the promotion gate for CAR correctness at the
-  ADX level across EVERY lane: asserts expected field VALUES (not just
-  presence) per CAR source, round-trip fidelity (each normalized field == its
-  native source field), per-artefact identity (every row carries a non-empty
-  SourceFile — never data compiled together), roll-up no-fabrication (union ==
-  sum of sources), and that no-producer sources (velociraptor: Srum/RECmd) stay
-  empty. Proven green (56/0) on a clean run: host Sysmon + Windows Security,
-  network Zeek, memory Volatility (7 objects), timeline Plaso.
+- **`dxdfir verify-car`** (`get_sybers_dfir.carcheck`) — the promotion gate for
+  CAR correctness at the ADX level across EVERY lane, ported to Python from the
+  original shell harness: asserts expected field VALUES (not just presence) per
+  CAR source, round-trip fidelity (each normalized field == its native source
+  field), per-artefact identity (every row carries a non-empty SourceFile —
+  never data compiled together), roll-up no-fabrication (union == sum of
+  sources), that no-producer sources (velociraptor: Srum/RECmd) stay empty, and
+  the Plaso-extraction guards (process exe is a program never a parsed
+  .pf/hive/$MFT; MFT names the file it describes; UsnJrnl deletes surface).
+  Proven green (59/0) on a clean run over host Sysmon + Windows Security,
+  network Zeek, memory Volatility (7 objects), and a Windows disk image
+  (prefetch/amcache/MFT/UsnJrnl). Replaces the retired `tests/car-runthrough.sh`.
 
 ### Fixed
+- **CAR-model logic (from a Fable audit against the pinned Volatility 2.28.0 /
+  Plaso 20260720 field names)** — bugs a value run-through over Sysmon-dominated
+  evidence could not surface: `CarProcess_Plaso` mapped exe/image_path to the
+  parsed artefact's own path (a `.pf`/hive/`$MFT`) instead of the executed
+  program (H1/H2); `CarFile_Plaso` labelled every MFT row `\$MFT` (H3) and every
+  UsnJrnl row `modify`, hiding deletes (M3); `CarService_Evtx` read 7045's keys
+  for 4697 (M1); `CarUserSession_Security` read the wrong keys for 4778/4779
+  (M2); Sysmon-23 file hashes dropped (M5); svcscan `Binary (Registry)` skipped
+  (M6); amcache sha1 / BAM sid mis-sourced (M4/M7); plus identity/representation
+  fixes (SourceFile aliases, Velociraptor host/fqdn, packet_count null,
+  vocabulary calls for 4625/4648/4779). Also added provider/Channel guards.
 - The `dxdfir` CLI now declares the Python docker SDK (`requests`, `docker`) as
   dependencies — `dxdfir deploy`/`ingest` drive community.docker and failed on a
   clean install (and would have failed from the offline wheel bundle, which is
