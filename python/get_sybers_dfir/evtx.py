@@ -26,7 +26,7 @@ log — so the lane consumes E01/raw/VMDK evidence without a hand-extraction ste
 Run standalone or via the ``dxdfir`` CLI:
 
     # loose logs, bundled EvtxECmd image
-    python -m get_sybers_dfir.evtx --evtx-dir RAW/WinEvt --out-dir PROCESSED/windows_logs
+    python -m get_sybers_dfir.evtx --evtx-dir RAW/logs/winevt --out-dir PROCESSED/windows_logs
 
     # straight from a disk image
     python -m get_sybers_dfir.evtx --image-src RAW/disk_images/Host.E01 \

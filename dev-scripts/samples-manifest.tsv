@@ -864,7 +864,7 @@ scenarios-magnet	2022 CTF - iOS Full File System.zip	4711962945	-	scenarios/magn
 # sysmon-attack-samples — real Sysmon .evtx from sbousseaden/EVTX-ATTACK-SAMPLES (MIT),
 #   covering the Sysmon EventIDs the CAR schema maps: 1/5 process, 3 network, 6 driver,
 #   7 module, 8 remote-thread, 11 file, 12/13 registry. Validates the Sysmon CAR objects
-#   (the corpus disk images carry no Sysmon). Routed to other_raw_data/WinEvt/<group>/.
+#   (the corpus disk images carry no Sysmon). Routed to logs/winevt/<group>/.
 sysmon-attack-samples	DSE_bypass_BYOV_TDL_dummydriver_sysmon_6_7_13.evtx	69632	1162521cb06986ddef24bff7c044b05d63f37ea8faeaa6acd8cc2529b05c7618	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/DSE_bypass_BYOV_TDL_dummydriver_sysmon_6_7_13.evtx
 sysmon-attack-samples	apt10_jjs_sideloading_prochollowing_persist_as_service_sysmon_1_7_8_13.evtx	69632	a623b11315eacd9732da5ebeabdb7c72d0f641fdf0ec5d2ec43e360abd13837e	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/apt10_jjs_sideloading_prochollowing_persist_as_service_sysmon_1_7_8_13.evtx
 sysmon-attack-samples	DE_UAC_Disabled_Sysmon_12_13.evtx	69632	06d462b8367cfc620bc84dbda970cf34bff761e02d9d6e1d33bc48f56bc66e6d	https://raw.githubusercontent.com/sbousseaden/EVTX-ATTACK-SAMPLES/master/Defense%20Evasion/DE_UAC_Disabled_Sysmon_12_13.evtx

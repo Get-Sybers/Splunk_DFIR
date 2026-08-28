@@ -22,7 +22,7 @@
 #     data_store/raw/disk_images/<group>/   the plaso lane
 #     data_store/raw/memory/<group>/        the volatility lane
 #     data_store/raw/pcaps/<group>/         the zeek lane
-#     data_store/raw/other_raw_data/WinEvt/<group>/  the evtx lane
+#     data_store/raw/logs/winevt/<group>/  the evtx lane
 #     data_store/raw/other_raw_data/<group>/         no processor yet (mobile, apk, …)
 #
 #   Type is decided per file by its content/name (a single scenario group can
@@ -151,7 +151,7 @@ classify_dir() { # group name  ->  path under $RAW
     local group="$1" ln; ln="$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')"
 
     case "$ln" in
-        *.evtx)                       echo "$RAW/other_raw_data/WinEvt"; return ;;
+        *.evtx)                       echo "$RAW/logs/winevt"; return ;;
     esac
     # memory: explicit dump markers (checked before the disk .raw rule)
     case "$ln" in

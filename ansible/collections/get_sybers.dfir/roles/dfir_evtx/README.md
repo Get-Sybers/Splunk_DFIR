@@ -31,7 +31,7 @@ the MIT-licensed release at build time; the repo ships the recipe, not the binar
 | Variable | Default | Description |
 |---|---|---|
 | `dfir_evtx_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
-| `dfir_evtx_evtx_dir` | `<repo>/data_store/raw/other_raw_data/WinEvt` | `.evtx` tree to parse (recursed). |
+| `dfir_evtx_evtx_dir` | `<repo>/data_store/raw/logs/winevt` | `.evtx` tree to parse (recursed). |
 | `dfir_evtx_adx_out_dir` | `<repo>/data_store/processed/windows_logs` | ADX-path output. |
 | `dfir_evtx_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/windows_logs` | SOF-ELK-path output. |
 | `dfir_evtx_use_bundled_image` | `true` | Use the bundled `dfir/evtxecmd` image; `false` = mount an operator release. |

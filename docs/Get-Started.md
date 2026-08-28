@@ -75,7 +75,7 @@ dxdfir process zeek
 ```bash
 dxdfir process evtx
 ```
-- Converts `.evtx` in `data_store/raw/other_raw_data/WinEvt/<host>/` using EvtxECmd.
+- Converts `.evtx` in `data_store/raw/logs/winevt/<host>/` using EvtxECmd.
 - Requires operator-supplied EvtxECmd — see
   [the README](/data_store/dependencies/evtxecmd/README.md). MIT licensed, no
   commercial-use restriction.

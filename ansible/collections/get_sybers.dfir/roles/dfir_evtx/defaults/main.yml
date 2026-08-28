@@ -6,7 +6,7 @@ dfir_evtx_pipeline: adx
 # (roles/dfir_evtx -> get_sybers.dfir -> collections -> ansible -> repo).
 dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
 
-dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/other_raw_data/WinEvt"
+dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/logs/winevt"
 dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
 dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
 # Resolved output base for the selected pipeline — consumed by

@@ -299,7 +299,7 @@ def verify_images() -> None:
 # file types that count as evidence there — mirrors the roles' input-dir defaults.
 _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "zeek":         (("pcaps",),                 (".pcap", ".pcapng", ".cap")),
-    "evtx":         (("other_raw_data/WinEvt",), (".evtx",)),
+    "evtx":         (("logs/winevt",), (".evtx",)),
     "volatility":   (("memory",),                (".dmp", ".mem", ".lime", ".vmem", ".raw", ".dump", ".bin")),
     "plaso":        (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
                                                    ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
