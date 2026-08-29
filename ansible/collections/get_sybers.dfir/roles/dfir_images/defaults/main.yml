@@ -18,6 +18,21 @@ dfir_images_set:
   - volatility
   - plaso
   - evtxecmd
+  # The Eric Zimmerman tool family — all built from the ONE parameterized
+  # docker/eztool/Dockerfile (same recipe as evtxecmd), tool selected per image
+  # via build args (see dfir_images_build_overrides).
+  - recmd
+  - srumecmd
+  - mftecmd
+  - pecmd
+  - amcacheparser
+  - appcompatcacheparser
+  - lecmd
+  - jlecmd
+  - sbecmd
+  - sqlecmd
+  - rbcmd
+  - wxtcmd
 
 # Rebuild even when an image already exists (docker build cache still applies).
 dfir_images_force: false
@@ -28,3 +43,15 @@ dfir_images_build_overrides:
   volatility:
     context: "{{ dfir_images_repo_root }}/third_party/piiat-mem/docker"
     dockerfile: "Dockerfile"
+  recmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RECmd"}}
+  srumecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SrumECmd"}}
+  mftecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "MFTECmd"}}
+  pecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "PECmd"}}
+  amcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AmcacheParser"}}
+  appcompatcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AppCompatCacheParser"}}
+  lecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "LECmd"}}
+  jlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "JLECmd"}}
+  sbecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SBECmd"}}
+  sqlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SQLECmd"}}
+  rbcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RBCmd"}}
+  wxtcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "WxTCmd"}}

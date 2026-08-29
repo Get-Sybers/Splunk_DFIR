@@ -29,7 +29,7 @@ The memory artefact does NOT map here: PIIAT-Mem already emits finished CAR —
 """
 from __future__ import annotations
 
-from .normalize import (basename, concat, const, domain_of, epoch_ts, ext,  # noqa: F401
+from ..normalize import (basename, concat, const, domain_of, epoch_ts, ext,  # noqa: F401
                         first, host_label, lower, map_value, payload, regex1)
 
 

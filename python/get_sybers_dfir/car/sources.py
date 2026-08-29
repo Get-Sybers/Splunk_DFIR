@@ -25,7 +25,10 @@ _PIIAT_HEADER = {"timestamp", "car_action", "guid", "owning_pid", "owning_offset
 
 
 def iter_jsonl(path: str):
-    with open(path, encoding="utf-8", errors="replace") as fh:
+    # utf-8-sig: EvtxECmd stamps a UTF-8 BOM on every export — plain utf-8 makes
+    # json.loads reject each file's FIRST line, silently dropping a record per
+    # file (the same BOM gotcha the ADX ingest hit).
+    with open(path, encoding="utf-8-sig", errors="replace") as fh:
         for line in fh:
             line = line.strip().rstrip(",")
             if not line or line in ("[", "]"):

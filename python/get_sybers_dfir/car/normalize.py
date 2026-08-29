@@ -77,6 +77,13 @@ def concat(*parts):
     return ("concat", parts)
 
 
+def exe_path(src):
+    """The executable path parsed out of an ImagePath-style command line
+    ('"C:\\p q\\x.exe" -k net' -> 'C:\\p q\\x.exe'; unquoted svchost-style
+    lines cut at .exe). Parsing, not guessing — the path is verbatim inside."""
+    return ("exe_path", src)
+
+
 def payload(key, field="Payload"):
     """A key out of an EvtxECmd `Payload` JSON string (EZ tools stamp the event
     data as a JSON blob) — the Python analogue of the KQL EvtxPayload()."""
@@ -195,6 +202,18 @@ def _resolve(src, rec):
         except (TypeError, ValueError, OverflowError):
             s2 = str(v)
             return s2 if s2[:4].isdigit() and "-" in s2 else None  # already ISO
+    if kind == "exe_path":
+        v = _resolve(arg, rec)
+        if _blank(v):
+            return None
+        s2 = str(v).strip()
+        if s2.startswith('"'):
+            end = s2.find('"', 1)
+            return s2[1:end] if end > 0 else s2.strip('"')
+        i = s2.lower().find(".exe")
+        if i >= 0:
+            return s2[:i + 4]
+        return s2.split(" ")[0]
     if kind == "map_value":
         field, table, upper = arg
         v = _resolve(field, rec)
