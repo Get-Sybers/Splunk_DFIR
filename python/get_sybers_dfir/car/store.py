@@ -21,8 +21,19 @@ import sqlite3
 
 from . import carmodel
 
-HEADER = ["timestamp", "car_action", "guid", "owning_pid", "owning_guid",
-          "parent_pid", "parent_guid", "link_confidence",
+# The stored header is deliberately minimal and MITRE-faithful: event metadata
+# (timestamp, car_action), the row identity (guid — also the MITRE process guid),
+# the ONE non-MITRE addition the model lacks (owning_guid — the definitive link
+# from a spoke to its owning process), enrichment confidence, and provenance.
+# Everything else is a MITRE field of the object.
+#
+# Deliberately NOT in the header (were phantom/duplicate columns before):
+#   - parent_guid: a MITRE field of `process` ONLY, so it flows as a process
+#     column via _cols and never appears as a null column on other objects;
+#   - parent_pid / owning_pid: not MITRE fields — transient enrichment inputs
+#     (enrich reads them off the in-memory event); the canonical parent/owner
+#     pid already lives in the object's own `ppid`/`pid` MITRE fields.
+HEADER = ["timestamp", "car_action", "guid", "owning_guid", "link_confidence",
           "source_artefact", "source_host", "native"]
 
 
