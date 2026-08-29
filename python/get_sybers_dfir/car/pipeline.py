@@ -202,16 +202,88 @@ def process_file(in_path: str, out_dir: str, artefacts: list[str] | None = None,
             "objects": counts, "exported": written, "car_db": db_path}
 
 
+def discover_sources(processed_dir: str) -> list[tuple[str, str, str | None]]:
+    """The CAR sources under a processed tree, honouring the isolation rule
+    (one source -> one car.db). Returns (source_name, in_path, default_host):
+
+    - windows_logs/<case>/...: each DIRECTORY holding *_EvtxECmd_Output.json is
+      one host's event-log export (one source);
+    - zeek/<capture>/: each capture directory (one source, all protocol logs);
+    - log2timeline/jsonl/<image>.jsonl: each raw l2t container (one source);
+    - volatility/<image>/car.db: PIIAT-Mem finished CAR (passthrough).
+    """
+    out: list[tuple[str, str, str | None]] = []
+    wl = os.path.join(processed_dir, "windows_logs")
+    if os.path.isdir(wl):
+        dirs = set()
+        for root, _d, files in os.walk(wl):
+            if any(f.endswith("_EvtxECmd_Output.json") for f in files):
+                dirs.add(root)
+        for d in sorted(dirs):
+            rel = os.path.relpath(d, wl).replace(os.sep, "_")
+            out.append((f"windows_logs_{rel}", d, None))
+    zk = os.path.join(processed_dir, "zeek")
+    if os.path.isdir(zk):
+        for name in sorted(os.listdir(zk)):
+            d = os.path.join(zk, name)
+            if os.path.isdir(d):
+                out.append((f"zeek_{name}", d, name))
+    l2t = os.path.join(processed_dir, "log2timeline", "jsonl")
+    if os.path.isdir(l2t):
+        for name in sorted(os.listdir(l2t)):
+            if name.endswith(".jsonl"):
+                out.append((f"l2t_{name[:-6]}", os.path.join(l2t, name), None))
+    vol = os.path.join(processed_dir, "volatility")
+    if os.path.isdir(vol):
+        for name in sorted(os.listdir(vol)):
+            db = os.path.join(vol, name, "car.db")
+            if os.path.isfile(db):
+                out.append((f"memory_{name}", db, None))
+    return out
+
+
+def run_batch(processed_dir: str, out_root: str, force: bool = False) -> list[dict]:
+    """Every discovered source -> <out_root>/<source_name>/car.db + car_*.jsonl.
+    Idempotent: a source whose output car.db already exists is skipped unless
+    `force`. Sources run SEQUENTIALLY (bounded load); one failing source never
+    stops the rest."""
+    results = []
+    for name, in_path, host in discover_sources(processed_dir):
+        dst = os.path.join(out_root, name)
+        if not force and os.path.isfile(os.path.join(dst, "car.db")):
+            results.append({"source": name, "skipped": "exists"})
+            continue
+        try:
+            s = process_file(in_path, dst, default_host=host)
+            s["source"] = name
+            results.append(s)
+        except Exception as exc:                       # noqa: BLE001 — batch isolation
+            results.append({"source": name, "error": f"{type(exc).__name__}: {exc}"})
+    return results
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         prog="get_sybers_dfir.car",
-        description="one ingested file -> its own enriched CAR database + JSON for ADX")
-    ap.add_argument("--in", dest="in_path", required=True, help="one processed artefact file")
-    ap.add_argument("--out", dest="out_dir", required=True, help="output dir for this file's car.db + car_*.jsonl")
+        description="one ingested source -> its own enriched CAR database + JSON for ADX")
+    ap.add_argument("--in", dest="in_path", help="one processed artefact file/dir (single-source mode)")
+    ap.add_argument("--out", dest="out_dir", help="output dir (single-source: this source's car.db; batch: the car/ root)")
     ap.add_argument("--artefacts", default=None, help="comma-separated artefact map keys (default: route by filename)")
     ap.add_argument("--host", default=None, help="fallback source_host where the map derives none")
+    ap.add_argument("--batch", dest="batch_dir", default=None,
+                    help="discover every source under this processed dir and run each (idempotent)")
+    ap.add_argument("--force", action="store_true", help="batch: rebuild sources whose car.db already exists")
     args = ap.parse_args(argv)
 
+    if args.batch_dir:
+        out_root = args.out_dir or os.path.join(args.batch_dir, "car")
+        results = run_batch(args.batch_dir, out_root, force=args.force)
+        json.dump(results, sys.stdout, default=str)
+        sys.stdout.write("\n")
+        return 0 if any("error" not in r for r in results) else 1
+
+    if not (args.in_path and args.out_dir):
+        ap.error("--in/--out (single source) or --batch required")
     arts = [a.strip() for a in args.artefacts.split(",") if a.strip()] if args.artefacts else None
     summary = process_file(args.in_path, args.out_dir, artefacts=arts, default_host=args.host)
     json.dump(summary, sys.stdout, default=str)
