@@ -15,8 +15,8 @@ action** (one container run per plugin per image happens inside Python). One
 | `dfir_volatility_adx_out_dir` | `<repo>/data_store/processed/volatility` | ADX-path output. |
 | `dfir_volatility_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/volatility` | SOF-ELK-path output. |
 | `dfir_volatility_symbols_dir` | `<repo>/data_store/dependencies/volatility3-symbols` | Volatility 3 kernel-symbol cache (passed as `--symbols-dir`). |
-| `dfir_volatility_renderer` | `<repo>/dev-scripts/volatility/jsonl_dfir_renderer.py` | Custom JSONL renderer. |
-| `dfir_volatility_plugins_dir` | `<repo>/dev-scripts/volatility/plugins` | Custom plugins (`windows.PIIAT_processes`, `windows.PIIAT_registry`). |
+| `dfir_volatility_renderer` | `<repo>/third_party/piiat-mem/jsonl_dfir_renderer.py` | Custom JSONL renderer (PIIAT-Mem submodule). |
+| `dfir_volatility_plugins_dir` | `<repo>/third_party/piiat-mem/plugins` | Custom plugins dir (PIIAT-Mem submodule) — `windows.PIIAT_processes`, `windows.PIIAT_registry`. |
 | `dfir_volatility_image` | `dfir/volatility:latest` | The hardened in-repo Volatility 3 image (`playbooks/dfir-build-images.yml`). |
 | `dfir_volatility_symbols_online` | `false` | Allow container network access for ISF symbol fetch — the one legitimate network need; pre-seed the symbols dir instead. |
 | `dfir_volatility_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
