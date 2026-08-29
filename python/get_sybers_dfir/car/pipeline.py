@@ -43,6 +43,14 @@ ROUTES = [
     ("_EvtxECmd_Output", EVTX_MAPS),
     ("conn.json", ["zeek_conn"]),
     ("http.json", ["zeek_http"]),
+    ("smtp.json", ["zeek_smtp"]),
+    ("files.json", ["zeek_files"]),
+    # Zeek logs with no dedicated CAR object — routed to nothing EXPLICITLY (known,
+    # not unknown): their per-flow detail can enrich the flow by uid at the
+    # cascade stage, but they are not CAR objects.
+    ("dns.json", []), ("ssl.json", []), ("x509.json", []), ("dhcp.json", []),
+    ("ntp.json", []), ("snmp.json", []), ("ocsp.json", []), ("weird.json", []),
+    ("pe.json", []), ("packet_filter.json", []),
     (".L2tPrefetch", ["plaso_exec_prefetch"]),
     (".L2tWinreg", ["plaso_exec_winreg"]),
     (".L2tSyslog", ["plaso_exec_cron", "l2t_text"]),
@@ -64,23 +72,41 @@ def route(path: str) -> list[str]:
     return []
 
 
+def _iter_source_files(in_path: str):
+    """The files that make up ONE source. A directory (a Zeek capture, a host's
+    event-log export) is a single source: every file under it is routed and
+    merged into ONE car.db, so within-source cross-log enrichment can run and no
+    other source is depended on. A single file is a one-file source."""
+    if os.path.isdir(in_path):
+        for root, _dirs, files in os.walk(in_path):
+            for fn in sorted(files):
+                yield os.path.join(root, fn)
+    else:
+        yield in_path
+
+
 def process_file(in_path: str, out_dir: str, artefacts: list[str] | None = None,
                  default_host: str | None = None) -> dict:
-    """One file -> its own enriched CAR database + JSON export."""
+    """One SOURCE -> its own enriched CAR database + JSON export. The source is a
+    single file, or a directory whose files together are one source (Zeek's per-
+    protocol logs; a host's event-log channels) — same isolation either way."""
     os.makedirs(out_dir, exist_ok=True)
-    name = os.path.basename(in_path)
+    name = os.path.basename(in_path.rstrip("/"))
 
     if name == "car.db":                       # PIIAT-Mem finished CAR: passthrough
         events = sources.load_piiat_car(in_path)
         used = ["memory (passthrough)"]
     else:
-        used = artefacts if artefacts else route(in_path)
-        events = []
-        for art in used:
-            for ev in sources.iter_mapped(art, in_path, default_host=default_host):
-                events.append(ev)
+        events, used = [], []
+        for f in _iter_source_files(in_path):
+            arts = artefacts if artefacts else route(f)
+            for art in arts:
+                if art not in used:
+                    used.append(art)
+                for ev in sources.iter_mapped(art, f, default_host=default_host):
+                    events.append(ev)
 
-    # enrichment is SELF-CONTAINED: only this file's events are in scope
+    # enrichment is SELF-CONTAINED: only THIS source's events are in scope
     events = enrich.enrich(events)
 
     db_path = os.path.join(out_dir, "car.db")
