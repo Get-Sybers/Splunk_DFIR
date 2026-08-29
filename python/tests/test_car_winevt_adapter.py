@@ -88,3 +88,28 @@ def test_channel_aware_terminalservices_userdata_shape():
     assert ev["car_object"] == "user_session" and ev["car_action"] == "logout"
     assert ev["user"] == r"DESKTOP-PM6C56D\defaultuser0"
     assert ev["src_ip"] is None                   # LOCAL console
+
+
+def test_channel_aware_sysmon_process_and_definitive_guid():
+    # real Plaso Sysmon EID 1 positional strings (RuleName prepended at [0])
+    s = ["technique_id=T1112", "2019-05-16 14:17:15.753",
+         "{DFAE8213-70EB-5CDD-0000-0010F66D0A00}", "3788",
+         r"C:\Windows\System32\reg.exe", "6.3", "Registry Console Tool",
+         "MS Windows", "Microsoft Corporation", "reg add hklm\\...\\EnableLUA ...",
+         "C:\\", r"insecurebank\Administrator", "{DFAE8213-7002}", "0x585e6", "2",
+         "High", "SHA1=0873...", "{DFAE8213-702C}", "3748",
+         r"C:\Windows\System32\cmd.exe", '"C:\\Windows\\system32\\cmd.exe" ']
+    shaped = winevt_adapter.adapt(_wrap_ch(1, s, "Microsoft-Windows-Sysmon/Operational",
+                                           "Microsoft-Windows-Sysmon"))
+    assert shaped["Provider"] == "Microsoft-Windows-Sysmon"   # the Sysmon gate reads Provider
+    ev = normalize.normalize("evtx_sysmon", shaped)
+    assert ev["car_object"] == "process" and ev["car_action"] == "create"
+    assert ev["guid"] == "{DFAE8213-70EB-5CDD-0000-0010F66D0A00}"   # REAL Sysmon ProcessGuid
+    assert ev["integrity_level"] == "High" and ev["user"] == r"insecurebank\Administrator"
+    # a Sysmon EID 8 spoke carries the owning ProcessGuid (definitive link source)
+    s8 = ["-", "2019-05-26", "{365ABB72-0FA6}", "3884", r"C:\jjs.exe",
+          "{365ABB72-0FA7}", "3908", r"C:\svchost.exe", "3916", "0x60000", None, None]
+    t = normalize.normalize("evtx_sysmon", winevt_adapter.adapt(
+        _wrap_ch(8, s8, "Microsoft-Windows-Sysmon/Operational", "Microsoft-Windows-Sysmon")))
+    assert t["car_object"] == "thread" and t["car_action"] == "remote_create"
+    assert t["owning_guid_native"] == "{365ABB72-0FA6}"       # SourceProcessGuid

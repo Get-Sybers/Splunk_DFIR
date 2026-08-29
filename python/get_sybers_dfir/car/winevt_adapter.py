@@ -72,6 +72,38 @@ RULES = {
     ("TerminalServices", 21): ("U", ["User", "SessionID", "Address"]),          # (v)
     ("TerminalServices", 24): ("U", ["User", "SessionID", "Address"]),          # (v)
     ("TerminalServices", 25): ("U", ["User", "SessionID", "Address"]),          # (v shape)
+    # ---- Sysmon (channel Microsoft-Windows-Sysmon/Operational) --------------
+    # Plaso prepends RuleName at [0], then the standard Sysmon EventData order.
+    # Verified against real attack-sample records for 1/3/5/6/7/8/11/12/13.
+    ("Sysmon", 1): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",     # (v)
+        "Image", "FileVersion", "Description", "Product", "Company", "CommandLine",
+        "CurrentDirectory", "User", "LogonGuid", "LogonId", "TerminalSessionId",
+        "IntegrityLevel", "Hashes", "ParentProcessGuid", "ParentProcessId",
+        "ParentImage", "ParentCommandLine"]),
+    ("Sysmon", 3): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",     # (v)
+        "Image", "User", "Protocol", "Initiated", "SourceIsIpv6", "SourceIp",
+        "SourceHostname", "SourcePort", "SourcePortName", "DestinationIsIpv6",
+        "DestinationIp", "DestinationHostname", "DestinationPort",
+        "DestinationPortName"]),
+    ("Sysmon", 5): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",     # (v)
+        "Image"]),
+    ("Sysmon", 6): ("E", ["RuleName", "UtcTime", "ImageLoaded", "Hashes",        # (v)
+        "Signed", "Signature", "SignatureStatus"]),
+    ("Sysmon", 7): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",     # (v)
+        "Image", "ImageLoaded", "FileVersion", "Description", "Product",
+        "Company", "Hashes", "Signed", "Signature", "SignatureStatus"]),
+    ("Sysmon", 8): ("E", ["RuleName", "UtcTime", "SourceProcessGuid",            # (v)
+        "SourceProcessId", "SourceImage", "TargetProcessGuid", "TargetProcessId",
+        "TargetImage", "NewThreadId", "StartAddress", "StartModule",
+        "StartFunction"]),
+    ("Sysmon", 11): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",    # (v)
+        "Image", "TargetFilename", "CreationUtcTime"]),
+    ("Sysmon", 12): ("E", ["RuleName", "EventType", "UtcTime", "ProcessGuid",    # (v)
+        "ProcessId", "Image", "TargetObject"]),
+    ("Sysmon", 13): ("E", ["RuleName", "EventType", "UtcTime", "ProcessGuid",    # (v)
+        "ProcessId", "Image", "TargetObject", "Details"]),
+    ("Sysmon", 23): ("E", ["RuleName", "UtcTime", "ProcessGuid", "ProcessId",    # manifest
+        "User", "Image", "TargetFilename", "Hashes", "IsExecutable", "Archived"]),
 }
 
 
@@ -113,6 +145,9 @@ def adapt(wrapped: dict) -> dict | None:
     comp = _COMPUTER_RE.search(xml)
     return {
         "EventId": eid,
+        # the Sysmon map gates on Provider ("sysmon" in Provider); Plaso's
+        # source_name IS the provider (Microsoft-Windows-Sysmon)
+        "Provider": source,
         "Channel": channel or source,
         "Computer": rec.get("computer_name") or rec.get("hostname")
         or (comp.group(1) if comp else None),
