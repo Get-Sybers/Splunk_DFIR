@@ -21,7 +21,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
+import tempfile
 
 from . import enrich, sources, store
 
@@ -58,6 +60,8 @@ ROUTES = [
     (".L2tFilestat", ["l2t_filestat"]),
     (".L2tMft", ["l2t_mft"]),
     (".L2tUsnjrnl", ["l2t_usnjrnl"]),
+    (".L2tWinevt", ["l2t_winevt"]),     # Plaso legacy EVT  -> the winevtx CAR maps
+    (".L2tWinevtx", ["l2t_winevt"]),    # Plaso modern EVTX -> the winevtx CAR maps
     (".L2tUtmp", ["l2t_utmp"]),
     (".L2tUtmpx", ["l2t_utmpx"]),
     (".L2tText", ["l2t_text"]),
@@ -70,6 +74,25 @@ def route(path: str) -> list[str]:
         if pattern in name:
             return keys
     return []
+
+
+def _is_raw_l2t(path: str) -> bool:
+    """A raw log2timeline json_line file: unwrapped Plaso records (top-level
+    data_type + parser, no `Record`), as opposed to the split per-table files
+    the l2t maps consume."""
+    if not path.endswith(".jsonl"):
+        return False
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.strip().rstrip(",")
+                if not line or line in ("[", "]"):
+                    continue
+                r = json.loads(line)
+                return isinstance(r, dict) and "data_type" in r and "Record" not in r
+    except (OSError, ValueError):
+        return False
+    return False
 
 
 def _iter_source_files(in_path: str):
@@ -98,13 +121,59 @@ def process_file(in_path: str, out_dir: str, artefacts: list[str] | None = None,
         used = ["memory (passthrough)"]
     else:
         events, used = [], []
-        for f in _iter_source_files(in_path):
-            arts = artefacts if artefacts else route(f)
+
+        def _consume_rec(arts, rec):
             for art in arts:
-                if art not in used:
-                    used.append(art)
-                for ev in sources.iter_mapped(art, f, default_host=default_host):
-                    events.append(ev)
+                ev = sources.normalize.normalize(art, rec)
+                if ev is None:
+                    continue
+                if not ev.get("source_host"):
+                    ev["source_host"] = default_host
+                events.append(ev)
+
+        def _consume(arts, path):
+            """Read `path` ONCE and run every routed map per record (content-
+            routing sends an evtx file to all evtx maps — re-reading the file per
+            map is what made this O(maps × file))."""
+            arts = [a for a in arts if a]
+            if not arts:
+                return
+            for a in arts:
+                if a not in used:
+                    used.append(a)
+            # a Plaso winevt table is PORTED to the evtx maps: adapt each record
+            # to the EvtxECmd shape, then run the existing EVTX_MAPS over it
+            if arts == ["l2t_winevt"]:
+                from . import winevt_adapter
+                for a in EVTX_MAPS:
+                    if a not in used:
+                        used.append(a)
+                for wrapped in sources.iter_jsonl(path):
+                    shaped = winevt_adapter.adapt(wrapped)
+                    if shaped is not None:
+                        _consume_rec(EVTX_MAPS, shaped)
+                return
+            for rec in sources.iter_jsonl(path):
+                _consume_rec(arts, rec)
+
+        for f in _iter_source_files(in_path):
+            if artefacts:
+                _consume(artefacts, f)
+            elif _is_raw_l2t(f):
+                # a raw log2timeline json_line file is a CONTAINER of many
+                # parsers; wrap+split it into per-parser tables (the shape the
+                # l2t maps expect) and route each table by its name
+                from ..ingest import prepare  # lazy: keeps the heavy ingest/kusto
+                tmp = tempfile.mkdtemp(prefix="car_l2t_")   # deps out of the car import graph
+                try:
+                    tables = prepare.split_l2t(f, os.path.basename(f), tmp,
+                                               os.path.basename(f))
+                    for tpath in tables.values():
+                        _consume(route(tpath), tpath)
+                finally:
+                    shutil.rmtree(tmp, ignore_errors=True)
+            else:
+                _consume(route(f), f)
 
     # enrichment is SELF-CONTAINED: only THIS source's events are in scope
     events = enrich.enrich(events)

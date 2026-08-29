@@ -110,6 +110,13 @@ def hex_int(src):
     return ("hex_int", src)
 
 
+def at(src, index):
+    """The element at `index` of a list-valued field/marker (Plaso exposes event-
+    log EventData as a positional `strings` list, not named fields) — None if the
+    list is absent or too short. Negative indices allowed."""
+    return ("at", (src, index))
+
+
 # --- resolver ---------------------------------------------------------------
 
 def _blank(v) -> bool:
@@ -256,6 +263,15 @@ def _resolve(src, rec):
             return None
         s = str(v).upper() if upper else str(v)
         return table.get(s)
+    if kind == "at":
+        container, idx = arg
+        v = _resolve(container, rec)
+        if isinstance(v, (list, tuple)) and -len(v) <= idx < len(v):
+            e = v[idx]
+            if isinstance(e, str):
+                e = e.strip()
+            return None if _blank(e) else e
+        return None
     if kind == "hex_int":
         v = _resolve(arg, rec)
         if _blank(v):
