@@ -110,6 +110,13 @@ def hex_int(src):
     return ("hex_int", src)
 
 
+def unescape_backslashes(src):
+    """Collapse doubled backslashes to single ('C:\\\\x' -> 'C:\\x') — some Plaso
+    renderings (lnk link_target) double them; a rendering artifact, not
+    evidence."""
+    return ("unescape_backslashes", src)
+
+
 def at(src, index):
     """The element at `index` of a list-valued field/marker (Plaso exposes event-
     log EventData as a positional `strings` list, not named fields) — None if the
@@ -263,6 +270,11 @@ def _resolve(src, rec):
             return None
         s = str(v).upper() if upper else str(v)
         return table.get(s)
+    if kind == "unescape_backslashes":
+        v = _resolve(arg, rec)
+        if _blank(v):
+            return None
+        return str(v).replace("\\\\", "\\")
     if kind == "at":
         container, idx = arg
         v = _resolve(container, rec)
@@ -324,10 +336,16 @@ def normalize(artefact: str, rec: dict) -> dict | None:
     if m is None:
         return None
     obj = m["object"]
+    action = _resolve(m["action"], rec) if not isinstance(m["action"], str) else m["action"]
+    if action is None:
+        # a matched variant whose action marker resolves to nothing (e.g. an
+        # HTTP method outside CAR's get/post/put/tunnel) is NOT a CAR event —
+        # the row stays raw, never an action-less phantom.
+        return None
     props = {car: _resolve(sp, rec) for car, sp in m["props"].items()}
     event = {
         "car_object": obj,
-        "car_action": _resolve(m["action"], rec) if not isinstance(m["action"], str) else m["action"],
+        "car_action": action,
         "timestamp": None if m.get("ts") is None else _clean_ts(_resolve(m["ts"], rec)),
         "guid": _guid(m.get("guid"), obj, rec),
         # process-context links, resolved by enrich (docs: car-store §3 logic).

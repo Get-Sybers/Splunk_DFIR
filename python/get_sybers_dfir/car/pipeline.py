@@ -62,6 +62,18 @@ ROUTES = [
     (".L2tUsnjrnl", ["l2t_usnjrnl"]),
     (".L2tWinevt", ["l2t_winevt"]),     # Plaso legacy EVT  -> the winevtx CAR maps
     (".L2tWinevtx", ["l2t_winevt"]),    # Plaso modern EVTX -> the winevtx CAR maps
+    (".L2tMsiecf", ["l2t_msiecf"]),     # IE index.dat visits -> http
+    (".L2tFirefoxCache", ["l2t_firefox_cache"]),  # -> http (recorded method/status)
+    (".L2tSqlite", ["l2t_firefox_places"]),       # firefox page visits -> http (gated by data_type)
+    (".L2tJavaIdx", ["l2t_javaidx"]),   # Java download cache -> http
+    (".L2tLnk", ["l2t_lnk"]),           # shortcut target MAC times -> file
+    (".L2tRecycleBinInfo2", ["l2t_recyclebin"]),  # deletion events -> file/delete
+    (".L2tRecycleBin", ["l2t_recyclebin"]),
+    # l2t tables with NO CAR object — routed to [] EXPLICITLY (known, not
+    # unknown): pe = compilation times (no CAR file action); olecf = document
+    # internal streams; rplog = restore-point info; fseventsd = macOS flags
+    # (2 rows, undecoded). Their rows stay raw.
+    (".L2tPe", []), (".L2tOlecf", []), (".L2tRplog", []), (".L2tFseventsd", []),
     (".L2tUtmp", ["l2t_utmp"]),
     (".L2tUtmpx", ["l2t_utmpx"]),
     (".L2tText", ["l2t_text"]),
