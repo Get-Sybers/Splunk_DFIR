@@ -48,19 +48,19 @@
 //                   + Volatility filescan (memory-resident files)
 //   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
-//                   + Volatility dfir_registry (memory — RECmd-list keys in RAM)
+//                   + Volatility windows.piiat.registry (memory — RECmd-list keys in RAM)
 //   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
 //   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
 //   CarThread       Sysmon 8 + Volatility thrdscan (memory — threads/start addr)
 //
 //   MEMORY fills ALL NINE CAR objects where dead-box cannot: Volatility 3
-//   (memory.VolatilityJson) sources the live process tree (dfir_processes ->
+//   (memory.VolatilityJson) sources the live process tree (windows.piiat.processes ->
 //   process, full path/parent/cmdline/DLLs), loaded modules (dlllist -> module),
 //   kernel drivers (modules -> driver), connections (netscan/netstat -> flow),
 //   logon sessions (sessions -> user_session), memory-resident files (filescan ->
 //   file), services (svcscan -> service), threads (thrdscan -> thread, whose
 //   unbacked start addresses are the injection tell) and the registry
-//   (dfir_registry -> registry: the RECmd-style target keys read straight out of
+//   (windows.piiat.registry -> registry: the RECmd-style target keys read straight out of
 //   the hives resident in RAM). module/driver/thread had only Sysmon before.
 //
 //   registry lost its only source when the KAPE path was removed; the
@@ -463,7 +463,7 @@ CarProcess_Security() {
     | project-away _NewName, _Name4689, _NewPid, _EvPid, _SubjName, _SubjDom
 }
 
-// Volatility dfir_processes (psscan — unlinked processes found). Full image path,
+// Volatility windows.piiat.processes (psscan — unlinked processes found). Full image path,
 // parent path, command line, pid, ppid, create time from each process's rebuilt
 // address space. No user/SID or hostname natively (honest gaps). All plugin fields
 // (Record.Hidden, Record.DllCount, …) remain queryable as normal columns.
@@ -471,7 +471,7 @@ CarProcess_Security() {
 with (docstring = "CAR 'process' from Volatility psscan (memory) (native fields + CAR fields)", folder = "CAR/process")
 CarProcess_Memory() {
     database("memory").VolatilityJson
-    | where Plugin == "dfir_processes.DfirProcesses"
+    | where Plugin == "windows.piiat.processes"
     | extend _full = tostring(Record.Path), _short = tostring(Record.ImageFileName)
     | extend
         Timestamp         = todatetime(Record.CreateTime),
@@ -842,14 +842,14 @@ CarRegistry_Sysmon() {
     | project-away _etype, _target
 }
 
-// Volatility dfir_registry (memory) — the same RECmd-style target keys read from
+// Volatility windows.piiat.registry (memory) — the same RECmd-style target keys read from
 // the hives resident in RAM. Snapshot -> action "edit". user recovered from the
 // per-user hive path.
 .create-or-alter function
-with (docstring = "CAR 'registry' from Volatility dfir_registry (memory) (native fields + CAR fields)", folder = "CAR/registry")
+with (docstring = "CAR 'registry' from Volatility windows.piiat.registry (memory) (native fields + CAR fields)", folder = "CAR/registry")
 CarRegistry_Memory() {
     database("memory").VolatilityJson
-    | where Plugin == "dfir_registry.DfirRegistry"
+    | where Plugin == "windows.piiat.registry"
     | extend
         Timestamp  = todatetime(Record.LastWrite),
         action     = "edit",
