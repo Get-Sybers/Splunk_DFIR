@@ -25,12 +25,20 @@ import sys
 
 from . import enrich, sources, store
 
+# EvtxECmd output is ONE uniform shape across all ~110 Windows channels, so it
+# is CONTENT-routed, not filename-routed: every *_EvtxECmd_Output.json feeds the
+# whole evtx map family and each map's (Channel, EventId) predicate decides which
+# rows it claims (a row matching none is dropped). Adding a channel/EventId is a
+# map change, never a routing change.
+EVTX_MAPS = ["evtx_security",           # Security 4624/4625 -> authentication
+             "evtx_security_sessions",  # Security 4624/4634/4647/4778/4779 -> user_session
+             "evtx_process",            # Security 4688 -> process
+             "evtx_services",           # System 7045 / Security 4697 -> service
+             "evtx_sysmon"]             # Sysmon EIDs -> process/flow/file/registry/module/driver/thread
+
 # filename-pattern -> artefact map keys (explicit, first match wins)
 ROUTES = [
-    ("Security_EvtxECmd_Output", ["evtx_security", "evtx_security_sessions"]),
-    ("System_EvtxECmd_Output", ["evtx_services"]),
-    ("_EvtxECmd_Output", ["evtx_sysmon", "evtx_security", "evtx_security_sessions",
-                          "evtx_services"]),   # mixed/unknown channel: all evtx maps
+    ("_EvtxECmd_Output", EVTX_MAPS),
     ("conn.json", ["zeek_conn"]),
     ("http.json", ["zeek_http"]),
     (".L2tPrefetch", ["plaso_exec_prefetch"]),

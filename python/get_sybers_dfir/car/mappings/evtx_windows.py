@@ -32,7 +32,15 @@ prefixed to stay globally unique across mapping submodules.
 from __future__ import annotations
 
 from ..normalize import (basename, concat, const, domain_of, epoch_ts, ext, exe_path,  # noqa: F401
-                        first, host_label, lower, map_value, payload, regex1)
+                        first, hex_int, host_label, lower, map_value, payload, regex1)
+
+
+# S-1-16-<RID> mandatory-label SID -> CAR integrity_level (the memory processes
+# plugin's own vocabulary), so the field means the same across every source.
+_INTEGRITY = {
+    "S-1-16-0": "untrusted", "S-1-16-4096": "low", "S-1-16-8192": "medium",
+    "S-1-16-8448": "medium", "S-1-16-12288": "high", "S-1-16-16384": "system",
+}
 
 
 # --- variant predicates (evtxwin_ prefix: globally unique) -------------------
@@ -70,12 +78,18 @@ def evtxwin_is_sec_4697(rec) -> bool:
     return rec.get("EventId") == 4697 and "Security" in str(rec.get("Channel", ""))
 
 
+def evtxwin_is_sec_4688(rec) -> bool:
+    """Security 4688 — a new process has been created."""
+    return rec.get("EventId") == 4688 and "Security" in str(rec.get("Channel", ""))
+
+
 PREDICATES = {
     "evtxwin_is_sec_4624": evtxwin_is_sec_4624,
     "evtxwin_is_sec_logoff": evtxwin_is_sec_logoff,
     "evtxwin_is_sec_4778": evtxwin_is_sec_4778,
     "evtxwin_is_sys_7045": evtxwin_is_sys_7045,
     "evtxwin_is_sec_4697": evtxwin_is_sec_4697,
+    "evtxwin_is_sec_4688": evtxwin_is_sec_4688,
 }
 
 
@@ -274,5 +288,58 @@ MAPPINGS = {
             }),
         ],
         "default": None,   # 7036 state changes etc. have no canonical action here
+    },
+    # ---- Security 4688 → process create -------------------------------------
+    # The audit-log analogue of Sysmon EID 1 / memory psscan: a new process.
+    # 4688 field semantics (verified against real payloads): NewProcessId = THIS
+    # process (hex), ProcessId = its CREATOR (the parent, hex), NewProcessName =
+    # the image, Subject* = the creating security context, MandatoryLabel = the
+    # new process's integrity, SubjectLogonId = the session it ran under.
+    "evtx_process": {
+        "variants": [
+            ("evtxwin_is_sec_4688", {
+                "object": "process", "action": "create", "ts": "TimeCreated",
+                # no process guid in Security (unlike Sysmon's ProcessGuid) —
+                # identity is the audit record; spokes link to it by pid+window
+                "guid": {"fields": ["Computer", "Channel", "EventRecordId"]},
+                "host": host_label("Computer"),
+                # parent pid is 4688's ProcessId; enrich resolves the parent by
+                # (ppid, create-time window) — heuristic (PID reuse)
+                "parent_pid": payload("ProcessId"),
+                "props": {
+                    "pid": hex_int(payload("NewProcessId")),
+                    "ppid": hex_int(payload("ProcessId")),
+                    "image_path": payload("NewProcessName"),
+                    "exe": basename(payload("NewProcessName")),
+                    "parent_image_path": payload("ParentProcessName"),
+                    "parent_exe": basename(payload("ParentProcessName")),
+                    # only present with command-line auditing enabled — else
+                    # an honest null, never fabricated
+                    "command_line": payload("CommandLine"),
+                    # the CREATING context (4688 Subject). A process launched to
+                    # run AS a different user carries that in Target*; where
+                    # Target is "-"/S-1-0-0 (the common case) the running user IS
+                    # the creator, so Subject is the honest fill.
+                    "user": first(payload("TargetUserName"), payload("SubjectUserName")),
+                    # S-1-0-0 is the NULL SID ("Nobody") — 4688 sets Target to it
+                    # when the process runs as the creator, so it falls through to
+                    # the Subject SID (the name already blanks on "-")
+                    "sid": first(regex1(payload("TargetUserSid"), r"^(?!S-1-0-0$)(S-.+)$"),
+                                 payload("SubjectUserSid")),
+                    "integrity_level": map_value(payload("MandatoryLabel"), _INTEGRITY),
+                    "hostname": host_label("Computer"),
+                },
+                "keep": ["EventId", "EventRecordId", "Channel", "Computer",
+                         "Payload", "SourceFile", "MapDescription"],
+                # SubjectLogonId ties this process to its user_session (LUID);
+                # TokenElevationType corroborates integrity. Surfaced, not faked.
+                "native_extract": {
+                    "SubjectLogonId": payload("SubjectLogonId"),
+                    "TokenElevationType": payload("TokenElevationType"),
+                    "MandatoryLabel": payload("MandatoryLabel"),
+                },
+            }),
+        ],
+        "default": None,
     },
 }

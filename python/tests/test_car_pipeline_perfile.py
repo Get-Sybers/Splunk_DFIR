@@ -10,8 +10,10 @@ _SEC = os.path.join(os.path.dirname(__file__), "..", "..",
 
 
 def test_routing_by_filename():
-    assert pipeline.route("Security_EvtxECmd_Output.json") == [
-        "evtx_security", "evtx_security_sessions"]
+    # EvtxECmd is content-routed: any *_EvtxECmd_Output.json feeds the whole
+    # evtx family; each map's (Channel, EventId) predicate decides its rows
+    assert pipeline.route("Security_EvtxECmd_Output.json") == pipeline.EVTX_MAPS
+    assert "evtx_process" in pipeline.EVTX_MAPS
     assert pipeline.route("conn.json") == ["zeek_conn"]
     assert pipeline.route("x.L2tPrefetch") == ["plaso_exec_prefetch"]
     assert pipeline.route("unknown.bin") == []
@@ -22,7 +24,7 @@ def test_one_file_one_enriched_db(tmp_path):
         import pytest
         pytest.skip("lonewolf evidence absent")
     s = pipeline.process_file(_SEC, str(tmp_path))
-    assert s["objects"] == {"authentication": 827, "user_session": 875}
+    assert s["objects"] == {"authentication": 827, "process": 40, "user_session": 875}
     assert os.path.isfile(tmp_path / "car.db")
     assert os.path.isfile(tmp_path / "car_authentication.jsonl")
     # the in-file LUID join is self-contained and fires for every auth row

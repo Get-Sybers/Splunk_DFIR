@@ -248,3 +248,113 @@ def test_real_cross_feed_yields_nothing_wrong():
     # no session events — cross-feeding drops everything instead of mis-mapping
     assert list(sources.iter_mapped("evtx_services", _SECURITY)) == []
     assert list(sources.iter_mapped("evtx_security_sessions", _SYSTEM)) == []
+
+
+def _sec_4688(**over):
+    import json
+    data = [
+        {"@Name": "SubjectUserSid", "#text": "S-1-5-18"},
+        {"@Name": "SubjectUserName", "#text": "WIN-ABC$"},
+        {"@Name": "SubjectLogonId", "#text": "0x3E7"},
+        {"@Name": "NewProcessId", "#text": "0x150"},
+        {"@Name": "NewProcessName", "#text": r"C:\Windows\System32\smss.exe"},
+        {"@Name": "TokenElevationType", "#text": "%%1936"},
+        {"@Name": "ProcessId", "#text": "0x4"},
+        {"@Name": "CommandLine", "#text": None},
+        {"@Name": "TargetUserSid", "#text": "S-1-0-0"},
+        {"@Name": "TargetUserName", "#text": "-"},
+        {"@Name": "ParentProcessName", "#text": r"C:\Windows\System32\wininit.exe"},
+        {"@Name": "MandatoryLabel", "#text": "S-1-16-16384"},
+    ]
+    rec = {"EventId": 4688, "Channel": "Security", "Computer": "WIN-ABC",
+           "EventRecordId": 9, "TimeCreated": "2018-03-27T12:11:42+00:00",
+           "Payload": json.dumps({"EventData": {"Data": data}})}
+    rec.update(over)
+    return rec
+
+
+def test_sec_4688_is_process_create():
+    from get_sybers_dfir.car import normalize
+    ev = normalize.normalize("evtx_process", _sec_4688())
+    assert ev["car_object"] == "process" and ev["car_action"] == "create"
+    assert ev["pid"] == 336 and ev["ppid"] == 4          # NewProcessId=0x150, parent=ProcessId
+    assert ev["exe"] == "smss.exe" and ev["image_path"] == r"C:\Windows\System32\smss.exe"
+    assert ev["parent_exe"] == "wininit.exe"
+    assert ev["integrity_level"] == "system"             # S-1-16-16384
+    assert ev["sid"] == "S-1-5-18"                        # Target is the NULL SID -> Subject
+    assert ev["user"] == "WIN-ABC$"                       # Target "-" -> Subject
+    assert ev["command_line"] is None                    # cmdline auditing off — honest null
+    assert ev["parent_pid"] == "0x4"                     # raw for enrich's hex-aware join
+    assert ev["_native"]["SubjectLogonId"] == "0x3E7"    # process -> user_session key
+    # a process running AS a distinct target user keeps that user, not the creator
+    ev2 = normalize.normalize("evtx_process", _sec_4688(Payload=__import__("json").dumps(
+        {"EventData": {"Data": [
+            {"@Name": "SubjectUserSid", "#text": "S-1-5-18"},
+            {"@Name": "NewProcessId", "#text": "0x10"}, {"@Name": "ProcessId", "#text": "0x4"},
+            {"@Name": "NewProcessName", "#text": r"C:\x.exe"},
+            {"@Name": "TargetUserSid", "#text": "S-1-5-21-1-1-1-1001"},
+            {"@Name": "TargetUserName", "#text": "alice"}]}})))
+    assert ev2["user"] == "alice" and ev2["sid"] == "S-1-5-21-1-1-1-1001"
+
+
+def test_sec_4688_not_claimed_by_other_evtx_maps():
+    from get_sybers_dfir.car import normalize
+    assert normalize.normalize("evtx_security", _sec_4688()) is None       # not auth
+    assert normalize.normalize("evtx_security_sessions", _sec_4688()) is None
+    assert normalize.normalize("evtx_services", _sec_4688()) is None
+
+
+def _sec_4688(**over):
+    import json as _json
+    data = [
+        {"@Name": "SubjectUserSid", "#text": "S-1-5-18"},
+        {"@Name": "SubjectUserName", "#text": "-"},
+        {"@Name": "SubjectLogonId", "#text": "0x3E7"},
+        {"@Name": "NewProcessId", "#text": "0x150"},
+        {"@Name": "NewProcessName", "#text": r"C:\Windows\System32\smss.exe"},
+        {"@Name": "TokenElevationType", "#text": "%%1936"},
+        {"@Name": "ProcessId", "#text": "0x4"},
+        {"@Name": "CommandLine", "#text": None},
+        {"@Name": "TargetUserSid", "#text": "S-1-0-0"},
+        {"@Name": "TargetUserName", "#text": "-"},
+        {"@Name": "MandatoryLabel", "#text": "S-1-16-16384"},
+    ]
+    rec = {"EventId": 4688, "Channel": "Security", "Computer": "WIN-1M3263ACE5D",
+           "EventRecordId": 9, "TimeCreated": "2018-03-27T12:11:42+00:00",
+           "Payload": _json.dumps({"EventData": {"Data": data}})}
+    rec.update(over)
+    return rec
+
+
+def test_sec_4688_is_process_create():
+    from get_sybers_dfir.car import normalize
+    ev = normalize.normalize("evtx_process", _sec_4688())
+    assert ev["car_object"] == "process" and ev["car_action"] == "create"
+    assert ev["pid"] == 0x150 and ev["ppid"] == 4        # NewProcessId / ProcessId(parent), hex->int
+    assert ev["exe"] == "smss.exe"
+    assert ev["image_path"] == r"C:\Windows\System32\smss.exe"
+    assert ev["integrity_level"] == "system"             # S-1-16-16384
+    assert ev["sid"] == "S-1-5-18"                       # null-target falls through to Subject
+    assert ev["command_line"] is None                    # not audited -> honest null
+    assert ev["_native"]["SubjectLogonId"] == "0x3E7"    # process -> session join key
+    assert ev["source_host"] == "WIN-1M3263ACE5D"
+    # a real runas: Target names a different user -> that wins
+    import json as _json
+    runas = _sec_4688()
+    runas["Payload"] = _json.dumps({"EventData": {"Data": [
+        {"@Name": "NewProcessId", "#text": "0x200"},
+        {"@Name": "NewProcessName", "#text": r"C:\tmp\x.exe"},
+        {"@Name": "ProcessId", "#text": "0x150"},
+        {"@Name": "SubjectUserSid", "#text": "S-1-5-18"},
+        {"@Name": "TargetUserSid", "#text": "S-1-5-21-1-2-3-1001"},
+        {"@Name": "TargetUserName", "#text": "alice"},
+    ]}})
+    r2 = normalize.normalize("evtx_process", runas)
+    assert r2["user"] == "alice" and r2["sid"] == "S-1-5-21-1-2-3-1001"
+
+
+def test_sec_4688_not_claimed_by_other_evtx_maps():
+    from get_sybers_dfir.car import normalize
+    # a 4688 is a process, not a session/service/auth
+    assert normalize.normalize("evtx_security_sessions", _sec_4688()) is None
+    assert normalize.normalize("evtx_services", _sec_4688()) is None

@@ -95,6 +95,13 @@ def host_label(src):
     return ("host_label", src)
 
 
+def hex_int(src):
+    """A PID/handle rendered as an int, accepting decimal or Windows-hex form
+    ('0x150' -> 336) so a CAR column is uniform whatever the source's rendering.
+    Parsing, not a near-miss — the value is exact."""
+    return ("hex_int", src)
+
+
 # --- resolver ---------------------------------------------------------------
 
 def _blank(v) -> bool:
@@ -221,6 +228,17 @@ def _resolve(src, rec):
             return None
         s = str(v).upper() if upper else str(v)
         return table.get(s)
+    if kind == "hex_int":
+        v = _resolve(arg, rec)
+        if _blank(v):
+            return None
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            try:
+                return int(str(v), 16)
+            except (TypeError, ValueError):
+                return None
     raise ValueError(f"unknown source marker: {src!r}")
 
 
