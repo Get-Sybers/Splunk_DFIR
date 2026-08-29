@@ -65,6 +65,8 @@ DEFAULT_PLUGINS = [
     "windows.svcscan",                # -> CarService
     "windows.piiat.threads",          # -> CarThread (OwnerOffset + stacks)
     "windows.piiat.registry",         # -> CarRegistry
+    "windows.piiat.access",           # -> CarProcess access events (handle-observed)
+    "windows.mftscan.MFTScan",        # -> CarFile (NTFS times from resident $MFT)
     "windows.malfind",
 ]
 
