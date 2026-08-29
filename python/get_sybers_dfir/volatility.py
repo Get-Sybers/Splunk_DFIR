@@ -52,17 +52,18 @@ _PIIAT_MEM_DIR = os.path.join(_REPO_ROOT, "third_party", "piiat-mem")
 DEFAULT_PLUGINS = [
     "banners.Banners",
     "windows.info",
-    "windows.piiat.processes",        # -> CarProcess (psscan; full path, parent, DLLs)
+    "windows.piiat.processes",        # -> CarProcess (psscan; token Sid/User/LogonId)
     "windows.pslist",
     "windows.pstree",
-    "windows.dlllist",                # -> CarModule
+    "windows.piiat.modules",          # -> CarModule (OwnerOffset: definitive link)
     "windows.modules",                # -> CarDriver
-    "windows.netscan",                # -> CarFlow
-    "windows.netstat",                # -> CarFlow
-    "windows.sessions",               # -> CarUserSession
-    "windows.filescan",               # -> CarFile
+    "windows.piiat.network",          # -> CarFlow / socket (OwnerOffset)
+    "windows.netstat",                # -> CarFlow (second view)
+    "windows.piiat.sessions",         # -> CarUserSession (token LUID logons)
+    "windows.filescan",               # -> CarFile (ownerless scan)
+    "windows.piiat.files",            # -> CarFile (handle-enumerated, WITH owners)
     "windows.svcscan",                # -> CarService
-    "windows.thrdscan",               # -> CarThread
+    "windows.piiat.threads",          # -> CarThread (OwnerOffset + stacks)
     "windows.piiat.registry",         # -> CarRegistry
     "windows.malfind",
 ]
