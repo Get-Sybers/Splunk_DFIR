@@ -1,5 +1,6 @@
 """Unit tests for the pure logic of the volatility processor (no docker needed)."""
 import os
+import sys
 
 from get_sybers_dfir import volatility as vol
 
@@ -40,10 +41,7 @@ def test_valid_jsonl(tmp_path):
 
 
 def test_process_no_images_is_clean(tmp_path):
-    s = vol.process(
-        str(tmp_path / "mem"), str(tmp_path / "out"), str(tmp_path / "sym"),
-        "renderer.py", "plugins",
-    )
+    s = vol.process(str(tmp_path / "mem"), str(tmp_path / "out"), str(tmp_path / "sym"))
     assert s["images"] == 0 and s["processed"] == 0 and s["failed"] == 0
     assert s["plugins"] == len(vol.DEFAULT_PLUGINS)
 
@@ -54,16 +52,19 @@ def test_default_plugins_include_car_set():
     assert vol.DEFAULT_PLUGINS[0] == "banners.Banners"
 
 
-def test_car_set_is_engine_set_plus_extras():
-    """The CAR set is single-sourced from the PIIAT-Mem engine (no second plugin
-    list to keep in sync): it must be a superset of the engine's plugins."""
-    from piiat_mem import runner as piiat_runner
+def test_car_set_covers_the_tools_default_plugins():
+    """Conformance guard (not runtime coupling): the CAR set is named by PIIAT-Mem's
+    public plugin names, so a tool-side rename must not silently drift. Shell the
+    tool's own `--list-plugins` and assert the CAR set still covers it."""
+    import json
+    import subprocess
 
-    car = set(vol.DEFAULT_PLUGINS)
-    assert set(piiat_runner.ALL_PLUGINS).issubset(car)
-    # the custom plugin identities come from the submodule, not a local literal
-    assert "windows.piiat.processes" in piiat_runner.ALL_PLUGINS
-    assert "windows.piiat.registry" in piiat_runner.ALL_PLUGINS
-    # DX_DFIR-only extras that aren't part of the timeline engine
-    assert car - set(piiat_runner.ALL_PLUGINS) == {
-        "banners.Banners", "windows.pstree", "windows.netstat", "windows.malfind"}
+    env = dict(os.environ)
+    env["PYTHONPATH"] = vol._PIIAT_MEM_DIR + (
+        os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    out = subprocess.run(
+        [sys.executable, "-m", "piiat_mem", "--list-plugins"],
+        capture_output=True, text=True, env=env, check=True)
+    engine = set(json.loads(out.stdout))
+    missing = engine - set(vol.DEFAULT_PLUGINS)
+    assert not missing, f"CAR set no longer covers the tool's plugins: {missing}"
