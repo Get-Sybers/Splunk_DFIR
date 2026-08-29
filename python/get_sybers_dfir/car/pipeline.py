@@ -176,7 +176,10 @@ def process_file(in_path: str, out_dir: str, artefacts: list[str] | None = None,
                 # parsers; wrap+split it into per-parser tables (the shape the
                 # l2t maps expect) and route each table by its name
                 from ..ingest import prepare  # lazy: keeps the heavy ingest/kusto
-                tmp = tempfile.mkdtemp(prefix="car_l2t_")   # deps out of the car import graph
+                # split under the (disk-backed) output dir — a big container's
+                # per-parser tables overflow a tmpfs /tmp (hit for real: 15G
+                # tmpfs at 98% killed the two largest sources)
+                tmp = tempfile.mkdtemp(prefix=".car_l2t_", dir=out_dir)
                 try:
                     tables = prepare.split_l2t(f, os.path.basename(f), tmp,
                                                os.path.basename(f))
