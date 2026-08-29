@@ -30,11 +30,13 @@ from . import enrich, sources, store
 # whole evtx map family and each map's (Channel, EventId) predicate decides which
 # rows it claims (a row matching none is dropped). Adding a channel/EventId is a
 # map change, never a routing change.
-EVTX_MAPS = ["evtx_security",           # Security 4624/4625 -> authentication
+EVTX_MAPS = ["evtx_security",           # Security 4624/4625/4672 -> authentication
              "evtx_security_sessions",  # Security 4624/4634/4647/4778/4779 -> user_session
              "evtx_process",            # Security 4688 -> process
              "evtx_services",           # System 7045 / Security 4697 -> service
-             "evtx_sysmon"]             # Sysmon EIDs -> process/flow/file/registry/module/driver/thread
+             "evtx_sysmon",             # Sysmon EIDs -> process/flow/file/registry/module/driver/thread
+             "evtx_bits",               # BITS-Client 59/60 -> http
+             "evtx_rdp"]                # TerminalServices 21/24/25 -> user_session
 
 # filename-pattern -> artefact map keys (explicit, first match wins)
 ROUTES = [

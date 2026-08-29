@@ -86,8 +86,16 @@ def exe_path(src):
 
 def payload(key, field="Payload"):
     """A key out of an EvtxECmd `Payload` JSON string (EZ tools stamp the event
-    data as a JSON blob) — the Python analogue of the KQL EvtxPayload()."""
+    data as a JSON blob) — the Python analogue of the KQL EvtxPayload().
+    Handles the EventData.Data[] ({@Name,#text}) shape and a flat dict."""
     return ("payload", (field, key))
+
+
+def userdata(key, field="Payload"):
+    """A key out of the OTHER EvtxECmd payload shape — `UserData` with one nested
+    child dict of named fields (TerminalServices, WMI-Activity, ...): Payload ->
+    UserData -> <single child> -> key."""
+    return ("userdata", (field, key))
 
 
 def host_label(src):
@@ -192,6 +200,26 @@ def _resolve(src, rec):
             if isinstance(v, str):
                 v = v.strip()
             return None if _blank(v) else v
+        except (ValueError, AttributeError, TypeError):
+            return None
+    if kind == "userdata":
+        field, key = arg
+        raw = rec.get(field)
+        if _blank(raw):
+            return None
+        try:
+            import json as _json
+            data = raw if isinstance(raw, dict) else _json.loads(raw)
+            ud = data.get("UserData")
+            if not isinstance(ud, dict):
+                return None
+            for child in ud.values():          # the single nested element
+                if isinstance(child, dict) and key in child:
+                    v = child[key]
+                    if isinstance(v, str):
+                        v = v.strip()
+                    return None if _blank(v) else v
+            return None
         except (ValueError, AttributeError, TypeError):
             return None
     if kind == "host_label":
