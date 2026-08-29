@@ -1,17 +1,19 @@
 """Volatility 3 processor — memory images -> per-plugin JSON Lines.
 
-Run a fixed set of
-Volatility 3 plugins over each memory image with the custom ``jsonl_dfir`` renderer
-(one flat JSON object per TreeGrid node — one process/connection/artefact per line),
-writing ``<plugin>.jsonl`` per image. The ingest loader wraps each line as
-``{Plugin, SourceFile, Record}`` into memory.VolatilityJson, where the plugin's
-fields are reachable as ``Record.FieldName`` in KQL.
+Run a fixed set of Volatility 3 plugins over each memory image with the custom
+``jsonl_dfir`` renderer (one flat JSON object per TreeGrid node — one
+process/connection/artefact per line), writing ``<plugin>.jsonl`` per image. The
+ingest loader wraps each line as ``{Plugin, SourceFile, Record}`` into
+memory.VolatilityJson, where the plugin's fields are reachable as
+``Record.FieldName`` in KQL.
 
-The renderer isn't built in, so it's imported before the CLI runs (when Volatility
-discovers renderers) via a small ``python3 -c`` wrapper; the renderer file, custom
-plugins dir, symbols dir, memory file and plugin are passed as argv (no path is
-spliced into Python source). Container mode mounts them; a native run
-(``vol_native``) puts them on PYTHONPATH / env instead.
+The per-plugin execution — hardened container or native, the renderer-import
+wrapper, the ISF symbol mount — is the PIIAT-Mem engine's job: this module
+imports ``piiat_mem.runner`` from the vendored submodule and delegates to it, so
+the runner and the plugin identities live in ONE place (no second copy to keep in
+sync). This module keeps only what is DX_DFIR-specific: image discovery under the
+data store, per-plugin idempotency, the CAR plugin set, and the machine-readable
+summary Ansible gates on.
 
 ⚠️ SYMBOLS. Windows plugins resolve the kernel against ISF symbol tables Volatility
 fetches from the symbol servers on first use — that needs outbound network. On an
@@ -33,50 +35,34 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 
-from . import container
+# The memory-forensics engine is the vendored PIIAT-Mem submodule. Import it from
+# its fixed in-repo location so `python -m get_sybers_dfir.volatility`, the CLI,
+# and the tests all resolve it without depending on PYTHONPATH carrying the
+# submodule (the parent already cannot run Volatility without it — it mounts the
+# submodule's renderer + plugins).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_PIIAT_MEM = os.path.join(_REPO_ROOT, "third_party", "piiat-mem")
+if os.path.isdir(_PIIAT_MEM) and _PIIAT_MEM not in sys.path:
+    sys.path.insert(0, _PIIAT_MEM)
+from piiat_mem import runner as piiat_runner  # noqa: E402
 
 _IMAGE = "dfir/volatility:latest"
 
-# The plugins run per image — kept to the ones the analysis backend uses (process
-# tree, network, command lines, injected code). Order preserved from the shell.
-DEFAULT_PLUGINS = [
-    "banners.Banners",
-    "windows.info",
-    "windows.piiat.processes",        # -> CarProcess (psscan; full path, parent, DLLs)
-    "windows.pslist",
-    "windows.pstree",
-    "windows.dlllist",                # -> CarModule
-    "windows.modules",                # -> CarDriver
-    "windows.netscan",                # -> CarFlow
-    "windows.netstat",                # -> CarFlow
-    "windows.sessions",               # -> CarUserSession
-    "windows.filescan",               # -> CarFile
-    "windows.svcscan",                # -> CarService
-    "windows.thrdscan",               # -> CarThread
-    "windows.piiat.registry",         # -> CarRegistry
-    "windows.malfind",
-]
+# The CAR plugin set = the PIIAT-Mem engine's plugin set (single-sourced from the
+# submodule, so a plugin rename happens once, there) plus the DX_DFIR-only extras
+# the CAR ingest wants. banners.Banners runs first — format-agnostic, it sanity-
+# checks the image without symbols.
+#   engine set (piiat_runner.ALL_PLUGINS) -> CarProcess/CarModule/CarDriver/CarFlow/
+#     CarUserSession/CarFile/CarService/CarThread/CarRegistry (see the ingest)
+#   CAR-only extras: pstree (tree view), netstat (live sockets), malfind (injected code)
+_CAR_ONLY_PLUGINS = ["windows.pstree", "windows.netstat", "windows.malfind"]
+DEFAULT_PLUGINS = ["banners.Banners"] + piiat_runner.ALL_PLUGINS + _CAR_ONLY_PLUGINS
 
 _MEMORY_EXTS = (
     ".raw", ".mem", ".dmp", ".lime", ".vmem",
     ".bin", ".dump", ".vmsn", ".crash",
-)
-
-# Native runs import the renderer, then hand the CLI its argv (renderer
-# discovered on import). Container runs use the image's BAKED wrapper instead
-# (/opt/dfir/vol_wrapper.py — the only python entry the hardened image
-# allow-lists), which does the same import-then-run with argv passed through.
-_WRAPPER = (
-    "import importlib.util, sys\n"
-    "spec = importlib.util.spec_from_file_location('jsonl_dfir_renderer', sys.argv[1])\n"
-    "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)\n"
-    "from volatility3.cli import CommandLine\n"
-    "sys.argv = ['vol', '-q', '-p', sys.argv[2], '-s', sys.argv[3],\n"
-    "            '-r', 'jsonl_dfir', '-f', sys.argv[4], sys.argv[5]]\n"
-    "CommandLine().run()\n"
 )
 
 
@@ -120,53 +106,17 @@ def _valid_jsonl(path: str) -> bool:
         return False
 
 
-def vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
-             symbols_online=False):
-    """The ``docker run`` argv for one plugin pass on the minimal hardened
-    dfir/volatility image: the baked wrapper (python3 /opt/dfir/vol_wrapper.py)
-    is the ENTRYPOINT, so only the renderer path + CLI args are passed; the
-    plugin's JSONL goes to stdout. No caps, read-only rootfs, and no network
-    unless ``symbols_online`` (ISF symbol fetch) is requested. Pure."""
-    return container.run(
-        image,
-        ["/opt/jsonl_dfir_renderer.py",
-         "-q", "-p", "/plugins", "-s", "/symbols", "-r", "jsonl_dfir",
-         "-f", f"/mem/{os.path.basename(img)}", plugin],
-        mounts=[f"{os.path.dirname(img)}:/mem:ro",
-                f"{os.path.realpath(symbols_dir)}:/symbols",
-                f"{os.path.realpath(renderer)}:/opt/jsonl_dfir_renderer.py:ro",
-                f"{os.path.realpath(plugins_dir)}:/plugins:ro"],
-        network=symbols_online,
-    )
-
-
-def _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir, image,
-             native, symbols_online=False):
-    """Run one plugin over one image, JSONL to out_path (stdout captured)."""
-    if native:
-        env = dict(os.environ, VOLATILITY3_SYMBOL_DIRECTORIES=symbols_dir)
-        with open(out_path, "w") as out:
-            subprocess.run(
-                [native, "-c", _WRAPPER, renderer, plugins_dir, symbols_dir, img, plugin],
-                stdout=out, stderr=subprocess.DEVNULL, env=env, check=False,
-            )
-        return
-    with open(out_path, "w") as out:
-        subprocess.run(
-            vol_argv(img, plugin, symbols_dir, renderer, plugins_dir, image,
-                     symbols_online),
-            stdout=out, stderr=subprocess.DEVNULL, check=False,
-        )
-
-
 def process(memory_dir, out_dir, symbols_dir, renderer, plugins_dir,
             image=_IMAGE, plugins=None, native=None, force=False,
             symbols_online=False) -> dict:
     """Run the plugin set over every image under memory_dir. Idempotent per plugin.
 
-    ``symbols_online`` allows the container network access for ISF symbol fetch
-    (the ONE legitimate network need); default is fully offline — pre-seed
-    ``symbols_dir`` or expect Windows plugins to produce nothing on first use.
+    Execution of each plugin is delegated to ``piiat_mem.runner.run_plugin``; this
+    function owns discovery, the skip-if-valid gate, and the summary. ``native`` is
+    the native volatility executable path (falsy -> the hardened container).
+    ``symbols_online`` allows the container network access for ISF symbol fetch (the
+    ONE legitimate network need); default is fully offline — pre-seed ``symbols_dir``
+    or expect Windows plugins to produce nothing on first use.
     """
     memory_dir = os.path.realpath(memory_dir)
     out_dir = os.path.realpath(out_dir)
@@ -191,8 +141,11 @@ def process(memory_dir, out_dir, symbols_dir, renderer, plugins_dir,
             if not force and _valid_jsonl(out_path):
                 skipped += 1
                 continue
-            _run_vol(img, plugin, out_path, symbols_dir, renderer, plugins_dir,
-                     image, native, symbols_online)
+            piiat_runner.run_plugin(
+                img, plugin, out_path=out_path, symbols_dir=symbols_dir,
+                image=image, native=bool(native), python_exe=(native or None),
+                symbols_online=symbols_online, renderer=renderer, plugins_dir=plugins_dir,
+            )
             if _valid_jsonl(out_path):
                 processed += 1
                 per_image["produced"].append(plugin)

@@ -52,3 +52,18 @@ def test_default_plugins_include_car_set():
     assert "windows.piiat.processes" in vol.DEFAULT_PLUGINS
     assert "windows.piiat.registry" in vol.DEFAULT_PLUGINS
     assert vol.DEFAULT_PLUGINS[0] == "banners.Banners"
+
+
+def test_car_set_is_engine_set_plus_extras():
+    """The CAR set is single-sourced from the PIIAT-Mem engine (no second plugin
+    list to keep in sync): it must be a superset of the engine's plugins."""
+    from piiat_mem import runner as piiat_runner
+
+    car = set(vol.DEFAULT_PLUGINS)
+    assert set(piiat_runner.ALL_PLUGINS).issubset(car)
+    # the custom plugin identities come from the submodule, not a local literal
+    assert "windows.piiat.processes" in piiat_runner.ALL_PLUGINS
+    assert "windows.piiat.registry" in piiat_runner.ALL_PLUGINS
+    # DX_DFIR-only extras that aren't part of the timeline engine
+    assert car - set(piiat_runner.ALL_PLUGINS) == {
+        "banners.Banners", "windows.pstree", "windows.netstat", "windows.malfind"}
