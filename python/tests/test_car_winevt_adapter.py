@@ -47,3 +47,44 @@ def test_adapt_4624_and_4672_feed_auth_and_session_maps():
 
 def test_adapt_unmapped_eventid_is_none():
     assert winevt_adapter.adapt(_wrapped(4907, ["x"])) is None   # no CAR layout -> raw
+
+
+def _wrap_ch(eid, strings, channel, source="prov"):
+    xml = f"<Event><System><Channel>{channel}</Channel>" \
+          "<Computer>WIN-1M3263ACE5D</Computer></System></Event>"
+    return {"SourceImage": "LoneWolf.E01", "Timestamp": "2018-03-27T12:00:00Z",
+            "Parser": "winevtx",
+            "Record": {"data_type": "windows:evtx:record", "event_identifier": eid,
+                       "strings": strings, "xml_string": xml, "source_name": source,
+                       "record_number": 5, "hostname": "WIN-1M3263ACE5D"}}
+
+
+def test_channel_aware_7045_service():
+    s = ["Airplane Mode Switch", r"\SystemRoot\System32\drivers\DellRbtn.sys",
+         "kernel mode driver", "demand start", None]
+    shaped = winevt_adapter.adapt(_wrap_ch(7045, s, "System", "Service Control Manager"))
+    ev = normalize.normalize("evtx_services", shaped)
+    assert ev["car_object"] == "service" and ev["name"] == "Airplane Mode Switch"
+    assert ev["image_path"] == r"\SystemRoot\System32\drivers\DellRbtn.sys"
+
+
+def test_channel_aware_bits_http_and_eventid_collision():
+    s = ["{C411}", "Font Download", "{43D8}", "https://fs.microsoft.com/fs/x.json",
+         None, "0", "2017-04-20T16:10:39Z", "55", "55", "55"]
+    shaped = winevt_adapter.adapt(_wrap_ch(60, s, "Microsoft-Windows-Bits-Client/Operational",
+                                           "Microsoft-Windows-Bits-Client"))
+    ev = normalize.normalize("evtx_bits", shaped)
+    assert ev["car_object"] == "http" and ev["url_domain"] == "fs.microsoft.com"
+    # EventId 59 on the TerminalServices channel must NOT be claimed by the BITS rule
+    ts59 = winevt_adapter.adapt(_wrap_ch(59, ["x"], "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational"))
+    assert ts59 is None
+
+
+def test_channel_aware_terminalservices_userdata_shape():
+    shaped = winevt_adapter.adapt(_wrap_ch(24, [r"DESKTOP-PM6C56D\defaultuser0", "1", "LOCAL"],
+                                           "Microsoft-Windows-TerminalServices-LocalSessionManager/Operational"))
+    assert "UserData" in shaped["Payload"]        # UserData shape, not EventData
+    ev = normalize.normalize("evtx_rdp", shaped)
+    assert ev["car_object"] == "user_session" and ev["car_action"] == "logout"
+    assert ev["user"] == r"DESKTOP-PM6C56D\defaultuser0"
+    assert ev["src_ip"] is None                   # LOCAL console
