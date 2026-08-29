@@ -24,7 +24,7 @@ def test_one_file_one_enriched_db(tmp_path):
         import pytest
         pytest.skip("lonewolf evidence absent")
     s = pipeline.process_file(_SEC, str(tmp_path))
-    assert s["objects"] == {"authentication": 827, "process": 40, "user_session": 875}
+    assert s["objects"] == {"authentication": 1616, "process": 40, "user_session": 875}
     assert os.path.isfile(tmp_path / "car.db")
     assert os.path.isfile(tmp_path / "car_authentication.jsonl")
     # the in-file LUID join is self-contained and fires for every auth row
@@ -32,6 +32,6 @@ def test_one_file_one_enriched_db(tmp_path):
     c = sqlite3.connect(str(tmp_path / "car.db"))
     linked = c.execute(
         "SELECT COUNT(*) FROM authentication WHERE native LIKE '%session_guid%'").fetchone()[0]
-    assert linked == 827
+    assert linked == 1616   # 4624 (target LUID) + 4672 (subject LUID) all cascade-linked
     row = json.loads(open(tmp_path / "car_authentication.jsonl").readline())
     assert row["native"].get("target_session_guid") or row["native"].get("subject_session_guid")

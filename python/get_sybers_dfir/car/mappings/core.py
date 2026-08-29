@@ -43,6 +43,15 @@ def is_sec_4625(rec) -> bool:
     return rec.get("EventId") == 4625 and "Security" in str(rec.get("Channel", ""))
 
 
+def is_sec_4672(rec) -> bool:
+    """Security 4672 — special (admin-equivalent) privileges assigned to a new
+    logon. A COMPANION to the 4624 for the same session: mapped in as its own
+    authentication entry (it only fires on success, and its whole meaning is the
+    administrative role); the end-cascade links it to the 4624 by the shared LUID
+    (SubjectLogonId)."""
+    return rec.get("EventId") == 4672 and "Security" in str(rec.get("Channel", ""))
+
+
 def is_http_origin(rec) -> bool:
     """Origin-form requests — a URL is reconstructable (scheme+Host+uri)."""
     return str(rec.get("method", "")).upper() in ("GET", "POST", "PUT")
@@ -55,6 +64,7 @@ def is_http_tunnel(rec) -> bool:
 
 PREDICATES = {
     "is_sec_4624": is_sec_4624, "is_sec_4625": is_sec_4625,
+    "is_sec_4672": is_sec_4672,
     "is_http_origin": is_http_origin, "is_http_tunnel": is_http_tunnel,
 }
 
@@ -141,6 +151,29 @@ MAPPINGS = {
                                                     payload("Status"),
                                                     payload("FailureReason"))),
                 "keep": _AUTH_KEEP, "native_extract": _AUTH_NATIVE,
+            }),
+            ("is_sec_4672", {
+                # COMPANION entry: 4672 only fires on a successful privileged
+                # logon, so action=success is the event's own assertion; its
+                # whole meaning is the administrative role. It carries no auth
+                # method/target — those stay null (the paired 4624 has them; the
+                # end-cascade merges by the shared LUID).
+                "object": "authentication", "action": "success", "ts": "TimeCreated",
+                "guid": {"fields": ["Computer", "Channel", "EventRecordId"]},
+                "host": host_label("Computer"),
+                "props": {
+                    "user": payload("SubjectUserName"),
+                    "uid": payload("SubjectUserSid"),
+                    "ad_domain": payload("SubjectDomainName"),
+                    "auth_target": "Computer",
+                    # 4672 = admin-equivalent privileges granted -> the role
+                    "user_role": const("administrator"),
+                },
+                "keep": _AUTH_KEEP,
+                # SubjectLogonId = the LUID that ties this companion to its 4624
+                # and to the user_session; PrivilegeList is the evidence.
+                "native_extract": {"SubjectLogonId": payload("SubjectLogonId"),
+                                   "PrivilegeList": payload("PrivilegeList")},
             }),
             # 4648 deliberately unmapped: an explicit-credential logon recorded
             # at issuance carries NO service response — asserting

@@ -189,3 +189,20 @@ def test_piiat_car_passthrough(tmp_path):
     assert ev["link_confidence"] == "heuristic"
     assert ev["source_artefact"] == "memory/windows.piiat.processes"
     assert ev["source_host"] == "DESKTOP-8"                   # its own hostname wins
+
+
+def test_security_4672_admin_logon_grabs_role_and_privileges():
+    rec = dict(_SEC_4624, EventId=4672)
+    rec["Payload"] = json.dumps({"EventData": {"Data": [
+        {"@Name": "SubjectUserName", "#text": "SYSTEM"},
+        {"@Name": "SubjectUserSid", "#text": "S-1-5-18"},
+        {"@Name": "SubjectDomainName", "#text": "NT AUTHORITY"},
+        {"@Name": "SubjectLogonId", "#text": "0x3E7"},
+        {"@Name": "PrivilegeList", "#text": "SeDebugPrivilege, SeTcbPrivilege"},
+    ]}})
+    ev = normalize.normalize("evtx_security", rec)
+    assert ev["car_object"] == "authentication" and ev["car_action"] == "success"
+    assert ev["user_role"] == "administrator"          # 4672 = admin privileges granted
+    assert ev["uid"] == "S-1-5-18"
+    assert ev["_native"]["SubjectLogonId"] == "0x3E7"  # LUID for the end-cascade
+    assert "SeDebugPrivilege" in ev["_native"]["PrivilegeList"]
