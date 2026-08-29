@@ -46,7 +46,7 @@ argument_specs:
       dfir_volatility_plugins_dir:
         type: str
         required: false
-        description: "Custom plugins dir (windows.PIIAT_processes, windows.PIIAT_registry)."
+        description: "Custom plugins dir (windows.piiat.processes, windows.piiat.registry)."
       dfir_volatility_image:
         type: str
         required: false
