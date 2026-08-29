@@ -144,6 +144,46 @@ def _basename(v):
     return (ntpath.basename(s) if "\\" in s else posixpath.basename(s)) or None
 
 
+_PARSE_CACHE_KEY = "__car_parsed_payload__"
+
+
+def _parsed_payload(rec, field):
+    """Parse-and-index a payload blob ONCE per (record, field) — the cache lives
+    on the record dict, so it persists across the whole map family run over the
+    same record (payload() was re-parsing the JSON per field access, the main
+    real-data cost). Returns (names_map_or_None, data): names_map indexes an
+    EventData.Data list by @Name (values pre-stripped); data is the parsed
+    object for the other shapes."""
+    cache = rec.get(_PARSE_CACHE_KEY)
+    if cache is None:
+        cache = {}
+        rec[_PARSE_CACHE_KEY] = cache
+    raw = rec.get(field)
+    hit = cache.get(field)
+    if hit is not None and hit[0] is raw:
+        # valid only while the raw value is the SAME object — a replaced
+        # Payload (or a copied record with a new one) reparses, never stale
+        return hit[1], hit[2]
+    names, data = None, None
+    if not _blank(raw):
+        try:
+            import json as _json
+            data = raw if isinstance(raw, dict) else _json.loads(raw)
+            datas = (data.get("EventData") or {}).get("Data") if isinstance(data, dict) else None
+            if isinstance(datas, list):
+                names = {}
+                for d in datas:
+                    if isinstance(d, dict) and "@Name" in d:
+                        v = d.get("#text")
+                        if isinstance(v, str):
+                            v = v.strip()      # MS pads values ('Advapi  ')
+                        names[d["@Name"]] = None if _blank(v) else v
+        except (ValueError, AttributeError, TypeError):
+            names, data = None, None
+    cache[field] = (raw, names, data)
+    return names, data
+
+
 def _resolve(src, rec):
     """Resolve a plain field name or a (nestable) marker against a record."""
     if isinstance(src, str):
@@ -194,36 +234,21 @@ def _resolve(src, rec):
         return "".join(out)
     if kind == "payload":
         field, key = arg
-        raw = rec.get(field)
-        if _blank(raw):
-            return None
-        try:
-            import json as _json
-            data = raw if isinstance(raw, dict) else _json.loads(raw)
-            # EvtxECmd payloads nest as {"EventData":{"Data":[{"@Name":..,"#text":..}]}}
-            datas = (data.get("EventData") or {}).get("Data")
-            if isinstance(datas, list):
-                for d in datas:
-                    if isinstance(d, dict) and d.get("@Name") == key:
-                        v = d.get("#text")
-                        if isinstance(v, str):
-                            v = v.strip()      # MS pads values ('Advapi  ')
-                        return None if _blank(v) else v
-                return None
+        names, data = _parsed_payload(rec, field)
+        if names is not None:                  # EventData.Data indexed by @Name
+            return names.get(key)
+        if isinstance(data, dict):             # flat dict (e.g. the wrapped Record)
             v = data.get(key)
             if isinstance(v, str):
                 v = v.strip()
             return None if _blank(v) else v
-        except (ValueError, AttributeError, TypeError):
-            return None
+        return None
     if kind == "userdata":
         field, key = arg
-        raw = rec.get(field)
-        if _blank(raw):
+        _names, data = _parsed_payload(rec, field)
+        if not isinstance(data, dict):
             return None
         try:
-            import json as _json
-            data = raw if isinstance(raw, dict) else _json.loads(raw)
             ud = data.get("UserData")
             if not isinstance(ud, dict):
                 return None
