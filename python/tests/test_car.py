@@ -5,6 +5,7 @@ from get_sybers_dfir.car import carmodel, enrich, normalize, sources, store
 
 _SEC_4624 = {
     "EventId": 4624, "Channel": "Security", "Computer": "HOST1.example.com",
+    "EventRecordId": 14,
     "TimeCreated": "2019-01-28T19:40:32+00:00", "UserName": "x",
     "Payload": json.dumps({"EventData": {"Data": [
         {"@Name": "TargetUserName", "#text": "Steve"},
@@ -14,6 +15,7 @@ _SEC_4624 = {
         {"@Name": "AuthenticationPackageName", "#text": "Negotiate"},
         {"@Name": "LogonProcessName", "#text": "User32"},
         {"@Name": "WorkstationName", "#text": "DESKTOP-8"},
+        {"@Name": "TargetLogonId", "#text": "0x338F0"},
         {"@Name": "ProcessName", "#text": r"C:\Windows\System32\svchost.exe"},
     ]}}),
 }
@@ -33,6 +35,9 @@ def test_security_4624_is_authentication_success():
     assert ev["auth_target"] == "HOST1.example.com"      # authenticated TO
     assert ev["source_host"] == "HOST1"                  # scope = first label
     assert ev["user"] is None                            # '-' is an honest blank
+    assert ev["guid"].startswith("authentication-HOST1.example.com-Security-")
+    assert ev["app_name"] == "svchost.exe"               # basename, per MITRE example
+    assert ev["_native"]["TargetLogonId"] == "0x338F0"   # join key surfaced
 
 
 def test_security_4625_is_failure_with_reason():
@@ -47,6 +52,66 @@ def test_security_4625_is_failure_with_reason():
 
 def test_non_mapped_security_event_is_dropped():
     assert normalize.normalize("evtx_security", dict(_SEC_4624, EventId=4688)) is None
+    # 4648 records an ATTEMPT at issuance — no response exists, so no CAR action
+    assert normalize.normalize("evtx_security", dict(_SEC_4624, EventId=4648)) is None
+
+
+def test_http_limits_hostname_and_url_reconstruction():
+    rec = {"ts": "2012-07-09T17:51:46Z", "uid": "Cx", "trans_depth": 1,
+           "id.orig_h": "10.0.0.5", "method": "GET", "host": "evil.example.com",
+           "uri": "/p?q=1", "version": "1.1", "status_code": 200}
+    ev = normalize.normalize("zeek_http", rec)
+    assert ev.get("hostname") is None            # vantage, NOT the Host header
+    assert ev["url_domain"] == "evil.example.com"
+    assert ev["url_scheme"] == "http"
+    assert ev["url_full"] == "http://evil.example.com/p?q=1"
+    t = normalize.normalize("zeek_http", dict(rec, method="CONNECT"))
+    assert t["car_action"] == "tunnel"
+    assert t.get("url_full") is None and t.get("url_scheme") is None
+
+
+def test_auth_session_luid_join_and_failure_never_joins():
+    sess = {"car_object": "user_session", "car_action": "login", "guid": "us-1",
+            "login_id": "0x338F0", "timestamp": "2019-01-28T19:40:32+00:00",
+            "source_host": "HOST1", "_native": {}}
+    ok = {"car_object": "authentication", "car_action": "success", "guid": "a1",
+          "timestamp": "2019-01-28T19:40:32+00:00", "source_host": "HOST1",
+          "_native": {"TargetLogonId": "0x338f0", "SubjectLogonId": "0x3e7"}}
+    fail = {"car_object": "authentication", "car_action": "failure", "guid": "a2",
+            "timestamp": "2019-01-28T19:41:00+00:00", "source_host": "HOST1",
+            "_native": {"TargetLogonId": "0x338f0"}}
+    out = enrich.enrich([sess, ok, fail])
+    by = {e.get("guid"): e for e in out}
+    assert by["a1"]["_native"]["target_session_guid"] == "us-1"
+    assert by["a1"]["_native"]["target_session_link"] == "definitive"  # case-normalized
+    assert "subject_session_guid" not in by["a1"]["_native"]  # 0x3e7 session absent
+    assert "target_session_guid" not in by["a2"]["_native"]   # failure NEVER joins
+
+
+def test_canonicalization_never_overwrites_native_evidence():
+    machine = {"car_object": "authentication", "car_action": "success", "guid": "a3",
+               "timestamp": "t", "source_host": "H", "uid": "S-1-5-18",
+               "user": "DESKTOP-X$", "_native": {}}
+    alias = {"car_object": "user_session", "car_action": "login", "guid": "us-2",
+             "timestamp": "t", "source_host": "H", "uid": "S-1-5-18",
+             "user": "systemprofile", "login_id": "0x999", "_native": {}}
+    out = enrich.enrich([machine, alias])
+    by = {e.get("guid"): e for e in out}
+    assert by["a3"]["user"] == "DESKTOP-X$"        # native evidence untouched
+    assert by["us-2"]["user"] == "Local System"    # alias of the SAME account unified
+
+
+def test_hex_pid_join():
+    proc = {"car_object": "process", "car_action": "create", "guid": "p1",
+            "timestamp": "2020-01-01T00:00:10+00:00", "pid": 508,
+            "exe": "wininit.exe", "source_host": "H", "_native": {}}
+    spoke = {"car_object": "module", "car_action": "load", "guid": "m1",
+             "timestamp": "2020-01-01T00:00:20+00:00", "owning_pid": "0x1FC",
+             "owning_guid_native": None, "source_host": "H", "_native": {}}
+    out = enrich.enrich([proc, spoke])
+    m = [e for e in out if e.get("guid") == "m1"][0]
+    assert m.get("owning_guid") == "p1"            # 0x1FC == 508
+    assert m.get("link_confidence") == "heuristic"
 
 
 def test_zeek_http_get_and_iso_or_epoch_ts():

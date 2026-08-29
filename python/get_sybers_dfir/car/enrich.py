@@ -34,11 +34,31 @@ from . import carmodel
 _INHERIT = ["exe", "image_path", "command_line", "user", "sid",
             "fqdn", "hostname", "ppid"]
 
+def _to_int(v):
+    """int() that also accepts Windows hex strings ('0x1FC') — EvtxECmd payload
+    PIDs arrive hex; a silent parse failure would silently kill the join."""
+    if v is None:
+        return None
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        try:
+            return int(str(v), 16)
+        except (TypeError, ValueError):
+            return None
+
+
 _WELL_KNOWN_SIDS = {
     "S-1-5-18": "Local System",
     "S-1-5-19": "Local Service",
     "S-1-5-20": "Network Service",
 }
+# Renderings of the SAME well-known accounts that MAY be canonicalized; any
+# other native value (e.g. a machine account DESKTOP-X$ on a 4624 Subject) is
+# evidence and is never overwritten.
+_CANON_ALIASES = {"system", "local system", "localsystem", "systemprofile",
+                  "nt authority", "local service", "localservice",
+                  "network service", "networkservice"}
 
 
 def _populated(ev: dict) -> int:
@@ -78,10 +98,10 @@ def _by_pid(events):
     idx = defaultdict(list)
     for ev in events:
         if _is_process_create(ev) and ev.get("pid") is not None:
-            try:
-                idx[(ev.get("source_host"), int(ev["pid"]))].append(ev)
-            except (TypeError, ValueError):
+            pid = _to_int(ev["pid"])
+            if pid is None:
                 continue
+            idx[(ev.get("source_host"), pid)].append(ev)
     for lst in idx.values():
         lst.sort(key=lambda e: e.get("timestamp") or "")
     return idx
@@ -114,14 +134,51 @@ def _resolve_owner(ev, by_guid, by_pid):
         if owner is not None:
             return owner, "definitive"
     if ev.get("owning_pid") is not None:
-        try:
-            pid = int(ev["owning_pid"])
-        except (TypeError, ValueError):
+        pid = _to_int(ev["owning_pid"])
+        if pid is None:
             return None, None
         owner = _match(by_pid.get((host, pid), []), ev.get("timestamp"))
         if owner is not None:
             return owner, "heuristic"
     return None, None
+
+
+_WELL_KNOWN_LUIDS = {"0x3e4", "0x3e5", "0x3e7"}  # per-boot singletons that recur every boot
+
+
+def _session_index(events):
+    """(host, lowercased LUID) -> user_session event."""
+    idx = {}
+    for ev in events:
+        if ev["car_object"] == "user_session" and ev.get("login_id"):
+            idx[(ev.get("source_host"), str(ev["login_id"]).lower())] = ev
+    return idx
+
+
+def _link_auth_sessions(ev, sessions):
+    """A successful authentication names the session it opened (TargetLogonId)
+    and the session it was requested FROM (SubjectLogonId) — both LUIDs, both
+    joinable per (host, LUID). LUIDs are per-boot unique, so a match on a
+    well-known LUID (0x3e7/…) across a multi-boot log is only heuristic; any
+    other LUID match is definitive within the evidence window. A FAILED
+    authentication opens no session — the target join never runs for it."""
+    host = ev.get("source_host")
+    nat = ev.get("_native") or {}
+    def tier(luid):
+        return "heuristic" if luid in _WELL_KNOWN_LUIDS else "definitive"
+    if ev.get("car_action") == "success":
+        luid = str(nat.get("TargetLogonId") or "").lower()
+        if luid and luid not in ("0x0",):
+            sess = sessions.get((host, luid))
+            if sess is not None:
+                nat["target_session_guid"] = sess.get("guid")
+                nat["target_session_link"] = tier(luid)
+    luid = str(nat.get("SubjectLogonId") or "").lower()
+    if luid and luid not in ("0x0",):
+        sess = sessions.get((host, luid))
+        if sess is not None:
+            nat["subject_session_guid"] = sess.get("guid")
+            nat["subject_session_link"] = tier(luid)
 
 
 def enrich(events: list[dict]) -> list[dict]:
@@ -130,14 +187,22 @@ def enrich(events: list[dict]) -> list[dict]:
     events = _dedupe(events)
     by_guid = _by_guid(events)
     by_pid = _by_pid(events)
+    sessions = _session_index(events)
 
     for ev in events:
         obj_fields = set(model[ev["car_object"]]["fields"])
 
-        # canonical well-known account names, store-wide
+        if ev["car_object"] == "authentication":
+            _link_auth_sessions(ev, sessions)
+
+        # canonical well-known account names, store-wide — filling blanks and
+        # unifying alternate renderings of the SAME account, never overwriting
+        # an arbitrary natively-extracted value (that value is evidence).
         canonical = _WELL_KNOWN_SIDS.get(str(ev.get("sid") or ev.get("uid") or ""))
         if canonical and "user" in obj_fields:
-            ev["user"] = canonical
+            cur = ev.get("user")
+            if cur in (None, "") or str(cur).strip().lower() in _CANON_ALIASES:
+                ev["user"] = canonical
 
         if _is_process_create(ev):
             # parent link: native ParentProcessGuid (definitive) else ppid window
@@ -148,11 +213,9 @@ def enrich(events: list[dict]) -> list[dict]:
                 parent = by_guid.get((host, str(native_parent)))
                 conf = "definitive" if parent is not None else None
             if parent is None and ev.get("parent_pid") is not None:
-                try:
-                    parent = _match(by_pid.get((host, int(ev["parent_pid"])), []),
-                                    ev.get("timestamp"))
-                except (TypeError, ValueError):
-                    parent = None
+                ppid = _to_int(ev["parent_pid"])
+                parent = _match(by_pid.get((host, ppid), []),
+                                ev.get("timestamp")) if ppid is not None else None
                 conf = "heuristic" if parent is not None else None
             if parent is not None and parent is not ev:
                 ev["parent_guid"] = parent.get("guid")

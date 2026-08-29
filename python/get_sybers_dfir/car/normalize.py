@@ -70,6 +70,13 @@ def map_value(src, table, upper=False):
     return ("map_value", (src, table, upper))
 
 
+def concat(*parts):
+    """Concatenate resolved parts (field names or markers; use const("...") for
+    literals) — null if ANY part is missing: a reconstruction made only from
+    provable pieces."""
+    return ("concat", parts)
+
+
 def payload(key, field="Payload"):
     """A key out of an EvtxECmd `Payload` JSON string (EZ tools stamp the event
     data as a JSON blob) — the Python analogue of the KQL EvtxPayload()."""
@@ -141,6 +148,14 @@ def _resolve(src, rec):
             s = s.split("@", 1)[1]
         s = s.split("/")[0]                    # strip any URL path
         return s.lower() or None
+    if kind == "concat":
+        out = []
+        for part in arg:
+            v = _resolve(part, rec)
+            if _blank(v):
+                return None
+            out.append(str(v))
+        return "".join(out)
     if kind == "payload":
         field, key = arg
         raw = rec.get(field)
@@ -155,9 +170,13 @@ def _resolve(src, rec):
                 for d in datas:
                     if isinstance(d, dict) and d.get("@Name") == key:
                         v = d.get("#text")
+                        if isinstance(v, str):
+                            v = v.strip()      # MS pads values ('Advapi  ')
                         return None if _blank(v) else v
                 return None
             v = data.get(key)
+            if isinstance(v, str):
+                v = v.strip()
             return None if _blank(v) else v
         except (ValueError, AttributeError, TypeError):
             return None
@@ -246,5 +265,11 @@ def normalize(artefact: str, rec: dict) -> dict | None:
         "source_host": _resolve(m["host"], rec) if m.get("host") else None,
         "_native": {k: rec.get(k) for k in m.get("keep", []) if k in rec},
     }
+    # parsed values promoted into _native (join keys the raw blob buries —
+    # e.g. an EvtxECmd payload's TargetLogonId); never CAR-canonical columns.
+    for name, spec in (m.get("native_extract") or {}).items():
+        v = _resolve(spec, rec)
+        if v is not None:
+            event["_native"][name] = v
     event.update(props)
     return event
