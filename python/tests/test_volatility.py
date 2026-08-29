@@ -49,6 +49,6 @@ def test_process_no_images_is_clean(tmp_path):
 
 
 def test_default_plugins_include_car_set():
-    assert "dfir_processes.DfirProcesses" in vol.DEFAULT_PLUGINS
-    assert "dfir_registry.DfirRegistry" in vol.DEFAULT_PLUGINS
+    assert "windows.PIIAT_processes" in vol.DEFAULT_PLUGINS
+    assert "windows.PIIAT_registry" in vol.DEFAULT_PLUGINS
     assert vol.DEFAULT_PLUGINS[0] == "banners.Banners"

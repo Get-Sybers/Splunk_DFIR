@@ -45,7 +45,7 @@ _IMAGE = "dfir/volatility:latest"
 DEFAULT_PLUGINS = [
     "banners.Banners",
     "windows.info",
-    "dfir_processes.DfirProcesses",   # -> CarProcess (psscan; full path, parent, DLLs)
+    "windows.PIIAT_processes",        # -> CarProcess (psscan; full path, parent, DLLs)
     "windows.pslist",
     "windows.pstree",
     "windows.dlllist",                # -> CarModule
@@ -56,7 +56,7 @@ DEFAULT_PLUGINS = [
     "windows.filescan",               # -> CarFile
     "windows.svcscan",                # -> CarService
     "windows.thrdscan",               # -> CarThread
-    "dfir_registry.DfirRegistry",     # -> CarRegistry
+    "windows.PIIAT_registry",         # -> CarRegistry
     "windows.malfind",
 ]
 
@@ -225,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out-dir", required=True, help="output dir; one folder per image")
     ap.add_argument("--symbols-dir", required=True, help="Volatility symbol cache (VOLATILITY_SYMBOLS)")
     ap.add_argument("--renderer", required=True, help="path to jsonl_dfir_renderer.py")
-    ap.add_argument("--plugins-dir", required=True, help="custom plugins dir (dfir_processes, dfir_registry)")
+    ap.add_argument("--plugins-dir", required=True, help="custom plugins dir (windows.PIIAT_processes, windows.PIIAT_registry)")
     ap.add_argument("--image", default=_IMAGE, help="Volatility 3 container image")
     ap.add_argument("--vol-native", default=None, help="native volatility executable (skip container)")
     ap.add_argument("--plugins", default=None, help="comma-separated plugin override (default: the CAR set)")
