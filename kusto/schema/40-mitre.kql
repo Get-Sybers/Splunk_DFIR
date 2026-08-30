@@ -959,3 +959,853 @@ CarCoverage() {
     | project Object, Rows
     | order by Rows desc
 }
+
+//#############################################################################
+//# MATERIALIZED CAR (epic #86) — the CAR objects as INGESTED TABLES
+//#############################################################################
+//
+// The functions above build CAR at query time from the raw host/network/memory
+// tables. In parallel, the pipeline now NORMALISES each source into finished CAR
+// events (PIIAT-MitreCar: one car.db per source) and exports one
+// `car_<object>.jsonl` per populated object. The tables below ingest that JSON
+// 1:1 — the JSON is the ADX contract. Extraction happens ONCE, in the engine
+// (its own test suite), instead of being re-derived in KQL per artefact.
+//
+// ADDITIVE, ON PURPOSE. These live alongside the query-time Car*() functions,
+// they do not replace them yet: the ingest lane does not load car_*.jsonl until
+// its SOURCES entry is added, and `verify-car` still asserts against the
+// functions. Once the materialised path is wired and the verify harness is
+// migrated, the query-time views collapse into these tables.
+//
+// SHAPE (every table): car_object (constant per table) + the common CAR header
+// (timestamp, car_action, guid, owning_guid, link_confidence, source_artefact,
+// source_host) + native (dynamic — evidence with no CAR home) + the object's
+// MITRE fields as nullable strings. Numeric-looking fields stay string (the
+// evidence is inconsistent about type); cast at query time, as VolatilityJson does.
+//
+// GENERATED from the engine's object model (store.HEADER + each object's fields);
+// re-derive rather than hand-editing if the model changes.
+
+//=============================================================================
+// car_authentication
+//=============================================================================
+.create-merge table car_authentication (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    app_name:string,
+    method:string,
+    auth_service:string,
+    auth_target:string,
+    target_ad_domain:string,
+    decision_reason:string,
+    response_time:string,
+    fqdn:string,
+    hostname:string,
+    ad_domain:string,
+    uid:string,
+    user_role:string,
+    user_type:string,
+    user:string,
+    user_agent:string,
+    target_uid:string,
+    target_user_role:string,
+    target_user_type:string,
+    target_user:string
+)
+
+.create-or-alter table car_authentication ingestion json mapping "car_authenticationMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"app_name", "Properties":{"Path":"$.app_name"}},
+  {"Column":"method", "Properties":{"Path":"$.method"}},
+  {"Column":"auth_service", "Properties":{"Path":"$.auth_service"}},
+  {"Column":"auth_target", "Properties":{"Path":"$.auth_target"}},
+  {"Column":"target_ad_domain", "Properties":{"Path":"$.target_ad_domain"}},
+  {"Column":"decision_reason", "Properties":{"Path":"$.decision_reason"}},
+  {"Column":"response_time", "Properties":{"Path":"$.response_time"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"ad_domain", "Properties":{"Path":"$.ad_domain"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}},
+  {"Column":"user_role", "Properties":{"Path":"$.user_role"}},
+  {"Column":"user_type", "Properties":{"Path":"$.user_type"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"user_agent", "Properties":{"Path":"$.user_agent"}},
+  {"Column":"target_uid", "Properties":{"Path":"$.target_uid"}},
+  {"Column":"target_user_role", "Properties":{"Path":"$.target_user_role"}},
+  {"Column":"target_user_type", "Properties":{"Path":"$.target_user_type"}},
+  {"Column":"target_user", "Properties":{"Path":"$.target_user"}}
+]```
+
+//=============================================================================
+// car_driver
+//=============================================================================
+.create-merge table car_driver (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    base_address:string,
+    image_path:string,
+    md5_hash:string,
+    sha1_hash:string,
+    sha256_hash:string,
+    module_name:string,
+    signer:string,
+    pid:string,
+    signature_valid:string
+)
+
+.create-or-alter table car_driver ingestion json mapping "car_driverMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"base_address", "Properties":{"Path":"$.base_address"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"module_name", "Properties":{"Path":"$.module_name"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}}
+]```
+
+//=============================================================================
+// car_email
+//=============================================================================
+.create-merge table car_email (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    action_reason:string,
+    attachment_name:string,
+    attachment_size:string,
+    attachment_mime_type:string,
+    dest_ip:string,
+    dest_port:string,
+    dest_address:string,
+    date:string,
+    server_relay:string,
+    from:string,
+    smtp_uid:string,
+    message_links:string,
+    src_address:string,
+    src_domain:string,
+    return_address:string,
+    message_body:string,
+    subject:string,
+    src_ip:string,
+    src_port:string,
+    message_type:string,
+    to:string
+)
+
+.create-or-alter table car_email ingestion json mapping "car_emailMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"action_reason", "Properties":{"Path":"$.action_reason"}},
+  {"Column":"attachment_name", "Properties":{"Path":"$.attachment_name"}},
+  {"Column":"attachment_size", "Properties":{"Path":"$.attachment_size"}},
+  {"Column":"attachment_mime_type", "Properties":{"Path":"$.attachment_mime_type"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"dest_address", "Properties":{"Path":"$.dest_address"}},
+  {"Column":"date", "Properties":{"Path":"$.date"}},
+  {"Column":"server_relay", "Properties":{"Path":"$.server_relay"}},
+  {"Column":"from", "Properties":{"Path":"$.from"}},
+  {"Column":"smtp_uid", "Properties":{"Path":"$.smtp_uid"}},
+  {"Column":"message_links", "Properties":{"Path":"$.message_links"}},
+  {"Column":"src_address", "Properties":{"Path":"$.src_address"}},
+  {"Column":"src_domain", "Properties":{"Path":"$.src_domain"}},
+  {"Column":"return_address", "Properties":{"Path":"$.return_address"}},
+  {"Column":"message_body", "Properties":{"Path":"$.message_body"}},
+  {"Column":"subject", "Properties":{"Path":"$.subject"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"message_type", "Properties":{"Path":"$.message_type"}},
+  {"Column":"to", "Properties":{"Path":"$.to"}}
+]```
+
+//=============================================================================
+// car_file
+//=============================================================================
+.create-merge table car_file (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    creation_time:string,
+    file_name:string,
+    fqdn:string,
+    hostname:string,
+    image_path:string,
+    md5_hash:string,
+    sha1_hash:string,
+    sha256_hash:string,
+    pid:string,
+    ppid:string,
+    previous_creation_time:string,
+    signer:string,
+    user:string,
+    company:string,
+    file_path:string,
+    owner_uid:string,
+    owner:string,
+    content:string,
+    extension:string,
+    gid:string,
+    group:string,
+    link_target:string,
+    mime_type:string,
+    mode:string,
+    signature_valid:string,
+    uid:string
+)
+
+.create-or-alter table car_file ingestion json mapping "car_fileMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"creation_time", "Properties":{"Path":"$.creation_time"}},
+  {"Column":"file_name", "Properties":{"Path":"$.file_name"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"previous_creation_time", "Properties":{"Path":"$.previous_creation_time"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"company", "Properties":{"Path":"$.company"}},
+  {"Column":"file_path", "Properties":{"Path":"$.file_path"}},
+  {"Column":"owner_uid", "Properties":{"Path":"$.owner_uid"}},
+  {"Column":"owner", "Properties":{"Path":"$.owner"}},
+  {"Column":"content", "Properties":{"Path":"$.content"}},
+  {"Column":"extension", "Properties":{"Path":"$.extension"}},
+  {"Column":"gid", "Properties":{"Path":"$.gid"}},
+  {"Column":"group", "Properties":{"Path":"$.group"}},
+  {"Column":"link_target", "Properties":{"Path":"$.link_target"}},
+  {"Column":"mime_type", "Properties":{"Path":"$.mime_type"}},
+  {"Column":"mode", "Properties":{"Path":"$.mode"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_flow
+//=============================================================================
+.create-merge table car_flow (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    content:string,
+    dest_ip:string,
+    dest_port:string,
+    src_ip:string,
+    src_port:string,
+    start_time:string,
+    end_time:string,
+    exe:string,
+    image_path:string,
+    packet_count:string,
+    pid:string,
+    ppid:string,
+    proto_info:string,
+    user:string,
+    src_fqdn:string,
+    src_hostname:string,
+    dest_fqdn:string,
+    dest_hostname:string,
+    application_protocol:string,
+    in_bytes:string,
+    out_bytes:string,
+    network_direction:string,
+    tcp_flags:string,
+    transport_protocol:string,
+    uid:string
+)
+
+.create-or-alter table car_flow ingestion json mapping "car_flowMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"content", "Properties":{"Path":"$.content"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"start_time", "Properties":{"Path":"$.start_time"}},
+  {"Column":"end_time", "Properties":{"Path":"$.end_time"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"packet_count", "Properties":{"Path":"$.packet_count"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"proto_info", "Properties":{"Path":"$.proto_info"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"src_fqdn", "Properties":{"Path":"$.src_fqdn"}},
+  {"Column":"src_hostname", "Properties":{"Path":"$.src_hostname"}},
+  {"Column":"dest_fqdn", "Properties":{"Path":"$.dest_fqdn"}},
+  {"Column":"dest_hostname", "Properties":{"Path":"$.dest_hostname"}},
+  {"Column":"application_protocol", "Properties":{"Path":"$.application_protocol"}},
+  {"Column":"in_bytes", "Properties":{"Path":"$.in_bytes"}},
+  {"Column":"out_bytes", "Properties":{"Path":"$.out_bytes"}},
+  {"Column":"network_direction", "Properties":{"Path":"$.network_direction"}},
+  {"Column":"tcp_flags", "Properties":{"Path":"$.tcp_flags"}},
+  {"Column":"transport_protocol", "Properties":{"Path":"$.transport_protocol"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_http
+//=============================================================================
+.create-merge table car_http (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    hostname:string,
+    request_body_bytes:string,
+    http_version:string,
+    request_body_content:string,
+    request_referrer:string,
+    requester_ip_address:string,
+    response_body_bytes:string,
+    response_body_content:string,
+    response_status_code:string,
+    url_full:string,
+    url_domain:string,
+    url_remainder:string,
+    url_scheme:string,
+    user_agent_full:string,
+    user_agent_name:string,
+    user_agent_device:string,
+    user_agent_version:string
+)
+
+.create-or-alter table car_http ingestion json mapping "car_httpMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"request_body_bytes", "Properties":{"Path":"$.request_body_bytes"}},
+  {"Column":"http_version", "Properties":{"Path":"$.http_version"}},
+  {"Column":"request_body_content", "Properties":{"Path":"$.request_body_content"}},
+  {"Column":"request_referrer", "Properties":{"Path":"$.request_referrer"}},
+  {"Column":"requester_ip_address", "Properties":{"Path":"$.requester_ip_address"}},
+  {"Column":"response_body_bytes", "Properties":{"Path":"$.response_body_bytes"}},
+  {"Column":"response_body_content", "Properties":{"Path":"$.response_body_content"}},
+  {"Column":"response_status_code", "Properties":{"Path":"$.response_status_code"}},
+  {"Column":"url_full", "Properties":{"Path":"$.url_full"}},
+  {"Column":"url_domain", "Properties":{"Path":"$.url_domain"}},
+  {"Column":"url_remainder", "Properties":{"Path":"$.url_remainder"}},
+  {"Column":"url_scheme", "Properties":{"Path":"$.url_scheme"}},
+  {"Column":"user_agent_full", "Properties":{"Path":"$.user_agent_full"}},
+  {"Column":"user_agent_name", "Properties":{"Path":"$.user_agent_name"}},
+  {"Column":"user_agent_device", "Properties":{"Path":"$.user_agent_device"}},
+  {"Column":"user_agent_version", "Properties":{"Path":"$.user_agent_version"}}
+]```
+
+//=============================================================================
+// car_module
+//=============================================================================
+.create-merge table car_module (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    base_address:string,
+    image_path:string,
+    md5_hash:string,
+    sha1_hash:string,
+    sha256_hash:string,
+    module_path:string,
+    module_name:string,
+    pid:string,
+    signer:string,
+    tid:string,
+    signature_valid:string
+)
+
+.create-or-alter table car_module ingestion json mapping "car_moduleMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"base_address", "Properties":{"Path":"$.base_address"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"module_path", "Properties":{"Path":"$.module_path"}},
+  {"Column":"module_name", "Properties":{"Path":"$.module_name"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"tid", "Properties":{"Path":"$.tid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}}
+]```
+
+//=============================================================================
+// car_process
+//=============================================================================
+.create-merge table car_process (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    command_line:string,
+    exe:string,
+    image_path:string,
+    md5_hash:string,
+    sha1_hash:string,
+    sha256_hash:string,
+    parent_exe:string,
+    parent_image_path:string,
+    pid:string,
+    ppid:string,
+    sid:string,
+    signer:string,
+    user:string,
+    integrity_level:string,
+    parent_command_line:string,
+    current_working_directory:string,
+    env_vars:string,
+    access_level:string,
+    call_trace:string,
+    parent_guid:string,
+    signature_valid:string,
+    target_guid:string,
+    target_pid:string,
+    target_address:string,
+    target_name:string,
+    uid:string
+)
+
+.create-or-alter table car_process ingestion json mapping "car_processMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"command_line", "Properties":{"Path":"$.command_line"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"parent_exe", "Properties":{"Path":"$.parent_exe"}},
+  {"Column":"parent_image_path", "Properties":{"Path":"$.parent_image_path"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"sid", "Properties":{"Path":"$.sid"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"integrity_level", "Properties":{"Path":"$.integrity_level"}},
+  {"Column":"parent_command_line", "Properties":{"Path":"$.parent_command_line"}},
+  {"Column":"current_working_directory", "Properties":{"Path":"$.current_working_directory"}},
+  {"Column":"env_vars", "Properties":{"Path":"$.env_vars"}},
+  {"Column":"access_level", "Properties":{"Path":"$.access_level"}},
+  {"Column":"call_trace", "Properties":{"Path":"$.call_trace"}},
+  {"Column":"parent_guid", "Properties":{"Path":"$.parent_guid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}},
+  {"Column":"target_guid", "Properties":{"Path":"$.target_guid"}},
+  {"Column":"target_pid", "Properties":{"Path":"$.target_pid"}},
+  {"Column":"target_address", "Properties":{"Path":"$.target_address"}},
+  {"Column":"target_name", "Properties":{"Path":"$.target_name"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_registry
+//=============================================================================
+.create-merge table car_registry (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    key:string,
+    value:string,
+    data:string,
+    type:string,
+    hive:string,
+    image_path:string,
+    pid:string,
+    user:string,
+    new_content:string
+)
+
+.create-or-alter table car_registry ingestion json mapping "car_registryMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"key", "Properties":{"Path":"$.key"}},
+  {"Column":"value", "Properties":{"Path":"$.value"}},
+  {"Column":"data", "Properties":{"Path":"$.data"}},
+  {"Column":"type", "Properties":{"Path":"$.type"}},
+  {"Column":"hive", "Properties":{"Path":"$.hive"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"new_content", "Properties":{"Path":"$.new_content"}}
+]```
+
+//=============================================================================
+// car_service
+//=============================================================================
+.create-merge table car_service (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    fqdn:string,
+    hostname:string,
+    user:string,
+    command_line:string,
+    exe:string,
+    image_path:string,
+    name:string,
+    pid:string,
+    ppid:string,
+    uid:string
+)
+
+.create-or-alter table car_service ingestion json mapping "car_serviceMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"command_line", "Properties":{"Path":"$.command_line"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"name", "Properties":{"Path":"$.name"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_socket
+//=============================================================================
+.create-merge table car_socket (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    pid:string,
+    image_path:string,
+    success:string,
+    family:string,
+    protocol:string,
+    local_address:string,
+    local_port:string,
+    remote_port:string,
+    remote_address:string,
+    local_path:string
+)
+
+.create-or-alter table car_socket ingestion json mapping "car_socketMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"success", "Properties":{"Path":"$.success"}},
+  {"Column":"family", "Properties":{"Path":"$.family"}},
+  {"Column":"protocol", "Properties":{"Path":"$.protocol"}},
+  {"Column":"local_address", "Properties":{"Path":"$.local_address"}},
+  {"Column":"local_port", "Properties":{"Path":"$.local_port"}},
+  {"Column":"remote_port", "Properties":{"Path":"$.remote_port"}},
+  {"Column":"remote_address", "Properties":{"Path":"$.remote_address"}},
+  {"Column":"local_path", "Properties":{"Path":"$.local_path"}}
+]```
+
+//=============================================================================
+// car_thread
+//=============================================================================
+.create-merge table car_thread (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    hostname:string,
+    src_pid:string,
+    src_tid:string,
+    tgt_pid:string,
+    tgt_tid:string,
+    stack_base:string,
+    stack_limit:string,
+    start_address:string,
+    user:string,
+    user_stack_base:string,
+    user_stack_limit:string,
+    start_function:string,
+    start_module:string,
+    start_module_name:string,
+    uid:string
+)
+
+.create-or-alter table car_thread ingestion json mapping "car_threadMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"src_pid", "Properties":{"Path":"$.src_pid"}},
+  {"Column":"src_tid", "Properties":{"Path":"$.src_tid"}},
+  {"Column":"tgt_pid", "Properties":{"Path":"$.tgt_pid"}},
+  {"Column":"tgt_tid", "Properties":{"Path":"$.tgt_tid"}},
+  {"Column":"stack_base", "Properties":{"Path":"$.stack_base"}},
+  {"Column":"stack_limit", "Properties":{"Path":"$.stack_limit"}},
+  {"Column":"start_address", "Properties":{"Path":"$.start_address"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"user_stack_base", "Properties":{"Path":"$.user_stack_base"}},
+  {"Column":"user_stack_limit", "Properties":{"Path":"$.user_stack_limit"}},
+  {"Column":"start_function", "Properties":{"Path":"$.start_function"}},
+  {"Column":"start_module", "Properties":{"Path":"$.start_module"}},
+  {"Column":"start_module_name", "Properties":{"Path":"$.start_module_name"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_user_session
+//=============================================================================
+.create-merge table car_user_session (
+    car_object:string,
+    timestamp:datetime,
+    car_action:string,
+    guid:string,
+    owning_guid:string,
+    link_confidence:string,
+    source_artefact:string,
+    source_host:string,
+    native:dynamic,
+    dest_ip:string,
+    dest_port:string,
+    hostname:string,
+    login_id:string,
+    src_ip:string,
+    src_port:string,
+    user:string,
+    login_type:string,
+    uid:string,
+    login_successful:string
+)
+
+.create-or-alter table car_user_session ingestion json mapping "car_user_sessionMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"login_id", "Properties":{"Path":"$.login_id"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"login_type", "Properties":{"Path":"$.login_type"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}},
+  {"Column":"login_successful", "Properties":{"Path":"$.login_successful"}}
+]```
+
+//=============================================================================
+// Views over the materialised tables
+//=============================================================================
+.create-or-alter function
+with (docstring = "Every materialised CAR event across all 13 objects, common header only — one CAR timeline", folder = "CAR/materialized")
+Car() {
+    union isfuzzy=true
+        car_authentication, car_driver, car_email, car_file, car_flow, car_http,
+        car_module, car_process, car_registry, car_service, car_socket,
+        car_thread, car_user_session
+    | project car_object, timestamp = todatetime(timestamp), car_action, guid,
+              owning_guid, link_confidence, source_artefact, source_host, native
+    | order by timestamp asc
+}
+
+.create-or-alter function
+with (docstring = "Row counts per materialised CAR object table", folder = "CAR/materialized")
+CarObjects() {
+    Car()
+    | summarize Events = count() by car_object
+    | order by Events desc
+}
+
