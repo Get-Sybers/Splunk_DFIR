@@ -1,961 +1,882 @@
-// Database: mitre — the MITRE CAR data model in KQL
+// Database: mitre — the MITRE CAR model, MATERIALIZED (epic #86)
 //
-// The MITRE CAR model as KQL functions (it replaced the retired Splunk-era
-// MITRE_CAR_App). Same object model,
-// same coverage, same deliberate gaps — expressed as functions rather than as
-// a data model with eventtypes and tags.
+// The pipeline NORMALISES each evidence source into finished CAR events
+// (PIIAT-MitreCar: one car.db per source, one row per event) and exports one
+// `car_<object>.jsonl` per populated object plus `car_relationships.jsonl` (the
+// superset relationship instances). Those files are ingested here, 1:1, as the
+// `mitre.car_<object>` tables + `mitre.car_relationships` below — the JSON IS the
+// ADX contract.
 //
-// WHY FUNCTIONS AND NOT UPDATE POLICIES
+// This REPLACES the former query-time model (the CarX() / Car<Object>_<Artefact>()
+// functions that rebuilt each object from host/network/memory at query time).
+// Extraction now happens ONCE, in the engine, with its own test suite; KQL just
+// stores the result. No backwards-compatible views are kept.
 //
-// An update policy writes a transformed copy into a second table on ingestion,
-// and requires that "the update policy function schema and the target table
-// schema must match in their column types, and order". For CAR that is the
-// wrong shape: the nine objects are views over the same rows — a 4688 event is
-// simultaneously an EvtxEcmdJson row and a car_process row. Materialising each
-// object would double storage, force exact schema lockstep across every field,
-// and make each mapping fix an ingestion-time change rather than a query-time
-// one. Functions cost nothing to iterate on and match how the Splunk era
-// already works: the data model is a view, not a copy.
+// COLUMN NAMES ARE BRACKET-QUOTED. Many CAR fields collide with KQL keywords
+// (from, to, type, data, key, value, user, group, ...), a syntax error as bare
+// column names in .create table — the same trap 00-databases.kql documents for
+// the `network` database name. ['name'] is always valid, so every column is
+// bracketed rather than guessing which are safe.
 //
-// CROSS-DATABASE ACCESS
+// SHAPE (object tables): car_object (constant per table) + the common CAR header
+// (timestamp, car_action, guid, owning_guid, link_confidence, source_artefact,
+// source_host) + native (dynamic) + the object's MITRE fields as nullable
+// strings. Numeric-looking fields stay string (evidence is type-inconsistent);
+// cast at query time as memory.VolatilityJson does.
 //
-// Source tables live in the host / network / memory databases, so these use
-// database("<name>").<Table>. That is why the databases are separate at all —
-// they mirror the data domains, as intended.
-//
-// COVERAGE — 9 of 9 objects
-//
-// STRUCTURE: each object is built as one view per artefact —
-// Car<Object>_<Artefact>() (e.g. CarProcess_Sysmon, CarRegistry_Memory) — which
-// keeps the source table's native fields and ADDS the canonical CAR fields on top
-// (car_data_model.json). The public CarX() is a `union isfuzzy` roll-up of those
-// views. Filling CAR fields is the goal, not a stripping rule: native fields stay
-// queryable by their own name. See docs/CAR-Extraction-Rules.md. The list below is
-// the artefact -> object coverage those views implement.
-//
-//   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
-//   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
-//                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
-//                   + Volatility sessions (memory — user + logon time)
-//   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
-//                   artefacts (prefetch/amcache/appcompat), Linux cron,
-//                   + Volatility pslist(+cmdline) (memory — live process tree)
-//   CarService      EvtxECmd 7045/4697 + Volatility svcscan (memory — services)
-//   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
-//                   + Volatility filescan (memory-resident files)
-//                   + Sysmon 12/13/14 (key/value add, set, rename)
-//   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
-//   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
-//   CarThread       Sysmon 8 + Volatility thrdscan (memory — threads/start addr)
-//
-//   MEMORY fills ALL NINE CAR objects where dead-box cannot: Volatility 3
-//   (memory.VolatilityJson) sources the live process tree (windows.piiat.processes ->
-//   process, full path/parent/cmdline/DLLs), loaded modules (dlllist -> module),
-//   kernel drivers (modules -> driver), connections (netscan/netstat -> flow),
-//   logon sessions (sessions -> user_session), memory-resident files (filescan ->
-//   file), services (svcscan -> service), threads (thrdscan -> thread, whose
-//   unbacked start addresses are the injection tell) and the registry
-//   the hives resident in RAM). module/driver/thread had only Sysmon before.
-//
-//   registry lost its only source when the KAPE path was removed; the
-//   CarRegistry(). Same Zimmerman field names the old KapeJson mapping used.
-//
-//   driver, module, thread — SOURCED via Sysmon. Nothing *dead-box* produces
-//   driver loads, image loads or thread creation, which is why they were empty
-//   for so long; Sysmon (Microsoft-Windows-Sysmon/Operational, events 6/7/8) is
-//   the endpoint telemetry that does, and it lands in host.EvtxEcmdJson through
-//   the same EvtxECmd path as the Windows Security log. See the SYSMON note
-//   below for why the PID handling differs from the Security channel.
-//
-// NULLS ARE PRESERVED. Where a source cannot supply a CAR field it stays null
-// rather than being defaulted. A visible gap is worth more than an object that
-// looks fully populated.
-//
-// SYSMON — a second Windows source in the SAME table.
-//
-// Sysmon writes to Microsoft-Windows-Sysmon/Operational, which EvtxECmd parses
-// into host.EvtxEcmdJson exactly like the Security log — so Sysmon rows are told
-// apart by Provider ("Microsoft-Windows-Sysmon"), not by table. The CAR
-// functions below filter Sysmon branches with `Provider matches regex sysmon`
-// AND the Sysmon EventId, so a stray EventId 6/7/8 from another provider (those
-// numbers are reused across channels) can never leak into a Sysmon object.
-//
-// PID ENCODING DIFFERS. The Security channel writes ProcessId as a hex string
-// ("0x1a4"); Sysmon writes it as a DECIMAL string ("420"). So Sysmon branches
-// use tolong() directly and do NOT carry a pid_hex — the hex dance only the
-// Security 4688 path needs. Getting this wrong would silently misparse every
-// Sysmon PID, so it is called out at each Sysmon branch.
+// GENERATED from the engine's object model (store.HEADER + each object's fields)
+// plus the relationship export schema. Re-derive rather than hand-editing.
 
 //=============================================================================
-// Helper — pull a value out of an EvtxECmd Payload by Name.
-//
-// EvtxECmd's --json output stores EventData in Payload as JSON: an array of
-// {"@Name":"X","#text":"value"} objects under EventData.Data (a field with no
-// value has no "#text"). Its PayloadData1..6 summary fields vary by map, so they
-// are not dependable for a specific value — hence extracting from Payload.
-//
-// The value is captured with an escape-aware regex, then round-tripped through
-// parse_json so JSON escapes are decoded (\\ -> \ in paths, \" -> " in command
-// lines). A legacy fallback matches the old XML shape (<Data Name="X">value</Data>)
-// so payloads captured before the JSON switch still resolve.
+// car_authentication
 //=============================================================================
-.create-or-alter function
-with (docstring = "Extract a field from an EvtxECmd Payload by Name (JSON output; falls back to the legacy XML shape)", folder = "Helpers")
-EvtxPayload(payload:string, key:string) {
-    let j = tostring(parse_json(strcat('"',
-        extract(strcat(@'"@Name":"', key, @'","#text":"((?:[^"\\]|\\.)*)"'), 1, payload),
-        '"')));
-    iff(isnotempty(j), j,
-        extract(strcat(@'<Data Name="', key, @'">([^<]*)</Data>'), 1, payload))
-}
+.create-merge table car_authentication (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['app_name']:string,
+    ['method']:string,
+    ['auth_service']:string,
+    ['auth_target']:string,
+    ['target_ad_domain']:string,
+    ['decision_reason']:string,
+    ['response_time']:string,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['ad_domain']:string,
+    ['uid']:string,
+    ['user_role']:string,
+    ['user_type']:string,
+    ['user']:string,
+    ['user_agent']:string,
+    ['target_uid']:string,
+    ['target_user_role']:string,
+    ['target_user_type']:string,
+    ['target_user']:string
+)
 
-//=============================================================================
-// flow — ONE VIEW PER ARTEFACT (CarFlow_<Artefact>): source table with native
-// fields kept, canonical CAR flow fields added (car_data_model.json: content,
-// dest_fqdn, dest_hostname, dest_ip, dest_port, end_time, exe, flags, fqdn,
-// hostname, image_path, packet_count, pid, ppid, proto_info, protocol, src_fqdn,
-// src_hostname, src_ip, src_port, start_time, user). Additive; roll-up is union
-// isfuzzy. See docs/CAR-Extraction-Rules.md.
-//=============================================================================
-
-// Zeek conn — the full network 5-tuple with timing and packet counts. Service is
-// the app-layer protocol (proto_info); History is the connection flags. All Zeek
-// columns (Uid, bytes, IpBytes, …) remain. No host/user identity (network capture).
-.create-or-alter function
-with (docstring = "CAR 'flow' from Zeek conn (native fields + CAR fields)", folder = "CAR/flow")
-CarFlow_Zeek() {
-    database("network").ZeekTyped()
-    | extend
-        Timestamp    = Ts,
-        action       = case(ConnState == "SF", "end", ConnState == "S0", "start",
-                            ConnState == "REJ", "end", ConnState in ("RSTO", "RSTR"), "end",
-                            isnotempty(ConnState), "message", ""),
-        src_ip       = SrcIp,
-        src_port     = SrcPort,
-        dest_ip      = DestIp,
-        dest_port    = DestPort,
-        protocol     = Proto,
-        proto_info   = Service,
-        ["flags"]    = History,   // `flags` is a KQL reserved word — must be bracket-quoted
-        start_time   = Ts,
-        end_time     = iff(isnotnull(DurationSec), datetime_add('microsecond', tolong(DurationSec * 1000000), Ts), datetime(null)),
-        // Zeek omits the packet counters on some rows — a null stays null rather
-        // than fabricating a 0-packet flow. Only sum when at least one is present.
-        packet_count = iff(isnull(OrigPktsN) and isnull(RespPktsN), long(null),
-                           coalesce(OrigPktsN, 0) + coalesce(RespPktsN, 0))
-}
-
-// Sysmon 3 (NetworkConnect) — the connection AS MADE, with the initiating process
-// and user, so exe/image_path/pid/user fill; SourceHostname/DestinationHostname
-// map to src_hostname/dest_hostname. No duration/packets (single event).
-.create-or-alter function
-with (docstring = "CAR 'flow' from Sysmon 3 (native fields + CAR fields)", folder = "CAR/flow")
-CarFlow_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 3
-    | extend
-        Timestamp     = TimeCreated,
-        action        = "start",
-        src_ip        = EvtxPayload(Payload, "SourceIp"),
-        src_port      = toint(EvtxPayload(Payload, "SourcePort")),
-        src_hostname  = EvtxPayload(Payload, "SourceHostname"),
-        dest_ip       = EvtxPayload(Payload, "DestinationIp"),
-        dest_port     = toint(EvtxPayload(Payload, "DestinationPort")),
-        dest_hostname = EvtxPayload(Payload, "DestinationHostname"),
-        protocol      = EvtxPayload(Payload, "Protocol"),
-        exe           = EvtxPayload(Payload, "Image"),
-        image_path    = EvtxPayload(Payload, "Image"),
-        pid           = tolong(EvtxPayload(Payload, "ProcessId")),
-        user          = EvtxPayload(Payload, "User"),
-        start_time    = TimeCreated,
-        hostname      = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn          = iff(Computer contains ".", Computer, "")
-}
-
-// Volatility netscan / netstat (memory) — connections resident in the image with
-// the owning process (Owner -> image_path) and pid. action "message": observed in
-// memory, not a start/end. netscan is a Win7+ pool scan (empty on XP).
-.create-or-alter function
-with (docstring = "CAR 'flow' from Volatility netscan/netstat (memory) (native fields + CAR fields)", folder = "CAR/flow")
-CarFlow_Memory() {
-    union (database("memory").VolatilityJson | where Plugin == "windows.netscan"),
-          (database("memory").VolatilityJson | where Plugin == "windows.netstat")
-    | extend
-        Timestamp    = todatetime(Record.Created),
-        action       = "message",
-        src_ip       = tostring(Record.LocalAddr),
-        src_port     = toint(Record.LocalPort),
-        dest_ip      = tostring(Record.ForeignAddr),
-        dest_port    = toint(Record.ForeignPort),
-        protocol     = tostring(Record.Proto),
-        image_path   = tostring(Record.Owner),
-        pid          = tolong(Record.PID),
-        start_time   = todatetime(Record.Created)
-}
-
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'flow' object — roll-up of the per-artefact views", folder = "CAR")
-CarFlow() {
-    union isfuzzy=true CarFlow_Zeek, CarFlow_Sysmon, CarFlow_Memory
-}
+.create-or-alter table car_authentication ingestion json mapping "car_authenticationMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"app_name", "Properties":{"Path":"$.app_name"}},
+  {"Column":"method", "Properties":{"Path":"$.method"}},
+  {"Column":"auth_service", "Properties":{"Path":"$.auth_service"}},
+  {"Column":"auth_target", "Properties":{"Path":"$.auth_target"}},
+  {"Column":"target_ad_domain", "Properties":{"Path":"$.target_ad_domain"}},
+  {"Column":"decision_reason", "Properties":{"Path":"$.decision_reason"}},
+  {"Column":"response_time", "Properties":{"Path":"$.response_time"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"ad_domain", "Properties":{"Path":"$.ad_domain"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}},
+  {"Column":"user_role", "Properties":{"Path":"$.user_role"}},
+  {"Column":"user_type", "Properties":{"Path":"$.user_type"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"user_agent", "Properties":{"Path":"$.user_agent"}},
+  {"Column":"target_uid", "Properties":{"Path":"$.target_uid"}},
+  {"Column":"target_user_role", "Properties":{"Path":"$.target_user_role"}},
+  {"Column":"target_user_type", "Properties":{"Path":"$.target_user_type"}},
+  {"Column":"target_user", "Properties":{"Path":"$.target_user"}}
+]```
 
 //=============================================================================
-// user_session — ONE VIEW PER ARTEFACT (CarUserSession_<Artefact>): native fields
-// kept, canonical CAR user_session fields added (car_data_model.json: dest_ip,
-// dest_port, hostname, logon_id, src_ip, src_port, user). Non-canonical logon
-// detail (LogonType, SID, workstation, session type) is NOT a CAR field and stays
-// in the native columns (Payload / Record). Additive; roll-up is union isfuzzy.
+// car_driver
 //=============================================================================
+.create-merge table car_driver (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['base_address']:string,
+    ['image_path']:string,
+    ['md5_hash']:string,
+    ['sha1_hash']:string,
+    ['sha256_hash']:string,
+    ['module_name']:string,
+    ['signer']:string,
+    ['pid']:string,
+    ['signature_valid']:string
+)
 
-// Windows Security 4624/4625/4634/4647/4648/4778/4779. LogonType drives `action`
-// (canonical: interactive/unlock/rdp/remote/login/logout/reconnect) but is itself
-// not a CAR field, so it is computed internally and dropped; it stays queryable in
-// the native Payload, as do SubjectUserSid and WorkstationName. 4624's IpAddress
-// is "-" for a local logon, nulled rather than stored.
-.create-or-alter function
-with (docstring = "CAR 'user_session' from Windows Security logons (native fields + CAR fields)", folder = "CAR/user_session")
-CarUserSession_Security() {
-    database("host").EvtxEcmdJson
-    // Channel guard: these EventIds are Security-channel events; the numbers are
-    // reused by other providers, so pin the channel (non-destructive on real data —
-    // EvtxECmd stamps Channel "Security" on every one of these).
-    | where Channel has "Security" and EventId in (4624, 4625, 4634, 4647, 4648, 4778, 4779)
-    // 4778/4779 (RDP session reconnect/disconnect) carry AccountName / LogonID /
-    // ClientAddress instead of the 4624-family's TargetUserName / TargetLogonId /
-    // IpAddress — coalesce per field. EvtxPayload returns "" (never null) for a
-    // missing key, so the fallback is iff(isempty(...)), not coalesce().
-    | extend _lt = toint(EvtxPayload(Payload, "LogonType")),
-             _ip0 = EvtxPayload(Payload, "IpAddress"),
-             _cip = EvtxPayload(Payload, "ClientAddress"),
-             _port = EvtxPayload(Payload, "IpPort"),
-             _tuser0 = EvtxPayload(Payload, "TargetUserName"),
-             _auser = EvtxPayload(Payload, "AccountName"),
-             _tlid = EvtxPayload(Payload, "TargetLogonId"),
-             _alid = EvtxPayload(Payload, "LogonID")
-    | extend _ip = iff(isempty(_ip0), _cip, _ip0),
-             _tuser = iff(isempty(_tuser0), _auser, _tuser0)
-    | extend
-        Timestamp = TimeCreated,
-        action    = case(EventId in (4634, 4647), "logout",
-                         EventId == 4778, "reconnect",
-                         // 4779 is a session DISCONNECT — the session ended from the
-                         // user's side. CAR has no "disconnect" action, so "logout"
-                         // is the nearest honest label (was: "remote", wrong).
-                         EventId == 4779, "logout",
-                         EventId == 4624 and _lt == 10, "rdp",
-                         EventId == 4624 and _lt == 7,  "unlock",
-                         EventId == 4624 and _lt == 2,  "interactive",
-                         EventId == 4624 and _lt == 3,  "remote",
-                         EventId == 4624, "login",
-                         // 4648 = a logon USING explicit credentials — a login.
-                         EventId == 4648, "login",
-                         // 4625 is a FAILED logon — not a "login" in the CAR action
-                         // vocabulary. action stays empty; the native EventId still
-                         // identifies the failure.
-                         ""),
-        user      = iff(isempty(_tuser), UserName, _tuser),
-        logon_id  = iff(isempty(_tlid), _alid, _tlid),
-        hostname  = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        // "LOCAL" is 4778/4779's ClientAddress for a console session — not an IP.
-        src_ip    = iff(_ip in ("-", "::1", "127.0.0.1", "LOCAL", ""), "", _ip),
-        src_port  = iff(_port in ("-", "0", ""), int(null), toint(_port)),
-        dest_ip   = "",
-        dest_port = int(null)
-    | project-away _lt, _ip0, _cip, _ip, _port, _tuser0, _auser, _tuser, _tlid, _alid
-}
-
-// Linux utmp/wtmp (Plaso, typed). login_type: 6/7 -> login, 8 -> logout; BOOT_TIME
-// (2) is not a user session and has no canonical action, so it is excluded (still
-// in the raw L2tUtmp table). Record.hostname is the login SOURCE host — not a CAR
-// user_session field (no src_hostname), so it stays native.
-.create-or-alter function
-with (docstring = "CAR 'user_session' from Plaso Linux utmp (native fields + CAR fields)", folder = "CAR/user_session")
-CarUserSession_Utmp() {
-    union database("host").L2tUtmp, database("host").L2tUtmpx
-    | extend _lt = toint(Record.login_type), _ip = tostring(Record.ip_address)
-    | where _lt in (6, 7, 8)
-    | extend
-        action    = iff(_lt == 8, "logout", "login"),
-        user      = tostring(Record.username),
-        logon_id  = "",
-        hostname  = tostring(Record.image_hostname),
-        src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
-        src_port  = int(null),
-        dest_ip   = "",
-        dest_port = int(null),
-        SourceFile = SourceImage    // per-artefact identity for the roll-up
-    | project-away _lt, _ip
-}
-
-// Linux SSH logins (Plaso ssh:login, typed): username, ip_address, port. The
-// authentication_method stays native in Record.
-.create-or-alter function
-with (docstring = "CAR 'user_session' from Plaso Linux SSH (native fields + CAR fields)", folder = "CAR/user_session")
-CarUserSession_Ssh() {
-    database("host").L2tText
-    | where tostring(Record.data_type) == "syslog:ssh:login"
-    | extend _ip = tostring(Record.ip_address)
-    | extend
-        action    = "login",
-        user      = tostring(Record.username),
-        logon_id  = "",
-        hostname  = tostring(Record.image_hostname),
-        src_ip    = iff(_ip in ("0.0.0.0", "", "::1", "127.0.0.1"), "", _ip),
-        src_port  = toint(Record.port),
-        dest_ip   = "",
-        dest_port = int(null),
-        SourceFile = SourceImage    // per-artefact identity for the roll-up
-    | project-away _ip
-}
-
-// Volatility windows.sessions (memory) — logon sessions in the image with the user,
-// Session ID (logon_id) and Create Time (logon time). Session Type stays native.
-.create-or-alter function
-with (docstring = "CAR 'user_session' from Volatility sessions (memory) (native fields + CAR fields)", folder = "CAR/user_session")
-CarUserSession_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.sessions"
-    | extend
-        Timestamp = todatetime(Record.["Create Time"]),
-        action    = "login",
-        user      = tostring(Record.["User Name"]),
-        logon_id  = tostring(Record.["Session ID"]),
-        hostname  = "",
-        src_ip    = "",
-        src_port  = int(null),
-        dest_ip   = "",
-        dest_port = int(null)
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'user_session' object — roll-up of the per-artefact views", folder = "CAR")
-CarUserSession() {
-    union isfuzzy=true CarUserSession_Security, CarUserSession_Utmp,
-        CarUserSession_Ssh, CarUserSession_Memory
-}
-
-// Security 4688/4689 PIDs are hex strings ("0x1a4"); tolong() parses the 0x form
-// at run time (tolong("0x1a4") = 420, verified against the emulator, issue #14).
-// ppid comes from EventData's ProcessId (the creator), NOT the row's top-level
-// Execution ProcessID (identical on every Security row → bogus parents).
-//=============================================================================
-// process — ONE VIEW PER ARTEFACT (CarProcess_<Artefact>). Each view is just the
-// source table with its NORMAL FIELDS KEPT, plus the canonical CAR process fields
-// added on top (car_data_model.json: command_line, exe, fqdn, hostname, image_path,
-// md5_hash, parent_exe, parent_image_path, pid, ppid, sha1_hash, sha256_hash, sid,
-// signer, user). See docs/CAR-Extraction-Rules.md.
-//
-// FILLING THE CAR OBJECT IS THE GOAL, NOT A STRIPPING RULE. The mapping is
-// ADDITIVE — nothing is removed, every native field stays a queryable named column
-// (Hidden, Payload, BytesSent, …), the CAR fields sit alongside them. The base
-// views never combine sources; CarProcess() at the end is the downstream roll-up
-// (rule 4), a union isfuzzy so it carries the CAR fields for every source plus
-// whatever native columns each one brings.
-//=============================================================================
-
-// Sysmon 1 (ProcessCreate) / 5 (ProcessTerminate) — the richest single source.
-// pid/ppid are DECIMAL -> tolong directly; the Hashes string splits into
-// md5/sha1/sha256_hash; hostname/fqdn split from Computer. Event 1 has no SID or
-// signer, so those stay empty. All EvtxECmd columns (Payload, Provider, …) remain.
-.create-or-alter function
-with (docstring = "CAR 'process' from Sysmon 1/5 (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId in (1, 5)
-    | extend _Hashes = EvtxPayload(Payload, "Hashes")
-    | extend
-        Timestamp         = TimeCreated,
-        action            = iff(EventId == 1, "create", "terminate"),
-        exe               = EvtxPayload(Payload, "Image"),
-        image_path        = EvtxPayload(Payload, "Image"),
-        parent_exe        = EvtxPayload(Payload, "ParentImage"),
-        parent_image_path = EvtxPayload(Payload, "ParentImage"),
-        command_line      = EvtxPayload(Payload, "CommandLine"),
-        pid               = tolong(EvtxPayload(Payload, "ProcessId")),
-        ppid              = tolong(EvtxPayload(Payload, "ParentProcessId")),
-        user              = EvtxPayload(Payload, "User"),
-        sid               = "",
-        md5_hash          = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _Hashes),
-        sha1_hash         = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _Hashes),
-        sha256_hash       = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _Hashes),
-        signer            = "",
-        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn              = iff(Computer contains ".", Computer, "")
-    | project-away _Hashes
-}
-
-// Security 4688 (create) / 4689 (terminate). Carries SubjectUserSid -> sid (which
-// Sysmon can't give); no file hashes. pid/ppid are HEX ("0x1a4") — tolong parses
-// the 0x form. ppid is EventData's ProcessId (the creator). 4689 has only the
-// terminating ProcessName/ProcessId, so parent/command_line are empty there.
-.create-or-alter function
-with (docstring = "CAR 'process' from Security 4688/4689 (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Security() {
-    database("host").EvtxEcmdJson
-    // Channel guard: 4688/4689 are Security-channel events; the numbers are reused
-    // by other providers, so pin the channel (non-destructive on real data).
-    | where Channel has "Security" and EventId in (4688, 4689)
-    | extend
-        _NewName   = EvtxPayload(Payload, "NewProcessName"),
-        _Name4689  = EvtxPayload(Payload, "ProcessName"),
-        _NewPid    = EvtxPayload(Payload, "NewProcessId"),
-        _EvPid     = EvtxPayload(Payload, "ProcessId"),
-        _SubjName  = EvtxPayload(Payload, "SubjectUserName"),
-        _SubjDom   = EvtxPayload(Payload, "SubjectDomainName")
-    | extend
-        Timestamp         = TimeCreated,
-        action            = iff(EventId == 4688, "create", "terminate"),
-        exe               = iff(EventId == 4688, _NewName, _Name4689),
-        image_path        = iff(EventId == 4688, _NewName, _Name4689),
-        parent_exe        = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
-        parent_image_path = iff(EventId == 4688, EvtxPayload(Payload, "ParentProcessName"), ""),
-        command_line      = iff(EventId == 4688, EvtxPayload(Payload, "CommandLine"), ""),
-        pid               = iff(EventId == 4688, tolong(_NewPid), tolong(_EvPid)),
-        ppid              = iff(EventId == 4688, tolong(_EvPid), long(null)),
-        // "-" is the Security channel's placeholder for an absent value — treat it
-        // as empty everywhere rather than fabricating a "-\name" (or bare "-")
-        // identity. XP-era 4688s carry "-" in every user field; those rows honestly
-        // have no user.
-        user              = iff(isempty(_SubjName) or _SubjName == "-",
-                                iff(UserName in ("-", @"-\-"), "", UserName),
-                                iff(isempty(_SubjDom) or _SubjDom == "-", _SubjName, strcat(_SubjDom, @"\", _SubjName))),
-        sid               = EvtxPayload(Payload, "SubjectUserSid"),
-        md5_hash          = "",
-        sha1_hash         = "",
-        sha256_hash       = "",
-        signer            = "",
-        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn              = iff(Computer contains ".", Computer, "")
-    | project-away _NewName, _Name4689, _NewPid, _EvPid, _SubjName, _SubjDom
-}
-
-// Volatility windows.piiat.processes (psscan — unlinked processes found). Full image path,
-// parent path, command line, pid, ppid, create time from each process's rebuilt
-// address space. No user/SID or hostname natively (honest gaps). All plugin fields
-// (Record.Hidden, Record.DllCount, …) remain queryable as normal columns.
-.create-or-alter function
-with (docstring = "CAR 'process' from Volatility psscan (memory) (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.piiat.processes"
-    | extend _full = tostring(Record.Path), _short = tostring(Record.ImageFileName)
-    | extend
-        Timestamp         = todatetime(Record.CreateTime),
-        action            = "create",
-        exe               = iff(isnotempty(_full), _full, _short),
-        image_path        = iff(isnotempty(_full), _full, _short),
-        parent_exe        = tostring(Record.ParentPath),
-        parent_image_path = tostring(Record.ParentPath),
-        command_line      = tostring(Record.CommandLine),
-        pid               = tolong(Record.PID),
-        ppid              = tolong(Record.PPID),
-        user              = "",
-        sid               = "",
-        md5_hash          = "",
-        sha1_hash         = "",
-        sha256_hash       = "",
-        signer            = "",
-        hostname          = "",
-        fqdn              = ""
-    | project-away _full, _short
-}
-
-// Plaso Windows execution artefacts (prefetch, amcache, appcompatcache, userassist,
-// bam) — evidence a program ran, with image hostname and user from Plaso enrichment.
-// The EXECUTED PROGRAM's path lives in a different Record field per parser — never
-// in Record.filename/display_name, which name the parsed ARTEFACT file itself (the
-// .pf file, the hive) and must not leak into exe/image_path:
-//   prefetch       -> Record.path_hints[0] (full path); Record.executable is the
-//                     bare name, kept as the exe fallback only
-//   appcompatcache -> Record.path            bam -> Record.path (+ the user SID in
-//                     Record.user_identifier -> sid)
-//   amcache        -> Record.full_path       userassist -> Record.value_name
-// amcache's Record.sha1 is the PROGRAM's SHA-1 -> sha1_hash (Record.sha1_hash would
-// be the parsed hive's own hash — deliberately not used). The full Plaso Record stays.
-.create-or-alter function
-with (docstring = "CAR 'process' from Plaso execution artefacts (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Plaso() {
-    union
-        // L2tPrefetch carries both windows:volume:creation (volume metadata, no
-        // program) and windows:prefetch:execution — only the latter is a run.
-        (database("host").L2tPrefetch
-         | where tostring(Record.data_type) == "windows:prefetch:execution"
-         | extend _art = "prefetch"),
-        (database("host").L2tWinreg
-         | where Parser matches regex @"(?i)appcompatcache|userassist|programscache|amcache|bam"
-         | extend _art = case(Parser matches regex @"(?i)amcache",    "amcache",
-                              Parser matches regex @"(?i)userassist", "userassist",
-                              Parser matches regex @"(?i)bam",        "bam",
-                              Parser matches regex @"(?i)appcompatcache", "appcompatcache",
-                              "winreg"))
-    // prefetch has no full path on some Windows versions (path_hints empty) — the
-    // executable NAME is then the only identifier, so fall back to it.
-    | extend _prog = case(_art == "prefetch",   coalesce(tostring(Record.path_hints[0]), tostring(Record.executable)),
-                          _art == "amcache",    coalesce(tostring(Record.full_path), tostring(Record.filename)),
-                          _art == "userassist", tostring(Record.value_name),
-                          tostring(Record.path))
-    | extend
-        action            = "create",
-        exe               = _prog,
-        image_path        = _prog,
-        parent_exe        = "",
-        parent_image_path = "",
-        command_line      = "",
-        pid               = long(null),
-        ppid              = long(null),
-        user              = tostring(Record.username),
-        sid               = iff(_art == "bam", tostring(Record.user_identifier), ""),
-        md5_hash          = "",
-        sha1_hash         = tostring(Record.sha1),
-        sha256_hash       = "",
-        signer            = "",
-        hostname          = tostring(Record.image_hostname),
-        fqdn              = "",
-        SourceFile        = SourceImage
-    | project-away _prog, _art
-}
-
-// Plaso Linux cron (syslog:cron:task_run) — command line, crond worker pid, user.
-.create-or-alter function
-with (docstring = "CAR 'process' from Plaso Linux cron (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Cron() {
-    database("host").L2tText
-    | where tostring(Record.data_type) == "syslog:cron:task_run"
-    | extend _cmd = tostring(Record.command)
-    | extend
-        action            = "create",
-        exe               = extract(@"^(\S+)", 1, _cmd),
-        image_path        = extract(@"^(\S+)", 1, _cmd),
-        parent_exe        = "",
-        parent_image_path = "",
-        command_line      = _cmd,
-        pid               = tolong(Record.pid),
-        ppid              = long(null),
-        user              = tostring(Record.username),
-        sid               = "",
-        md5_hash          = "",
-        sha1_hash         = "",
-        sha256_hash       = "",
-        signer            = "",
-        hostname          = tostring(Record.image_hostname),
-        fqdn              = "",
-        SourceFile        = SourceImage
-    | project-away _cmd
-}
-
+.create-or-alter table car_driver ingestion json mapping "car_driverMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"base_address", "Properties":{"Path":"$.base_address"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"module_name", "Properties":{"Path":"$.module_name"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}}
+]```
 
 //=============================================================================
-// process roll-up — the downstream COMBINATION stage (rule 4). union isfuzzy of
-// the per-artefact views: every row has the canonical CAR process fields, plus
-// whatever native columns its source brought (null for the others). Deeper
-// correlation (same real process across artefacts via host+pid+time) is a later
-// analytic, done only where a shared identity key allows it.
+// car_email
+//=============================================================================
+.create-merge table car_email (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['action_reason']:string,
+    ['attachment_name']:string,
+    ['attachment_size']:string,
+    ['attachment_mime_type']:string,
+    ['dest_ip']:string,
+    ['dest_port']:string,
+    ['dest_address']:string,
+    ['date']:string,
+    ['server_relay']:string,
+    ['from']:string,
+    ['smtp_uid']:string,
+    ['message_links']:string,
+    ['src_address']:string,
+    ['src_domain']:string,
+    ['return_address']:string,
+    ['message_body']:string,
+    ['subject']:string,
+    ['src_ip']:string,
+    ['src_port']:string,
+    ['message_type']:string,
+    ['to']:string
+)
+
+.create-or-alter table car_email ingestion json mapping "car_emailMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"action_reason", "Properties":{"Path":"$.action_reason"}},
+  {"Column":"attachment_name", "Properties":{"Path":"$.attachment_name"}},
+  {"Column":"attachment_size", "Properties":{"Path":"$.attachment_size"}},
+  {"Column":"attachment_mime_type", "Properties":{"Path":"$.attachment_mime_type"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"dest_address", "Properties":{"Path":"$.dest_address"}},
+  {"Column":"date", "Properties":{"Path":"$.date"}},
+  {"Column":"server_relay", "Properties":{"Path":"$.server_relay"}},
+  {"Column":"from", "Properties":{"Path":"$.from"}},
+  {"Column":"smtp_uid", "Properties":{"Path":"$.smtp_uid"}},
+  {"Column":"message_links", "Properties":{"Path":"$.message_links"}},
+  {"Column":"src_address", "Properties":{"Path":"$.src_address"}},
+  {"Column":"src_domain", "Properties":{"Path":"$.src_domain"}},
+  {"Column":"return_address", "Properties":{"Path":"$.return_address"}},
+  {"Column":"message_body", "Properties":{"Path":"$.message_body"}},
+  {"Column":"subject", "Properties":{"Path":"$.subject"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"message_type", "Properties":{"Path":"$.message_type"}},
+  {"Column":"to", "Properties":{"Path":"$.to"}}
+]```
+
+//=============================================================================
+// car_file
+//=============================================================================
+.create-merge table car_file (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['creation_time']:string,
+    ['file_name']:string,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['image_path']:string,
+    ['md5_hash']:string,
+    ['sha1_hash']:string,
+    ['sha256_hash']:string,
+    ['pid']:string,
+    ['ppid']:string,
+    ['previous_creation_time']:string,
+    ['signer']:string,
+    ['user']:string,
+    ['company']:string,
+    ['file_path']:string,
+    ['owner_uid']:string,
+    ['owner']:string,
+    ['content']:string,
+    ['extension']:string,
+    ['gid']:string,
+    ['group']:string,
+    ['link_target']:string,
+    ['mime_type']:string,
+    ['mode']:string,
+    ['signature_valid']:string,
+    ['uid']:string
+)
+
+.create-or-alter table car_file ingestion json mapping "car_fileMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"creation_time", "Properties":{"Path":"$.creation_time"}},
+  {"Column":"file_name", "Properties":{"Path":"$.file_name"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"previous_creation_time", "Properties":{"Path":"$.previous_creation_time"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"company", "Properties":{"Path":"$.company"}},
+  {"Column":"file_path", "Properties":{"Path":"$.file_path"}},
+  {"Column":"owner_uid", "Properties":{"Path":"$.owner_uid"}},
+  {"Column":"owner", "Properties":{"Path":"$.owner"}},
+  {"Column":"content", "Properties":{"Path":"$.content"}},
+  {"Column":"extension", "Properties":{"Path":"$.extension"}},
+  {"Column":"gid", "Properties":{"Path":"$.gid"}},
+  {"Column":"group", "Properties":{"Path":"$.group"}},
+  {"Column":"link_target", "Properties":{"Path":"$.link_target"}},
+  {"Column":"mime_type", "Properties":{"Path":"$.mime_type"}},
+  {"Column":"mode", "Properties":{"Path":"$.mode"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_flow
+//=============================================================================
+.create-merge table car_flow (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['content']:string,
+    ['dest_ip']:string,
+    ['dest_port']:string,
+    ['src_ip']:string,
+    ['src_port']:string,
+    ['start_time']:string,
+    ['end_time']:string,
+    ['exe']:string,
+    ['image_path']:string,
+    ['packet_count']:string,
+    ['pid']:string,
+    ['ppid']:string,
+    ['proto_info']:string,
+    ['user']:string,
+    ['src_fqdn']:string,
+    ['src_hostname']:string,
+    ['dest_fqdn']:string,
+    ['dest_hostname']:string,
+    ['application_protocol']:string,
+    ['in_bytes']:string,
+    ['out_bytes']:string,
+    ['network_direction']:string,
+    ['tcp_flags']:string,
+    ['transport_protocol']:string,
+    ['uid']:string
+)
+
+.create-or-alter table car_flow ingestion json mapping "car_flowMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"content", "Properties":{"Path":"$.content"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"start_time", "Properties":{"Path":"$.start_time"}},
+  {"Column":"end_time", "Properties":{"Path":"$.end_time"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"packet_count", "Properties":{"Path":"$.packet_count"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"proto_info", "Properties":{"Path":"$.proto_info"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"src_fqdn", "Properties":{"Path":"$.src_fqdn"}},
+  {"Column":"src_hostname", "Properties":{"Path":"$.src_hostname"}},
+  {"Column":"dest_fqdn", "Properties":{"Path":"$.dest_fqdn"}},
+  {"Column":"dest_hostname", "Properties":{"Path":"$.dest_hostname"}},
+  {"Column":"application_protocol", "Properties":{"Path":"$.application_protocol"}},
+  {"Column":"in_bytes", "Properties":{"Path":"$.in_bytes"}},
+  {"Column":"out_bytes", "Properties":{"Path":"$.out_bytes"}},
+  {"Column":"network_direction", "Properties":{"Path":"$.network_direction"}},
+  {"Column":"tcp_flags", "Properties":{"Path":"$.tcp_flags"}},
+  {"Column":"transport_protocol", "Properties":{"Path":"$.transport_protocol"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_http
+//=============================================================================
+.create-merge table car_http (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['hostname']:string,
+    ['request_body_bytes']:string,
+    ['http_version']:string,
+    ['request_body_content']:string,
+    ['request_referrer']:string,
+    ['requester_ip_address']:string,
+    ['response_body_bytes']:string,
+    ['response_body_content']:string,
+    ['response_status_code']:string,
+    ['url_full']:string,
+    ['url_domain']:string,
+    ['url_remainder']:string,
+    ['url_scheme']:string,
+    ['user_agent_full']:string,
+    ['user_agent_name']:string,
+    ['user_agent_device']:string,
+    ['user_agent_version']:string
+)
+
+.create-or-alter table car_http ingestion json mapping "car_httpMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"request_body_bytes", "Properties":{"Path":"$.request_body_bytes"}},
+  {"Column":"http_version", "Properties":{"Path":"$.http_version"}},
+  {"Column":"request_body_content", "Properties":{"Path":"$.request_body_content"}},
+  {"Column":"request_referrer", "Properties":{"Path":"$.request_referrer"}},
+  {"Column":"requester_ip_address", "Properties":{"Path":"$.requester_ip_address"}},
+  {"Column":"response_body_bytes", "Properties":{"Path":"$.response_body_bytes"}},
+  {"Column":"response_body_content", "Properties":{"Path":"$.response_body_content"}},
+  {"Column":"response_status_code", "Properties":{"Path":"$.response_status_code"}},
+  {"Column":"url_full", "Properties":{"Path":"$.url_full"}},
+  {"Column":"url_domain", "Properties":{"Path":"$.url_domain"}},
+  {"Column":"url_remainder", "Properties":{"Path":"$.url_remainder"}},
+  {"Column":"url_scheme", "Properties":{"Path":"$.url_scheme"}},
+  {"Column":"user_agent_full", "Properties":{"Path":"$.user_agent_full"}},
+  {"Column":"user_agent_name", "Properties":{"Path":"$.user_agent_name"}},
+  {"Column":"user_agent_device", "Properties":{"Path":"$.user_agent_device"}},
+  {"Column":"user_agent_version", "Properties":{"Path":"$.user_agent_version"}}
+]```
+
+//=============================================================================
+// car_module
+//=============================================================================
+.create-merge table car_module (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['base_address']:string,
+    ['image_path']:string,
+    ['md5_hash']:string,
+    ['sha1_hash']:string,
+    ['sha256_hash']:string,
+    ['module_path']:string,
+    ['module_name']:string,
+    ['pid']:string,
+    ['signer']:string,
+    ['tid']:string,
+    ['signature_valid']:string
+)
+
+.create-or-alter table car_module ingestion json mapping "car_moduleMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"base_address", "Properties":{"Path":"$.base_address"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"module_path", "Properties":{"Path":"$.module_path"}},
+  {"Column":"module_name", "Properties":{"Path":"$.module_name"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"tid", "Properties":{"Path":"$.tid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}}
+]```
+
+//=============================================================================
+// car_process
+//=============================================================================
+.create-merge table car_process (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['command_line']:string,
+    ['exe']:string,
+    ['image_path']:string,
+    ['md5_hash']:string,
+    ['sha1_hash']:string,
+    ['sha256_hash']:string,
+    ['parent_exe']:string,
+    ['parent_image_path']:string,
+    ['pid']:string,
+    ['ppid']:string,
+    ['sid']:string,
+    ['signer']:string,
+    ['user']:string,
+    ['integrity_level']:string,
+    ['parent_command_line']:string,
+    ['current_working_directory']:string,
+    ['env_vars']:string,
+    ['access_level']:string,
+    ['call_trace']:string,
+    ['parent_guid']:string,
+    ['signature_valid']:string,
+    ['target_guid']:string,
+    ['target_pid']:string,
+    ['target_address']:string,
+    ['target_name']:string,
+    ['uid']:string
+)
+
+.create-or-alter table car_process ingestion json mapping "car_processMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"command_line", "Properties":{"Path":"$.command_line"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"md5_hash", "Properties":{"Path":"$.md5_hash"}},
+  {"Column":"sha1_hash", "Properties":{"Path":"$.sha1_hash"}},
+  {"Column":"sha256_hash", "Properties":{"Path":"$.sha256_hash"}},
+  {"Column":"parent_exe", "Properties":{"Path":"$.parent_exe"}},
+  {"Column":"parent_image_path", "Properties":{"Path":"$.parent_image_path"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"sid", "Properties":{"Path":"$.sid"}},
+  {"Column":"signer", "Properties":{"Path":"$.signer"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"integrity_level", "Properties":{"Path":"$.integrity_level"}},
+  {"Column":"parent_command_line", "Properties":{"Path":"$.parent_command_line"}},
+  {"Column":"current_working_directory", "Properties":{"Path":"$.current_working_directory"}},
+  {"Column":"env_vars", "Properties":{"Path":"$.env_vars"}},
+  {"Column":"access_level", "Properties":{"Path":"$.access_level"}},
+  {"Column":"call_trace", "Properties":{"Path":"$.call_trace"}},
+  {"Column":"parent_guid", "Properties":{"Path":"$.parent_guid"}},
+  {"Column":"signature_valid", "Properties":{"Path":"$.signature_valid"}},
+  {"Column":"target_guid", "Properties":{"Path":"$.target_guid"}},
+  {"Column":"target_pid", "Properties":{"Path":"$.target_pid"}},
+  {"Column":"target_address", "Properties":{"Path":"$.target_address"}},
+  {"Column":"target_name", "Properties":{"Path":"$.target_name"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_registry
+//=============================================================================
+.create-merge table car_registry (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['key']:string,
+    ['value']:string,
+    ['data']:string,
+    ['type']:string,
+    ['hive']:string,
+    ['image_path']:string,
+    ['pid']:string,
+    ['user']:string,
+    ['new_content']:string
+)
+
+.create-or-alter table car_registry ingestion json mapping "car_registryMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"key", "Properties":{"Path":"$.key"}},
+  {"Column":"value", "Properties":{"Path":"$.value"}},
+  {"Column":"data", "Properties":{"Path":"$.data"}},
+  {"Column":"type", "Properties":{"Path":"$.type"}},
+  {"Column":"hive", "Properties":{"Path":"$.hive"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"new_content", "Properties":{"Path":"$.new_content"}}
+]```
+
+//=============================================================================
+// car_service
+//=============================================================================
+.create-merge table car_service (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['fqdn']:string,
+    ['hostname']:string,
+    ['user']:string,
+    ['command_line']:string,
+    ['exe']:string,
+    ['image_path']:string,
+    ['name']:string,
+    ['pid']:string,
+    ['ppid']:string,
+    ['uid']:string
+)
+
+.create-or-alter table car_service ingestion json mapping "car_serviceMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"fqdn", "Properties":{"Path":"$.fqdn"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"command_line", "Properties":{"Path":"$.command_line"}},
+  {"Column":"exe", "Properties":{"Path":"$.exe"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"name", "Properties":{"Path":"$.name"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"ppid", "Properties":{"Path":"$.ppid"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_socket
+//=============================================================================
+.create-merge table car_socket (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['pid']:string,
+    ['image_path']:string,
+    ['success']:string,
+    ['family']:string,
+    ['protocol']:string,
+    ['local_address']:string,
+    ['local_port']:string,
+    ['remote_port']:string,
+    ['remote_address']:string,
+    ['local_path']:string
+)
+
+.create-or-alter table car_socket ingestion json mapping "car_socketMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"pid", "Properties":{"Path":"$.pid"}},
+  {"Column":"image_path", "Properties":{"Path":"$.image_path"}},
+  {"Column":"success", "Properties":{"Path":"$.success"}},
+  {"Column":"family", "Properties":{"Path":"$.family"}},
+  {"Column":"protocol", "Properties":{"Path":"$.protocol"}},
+  {"Column":"local_address", "Properties":{"Path":"$.local_address"}},
+  {"Column":"local_port", "Properties":{"Path":"$.local_port"}},
+  {"Column":"remote_port", "Properties":{"Path":"$.remote_port"}},
+  {"Column":"remote_address", "Properties":{"Path":"$.remote_address"}},
+  {"Column":"local_path", "Properties":{"Path":"$.local_path"}}
+]```
+
+//=============================================================================
+// car_thread
+//=============================================================================
+.create-merge table car_thread (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['hostname']:string,
+    ['src_pid']:string,
+    ['src_tid']:string,
+    ['tgt_pid']:string,
+    ['tgt_tid']:string,
+    ['stack_base']:string,
+    ['stack_limit']:string,
+    ['start_address']:string,
+    ['user']:string,
+    ['user_stack_base']:string,
+    ['user_stack_limit']:string,
+    ['start_function']:string,
+    ['start_module']:string,
+    ['start_module_name']:string,
+    ['uid']:string
+)
+
+.create-or-alter table car_thread ingestion json mapping "car_threadMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"src_pid", "Properties":{"Path":"$.src_pid"}},
+  {"Column":"src_tid", "Properties":{"Path":"$.src_tid"}},
+  {"Column":"tgt_pid", "Properties":{"Path":"$.tgt_pid"}},
+  {"Column":"tgt_tid", "Properties":{"Path":"$.tgt_tid"}},
+  {"Column":"stack_base", "Properties":{"Path":"$.stack_base"}},
+  {"Column":"stack_limit", "Properties":{"Path":"$.stack_limit"}},
+  {"Column":"start_address", "Properties":{"Path":"$.start_address"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"user_stack_base", "Properties":{"Path":"$.user_stack_base"}},
+  {"Column":"user_stack_limit", "Properties":{"Path":"$.user_stack_limit"}},
+  {"Column":"start_function", "Properties":{"Path":"$.start_function"}},
+  {"Column":"start_module", "Properties":{"Path":"$.start_module"}},
+  {"Column":"start_module_name", "Properties":{"Path":"$.start_module_name"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}}
+]```
+
+//=============================================================================
+// car_user_session
+//=============================================================================
+.create-merge table car_user_session (
+    ['car_object']:string,
+    ['timestamp']:datetime,
+    ['car_action']:string,
+    ['guid']:string,
+    ['owning_guid']:string,
+    ['link_confidence']:string,
+    ['source_artefact']:string,
+    ['source_host']:string,
+    ['native']:dynamic,
+    ['dest_ip']:string,
+    ['dest_port']:string,
+    ['hostname']:string,
+    ['login_id']:string,
+    ['src_ip']:string,
+    ['src_port']:string,
+    ['user']:string,
+    ['login_type']:string,
+    ['uid']:string,
+    ['login_successful']:string
+)
+
+.create-or-alter table car_user_session ingestion json mapping "car_user_sessionMapping"
+```[
+  {"Column":"car_object", "Properties":{"Path":"$.car_object"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"car_action", "Properties":{"Path":"$.car_action"}},
+  {"Column":"guid", "Properties":{"Path":"$.guid"}},
+  {"Column":"owning_guid", "Properties":{"Path":"$.owning_guid"}},
+  {"Column":"link_confidence", "Properties":{"Path":"$.link_confidence"}},
+  {"Column":"source_artefact", "Properties":{"Path":"$.source_artefact"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"native", "Properties":{"Path":"$.native"}},
+  {"Column":"dest_ip", "Properties":{"Path":"$.dest_ip"}},
+  {"Column":"dest_port", "Properties":{"Path":"$.dest_port"}},
+  {"Column":"hostname", "Properties":{"Path":"$.hostname"}},
+  {"Column":"login_id", "Properties":{"Path":"$.login_id"}},
+  {"Column":"src_ip", "Properties":{"Path":"$.src_ip"}},
+  {"Column":"src_port", "Properties":{"Path":"$.src_port"}},
+  {"Column":"user", "Properties":{"Path":"$.user"}},
+  {"Column":"login_type", "Properties":{"Path":"$.login_type"}},
+  {"Column":"uid", "Properties":{"Path":"$.uid"}},
+  {"Column":"login_successful", "Properties":{"Path":"$.login_successful"}}
+]```
+
+// The superset RELATIONSHIP instances (source -> verb -> target),
+// linking car_* rows by guid — the granular relationship timeline.
+//=============================================================================
+// car_relationships
+//=============================================================================
+.create-merge table car_relationships (
+    ['id']:long,
+    ['timestamp']:datetime,
+    ['source_host']:string,
+    ['relationship']:string,
+    ['source_object']:string,
+    ['source_guid']:string,
+    ['target_object']:string,
+    ['target_guid']:string,
+    ['confidence']:string,
+    ['method']:string
+)
+
+.create-or-alter table car_relationships ingestion json mapping "car_relationshipsMapping"
+```[
+  {"Column":"id", "Properties":{"Path":"$.id"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"relationship", "Properties":{"Path":"$.relationship"}},
+  {"Column":"source_object", "Properties":{"Path":"$.source_object"}},
+  {"Column":"source_guid", "Properties":{"Path":"$.source_guid"}},
+  {"Column":"target_object", "Properties":{"Path":"$.target_object"}},
+  {"Column":"target_guid", "Properties":{"Path":"$.target_guid"}},
+  {"Column":"confidence", "Properties":{"Path":"$.confidence"}},
+  {"Column":"method", "Properties":{"Path":"$.method"}}
+]```
+
+//=============================================================================
+// Views
 //=============================================================================
 .create-or-alter function
-with (docstring = "MITRE CAR 'process' object — roll-up of the per-artefact views", folder = "CAR")
-CarProcess() {
+with (docstring = "Every CAR event across all 13 objects, common header only — the single CAR timeline", folder = "Views")
+Car() {
     union isfuzzy=true
-        CarProcess_Sysmon, CarProcess_Security, CarProcess_Memory,
-        CarProcess_Plaso, CarProcess_Cron
-}
-
-//=============================================================================
-// service — per-artefact (car_data_model.json: command_line, exe, fqdn, hostname,
-// image_path, name, pid, ppid, user). Note: the service binary is image_path
-// (NOT module_path — that is a module/driver-only field).
-//=============================================================================
-
-// Windows 7045 (System) / 4697 (Security) — service installed. The two events name
-// their fields differently: 7045 carries ServiceName/ImagePath/AccountName, 4697
-// carries ServiceName/ServiceFileName/ServiceAccount — coalesce per field.
-// EvtxPayload returns "" (never null) for a missing key, so the fallbacks are
-// iff(isempty(...)), not coalesce(). Channel guard: 7045 lives in System, 4697 in
-// Security; the numbers are reused by other providers, so pin the channels.
-.create-or-alter function
-with (docstring = "CAR 'service' from Windows 7045/4697 (native fields + CAR fields)", folder = "CAR/service")
-CarService_Evtx() {
-    database("host").EvtxEcmdJson
-    | where (EventId == 7045 and Channel has "System")
-         or (EventId == 4697 and Channel has "Security")
-    | extend _img7045 = EvtxPayload(Payload, "ImagePath"),
-             _img4697 = EvtxPayload(Payload, "ServiceFileName"),
-             _acct7045 = EvtxPayload(Payload, "AccountName"),
-             _acct4697 = EvtxPayload(Payload, "ServiceAccount")
-    | extend _img = iff(isempty(_img7045), _img4697, _img7045),
-             _acct = iff(isempty(_acct7045), _acct4697, _acct7045)
-    | extend
-        Timestamp  = TimeCreated,
-        action     = "create",
-        name       = EvtxPayload(Payload, "ServiceName"),
-        image_path = _img,
-        exe        = _img,
-        user       = iff(isempty(_acct), UserName, _acct),
-        hostname   = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn       = iff(Computer contains ".", Computer, "")
-    | project-away _img7045, _img4697, _acct7045, _acct4697, _img, _acct
-}
-
-// Volatility windows.svcscan (memory) — every registered service with its binary
-// and owning PID. svcscan emits THREE binary columns: `Binary` (in-memory SCM
-// image path), `Binary (Registry)` (the registry ImagePath, present when the
-// in-memory one is null — e.g. stopped services), and `Dll` (the hosted DLL for
-// svchost services). Prefer them in that order. State/Start/Type stay native.
-.create-or-alter function
-with (docstring = "CAR 'service' from Volatility svcscan (memory) (native fields + CAR fields)", folder = "CAR/service")
-CarService_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.svcscan"
-    | extend
-        action     = "create",
-        name       = tostring(Record.Name),
-        image_path = tostring(coalesce(Record.Binary, Record.["Binary (Registry)"], Record.Dll)),
-        pid        = tolong(Record.PID)
+        car_authentication, car_driver, car_email, car_file, car_flow, car_http, car_module, car_process, car_registry, car_service, car_socket, car_thread, car_user_session
+    | project car_object, timestamp = todatetime(['timestamp']), car_action, guid,
+              owning_guid, link_confidence, source_artefact, source_host, native
+    | order by timestamp asc
 }
 
 .create-or-alter function
-with (docstring = "MITRE CAR 'service' object — roll-up of the per-artefact views", folder = "CAR")
-CarService() { union isfuzzy=true CarService_Evtx, CarService_Memory }
-
-//=============================================================================
-// file — per-artefact (car_data_model.json: company, creation_time, file_name,
-// file_path, fqdn, hostname, image_path, md5_hash, pid, ppid, previous_creation_time,
-// sha1_hash, sha256_hash, signer, user). actions: timestomp/create/delete/modify/
-// read/write.
-//=============================================================================
-
-// Plaso filesystem (filestat/MFT/UsnJrnl) — MACB timeline. The three artefacts
-// describe files DIFFERENTLY, so each union arm is marked and mapped per source:
-//   filestat — the parsed file IS the file: filename/display_name is the path,
-//              and Plaso's per-file hashes (when hashing was on) are the file's own
-//              hashes -> md5/sha1/sha256_hash.
-//   mft      — Record.filename is the parsed $MFT artefact itself; the file the
-//              entry DESCRIBES is Record.path_hints[0] (else Record.name).
-//   usnjrnl  — every event is stamped "Metadata Modification"; the real action is
-//              in the USN reason bits (FILE_CREATE 0x100 / FILE_DELETE 0x200 take
-//              precedence over the plain modify).
-// action from Plaso's timestamp_desc otherwise; create is tested first so overlaps
-// resolve to it.
-.create-or-alter function
-with (docstring = "CAR 'file' from Plaso filesystem (native fields + CAR fields)", folder = "CAR/file")
-CarFile_Plaso() {
-    union (database("host").L2tFilestat | extend _art = "filestat"),
-          (database("host").L2tMft      | extend _art = "mft"),
-          (database("host").L2tUsnjrnl  | extend _art = "usnjrnl")
-    | extend _td = tostring(Record.timestamp_desc), _fn = tostring(Record.filename), _dn = tostring(Record.display_name),
-             _usn = tolong(Record.update_reason_flags)
-    | extend
-        action    = case(_art == "usnjrnl" and binary_and(_usn, 0x100) != 0, "create",
-                         _art == "usnjrnl" and binary_and(_usn, 0x200) != 0, "delete",
-                         _art == "usnjrnl", "modify",
-                         _td matches regex @"(?i)creation|crtime|birth", "create",
-                         _td matches regex @"(?i)modification|mtime", "modify",
-                         _td matches regex @"(?i)last access|atime", "read",
-                         _td matches regex @"(?i)deletion|deleted", "delete", ""),
-        file_path = case(_art == "mft", coalesce(tostring(Record.path_hints[0]), tostring(Record.name), _fn),
-                         iff(isnotempty(_fn), _fn, replace_regex(_dn, @"^[A-Z0-9]+:", ""))),
-        // filestat only: the parsed file is the file, so its hashes are canonical.
-        // For mft/usnjrnl any hash would be the $MFT/$UsnJrnl artefact's own — omitted.
-        md5_hash    = iff(_art == "filestat", tostring(Record.md5_hash), ""),
-        sha1_hash   = iff(_art == "filestat", tostring(Record.sha1_hash), ""),
-        sha256_hash = iff(_art == "filestat", tostring(Record.sha256_hash), ""),
-        hostname  = tostring(Record.image_hostname),
-        user      = tostring(Record.username),
-        SourceFile = SourceImage    // per-artefact identity for the roll-up
-    | extend
-        file_name     = replace_regex(file_path, @"^.*[\\/]", ""),
-        creation_time = iff(action == "create", Timestamp, datetime(null))
-    | project-away _td, _fn, _dn, _usn, _art
+with (docstring = "Row counts per CAR object table", folder = "Views")
+CarObjects() {
+    Car()
+    | summarize Events = count() by car_object
+    | order by Events desc
 }
 
-// Sysmon 11 (FileCreate) / 23 (FileDelete) — file activity with the creating
-// process image and user. TargetFilename->file_path, Image->image_path, ProcessId->pid.
-.create-or-alter function
-with (docstring = "CAR 'file' from Sysmon 11/23 (native fields + CAR fields)", folder = "CAR/file")
-CarFile_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId in (11, 23)
-    | extend _target = EvtxPayload(Payload, "TargetFilename"), _hashes = EvtxPayload(Payload, "Hashes")
-    | extend
-        Timestamp     = TimeCreated,
-        action        = iff(EventId == 11, "create", "delete"),
-        file_name     = replace_regex(_target, @"^.*[\\/]", ""),
-        file_path     = _target,
-        image_path    = EvtxPayload(Payload, "Image"),
-        pid           = tolong(EvtxPayload(Payload, "ProcessId")),
-        user          = EvtxPayload(Payload, "User"),
-        // Sysmon 23 (FileDelete) carries the deleted file's Hashes — extract them
-        // into the canonical file hash fields, as CarProcess/Module/Driver do.
-        md5_hash      = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
-        sha1_hash     = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
-        sha256_hash   = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
-        hostname      = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn          = iff(Computer contains ".", Computer, ""),
-        creation_time = iff(EventId == 11, TimeCreated, datetime(null))
-    | project-away _target, _hashes
-}
-
-// Volatility windows.filescan (memory) — FILE_OBJECTs resident at capture (incl.
-// files deleted from disk but still in RAM). No MACB/process context and no
-// canonical action fits "was resident", so action is empty — the row is a file
-// OBSERVATION (path/name). Name stays native.
-.create-or-alter function
-with (docstring = "CAR 'file' from Volatility filescan (memory) (native fields + CAR fields)", folder = "CAR/file")
-CarFile_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.filescan"
-    | extend _fp = tostring(Record.Name)
-    | where isnotempty(_fp)
-    | extend
-        action    = "",
-        file_path = _fp,
-        file_name = replace_regex(_fp, @"^.*[\\/]", "")
-    | project-away _fp
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'file' object — roll-up of the per-artefact views", folder = "CAR")
-CarFile() { union isfuzzy=true CarFile_Plaso, CarFile_Sysmon, CarFile_Memory }
-
-//=============================================================================
-// registry — per-artefact (car_data_model.json: data, fqdn, hive, hostname,
-// image_path, key, pid, type, user, value). actions: add/edit/remove.
-//=============================================================================
-
-
-// Sysmon 12 (key add/delete), 13 (value set), 14 (rename) — the CHANGE as it
-// happens, so action is canonical from EventType (add/remove/edit).
-.create-or-alter function
-with (docstring = "CAR 'registry' from Sysmon 12/13/14 (native fields + CAR fields)", folder = "CAR/registry")
-CarRegistry_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId in (12, 13, 14)
-    | extend _etype = EvtxPayload(Payload, "EventType"), _target = EvtxPayload(Payload, "TargetObject")
-    | extend
-        Timestamp  = TimeCreated,
-        action     = case(_etype contains "Delete", "remove", _etype contains "Create", "add",
-                         _etype contains "Set", "edit", _etype contains "Rename", "edit", "edit"),
-        key        = _target,
-        value      = iff(EventId == 13, replace_regex(_target, @"^.*\\", ""), ""),
-        data       = EvtxPayload(Payload, "Details"),
-        type       = "",
-        hive       = "",
-        image_path = EvtxPayload(Payload, "Image"),
-        pid        = tolong(EvtxPayload(Payload, "ProcessId")),
-        user       = EvtxPayload(Payload, "User"),
-        hostname   = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn       = iff(Computer contains ".", Computer, "")
-    | project-away _etype, _target
-}
-
-// the hives resident in RAM. Snapshot -> action "edit". user recovered from the
-// per-user hive path.
-.create-or-alter function
-with (docstring = "CAR 'registry' from Volatility windows.piiat.registry (memory) (native fields + CAR fields)", folder = "CAR/registry")
-CarRegistry_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.piiat.registry"
-    | extend
-        Timestamp  = todatetime(Record.LastWrite),
-        action     = "edit",
-        key        = tostring(Record.Key),
-        value      = tostring(Record.ValueName),
-        data       = tostring(Record.ValueData),
-        type       = tostring(Record.ValueType),
-        hive       = tostring(Record.Hive),
-        user       = extract(@"(?i)(?:Documents and Settings|Users)\\([^\\]+)\\", 1, tostring(Record.Hive))
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'registry' object — roll-up of the per-artefact views", folder = "CAR")
-CarRegistry() { union isfuzzy=true CarRegistry_Sysmon, CarRegistry_Memory }
-
-//=============================================================================
-// module — per-artefact (car_data_model.json: base_address, fqdn, hostname,
-// image_path, md5_hash, module_name, module_path, pid, sha1_hash, sha256_hash,
-// signer, tid). actions: load/unload.
-//=============================================================================
-
-// Sysmon 7 (Image loaded) — ImageLoaded is the module (module_path), Image is the
-// loading process (image_path). Hashes split into md5/sha1/sha256_hash; Signature
-// -> signer. Signed/SignatureStatus stay native in Payload.
-.create-or-alter function
-with (docstring = "CAR 'module' from Sysmon 7 (native fields + CAR fields)", folder = "CAR/module")
-CarModule_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 7
-    | extend _loaded = EvtxPayload(Payload, "ImageLoaded"), _hashes = EvtxPayload(Payload, "Hashes")
-    | extend
-        Timestamp   = TimeCreated,
-        action      = "load",
-        module_path = _loaded,
-        module_name = replace_regex(_loaded, @"^.*[\\/]", ""),
-        image_path  = EvtxPayload(Payload, "Image"),
-        pid         = tolong(EvtxPayload(Payload, "ProcessId")),
-        md5_hash    = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
-        sha1_hash   = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
-        sha256_hash = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
-        signer      = EvtxPayload(Payload, "Signature"),
-        hostname    = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn        = iff(Computer contains ".", Computer, "")
-    | project-away _loaded, _hashes
-}
-
-// Volatility windows.dlllist (memory) — every module mapped into each live process
-// with its base address and load time. Path->module_path, Process->image_path.
-.create-or-alter function
-with (docstring = "CAR 'module' from Volatility dlllist (memory) (native fields + CAR fields)", folder = "CAR/module")
-CarModule_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.dlllist"
-    | extend
-        Timestamp    = todatetime(Record.LoadTime),
-        action       = "load",
-        module_name  = tostring(Record.Name),
-        module_path  = tostring(Record.Path),
-        image_path   = tostring(Record.Process),
-        pid          = tolong(Record.PID),
-        // REPRESENTATION NOTE: Volatility 3 serialises Hex renderers as plain ints,
-        // so base_address is DECIMAL ("1213726720") while Sysmon's is 0x-hex
-        // ("0x00060000"). NOT normalised to hex here: x64 kernel addresses
-        // (0xFFFFF800...) exceed int64, so tohex(tolong(...)) would null exactly
-        // the rows that matter. Compare across sources via tolong()/parse.
-        base_address = tostring(Record.Base)
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'module' object — roll-up of the per-artefact views", folder = "CAR")
-CarModule() { union isfuzzy=true CarModule_Sysmon, CarModule_Memory }
-
-//=============================================================================
-// driver — per-artefact (car_data_model.json: base_address, fqdn, hostname,
-// image_path, md5_hash, module_name, sha1_hash, sha256_hash, signer). A driver
-// loads into the kernel, so ImageLoaded IS image_path (driver has no module_path).
-//=============================================================================
-
-// Sysmon 6 (Driver loaded) — the signature fields are the point (unsigned driver =
-// BYOVD tell). ImageLoaded->image_path, Hashes split, Signature->signer.
-.create-or-alter function
-with (docstring = "CAR 'driver' from Sysmon 6 (native fields + CAR fields)", folder = "CAR/driver")
-CarDriver_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 6
-    | extend _loaded = EvtxPayload(Payload, "ImageLoaded"), _hashes = EvtxPayload(Payload, "Hashes")
-    | extend
-        Timestamp   = TimeCreated,
-        action      = "load",
-        module_name = replace_regex(_loaded, @"^.*[\\/]", ""),
-        image_path  = _loaded,
-        md5_hash    = extract(@"(?i)\bMD5=([0-9A-Fa-f]+)", 1, _hashes),
-        sha1_hash   = extract(@"(?i)\bSHA1=([0-9A-Fa-f]+)", 1, _hashes),
-        sha256_hash = extract(@"(?i)\bSHA256=([0-9A-Fa-f]+)", 1, _hashes),
-        signer      = EvtxPayload(Payload, "Signature"),
-        hostname    = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer),
-        fqdn        = iff(Computer contains ".", Computer, "")
-    | project-away _loaded, _hashes
-}
-
-// Volatility windows.modules (memory) — loaded kernel modules/drivers with base
-// address. Path->image_path (the driver binary), no load time in the module list.
-.create-or-alter function
-with (docstring = "CAR 'driver' from Volatility modules (memory) (native fields + CAR fields)", folder = "CAR/driver")
-CarDriver_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.modules"
-    | extend
-        action       = "load",
-        module_name  = tostring(Record.Name),
-        image_path   = tostring(Record.Path),
-        base_address = tostring(Record.Base)   // decimal, not 0x-hex — see CarModule_Memory note
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'driver' object — roll-up of the per-artefact views", folder = "CAR")
-CarDriver() { union isfuzzy=true CarDriver_Sysmon, CarDriver_Memory }
-
-//=============================================================================
-// thread — per-artefact (car_data_model.json: hostname, src_pid, src_tid,
-// stack_base, stack_limit, start_address, start_function, start_module,
-// start_module_name, subprocess_tag, tgt_pid, tgt_tid, user, user_stack_base,
-// user_stack_limit). actions: create/suspend/terminate/remote_create.
-//=============================================================================
-
-// Sysmon 8 (CreateRemoteThread) — cross-process injection: Source creates a thread
-// in Target. action "remote_create". Source/TargetImage are not CAR thread fields
-// (thread has no image), so they stay native in Payload; the CAR mapping is the
-// src/tgt pids, the new tid and the start address/module.
-.create-or-alter function
-with (docstring = "CAR 'thread' from Sysmon 8 (native fields + CAR fields)", folder = "CAR/thread")
-CarThread_Sysmon() {
-    database("host").EvtxEcmdJson
-    | where Provider matches regex @"(?i)sysmon" and EventId == 8
-    | extend _sm = EvtxPayload(Payload, "StartModule")
-    | extend
-        Timestamp         = TimeCreated,
-        action            = "remote_create",
-        src_pid           = tolong(EvtxPayload(Payload, "SourceProcessId")),
-        tgt_pid           = tolong(EvtxPayload(Payload, "TargetProcessId")),
-        tgt_tid           = tolong(EvtxPayload(Payload, "NewThreadId")),
-        start_address     = EvtxPayload(Payload, "StartAddress"),
-        start_module      = _sm,
-        start_module_name = replace_regex(_sm, @"^.*[\\/]", ""),
-        start_function    = EvtxPayload(Payload, "StartFunction"),
-        hostname          = iff(Computer contains ".", tostring(split(Computer, ".")[0]), Computer)
-    | project-away _sm
-}
-
-// Volatility windows.thrdscan (memory) — every thread with its owning process (PID
-// -> tgt_pid), TID, create time and Win32 start address/path. Owner view, so src_*
-// is empty; a start address with no backing Win32StartPath is the injection tell.
-.create-or-alter function
-with (docstring = "CAR 'thread' from Volatility thrdscan (memory) (native fields + CAR fields)", folder = "CAR/thread")
-CarThread_Memory() {
-    database("memory").VolatilityJson
-    | where Plugin == "windows.thrdscan"
-    | extend _sm = tostring(coalesce(Record.Win32StartPath, Record.StartPath))
-    | extend
-        Timestamp         = todatetime(Record.CreateTime),
-        // thrdscan surfaces exited threads too (ExitTime set) — those are a
-        // terminate, not a create.
-        action            = iff(isnotempty(tostring(Record.ExitTime)), "terminate", "create"),
-        tgt_pid           = tolong(Record.PID),
-        tgt_tid           = tolong(Record.TID),
-        start_address     = tostring(Record.Win32StartAddress),   // decimal, not 0x-hex — see CarModule_Memory note
-        start_module      = _sm,
-        start_module_name = replace_regex(_sm, @"^.*[\\/]", "")
-    | project-away _sm
-}
-
-.create-or-alter function
-with (docstring = "MITRE CAR 'thread' object — roll-up of the per-artefact views", folder = "CAR")
-CarThread() { union isfuzzy=true CarThread_Sysmon, CarThread_Memory }
-
-//=============================================================================
-// CarCoverage — which objects actually have data.
-//
-// The equivalent of `| tstats count FROM datamodel=MITRE_CAR BY nodename` on
-// the Splunk era. Run this first after ingesting: an object that should be
-// populated and is not means the mapping is wrong, not that the model is.
-//
-// All nine objects now have a source and count real rows: driver, module and
-// thread from Sysmon (events 6/7/8), the other six as before. An object that
-// should be populated and shows 0 means the mapping is wrong (or that source
-// was not ingested), not that the model is — e.g. driver/module/thread show 0
-// on a host with no Sysmon, which is expected, not a defect.
-//=============================================================================
-.create-or-alter function
-with (docstring = "Row counts per CAR object (all nine are sourced)", folder = "CAR")
-CarCoverage() {
-    union
-        (CarFlow()        | summarize Rows = count() | extend Object = "flow"),
-        (CarUserSession() | summarize Rows = count() | extend Object = "user_session"),
-        (CarProcess()     | summarize Rows = count() | extend Object = "process"),
-        (CarService()     | summarize Rows = count() | extend Object = "service"),
-        (CarFile()        | summarize Rows = count() | extend Object = "file"),
-        (CarRegistry()    | summarize Rows = count() | extend Object = "registry"),
-        (CarDriver()      | summarize Rows = count() | extend Object = "driver"),
-        (CarModule()      | summarize Rows = count() | extend Object = "module"),
-        (CarThread()      | summarize Rows = count() | extend Object = "thread")
-    | project Object, Rows
-    | order by Rows desc
-}

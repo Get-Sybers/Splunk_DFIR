@@ -1,8 +1,8 @@
 # The DX_DFIR CAR pipeline — how it works
 
-*Epic: [Get-Sybers/DX_DFIR#86](https://github.com/Get-Sybers/DX_DFIR/issues/86).
-Companion docs: `CAR-Relations.md` (per-object identity/join/inheritance/limit
-rules) and `car_data_model.json` (the authoritative MITRE model).*
+*Companion docs: [CAR-Relations.md](CAR-Relations.md) (per-object
+identity/join/inheritance/limit rules), [CAR-Extraction-Rules.md](CAR-Extraction-Rules.md)
+(the extraction principles) and [Kusto-Port.md](Kusto-Port.md) (the ADX backend).*
 
 ## 1. What it is
 
@@ -40,14 +40,21 @@ source is a coherent evidence set:
 
 No source ever depends on another being present, and nothing is mixed.
 Cross-source ("final") enrichment is a **separate, optional end-stage** over the
-aggregate — never part of the per-source product (see §9, still to build).
+aggregate — never part of the per-source product (see §9).
 
 Run it:
 
 ```
-python -m get_sybers_dfir.mitrecar --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]
-# → <dir>/car.db  +  <dir>/car_<object>.jsonl   (one JSONL per populated object)
+dxdfir build-car                              # batch: build every source under data_store/processed/
+dxdfir build-car --rebuild                    # re-derive existing stores too (after a map/coverage change)
+dxdfir build-car --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]   # one source
+# → <dir>/car.db + <dir>/superset.db + <dir>/car_<object>.jsonl (one JSONL per populated object)
 ```
+
+A source whose `car.db` already exists is left as-is; `--rebuild` re-derives it,
+which is required after new maps land or the existing (stale) stores would keep
+skipping the newly-covered events. (`dxdfir build-car` fronts the same engine as
+`python -m get_sybers_dfir.mitrecar`.)
 
 ## 3. Components (the vendored `third_party/piiat-mitrecar` submodule)
 
@@ -169,19 +176,15 @@ wording that grounds each — are in `CAR-Relations.md`.
 
 ## 8. Output contract (JSON → ADX)
 
-`store.export_jsonl()` writes one `car_<object>.jsonl` per populated object; each
-line is a flat CAR event (`native` as a JSON object for a dynamic column). ADX
-ingests these as **new `mitre.car_*` tables**, additive — the existing raw tables
-(`host.EvtxEcmdJson`, `memory.VolatilityJson`, `network.ZeekConn`, …) are
-untouched. This is the "minimise changing what's built" contract: add CAR
-tables + repoint the public `Car<Object>()` functions at them.
+`store.export_jsonl()` writes one `car_<object>.jsonl` per populated object (plus
+`car_relationships.jsonl` for the superset edges); each line is a flat CAR event
+(`native` as a JSON object for a dynamic column). `dxdfir ingest --only car` loads
+these as the materialized `mitre.car_*` tables — the JSON is the ADX contract, and
+the table schemas are generated from the engine model so they cannot drift (see
+[Kusto-Port.md](Kusto-Port.md)).
 
-## 9. What is NOT done yet
+## 9. Cross-source correlation (deferred)
 
-See epic #86 for the tracked, detailed plan. In short: the CAR stage is
-**standalone** (not yet wired into the ingest lane/CLI); the **ADX
-materialization** (car_* tables + mappings, and collapsing the 1056-line
-query-time `40-mitre.kql` to read them) is not built; **cross-source final
-enrichment** is deferred behind a capability-determination + data-assessment
-pass; **SRUM/RECmd** is parked pending real output; and a **payload-parse cache**
-is a known perf item.
+Correlating across the per-source `car.db`s (memory + disk + network) is an
+optional, later aggregate stage that never mixes into the per-source products —
+see [CAR-CrossSource.md](CAR-CrossSource.md).

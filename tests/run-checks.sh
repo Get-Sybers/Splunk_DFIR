@@ -269,13 +269,17 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
     # "ZeekConn", so deriving one from the other would mis-pair them. The column
     # regex allows digits ([A-Za-z_][A-Za-z0-9_]*) so PayloadData1..6 count.
     _phantom=""
-    for _pair in "ZeekConn:ZeekConnMapping" "Zeek:ZeekJsonMapping" \
-                 "EvtxEcmdJson:EvtxEcmdJsonMapping" \
-                 "VelociraptorJson:VelociraptorJsonMapping"; do
+    # The raw source tables, plus every materialized CAR table (mitre.car_<object>,
+    # whose mapping is always <table>Mapping). Velociraptor is gone (lane removed).
+    _pairs="ZeekConn:ZeekConnMapping Zeek:ZeekJsonMapping EvtxEcmdJson:EvtxEcmdJsonMapping"
+    _pairs="$_pairs $(grep -oE 'create-merge table car_[a-z_]+' kusto/schema/40-mitre.kql 2>/dev/null \
+        | sed 's/create-merge table //' | while read -r _t; do printf '%s:%sMapping ' "$_t" "$_t"; done)"
+    for _pair in $_pairs; do
         _tbl=${_pair%%:*}; _map=${_pair##*:}
         _f=$(grep -l "create-merge table $_tbl " kusto/schema/*.kql 2>/dev/null | head -1)
         [[ -n "$_f" ]] || continue
-        _ncol=$(sed -n "/create-merge table $_tbl (/,/^)/p" "$_f" | grep -cE '^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*:')
+        # count columns — bare (col:) AND bracket-quoted (['col']:) — vs mapping entries
+        _ncol=$(sed -n "/create-merge table $_tbl (/,/^)/p" "$_f" | grep -cE "^[[:space:]]+\[?'?[A-Za-z_][A-Za-z0-9_]*'?\]?:")
         _nmap=$(sed -n "/ingestion .* mapping \"$_map\"/,/\]\`\`\`/p" "$_f" | grep -cE '"Ordinal"|"Path"')
         [[ "$_ncol" -eq "$_nmap" ]] || _phantom="$_phantom $_tbl($_ncol cols/$_nmap mapped)"
     done
@@ -304,32 +308,27 @@ if [[ ! -d kusto/schema ]]; then fail "kusto/schema is missing"; else
         fi
     fi
 
-    # CAR coverage, PINNED. Swapping which CAR object has a source is
-    # structurally legal KQL, so it would regress silently. The contract: all
-    # nine objects are sourced now — the six dead-box/agent objects plus
-    # driver/module/thread from Sysmon (events 6/7/8) — each has its Car<Object>()
-    # function in 40-mitre.kql, and every pinned name exists in MITRE's own
-    # car_data_model.json, so the model file stays load-bearing, not decorative.
-    # Change the set deliberately, updating docs/Kusto-Port.md coverage with it.
-    _car_missing=$(python3 - <<'PY' 2>/dev/null
-import json
-objs = {o['name'][0] for o in json.load(open('car_data_model.json'))['objects']}
-pinned = {'flow', 'user_session', 'process', 'service', 'file', 'registry',
-          'driver', 'module', 'thread'}
-print(' '.join(sorted(pinned - objs)))
-PY
-)
+    # CAR coverage, PINNED. CAR is MATERIALIZED (epic #86): the engine normalises
+    # each source to car_<object>.jsonl and 40-mitre.kql is exactly the 13
+    # mitre.car_<object> tables that ingest it, plus Car()/CarObjects(). A dropped
+    # table would regress coverage silently, so the object set is pinned to the 13
+    # CAR objects; change it deliberately, updating docs/Kusto-Port.md with it.
+    _car_missing=""
+    for _o in authentication driver email file flow http module process \
+              registry service socket thread user_session; do
+        grep -q "create-merge table car_${_o} " kusto/schema/40-mitre.kql 2>/dev/null \
+            || _car_missing="$_car_missing car_${_o}"
+    done
     if [[ -z "$_car_missing" ]]; then
-        pass "all nine sourced CAR objects exist in MITRE's model"
+        pass "40-mitre.kql defines all 13 materialized CAR object tables"
     else
-        fail "pinned CAR object(s) not in car_data_model.json:$_car_missing"
+        fail "40-mitre.kql missing CAR table(s):$_car_missing — coverage regressed"
     fi
-    for _fn in CarFlow CarUserSession CarProcess CarService CarFile CarRegistry \
-               CarDriver CarModule CarThread CarCoverage; do
-        if grep -q "^${_fn}()" kusto/schema/40-mitre.kql 2>/dev/null; then
+    for _fn in Car CarObjects; do
+        if grep -qE "^${_fn}\(\)" kusto/schema/40-mitre.kql 2>/dev/null; then
             pass "40-mitre.kql defines ${_fn}()"
         else
-            fail "40-mitre.kql lost ${_fn}() — CAR coverage regressed"
+            fail "40-mitre.kql lost ${_fn}() — CAR view regressed"
         fi
     done
 fi
@@ -571,11 +570,14 @@ for md in sorted(root.rglob("*.md")):
     rel = str(md.relative_to(root))
     # Skip VCS internals, evidence corpora — data_store/ holds raw and
     # processed forensic samples (whole disk images, vendored OS docs), whose
-    # internal links are not this project's documentation to validate — and
-    # third-party caches (ansible-lint installs the collection's pinned deps
-    # under .ansible/; their changelogs are not ours to validate).
+    # internal links are not this project's documentation to validate — third-
+    # party caches (ansible-lint installs the collection's pinned deps under
+    # .ansible/), and the vendored submodules under third_party/ (the CAR engine
+    # and its own pinned car / attack-datasources repos: MITRE's analytic docs
+    # use website-absolute links like /data_model/flow, not ours to validate).
     if ".git/" in str(md) or rel.startswith("data_store/"): continue
     if "/.ansible/" in str(md) or rel.startswith(".ansible/"): continue
+    if rel.startswith("third_party/") or "/third_party/" in str(md): continue
     for m in lr.finditer(md.read_text(errors="ignore")):
         t = m.group(1).split("#")[0].strip()
         if not t or t.startswith(("http://", "https://", "mailto:")): continue

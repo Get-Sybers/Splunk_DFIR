@@ -1,4 +1,4 @@
-# CAR relations — identity, joins, inheritance, limits (epic #86)
+# CAR relations — identity, joins, inheritance, limits
 
 The relational discipline of PIIAT-Mem's `car-store.md` §3, applied to the CAR
 objects the **memory artefact cannot supply** — determined from MITRE's own doc
@@ -133,36 +133,33 @@ hand is STARTTLS-encrypted — an empty `car_email` table is the honest output.
   Regression-tested against CAR's true-positive telemetry (`tests/
   test_true_positives.py`, CreateRemoteThread guid cascade).
 
-## Additional inference rules discovered from ingested data (epic #86, Phase C)
+## Within-source inference rules
 
-Phase C mines the REAL per-source stores for within-source join keys the cascade
-does not yet exploit. Every rule below is **within one `car.db`** (per-source,
-scoped per `source_host`); each is grounded in a measured key in the ingested
-evidence. R1–R3, R5 and R6 are now **implemented** in `enrich.py` +
-`relationships.yml` and verified against the real stores (link counts in the
-status column). Cross-source correlation (memory + disk + network) is a separate
-very-end stage — see `docs/CAR-CrossSource.md` — and is out of Phase C scope.
+These rules mine each per-source `car.db` for join keys the base cascade does not
+already exploit. Every rule is **within one `car.db`** (scoped per `source_host`)
+and grounded in a concrete key in the evidence, implemented in `enrich.py` +
+`relationships.yml`. Cross-source correlation (memory + disk + network) is a
+separate stage — see [CAR-CrossSource.md](CAR-CrossSource.md).
 
 The CAR model has no session/process `end_time` field, so R1/R2 surface the
 lifetime in `_native` (never a fabricated column); R2's real gain is
 **window-bounding** — a pid-reuse match now rejects an owner that had already
 terminated (`enrich._alive_at`), improving owner/parent link correctness.
 
-| # | rule | join key (tier) | fills | status (measured) |
-|---|---|---|---|---|
-| R1 | **user_session lifecycle** — pair logout→login, close the session | TS id24 by `SessionID`; Security 4634 by `TargetLogonId` LUID (definitive within window; well-known LUID heuristic) | `_native.session_login_guid` / `session_logout_guid` / `session_end` | **implemented** — lonewolf: 49/49 logouts paired, 49 logins closed |
-| R2 | **process lifetime bounding** — index terminate/exit; reject a pid-owner that had already exited before the spoke ts | ProcessGuid (definitive) / pid+window (heuristic) | tightens owner/parent pid-window (`_alive_at`) | **implemented** — Sysmon 3 exits indexed; owner links held 7/7, no regressions |
-| R3 | **zeek uid spoke→flow** — link each http/file to its connection | `uid` (definitive within capture); `fuid` = file identity | http/file inherit `from_owning_flow` (requester_ip, hostname); `_native.flow_guid` | **implemented** — exterior: 1309/1309 http + 1232/1232 file linked; requester_ip 1309/1309 |
-| R5 | **thread injection dual-link** — link BOTH source and target process | source + target ProcessGuid (both native, definitive) | owner = source; `_native.target_process_guid` = injected target | **implemented** — Sysmon 3/3 threads dual-linked |
-| R6 | **auth caller-process owner** — link an auth to the process that requested it | 4624/4625 Payload `ProcessId` → owning_pid (heuristic pid+window) | auth `owning_guid` (previously auth linked only to its *session* via LUID) | **implemented** — lonewolf: 692/1616 auths owner-linked (honest null for System/network logons) |
-| R4 | **BITS transfer correlation** — assemble one transfer from its events | `transferId` GUID (definitive) | final bytes/URL, completion; owner from the BITS job-created event's process | candidate — lonewolf: id59 ×114 + id60 ×101, 114 distinct `transferId`; **13 never completed = interrupted (signal)** |
-| R7 | **service→process by image** (weak) — link a 7045 install to a run of its binary | 7045 `ImagePath` ↔ 4688 `NewProcessName` exe+window (heuristic) | service `owning_guid` | optional — low confidence: install time ≠ run time; SCM (not the installer) starts it |
+| # | rule | join key (tier) | fills |
+|---|---|---|---|
+| R1 | **user_session lifecycle** — pair logout→login, close the session | TS id24 by `SessionID`; Security 4634 by `TargetLogonId` LUID (definitive within window; well-known LUID heuristic) | `_native.session_login_guid` / `session_logout_guid` / `session_end` |
+| R2 | **process lifetime bounding** — index terminate/exit; reject a pid-owner that had already exited before the spoke ts | ProcessGuid (definitive) / pid+window (heuristic) | tightens owner/parent pid-window (`_alive_at`) |
+| R3 | **zeek uid spoke→flow** — link each http/file to its connection | `uid` (definitive within capture); `fuid` = file identity | http/file inherit `from_owning_flow` (requester_ip, hostname); `_native.flow_guid` |
+| R5 | **thread injection dual-link** — link BOTH source and target process | source + target ProcessGuid (both native, definitive) | owner = source; `_native.target_process_guid` = injected target |
+| R6 | **auth caller-process owner** — link an auth to the process that requested it | 4624/4625 Payload `ProcessId` → owning_pid (heuristic pid+window) | auth `owning_guid` (previously auth linked only to its *session* via LUID) |
+| R4 | **BITS transfer correlation** — assemble one transfer from its events | `transferId` GUID (definitive) | final bytes/URL, completion; owner from the BITS job-created event's process |
+| R7 | **service→process by image** (weak) — link a 7045 install to a run of its binary | 7045 `ImagePath` ↔ 4688 `NewProcessName` exe+window (heuristic) | service `owning_guid` |
 
-**Deferred to the very-end aggregate stage (NOT Phase C — different `car.db`s):**
-service↔registry service-key writes (evtx and registry are *separate* sources),
-the WIN-1M3263ACE5D↔DESKTOP-PM6C56D rename lineage (a host-identity call — one
-box renamed, seen in one store but a cross-scope decision), and any
-`community_id` zeek↔host-flow bridge.
+**Deferred to the cross-source aggregate stage (different `car.db`s):**
+service↔registry service-key writes (evtx and registry are separate sources),
+host-rename lineage (a host-identity call across scopes), and any `community_id`
+zeek↔host-flow bridge.
 
 ### Coverage pass — ingest more event-log + registry CAR content
 

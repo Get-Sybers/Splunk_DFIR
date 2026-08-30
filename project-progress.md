@@ -58,34 +58,15 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
 | [Zimmerman](https://github.com/EricZimmerman)                 | (via Velociraptor) |            |              |               |
 
-**All nine CAR objects now run against a live emulator.** The MITRE CAR data
-model is expressed as KQL functions in the `mitre` database — `CarFlow()`,
-`CarUserSession()`, `CarProcess()`, `CarService()`, `CarFile()`, `CarRegistry()`,
-`CarDriver()`, `CarModule()`, `CarThread()`, with `CarCoverage()` reporting what
-has data. The three that were empty for so long — `driver`, `module`, `thread` —
-are now sourced from **Sysmon** (Microsoft-Windows-Sysmon/Operational events
-6/7/8), which lands in `host.EvtxEcmdJson` through the same EvtxECmd path as the
-Security log. Sysmon also strengthens `process` (event 1/5, full pid/ppid/command
-line), `flow` (3), `registry` (12/13/14) and `file` (11/23). On the live engine
-`CarCoverage()` returned real rows for **all nine** objects — see
-[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
-
-**The CAR layer has since been refactored into per-artefact views.** Each object
-is now built as one view per artefact — `Car<Object>_<Artefact>()` (e.g.
-`CarProcess_Sysmon`, `CarProcess_Memory`, `CarRegistry_Recmd`) — that keeps the
-source table's native fields and *adds* the canonical CAR fields; the public
-`CarX()` is a `union isfuzzy` roll-up. Every artefact fills every canonical field
-it can supply, strict to `car_data_model.json`. See
-[docs/CAR-Extraction-Rules.md](/docs/CAR-Extraction-Rules.md) and #43.
-
-**What the live run still does not cover.** Plaso was run for real, but only on
-filesystem test images — a Windows image (for `CarProcess`-from-Plaso via
-Prefetch/Amcache) has not been run. The Zeek, EvtxECmd and Sysmon **engines**
-could not run here (egress policy blocks the `zeek/zeek` image and there is no
-standalone `.evtx`/Sysmon log in the corpus), so their ingest/mapping/CAR paths
-were proven with format-accurate fixtures against the live engine rather than
-live tool output. The remaining runtime checklist is
-[issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
+**CAR is materialized.** The engine (PIIAT-MitreCar) normalises each evidence
+source into finished CAR events; the pipeline ingests one `car_<object>.jsonl`
+per object as the 13 `mitre.car_<object>` tables plus `car_relationships` (the
+superset relationship edges). `Car()` unions the objects into one timeline;
+`CarObjects()` counts them. Extraction happens once, in the engine, so KQL just
+stores the result — the table schemas are generated from the engine model and
+cannot drift. `dxdfir build-car` produces the stores; `dxdfir ingest --only car`
+loads them. See [docs/CAR-Pipeline.md](/docs/CAR-Pipeline.md) and
+[docs/CAR-Extraction-Rules.md](/docs/CAR-Extraction-Rules.md).
 
 ---
 
@@ -93,12 +74,6 @@ live tool output. The remaining runtime checklist is
 
 Things that are broken or unsafe right now.
 
-- **No pipeline tests.** `tests/run-checks.sh` runs the static and behavioural
-  repo checks in CI, but nothing exercises the actual pipeline. Until
-  something does, every ✅ on this board is still a claim rather than a
-  result. Highest-value next step.
-- **Nothing has touched a real emulator.** Deploy, schema, ingestion and the
-  CAR functions are verified against fakes and fixtures only.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
   on `data_store/` to work around Docker UID mismatches. Don't run on a shared
   host.
@@ -213,9 +188,7 @@ with `ZeekLog()`/`ZeekDns()`/`ZeekHttp()`/`ZeekSsl()` views. Validated live.
 ### First run against a live Kusto emulator — *the blocker, broken*
 ✅ Deploy → apply → ingest → `CarCoverage()` executed end-to-end on the real
 `kustainer-linux` engine, with data processed from the Digital Corpora sample
-URLs. Five of nine CAR objects returned real rows. Full write-up, including the
-field/source-type breakdown, in
-[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+URLs. Five of nine CAR objects returned real rows.
 ✅ Processed three real `.E01` images with Plaso (`psteal --output-format
 dynamic`) — 1240 filesystem events. Confirmed the 23-field CSV header order
 matches the `L2tCsvMapping` ordinals, the `datetime` field parses with zero
@@ -244,8 +217,7 @@ History Database" and the real `fseventsd` `MacOS File System Events`
 source types correctly do **not** map to a CAR object (CAR's objects are
 host dead-box: file/process/flow/…); they're queried directly by `SourceLong`.
 Full Android/macOS *disk images* (5–48 GB) exceed the working disk here; the
-real artefact formats were parsed instead. See
-[docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
+real artefact formats were parsed instead.
 
 ### The pivot: Splunk → Data Explorer emulator
 ✅ Ported the SIEM layer to the Kusto emulator — 5 databases, typed tables and

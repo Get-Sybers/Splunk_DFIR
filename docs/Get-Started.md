@@ -128,9 +128,9 @@ dxdfir ingest
   into per-parser `host.L2t<Parser>` tables, EvtxECmd JSON → `host.EvtxEcmdJson`,
   Zeek `conn` → `network.ZeekConn` (every other Zeek log → the generic
   `network.Zeek`), and Volatility JSONL → `memory.VolatilityJson`.
-- What's still partial is the **upstream** collection path for the EZ-tool
-  artefacts (SRUM, registry) — the hardened EZ containers exist; the
-  extraction+run lane is tracked on epic #86.
+- The materialized CAR loads separately: `dxdfir build-car` normalises the
+  processed output into per-source CAR stores and `dxdfir ingest --only car`
+  loads them into the `mitre.car_*` tables.
 - An in-DB ledger makes re-runs idempotent (already-loaded files are skipped;
   `--force` re-ingests). The ledger lives in the ephemeral database, so a
   redeploy resets ledger and data together.
@@ -146,13 +146,14 @@ on Windows), or drive it with `curl` — the deploy banner prints the endpoints.
 Start in the `mitre` database:
 
 ```kusto
-CarCoverage()          // which CAR objects have data right now
-CarProcess() | take 50
-CarFlow() | where dest_port == 445
+CarObjects()                          // which CAR objects have data right now
+car_process | take 50
+car_flow | where dest_port == "445"   // columns are strings; cast where needed
+Car() | take 100                      // every object on one timeline
+car_relationships | take 50           // the superset relationship edges
 ```
 
 ---
 
 For detailed script usage, refer to the [📜 Scripts Overview](/docs/scripts/Scripts-Overview.md).
-The design, the schema layout, and what is deliberately not done yet:
-[docs/Kusto-Port.md](/docs/Kusto-Port.md).
+The backend design and schema layout: [docs/Kusto-Port.md](/docs/Kusto-Port.md).

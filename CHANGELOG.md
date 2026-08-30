@@ -7,6 +7,20 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Added
+- Materialized MITRE CAR: the engine (PIIAT-MitreCar) normalises each source to `car_<object>.jsonl`, ingested as the 13 `mitre.car_*` tables + `car_relationships`, with `Car()`/`CarObjects()` views.
+- `dxdfir build-car` (build the per-source CAR stores) and `dxdfir car-timeline` (one property-rich, time-ordered timeline from car.db + superset.db).
+- `dxdfir ingest --only car` loads the CAR stores into `mitre.car_*`.
+- Zimmerman (EZ-Tools) lane: hardened `dfir/*` containers (RECmd, SRUM via Plaso, MFT, …) → CAR.
+
+### Changed
+- CAR extraction moved into the PIIAT-MitreCar engine (pinned submodule); memory/Volatility driven via the PIIAT-Mem CLI. `40-mitre.kql` is now the materialized tables, schema generated from the engine model.
+- `dxdfir verify-car` rewritten against the `mitre.car_*` tables; `car_action` validated against the engine model's vocabulary.
+
+### Removed
+- The query-time `Car*()` / `Car<Object>_<Artefact>()` KQL functions — no backwards compatibility; read the `car_*` tables directly.
+- The Velociraptor lane (role, playbook, ingest source, `host.VelociraptorJson`).
+
 ## [0.5.0] - 2026-08-28
 
 ### Added
