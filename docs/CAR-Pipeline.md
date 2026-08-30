@@ -104,7 +104,7 @@ including definitive Sysmon ProcessGuid links).
 Honest non-coverage: `email` has no live source yet (the only smtp capture is
 STARTTLS-encrypted); Zeek dns/ssl/x509/dhcp/ntp/snmp/ocsp/weird/pe have no
 dedicated CAR object (flow-detail, routed to `[]` explicitly); SRUM/RECmd is
-**parked** pending real Velociraptor/EZ output.
+**parked** pending real EZ-tool (SrumECmd/RECmd) output.
 
 ## 6. The mapping engine
 

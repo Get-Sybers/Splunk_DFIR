@@ -3,6 +3,12 @@
 Collection-level changes only; the project-wide history lives in the repository
 root [CHANGELOG.md](../../../CHANGELOG.md).
 
+## [Unreleased]
+
+### Removed
+
+- The Velociraptor lane — `dfir_velociraptor` role, the `dfir-process-velociraptor` playbook, the ingest source and the `host.VelociraptorJson` table: Velociraptor is no longer part of this project (SRUM/RECmd evidence now comes from the hardened EZ-tool containers directly).
+
 ## 0.4.0
 
 - New `dfir_images` role: builds the hardened dfir/* tool images from in-repo

@@ -11,7 +11,7 @@
 // `-r json` renderer emits an array of row objects per plugin. The ingest loader
 // wraps each row as {Plugin, SourceFile, Record} — Plugin/SourceFile are
 // per-file constants .ingest cannot inject, so the loader derives them from the
-// source path, exactly as the Velociraptor path will.
+// source path.
 
 //=============================================================================
 // VolatilityJson — Volatility 3, one row per plugin-output row.

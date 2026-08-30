@@ -14,7 +14,6 @@ Plaso l2t fans one json_line file out into per-parser `L2t<Parser>` tables.
 | Variable | Default | Description |
 |---|---|---|
 | `dfir_ingest_adx_processed_dir` | `<repo>/data_store/processed` | Tree to load. |
-| `dfir_ingest_adx_only` | `""` (all) | Load one source: `l2t`, `zeek`, `evtx`, `volatility`, `velociraptor`. |
 | `dfir_ingest_adx_kusto_host` | `127.0.0.1` | Emulator host. |
 | `dfir_ingest_adx_kusto_port` | `8080` | Emulator port. |
 | `dfir_ingest_adx_kusto_container` | `kusto-emulator` | Emulator container (files are docker-cp'd into it). |

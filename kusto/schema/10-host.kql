@@ -20,7 +20,7 @@
 // parsers. Rather than one table scanned by every query, or ~59 typed tables,
 // events are split by TOP-LEVEL parser (winreg, filestat, usnjrnl, text, …) into
 // L2t<Parser> tables, each a `dynamic` Record (the honest shape for a per-parser
-// schema, as memory.VolatilityJson / host.VelociraptorJson use). Each CAR
+// schema, as memory.VolatilityJson uses). Each CAR
 // function then scans only the tables it needs, not the whole timeline.
 //
 // Every table has the SAME shape:
@@ -128,52 +128,6 @@ L2tAll() {
   {"Column":"SourceFile",    "Properties":{"Path":"$.SourceFile"}},
   {"Column":"Payload",       "Properties":{"Path":"$.Payload"}}
 ]```
-
-//=============================================================================
-// Velociraptor — semi-structured.
-//
-// Deliberately NOT given typed columns: Velociraptor's JSON varies per VQL
-// artefact, and the planned offline collectors run Eric Zimmerman's tools,
-// whose output is per-artefact with a different shape each time. Kusto
-// handles this natively with a dynamic column — the honest representation,
-// better than inventing a lowest-common-denominator schema that silently
-// drops columns. Access is Record.FieldName in KQL.
-//
-// Artefact and SourceFile are per-file constants .ingest cannot inject, so
-// the ingest loader's velociraptor wrap rewrites each collected record as
-// {Artefact, SourceFile, Record} (Artefact from the filename, SourceFile from
-// the path) and the mapping below reads all three — the same shape the
-// Volatility loader uses. Artefact is what CarRegistry() filters on.
-//
-// (A KapeJson twin of this table existed until the KAPE path was removed in
-// favour of Velociraptor offline collectors running the same EZ Tools. One
-// lesson from it survives: a CSV ingestion mapping maps ordinals to columns
-// and CANNOT build a `dynamic` object — so if the collectors emit EZ-tool
-// CSV rather than JSON, the answer is typed per-artefact tables or a
-// JSON-conversion step, never a dynamic-column CSV table. The wrapper keeps
-// everything JSON, so this stays a dynamic-column table.)
-//=============================================================================
-
-.create-merge table VelociraptorJson (
-    Artefact:   string,
-    SourceFile: string,
-    Record:     dynamic
-)
-
-.create-or-alter table VelociraptorJson ingestion json mapping "VelociraptorJsonMapping"
-```[
-  {"Column":"Artefact",   "Properties":{"Path":"$.Artefact"}},
-  {"Column":"SourceFile", "Properties":{"Path":"$.SourceFile"}},
-  {"Column":"Record",     "Properties":{"Path":"$.Record"}}
-]```
-
-.create-or-alter function
-with (docstring = "Distinct Velociraptor artefacts present, with row counts", folder = "Views")
-VelociraptorArtefacts() {
-    VelociraptorJson
-    | summarize Rows = count() by Artefact
-    | order by Rows desc
-}
 
 //=============================================================================
 // Convenience views.

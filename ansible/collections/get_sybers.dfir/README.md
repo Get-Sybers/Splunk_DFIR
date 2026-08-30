@@ -15,7 +15,6 @@ as a single action.
 | Role | Source | Processor |
 |---|---|---|
 | `dfir_zeek` | PCAPs → Zeek JSON | `get_sybers_dfir.zeek` |
-| `dfir_velociraptor` | Velociraptor collector ZIPs → per-artefact JSON | `get_sybers_dfir.velociraptor` |
 | `dfir_volatility` | Memory images → Volatility 3 per-plugin JSONL | `get_sybers_dfir.volatility` |
 | `dfir_evtx` | Windows Event Logs (`.evtx`) → EvtxECmd JSON | `get_sybers_dfir.evtx` |
 | `dfir_plaso` | Disk images / VM exports → Plaso JSONL | `get_sybers_dfir.plaso` |
@@ -52,7 +51,6 @@ Or run a playbook directly; each source has one under `playbooks/`, which select
 the role and passes the pipeline:
 ```bash
 ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=adx
-ansible-playbook playbooks/dfir-process-velociraptor.yml -e dfir_velociraptor_pipeline=adx
 ansible-playbook playbooks/dfir-process-volatility.yml -e dfir_volatility_pipeline=adx
 ansible-playbook playbooks/dfir-process-evtx.yml -e dfir_evtx_pipeline=adx
 ansible-playbook playbooks/dfir-process-plaso.yml -e dfir_plaso_pipeline=adx

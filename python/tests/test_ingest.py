@@ -69,19 +69,14 @@ def test_zeek_wrap_skips_conn(tmp_path):
     assert obj == {"LogType": "dns", "SourceFile": "zeek/cap/dns.json", "Record": {"q": "x"}}
 
 
-def test_volatility_and_velociraptor_wrap(tmp_path):
-    v = tmp_path / "windows.pslist.jsonl"
-    v.write_text('{"PID":4}\n')
-    obj = json.loads(prepare.volatility_wrap(str(v), "volatility/img/windows.pslist.jsonl")[0])
-    assert obj["Plugin"] == "windows.pslist" and obj["Record"] == {"PID": 4}
-
-    r = tmp_path / "Windows.Registry.RecentApps.json"
-    r.write_text('[{"k":"v"}]')
-    obj = json.loads(prepare.velociraptor_wrap(str(r), "velociraptor/H/Windows.Registry.RecentApps.json")[0])
-    assert obj["Artefact"] == "Windows.Registry.RecentApps"
+def test_volatility_wrap(tmp_path):
+    p = tmp_path / "windows.pslist.jsonl"
+    p.write_text('{"PID": 4}\n')
+    lines = prepare.volatility_wrap(str(p), "img/windows.pslist.jsonl")
+    rec = json.loads(lines[0])
+    assert rec["Plugin"] == "windows.pslist" and rec["Record"] == {"PID": 4}
 
 
-# ---- l2t split -------------------------------------------------------------
 def test_table_name():
     assert prepare.table_name("filestat") == "L2tFilestat"
     assert prepare.table_name("winreg/appcompatcache") == "L2tWinreg"

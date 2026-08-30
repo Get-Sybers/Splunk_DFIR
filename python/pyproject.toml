@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "get-sybers-dfir"
 version = "0.5.0"
-description = "DX_DFIR forensic processing package (zeek, velociraptor, evtx, volatility, plaso, signatures) + dxdfir CLI"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [

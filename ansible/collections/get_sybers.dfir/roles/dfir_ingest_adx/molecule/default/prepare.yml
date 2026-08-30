@@ -1,6 +1,6 @@
 ---
 # Needs a deployed emulator (`dxdfir deploy`) with the schema applied. Stages a tiny
-# processed/velociraptor fixture so the converge has something to load.
+# processed/volatility fixture so the converge has something to load.
 - name: Prepare
   hosts: localhost
   gather_facts: false
@@ -16,15 +16,15 @@
       changed_when: false
       failed_when: dfir_ingest_adx_ping.rc != 0
 
-    - name: "molecule-prepare | processed/velociraptor fixture dir"
+    - name: "molecule-prepare | processed/volatility fixture dir"
       ansible.builtin.file:
-        path: "{{ molecule_processed }}/velociraptor/HOSTMOL"
+        path: "{{ molecule_processed }}/volatility/HOSTMOL"
         state: directory
         mode: "0755"
 
     - name: "molecule-prepare | a distinctive artefact record"
       ansible.builtin.copy:
-        dest: "{{ molecule_processed }}/velociraptor/HOSTMOL/Molecule.Probe.json"
+        dest: "{{ molecule_processed }}/volatility/HOSTMOL/molecule.probe.jsonl"
         content: |
           {"Marker":"DFIR_INGEST_MOLECULE","Key":"HKLM\\probe","Val":7}
         mode: "0644"

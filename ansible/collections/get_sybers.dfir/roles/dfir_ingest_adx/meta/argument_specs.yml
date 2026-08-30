@@ -18,7 +18,6 @@ argument_specs:
         type: str
         required: false
         default: ""
-        choices: ["", l2t, zeek, evtx, volatility, velociraptor]
         description: "Load one source only; empty = all."
       dfir_ingest_adx_kusto_host:
         type: str

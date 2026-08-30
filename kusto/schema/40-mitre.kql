@@ -34,21 +34,16 @@
 // the artefact -> object coverage those views implement.
 //
 //   CarFlow         Zeek conn + Sysmon 3 + Volatility netscan/netstat (memory)
-//                   + SRUM Network Usage (SrumECmd — app+user attribution; bytes
-//                     are not a CAR flow field, so they stay in raw VelociraptorJson)
 //   CarUserSession  EvtxECmd 4624/4625/4634/4647/4648/4778/4779 (Windows)
 //                   + Plaso linux:utmp:event + syslog:ssh:login (Linux)
 //                   + Volatility sessions (memory — user + logon time)
 //   CarProcess      EvtxECmd 4688/4689 + Sysmon 1/5, Plaso Windows execution
 //                   artefacts (prefetch/amcache/appcompat), Linux cron,
 //                   + Volatility pslist(+cmdline) (memory — live process tree)
-//                   + SRUM App Resource Usage (SrumECmd — execution evidence)
 //   CarService      EvtxECmd 7045/4697 + Volatility svcscan (memory — services)
 //   CarFile         Plaso fs:* events + Sysmon 11/23 (create/delete)
 //                   + Volatility filescan (memory-resident files)
-//   CarRegistry     Velociraptor registry artefacts (EZ Tools / RECmd)
 //                   + Sysmon 12/13/14 (key/value add, set, rename)
-//                   + Volatility windows.piiat.registry (memory — RECmd-list keys in RAM)
 //   CarDriver       Sysmon 6 (driver loaded) + Volatility modules (memory)
 //   CarModule       Sysmon 7 (image loaded) + Volatility dlllist (memory)
 //   CarThread       Sysmon 8 + Volatility thrdscan (memory — threads/start addr)
@@ -60,12 +55,9 @@
 //   logon sessions (sessions -> user_session), memory-resident files (filescan ->
 //   file), services (svcscan -> service), threads (thrdscan -> thread, whose
 //   unbacked start addresses are the injection tell) and the registry
-//   (windows.piiat.registry -> registry: the RECmd-style target keys read straight out of
 //   the hives resident in RAM). module/driver/thread had only Sysmon before.
 //
 //   registry lost its only source when the KAPE path was removed; the
-//   replacement — Velociraptor offline collectors running the EZ Tools (RECmd /
-//   Registry Explorer) — is wired through host.VelociraptorJson and read by
 //   CarRegistry(). Same Zimmerman field names the old KapeJson mapping used.
 //
 //   driver, module, thread — SOURCED via Sysmon. Nothing *dead-box* produces
@@ -201,36 +193,11 @@ CarFlow_Memory() {
         start_time   = todatetime(Record.Created)
 }
 
-// SRUM Network Usage (SrumECmd -> Velociraptor) — network activity attributed to
-// an app+user; no 5-tuple (SRUM aggregates), so action is "message". The per-app
-// byte counters are not CAR flow fields — they remain their own native columns
-// (Record.BytesSent/BytesReceived), never faked into the object.
-.create-or-alter function
-with (docstring = "CAR 'flow' from SRUM Network Usage (native fields + CAR fields)", folder = "CAR/flow")
-CarFlow_Srum() {
-    database("host").VelociraptorJson
-    | where Artefact matches regex @"(?i)srum"
-    | where isnotempty(tostring(coalesce(Record.BytesSent, Record.BytesReceived, Record.["Bytes Sent"], Record.["Bytes Received"])))
-    // The collection dir is Collection-<host>-<timestamp> (Velociraptor offline
-    // collector naming; the host may itself contain dashes) — extract just the
-    // host. Fallback chains coalesce over tostring() so a present-but-EMPTY JSON
-    // value ("" is non-null as dynamic) falls through to the next candidate.
-    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
-    | extend
-        Timestamp    = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-        action       = "message",
-        image_path   = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
-        user         = coalesce(tostring(Record.UserName), tostring(Record.Sid), tostring(Record.User), tostring(Record.UserId)),
-        start_time   = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-        hostname     = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
-        fqdn         = iff(_vhost contains ".", _vhost, "")
-    | project-away _vhost
-}
 
 .create-or-alter function
 with (docstring = "MITRE CAR 'flow' object — roll-up of the per-artefact views", folder = "CAR")
 CarFlow() {
-    union isfuzzy=true CarFlow_Zeek, CarFlow_Sysmon, CarFlow_Memory, CarFlow_Srum
+    union isfuzzy=true CarFlow_Zeek, CarFlow_Sysmon, CarFlow_Memory
 }
 
 //=============================================================================
@@ -577,39 +544,6 @@ CarProcess_Cron() {
     | project-away _cmd
 }
 
-// SRUM App Resource Usage (SRUDB.dat via SrumECmd -> Velociraptor) — proof an app
-// executed, attributed to a user AND a SID. The byte counters are not process
-// fields but remain queryable as their normal columns (Record.ForegroundBytesRead).
-.create-or-alter function
-with (docstring = "CAR 'process' from SRUM App Resource Usage (native fields + CAR fields)", folder = "CAR/process")
-CarProcess_Srum() {
-    database("host").VelociraptorJson
-    | where Artefact matches regex @"(?i)srum"
-    | where isnotempty(tostring(coalesce(Record.ForegroundBytesRead, Record.ForegroundBytesWritten, Record.BackgroundBytesRead, Record.BackgroundBytesWritten)))
-    // Collection dir is Collection-<host>-<timestamp> — extract just the host.
-    // Fallback chains coalesce over tostring() so a present-but-empty JSON value
-    // falls through (a dynamic "" is non-null and would mask the fallbacks).
-    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
-    | extend
-        Timestamp         = todatetime(coalesce(Record.Timestamp, Record.EventTime, Record.TimeStamp)),
-        action            = "create",
-        exe               = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
-        image_path        = coalesce(tostring(Record.ExeInfo), tostring(Record.AppId), tostring(Record.Application), tostring(Record.App)),
-        parent_exe        = "",
-        parent_image_path = "",
-        command_line      = "",
-        pid               = long(null),
-        ppid              = long(null),
-        user              = coalesce(tostring(Record.UserName), tostring(Record.User)),
-        sid               = tostring(Record.Sid),
-        md5_hash          = "",
-        sha1_hash         = "",
-        sha256_hash       = "",
-        signer            = "",
-        hostname          = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
-        fqdn              = iff(_vhost contains ".", _vhost, "")
-    | project-away _vhost
-}
 
 //=============================================================================
 // process roll-up — the downstream COMBINATION stage (rule 4). union isfuzzy of
@@ -623,7 +557,7 @@ with (docstring = "MITRE CAR 'process' object — roll-up of the per-artefact vi
 CarProcess() {
     union isfuzzy=true
         CarProcess_Sysmon, CarProcess_Security, CarProcess_Memory,
-        CarProcess_Plaso, CarProcess_Cron, CarProcess_Srum
+        CarProcess_Plaso, CarProcess_Cron
 }
 
 //=============================================================================
@@ -788,34 +722,6 @@ CarFile() { union isfuzzy=true CarFile_Plaso, CarFile_Sysmon, CarFile_Memory }
 // image_path, key, pid, type, user, value). actions: add/edit/remove.
 //=============================================================================
 
-// Velociraptor RECmd (disk hive snapshot). A hive records a key's LAST write, so
-// action is "edit" (add vs edit indistinguishable from a snapshot). hostname from
-// the per-host collection dir.
-.create-or-alter function
-with (docstring = "CAR 'registry' from Velociraptor RECmd (native fields + CAR fields)", folder = "CAR/registry")
-CarRegistry_Recmd() {
-    database("host").VelociraptorJson
-    | where Artefact matches regex @"(?i)recmd|registry|regexplorer"
-    // Collection dir is Collection-<host>-<timestamp> — extract just the host, and
-    // only claim fqdn when the name actually is one (contains a dot), matching the
-    // Computer discipline used elsewhere. Fallback chains coalesce over tostring()
-    // so a present-but-empty JSON value ("" is non-null as dynamic) falls through.
-    | extend _vhost = extract(@"(?i)velociraptor/(?:Collection-)?(.+?)(?:-\d{4}-\d{2}-\d{2}[^/]*)?/", 1, SourceFile)
-    | extend
-        Timestamp  = todatetime(coalesce(Record.LastWriteTimestamp, Record.LastWriteTime, Record.Mtime)),
-        action     = "edit",
-        key        = coalesce(tostring(Record.KeyPath), tostring(Record.Key)),
-        value      = coalesce(tostring(Record.ValueName), tostring(Record.Value)),
-        data       = coalesce(tostring(Record.ValueData), tostring(Record.Data)),
-        type       = coalesce(tostring(Record.ValueType), tostring(Record.Type)),
-        hive       = coalesce(tostring(Record.HivePath), tostring(Record.Hive)),
-        image_path = tostring(Record.ImagePath),
-        pid        = tolong(Record.PID),
-        user       = tostring(Record.User),
-        hostname   = iff(_vhost contains ".", tostring(split(_vhost, ".")[0]), _vhost),
-        fqdn       = iff(_vhost contains ".", _vhost, "")
-    | project-away _vhost
-}
 
 // Sysmon 12 (key add/delete), 13 (value set), 14 (rename) — the CHANGE as it
 // happens, so action is canonical from EventType (add/remove/edit).
@@ -842,7 +748,6 @@ CarRegistry_Sysmon() {
     | project-away _etype, _target
 }
 
-// Volatility windows.piiat.registry (memory) — the same RECmd-style target keys read from
 // the hives resident in RAM. Snapshot -> action "edit". user recovered from the
 // per-user hive path.
 .create-or-alter function
@@ -863,7 +768,7 @@ CarRegistry_Memory() {
 
 .create-or-alter function
 with (docstring = "MITRE CAR 'registry' object — roll-up of the per-artefact views", folder = "CAR")
-CarRegistry() { union isfuzzy=true CarRegistry_Recmd, CarRegistry_Sysmon, CarRegistry_Memory }
+CarRegistry() { union isfuzzy=true CarRegistry_Sysmon, CarRegistry_Memory }
 
 //=============================================================================
 // module — per-artefact (car_data_model.json: base_address, fqdn, hostname,

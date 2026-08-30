@@ -7,7 +7,6 @@ field is FAITHFUL to its single source record (round-trip: CAR field == the
 native source field in the same row), that every CAR row TRACES TO ONE ARTEFACT
 (a non-empty source identity — never data compiled together), that the roll-up
 unions FABRICATE nothing (union count == sum of the per-source counts), and that
-sources with no live producer here (the velociraptor lane: Srum, RECmd) stay
 EMPTY.
 
 Asserts against an ALREADY-POPULATED emulator — run the pipeline first
@@ -267,11 +266,6 @@ def run(host: str = "127.0.0.1", port: int = 8080) -> _Checker:
     else:
         c.skip("LINUX (no utmp/wtmp evidence processed)")
 
-    # -- NO-PRODUCER sources must be empty ------------------------------------
-    c.section("NO-PRODUCER sources must be empty (no fabrication without velociraptor)")
-    c.zero("mitre", "CarProcess_Srum() | count", "CarProcess_Srum empty (no velociraptor/SRUM producer)")
-    c.zero("mitre", "CarFlow_Srum() | count", "CarFlow_Srum empty (no velociraptor/SRUM producer)")
-    c.zero("mitre", "CarRegistry_Recmd() | count", "CarRegistry_Recmd empty (no velociraptor/RECmd producer)")
 
     # -- OS-family coverage ----------------------------------------------------
     # The validation aims to exercise the CAR model over every major OS family

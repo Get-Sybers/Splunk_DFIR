@@ -7,10 +7,10 @@
   ansible.builtin.assert:
     that:
       - dfir_ingest_adx_processed_dir | length > 0
-      - dfir_ingest_adx_only in ['', 'l2t', 'zeek', 'evtx', 'volatility', 'velociraptor']
+      - dfir_ingest_adx_only in ['', 'l2t', 'zeek', 'evtx', 'volatility']
     fail_msg: >-
       dfir_ingest_adx needs a non-empty dfir_ingest_adx_processed_dir; dfir_ingest_adx_only
-      may only be one of l2t/zeek/evtx/volatility/velociraptor (or empty for all).
+      may only be one of l2t/zeek/evtx/volatility (or empty for all).
     quiet: true
   tags: [always]
 

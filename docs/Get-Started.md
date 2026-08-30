@@ -13,7 +13,7 @@ walk a run end to end:
 
 ```bash
 pip install ./python     # provides dxdfir + ansible-core; or run scripts/setup-environment.sh
-dxdfir process plaso     # sources: plaso | zeek | evtx | volatility | velociraptor | signatures
+dxdfir process plaso     # sources: plaso | zeek | evtx | volatility | signatures
 dxdfir deploy            # stand up the ADX (Kusto) emulator + apply schema
 dxdfir ingest            # load data_store/processed into it
 dxdfir detect            # sweep detections across what's present
@@ -127,16 +127,14 @@ dxdfir ingest
   `get_sybers_dfir.ingest`): Plaso `json_line` fanned out
   into per-parser `host.L2t<Parser>` tables, EvtxECmd JSON → `host.EvtxEcmdJson`,
   Zeek `conn` → `network.ZeekConn` (every other Zeek log → the generic
-  `network.Zeek`), Volatility JSONL → `memory.VolatilityJson`, and Velociraptor
-  JSON → `host.VelociraptorJson` (each record wrapped with its `Artefact`/`SourceFile`).
-- The Velociraptor **ingest** loader is wired; what's still partial is the
-  **upstream** collection path — the Velociraptor offline collectors running the
-  EZ Tools (the KAPE replacement) aren't built yet, so in practice there is
-  usually no processed Velociraptor data to load.
+  `network.Zeek`), and Volatility JSONL → `memory.VolatilityJson`.
+- What's still partial is the **upstream** collection path for the EZ-tool
+  artefacts (SRUM, registry) — the hardened EZ containers exist; the
+  extraction+run lane is tracked on epic #86.
 - An in-DB ledger makes re-runs idempotent (already-loaded files are skipped;
   `--force` re-ingests). The ledger lives in the ephemeral database, so a
   redeploy resets ledger and data together.
-- `--only l2t|zeek|evtx|volatility|velociraptor` limits to one source;
+- `--only l2t|zeek|evtx|volatility` limits to one source;
   `--dry-run` lists without contacting anything.
 
 ### Step 8: Query

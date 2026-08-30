@@ -44,7 +44,6 @@ _COLLECTION = "ansible/collections/get_sybers.dfir"
 
 class Source(str, enum.Enum):
     zeek = "zeek"
-    velociraptor = "velociraptor"
     evtx = "evtx"
     volatility = "volatility"
     plaso = "plaso"
@@ -148,7 +147,7 @@ def process(
 
 @app.command()
 def ingest(
-    only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility|velociraptor."),
+    only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility."),
     force: bool = typer.Option(False, "--force", help="Re-ingest files already in the ledger."),
     dry_run: bool = typer.Option(False, "--dry-run", help="List what would be loaded; contact nothing."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
@@ -303,7 +302,6 @@ _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "volatility":   (("memory",),                (".dmp", ".mem", ".lime", ".vmem", ".raw", ".dump", ".bin")),
     "plaso":        (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
                                                    ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
-    "velociraptor": (("velociraptor",),          (".zip", ".json")),
 }
 
 

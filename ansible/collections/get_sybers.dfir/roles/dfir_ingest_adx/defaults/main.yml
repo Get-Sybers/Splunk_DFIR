@@ -4,7 +4,7 @@
 dfir_ingest_adx_repo_root: "{{ role_path }}/../../../../.."
 
 dfir_ingest_adx_processed_dir: "{{ dfir_ingest_adx_repo_root }}/data_store/processed"
-# Which source to load; empty = all (l2t, zeek, evtx, volatility, velociraptor).
+# Which source to load; empty = all (l2t, zeek, evtx, volatility).
 dfir_ingest_adx_only: ""
 # The ADX (Kusto) emulator endpoint + container (files are docker-cp'd into it).
 dfir_ingest_adx_kusto_host: "127.0.0.1"
