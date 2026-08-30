@@ -11,6 +11,37 @@ one `car.db`, `docs/CAR-Pipeline.md`). "Cross-source" is the OPTIONAL final
 stage that correlates events **across** the per-source databases of the same
 investigation. It never mixes into the per-source products.
 
+## The sources may be completely unrelated origins (read first)
+
+The processed tree is **not** one investigation by default — it is whatever
+evidence was dropped in. The real batch corpus mixes genuinely unrelated
+origins: LoneWolf (one Windows host), **M57** (a different case entirely —
+2009 Jean laptop), **sysmon-attack-samples** (three more hosts: DC1 / IEWIN7 /
+MSEDGEWIN10), the **2012 NGDC** network captures, and the pfsense / dualserver /
+internaldns **appliances**. These belong to different machines, cases, and
+years.
+
+Consequence — the correctness risk that dominates every join below:
+
+- A **well-known SID is machine-agnostic**. `S-1-5-18` (SYSTEM), `S-1-5-19/20`
+  (LOCAL/NETWORK SERVICE), the RID-`500` Administrator, RID-`501` Guest, the
+  BUILTIN aliases — all byte-identical on every Windows install ever made.
+  Joining two sources on such a SID **fabricates** a relationship between
+  unrelated evidence. (These are exactly the SIDs `relationships.yml`
+  canonicalises *within* a source — within-source they dedupe an account;
+  cross-source they are poison.)
+- **Empty host collides.** The Linux/appliance sources all carry
+  `source_host == ""`; a naive host-scoped join would fuse them into one
+  phantom host.
+- A **coincidental hostname or pid** proves nothing across origins.
+
+So the cross-source stage must **never infer that two sources belong together**
+from coincidental key overlap. Shared scope has to be asserted (an explicit
+case/investigation grouping input), or positively derived and agreed
+(matching machine GUID / domain SID / image identity) — never assumed. The safe
+default is **no cross-source join** until scope is established. Every "possible"
+verdict below is conditional on that.
+
 ## Data assessment (measured on the real per-source stores)
 
 Nine real `car.db` sources from the batch run, plus the memory and zimmerman
@@ -67,8 +98,8 @@ ProcessGuid links are definitive but exist only inside the Sysmon source.
 
 | # | cross-source join | possible? | tier | blocker / basis |
 |---|---|---|---|---|
-| A | **host identity reconciliation** | prerequisite | — | must canonicalise host across lanes before any host-scoped join; empty-host sources (Linux/appliance) can't participate |
-| B | any event ↔ **user context** by (host, SID) | **yes** | **definitive (as identity)** | SID fully populated across lanes; links account, not instance |
+| A | **scope + host disambiguation** | prerequisite | — | NOT mere canonicalisation — must establish which sources share an origin and refuse to fuse unrelated ones (empty host, coincidental hostname); no positive match ⇒ no join |
+| B | event ↔ **user context** by (scope, host, SID) | **yes, conditional** | **definitive within an established scope** | requires A AND excludes well-known/machine-agnostic SIDs (SYSTEM, LOCAL/NETWORK SERVICE, RID-500/501, BUILTIN); links account, not instance |
 | C | process ↔ process across lanes by (host, pid, create-time window) | yes, narrow | **heuristic** | PID reuse; needs pid+time in BOTH lanes → only memory↔Sysmon↔event-log-4688; **SRUM excluded** (no pid) |
 | D | process-instance join by shared **guid** across lanes | **no** | — | guids are per-lane namespaces (measured); no shared instance identity survives cross-lane |
 | E | SRUM execution/flow ↔ host process instance | **no (instance)** / yes (user via B) | — | SRUM has no pid/guid and hourly-aggregate times; only user-context (B) is defensible |
@@ -76,23 +107,31 @@ ProcessGuid links are definitive but exist only inside the Sysmon source.
 | G | file/registry/module ↔ its process across lanes | **no** | — | spokes carry no cross-lane process key; owning_guid is in-source only |
 
 ### Verdict
-Cross-source enrichment is **fundamentally heuristic** between lanes — the only
-*definitive* cross-lane relationship is **user-context by (canonical host,
-SID)** (join B). Everything process-instance-level is either heuristic and
+Cross-source enrichment is **fundamentally heuristic** between lanes, and only
+*within an established shared scope* at all — the sources may be completely
+unrelated origins, so the stage's first job is to refuse false joins. The only
+*definitive* cross-lane relationship is **user-context by (scope, host, SID)**
+(join B), and even that holds only once scope is established and machine-agnostic
+SIDs are excluded. Everything process-instance-level is either heuristic and
 narrow (C) or impossible (D, E-instance, G). Definitive linkage is a
 WITHIN-source property (guid) and must stay there.
 
 ## Recommended scope for the enrichment stage (when built)
 
-1. **Build host-identity reconciliation first** (join A) — nothing host-scoped
-   works without it; also fixes the arbitrary `--host` and empty-host cases.
-2. **Implement join B** (user-context by canonical host + SID) — the one
-   high-value, defensible, definitive cross-lane enrichment.
-3. **Implement join C** narrowly (heuristic, confidence-tagged, only
-   pid+time-bearing lanes).
+1. **Establish scope + host disambiguation first** (join A) — take an explicit
+   case/investigation grouping (which sources belong together) rather than
+   inferring it; canonicalise host only within a group; treat empty/ambiguous
+   host as un-joinable, never as a match; also fixes the arbitrary `--host`.
+2. **Implement join B** (user-context by scope + host + SID) — the one
+   high-value definitive cross-lane enrichment — with a **well-known-SID
+   deny-list** (reuse `relationships.yml` `well_known_sids`) so machine-agnostic
+   principals never bridge sources.
+3. **Implement join C** narrowly (heuristic, confidence-tagged, only within a
+   scope and only pid+time-bearing lanes).
 4. **Do NOT** attempt D/E-instance/G — they cannot be done honestly; leave the
    raw cross-lane evidence for analyst query instead.
-5. Keep it an **opt-in end stage over the aggregate**; never mixed into a
+5. **Fail safe**: with no scope input, the stage does nothing rather than guess.
+6. Keep it an **opt-in end stage over the aggregate**; never mixed into a
    per-source `car.db`.
 
 ## Still to measure (Phase E field-coverage audit)
