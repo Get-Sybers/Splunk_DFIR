@@ -153,6 +153,34 @@ the WIN-1M3263ACE5D↔DESKTOP-PM6C56D rename lineage (a host-identity call — o
 box renamed, seen in one store but a cross-scope decision), and any
 `community_id` zeek↔host-flow bridge.
 
+### Coverage pass — ingest more event-log + registry CAR content
+
+A triage over the real lonewolf image (55k records / 842 distinct
+Channel+EventId) added maps for every event that has a CLEAN canonical CAR home
+(`mappings/evtx_more.py`, wired into `EVTX_MAPS` so it also serves the
+`l2t_winevt` Plaso adapter). lonewolf coverage rose **2808 → 4852 events (+73%)**:
+
+| (Channel, EventId) | → object/action | count |
+|---|---|---|
+| Security 4907 (ObjectType=File) | file / acl_modify | 1686 |
+| WMI-Activity 5857 | module / load (wmiprvse provider DLL) | 312 |
+| System 20003 (UserPnp) | service / create | 35 |
+| SmbClient/Connectivity 30803 | flow / start (ServerName; addr is SOCKADDR hex → native) | 3 |
+| System 7001 / 7002 (Winlogon) | user_session / login, logout | 7 |
+| System 7034 (SCM) | service / stop (crash = involuntary) | 1 |
+
+Registry (`recmd.py`): `registry.type` ← `ValueType` (4969/4969) and
+`new_content` set for parity with the Sysmon registry map.
+
+**Honest nulls — deliberately left raw** (no CAR object in the 13-object model;
+mapping them would repeat the near-miss the codebase refuses at 7040/4648): the
+high-volume account/group **lifecycle** (4720/4726/4731…), local-group
+**enumeration** (4798 ×2789, 4799 ×630), privilege-rights grants (4717/4718),
+audit-policy (4719), system-time change (4616), and crypto-key ops. These are
+forensically meaningful but stay raw-but-queryable rather than forced into a
+wrong object. PowerShell script-block (4104) and WMI event-consumer persistence
+(5861) likewise have no clean CAR action → raw.
+
 **What the measured cascade already does right (baseline, lonewolf evtx):**
 parent link 36/40 (heuristic); auth↔session LUID join 1616/1616 (104
 definitive); user_session owner 692/880; well-known accounts unified (Local
