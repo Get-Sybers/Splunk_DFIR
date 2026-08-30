@@ -30,13 +30,43 @@ def _env() -> dict:
     return env
 
 
+# PIIAT-MitreCar reconstructs its object model LIVE from ITS OWN pinned
+# submodules (car + attack-datasources), so the submodule must be initialised
+# RECURSIVELY — a plain `--init` leaves the model sources missing.
+_MODEL_SOURCES = (
+    os.path.join(_PIIAT_MITRECAR_DIR, "third_party", "car", "data_model"),
+    os.path.join(_PIIAT_MITRECAR_DIR, "third_party", "attack-datasources",
+                 "docs", "attack_data_sources_objects.yaml"),
+)
+_INIT_HINT = ("git submodule update --init --recursive third_party/piiat-mitrecar")
+
+
+def _model_sources_present() -> bool:
+    car, ads = _MODEL_SOURCES
+    return os.path.isdir(car) and bool(os.listdir(car)) and os.path.exists(ads)
+
+
+def _ensure_ready() -> None:
+    """Make the vendored engine runnable: the package present AND its nested
+    model submodules checked out. Self-plumbs with a recursive init, then
+    verifies — raising a precise, actionable error if it still can't."""
+    if os.path.isdir(_PIIAT_MITRECAR_DIR) and _model_sources_present():
+        return
+    subprocess.run(["git", "submodule", "update", "--init", "--recursive",
+                    "third_party/piiat-mitrecar"],
+                   cwd=_REPO_ROOT, capture_output=True, text=True)
+    if not os.path.isdir(_PIIAT_MITRECAR_DIR):
+        raise RuntimeError(f"third_party/piiat-mitrecar is not initialised — run `{_INIT_HINT}`")
+    if not _model_sources_present():
+        raise RuntimeError(
+            "PIIAT-MitreCar's model submodules (car, attack-datasources) are "
+            f"missing — run `{_INIT_HINT}`")
+
+
 def run(tool_argv: list[str]) -> subprocess.CompletedProcess:
     """One ``python -m piiat_mitrecar`` invocation with the given tool argv.
     stdout is the tool's JSON summary (returned, not swallowed)."""
-    if not os.path.isdir(_PIIAT_MITRECAR_DIR):
-        raise RuntimeError(
-            "third_party/piiat-mitrecar is not initialised — run "
-            "`git submodule update --init third_party/piiat-mitrecar`")
+    _ensure_ready()
     return subprocess.run([sys.executable, "-m", "piiat_mitrecar"] + tool_argv,
                           env=_env(), capture_output=True, text=True, check=False)
 

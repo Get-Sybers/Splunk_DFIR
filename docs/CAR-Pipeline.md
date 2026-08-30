@@ -53,20 +53,33 @@ python -m get_sybers_dfir.mitrecar --in <file-or-dir> --out <dir> [--host NAME] 
 
 The engine is the standalone public **PIIAT-MitreCar** tool (Get-Sybers/PIIAT-MitreCar),
 vendored as a submodule and driven via its CLI by the thin
-`get_sybers_dfir/mitrecar.py` lane — exactly the PIIAT-Mem pattern. Its own
-repo houses the 100-test suite, the format adapters (`piiat_mitrecar/adapters/`)
-and the relationship rules as data (`piiat_mitrecar/relationships.yml`).
+`get_sybers_dfir/mitrecar.py` lane — exactly the PIIAT-Mem pattern.
+
+**Recursive submodules (required).** PIIAT-MitreCar reconstructs its object model
+LIVE from its OWN pinned submodules (`third_party/car` = the CAR model,
+`third_party/attack-datasources` = the ATT&CK data-sources superset + relationship
+vocabulary) — nothing is committed as a copy. So the submodule must be initialised
+**recursively**: `git submodule update --init --recursive third_party/piiat-mitrecar`.
+The `mitrecar.py` lane self-plumbs this (recursive init on first run) and errors
+clearly if it can't.
+
+**Two stores per source.** The lane produces, beside each `car.db`: a
+`superset.db` (the CAR+ATT&CK superset model + the relationship-instance timeline
+linking the car.db rows) and its `car_relationships.jsonl`, plus a `sources.yaml`
+manifest declaring what the source yields and how it was derived.
 
 | module | role |
 |---|---|
-| `piiat_mitrecar/carmodel.py` | loads repo-root `car_data_model.json` — the single source of truth for objects/actions/fields |
-| `mappings/` | per-artefact declarative maps (one file per family; auto-discovered) |
+| `piiat_mitrecar/carmodel.py` | the 13 CAR objects, reconstructed live from the `car` submodule |
+| `build_data_model.py` | CAR (13) + the CAR+ATT&CK superset (~38) + the relationship catalogue, from the pinned submodules |
+| `mappings/` | per-artefact declarative maps (one file per family; auto-discovered; shared helpers in `mappings/_common.py`) |
 | `normalize.py` | the marker engine: `normalize(artefact, record) → CAR event`, or `None` if unmapped |
-| `winevt_adapter.py` | Plaso winevt(x) record → EvtxECmd shape, so the evtx maps run unchanged |
-| `enrich.py` | the relationship + inheritance cascade (identity, joins, inheritance, dedupe, canonical accounts) |
-| `store.py` | the per-object SQLite CAR store + `export_jsonl()` (the ADX contract) |
-| `sources.py` | source readers: `iter_mapped()` (raw → normalize) and `load_piiat_car()` (memory passthrough) |
-| `pipeline.py` | orchestration: route source → normalize → enrich (self-contained) → store → JSON |
+| `adapters/` | format adapters (Plaso winevt(x) → EvtxECmd shape; l2t container split; jump lists) |
+| `enrich.py` | the within-source relationship + inheritance cascade (identity, joins, inheritance, dedupe, canonical accounts) |
+| `superset.py` | the `superset.db`: superset model + relationship-instance timeline |
+| `store.py` | the per-object SQLite CAR store + `export_jsonl()` |
+| `readers.py` | input readers: `iter_mapped()` (raw → normalize) and `load_piiat_car()` (memory passthrough) |
+| `pipeline.py` | orchestration: route → normalize → enrich → store (car.db + superset.db) → JSON |
 
 ## 4. The CAR data model (13 objects)
 

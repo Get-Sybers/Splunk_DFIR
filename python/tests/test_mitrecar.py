@@ -8,7 +8,10 @@ import pytest
 from get_sybers_dfir import mitrecar
 
 _SUBMODULE = mitrecar._PIIAT_MITRECAR_DIR
-_HAVE_TOOL = os.path.isfile(os.path.join(_SUBMODULE, "piiat_mitrecar", "pipeline.py"))
+# the tool AND its nested model submodules (car + attack-datasources) must be
+# present — the engine reconstructs its model live from them
+_HAVE_TOOL = (os.path.isfile(os.path.join(_SUBMODULE, "piiat_mitrecar", "pipeline.py"))
+              and mitrecar._model_sources_present())
 
 
 def test_lane_points_at_the_vendored_submodule():
