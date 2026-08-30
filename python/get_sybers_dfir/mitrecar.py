@@ -63,12 +63,22 @@ def _ensure_ready() -> None:
             f"missing — run `{_INIT_HINT}`")
 
 
+def _run_module(module: str, tool_argv: list[str]) -> subprocess.CompletedProcess:
+    _ensure_ready()
+    return subprocess.run([sys.executable, "-m", module] + tool_argv,
+                          env=_env(), capture_output=True, text=True, check=False)
+
+
 def run(tool_argv: list[str]) -> subprocess.CompletedProcess:
     """One ``python -m piiat_mitrecar`` invocation with the given tool argv.
     stdout is the tool's JSON summary (returned, not swallowed)."""
-    _ensure_ready()
-    return subprocess.run([sys.executable, "-m", "piiat_mitrecar"] + tool_argv,
-                          env=_env(), capture_output=True, text=True, check=False)
+    return _run_module("piiat_mitrecar", tool_argv)
+
+
+def run_timeline(tool_argv: list[str]) -> subprocess.CompletedProcess:
+    """Build the unified CAR timeline (``python -m piiat_mitrecar.timeline``) from
+    a source's car.db + superset.db."""
+    return _run_module("piiat_mitrecar.timeline", tool_argv)
 
 
 def main(argv: list[str] | None = None) -> int:
