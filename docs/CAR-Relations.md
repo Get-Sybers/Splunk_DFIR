@@ -181,6 +181,45 @@ forensically meaningful but stay raw-but-queryable rather than forced into a
 wrong object. PowerShell script-block (4104) and WMI event-consumer persistence
 (5861) likewise have no clean CAR action → raw.
 
+### Coverage pass 2 — Sysmon access, disk-image registry/shell, audit families
+
+Goal (owner): **populate as many CAR object/action/property rows as possible**
+(null or duplicate properties are fine) so the end-stage cascade has the most to
+relate. Relationship joins are NOT done at map time — maps only normalise and
+surface join keys; joining stays in `enrich.py` (the end stage).
+
+Verified, measured:
+- **Sysmon EID 10 (ProcessAccess) → process/access** — was unmapped; the
+  cred-dump/injection indicator (source→target handle, GrantedAccess). +2 on the
+  attack-samples source.
+- **Plaso disk-image registry** (`plaso_registry`): every `windows:registry:*`
+  data_type → registry/key_edit. **M57: 498,325 registry rows** (was ~2.3k).
+  Runs alongside `plaso_exec_winreg` on L2tWinreg — an execution artefact
+  (amcache/userassist) legitimately yields BOTH a process row and a registry
+  row (intended duplicate views).
+- **Plaso shell items** (`plaso_shellitem`): `windows:shell_item:file_entry`
+  (from LNK targets + shellbags) → file, action by MAC `timestamp_desc`. Folds
+  into M57's **190,718 file rows** (filestat + usn + lnk + shell + recycle).
+- M57 total: **~192k → 691,934 CAR events**.
+
+Schema-grounded, INERT until the audit subcategory is enabled (`evtx_audit`,
+absent from current corpora — field names from the documented Windows schema,
+action DECISIONS keyed on the STABLE numeric AccessMask, smoke-tested on
+synthetic records): Security **4663** object-access → file read/write/delete,
+**4660** → file/delete, **4670** → file/acl_modify, **4657** → registry
+add/value_edit/remove, **4689** → process/terminate, **5140/5145** share →
+file, **5156/5157** WFP → flow start/message, **5158** → socket/bind, **5058**
+key-file → file/read. Each is gated on Channel+EventId so it never touches a
+non-matching record; confirm the decision maps against a real audit-enabled
+capture before relying on the read/write split.
+
+**Still genuinely raw — no object exists in the 13-object model** (not
+conservatism; there is no row type to instantiate): account/group **lifecycle**
+(4720/4726/4731…), group-membership **enumeration** (4798/4799), privilege
+grants (4717/4718), audit-policy (4719), scheduled-task **registration**
+(4698/TaskScheduler), firewall-**rule** changes, WMI query telemetry, and pure
+app/telemetry channels. These stay raw-but-queryable.
+
 **What the measured cascade already does right (baseline, lonewolf evtx):**
 parent link 36/40 (heuristic); auth↔session LUID join 1616/1616 (104
 definitive); user_session owner 692/880; well-known accounts unified (Local
