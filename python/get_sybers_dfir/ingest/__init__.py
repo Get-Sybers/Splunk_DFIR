@@ -56,7 +56,7 @@ _WRAP_FUNCS = {
     "volatility": prepare.volatility_wrap,
 }
 
-VALID_SOURCES = ("l2t", "zeek", "evtx", "volatility")
+VALID_SOURCES = ("l2t", "zeek", "evtx", "volatility", "car")
 
 
 # ---- helpers ---------------------------------------------------------------
@@ -239,6 +239,43 @@ def run_l2t(client, processed_dir, container, staging_dir, seen, dry_run, summar
         "found": len(files), "ingested": ingested, "skipped": len(files) - len(todo)}
 
 
+def run_car(client, processed_dir, container, staging_dir, seen, dry_run, summary):
+    """Materialized CAR: data_store/processed/car/<source>/car_<object>.jsonl ->
+    mitre.car_<object> via car_<object>Mapping. A fan-out like run_l2t — the file
+    name carries the object — but the typed car_* tables + mappings already live
+    in the schema (kusto/schema/40-mitre.kql), so nothing is created here."""
+    car_dir = os.path.join(processed_dir, "car")
+    if not os.path.isdir(car_dir):
+        return
+    files = _find(car_dir, "car_*.jsonl")
+    todo = [f for f in files if _file_hash(os.path.relpath(f, processed_dir)) not in seen]
+    if not todo:
+        summary["sources"]["CAR -> mitre.car_*"] = {
+            "found": len(files), "ingested": 0, "skipped": len(files)}
+        return
+    ingested = 0
+    for f in todo:
+        rel = os.path.relpath(f, processed_dir)
+        obj = os.path.basename(f)[len("car_"):-len(".jsonl")]   # car_<object>.jsonl
+        table = f"car_{obj}"
+        fh = _file_hash(rel)
+        if os.path.getsize(f) == 0:        # a source with zero of this object
+            continue                       # (e.g. car_relationships for 0 edges)
+        if dry_run:
+            summary["submitted"] += 1
+            continue
+        dest = f"{CONTAINER_STAGE}/{prepare.staged_name(rel)}"
+        if not _docker_cp(f, container, dest):
+            summary["failed"] += 1
+            continue
+        if _ingest_batched(client, "mitre", table, f"{table}Mapping",
+                           "multijson", False, [dest], dry_run, summary):
+            record_hashes(client, [fh])
+            ingested += 1
+    summary["sources"]["CAR -> mitre.car_*"] = {
+        "found": len(files), "ingested": ingested, "skipped": len(files) - len(todo)}
+
+
 def process(processed_dir, only=None, dry_run=False, force=False,
             host="127.0.0.1", port=8080, container="kusto-emulator") -> dict:
     processed_dir = os.path.realpath(processed_dir)
@@ -276,6 +313,8 @@ def process(processed_dir, only=None, dry_run=False, force=False,
             run_source(client, row, processed_dir, container, staging_dir, seen, dry_run, summary)
         if not only or only == "l2t":
             run_l2t(client, processed_dir, container, staging_dir, seen, dry_run, summary)
+        if not only or only == "car":
+            run_car(client, processed_dir, container, staging_dir, seen, dry_run, summary)
 
     if not dry_run:
         _docker_exec(container, "rm", "-rf", CONTAINER_STAGE)

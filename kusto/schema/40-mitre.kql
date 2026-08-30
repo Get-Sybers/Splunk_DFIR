@@ -2,28 +2,30 @@
 //
 // The pipeline NORMALISES each evidence source into finished CAR events
 // (PIIAT-MitreCar: one car.db per source, one row per event) and exports one
-// `car_<object>.jsonl` per populated object. Those files are ingested here, 1:1,
-// as the `mitre.car_<object>` tables below — the JSON IS the ADX contract.
+// `car_<object>.jsonl` per populated object plus `car_relationships.jsonl` (the
+// superset relationship instances). Those files are ingested here, 1:1, as the
+// `mitre.car_<object>` tables + `mitre.car_relationships` below — the JSON IS the
+// ADX contract.
 //
 // This REPLACES the former query-time model (the CarX() / Car<Object>_<Artefact>()
 // functions that rebuilt each object from host/network/memory at query time).
 // Extraction now happens ONCE, in the engine, with its own test suite; KQL just
-// stores the result. No backwards-compatible views are kept — a consumer reads
-// the car_<object> table (or Car() for the cross-object stream) directly.
+// stores the result. No backwards-compatible views are kept.
 //
 // COLUMN NAMES ARE BRACKET-QUOTED. Many CAR fields collide with KQL keywords
-// (from, to, type, data, key, value, user, group, content, name, ...), which are
-// a syntax error as bare column names in .create table — the same trap
-// 00-databases.kql documents for the `network` database name. ['name'] form is
-// always valid, so every column is bracketed rather than guessing which are safe.
+// (from, to, type, data, key, value, user, group, ...), a syntax error as bare
+// column names in .create table — the same trap 00-databases.kql documents for
+// the `network` database name. ['name'] is always valid, so every column is
+// bracketed rather than guessing which are safe.
 //
-// SHAPE (every table): car_object (constant per table) + the common CAR header
+// SHAPE (object tables): car_object (constant per table) + the common CAR header
 // (timestamp, car_action, guid, owning_guid, link_confidence, source_artefact,
-// source_host) + native (dynamic — evidence with no CAR home) + the object's
-// MITRE fields as nullable strings. Numeric-looking fields stay string (evidence
-// is type-inconsistent); cast at query time as memory.VolatilityJson does.
+// source_host) + native (dynamic) + the object's MITRE fields as nullable
+// strings. Numeric-looking fields stay string (evidence is type-inconsistent);
+// cast at query time as memory.VolatilityJson does.
 //
-// GENERATED from the engine's object model (store.HEADER + each object's fields).
+// GENERATED from the engine's object model (store.HEADER + each object's fields)
+// plus the relationship export schema. Re-derive rather than hand-editing.
 
 //=============================================================================
 // car_authentication
@@ -825,6 +827,38 @@
   {"Column":"login_successful", "Properties":{"Path":"$.login_successful"}}
 ]```
 
+// The superset RELATIONSHIP instances (source -> verb -> target),
+// linking car_* rows by guid — the granular relationship timeline.
+//=============================================================================
+// car_relationships
+//=============================================================================
+.create-merge table car_relationships (
+    ['id']:long,
+    ['timestamp']:datetime,
+    ['source_host']:string,
+    ['relationship']:string,
+    ['source_object']:string,
+    ['source_guid']:string,
+    ['target_object']:string,
+    ['target_guid']:string,
+    ['confidence']:string,
+    ['method']:string
+)
+
+.create-or-alter table car_relationships ingestion json mapping "car_relationshipsMapping"
+```[
+  {"Column":"id", "Properties":{"Path":"$.id"}},
+  {"Column":"timestamp", "Properties":{"Path":"$.timestamp"}},
+  {"Column":"source_host", "Properties":{"Path":"$.source_host"}},
+  {"Column":"relationship", "Properties":{"Path":"$.relationship"}},
+  {"Column":"source_object", "Properties":{"Path":"$.source_object"}},
+  {"Column":"source_guid", "Properties":{"Path":"$.source_guid"}},
+  {"Column":"target_object", "Properties":{"Path":"$.target_object"}},
+  {"Column":"target_guid", "Properties":{"Path":"$.target_guid"}},
+  {"Column":"confidence", "Properties":{"Path":"$.confidence"}},
+  {"Column":"method", "Properties":{"Path":"$.method"}}
+]```
+
 //=============================================================================
 // Views
 //=============================================================================
@@ -832,9 +866,7 @@
 with (docstring = "Every CAR event across all 13 objects, common header only — the single CAR timeline", folder = "Views")
 Car() {
     union isfuzzy=true
-        car_authentication, car_driver, car_email, car_file, car_flow, car_http,
-        car_module, car_process, car_registry, car_service, car_socket,
-        car_thread, car_user_session
+        car_authentication, car_driver, car_email, car_file, car_flow, car_http, car_module, car_process, car_registry, car_service, car_socket, car_thread, car_user_session
     | project car_object, timestamp = todatetime(['timestamp']), car_action, guid,
               owning_guid, link_confidence, source_artefact, source_host, native
     | order by timestamp asc
