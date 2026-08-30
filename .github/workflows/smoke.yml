@@ -46,6 +46,11 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the CAR lane (get_sybers_dfir.mitrecar) reconstructs its model live
+          # from the nested car / attack-datasources submodules — check out
+          # recursively so build-car works.
+          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v5

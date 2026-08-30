@@ -156,7 +156,7 @@ fi
 python3 -m get_sybers_dfir.ingest --ping --host 127.0.0.1 --port "$SMOKE_PORT" >/dev/null 2>&1 \
     || die "emulator did not become reachable on :$SMOKE_PORT."
 pass "emulator deployed and answering (dfir_deploy_adx via dxdfir)"
-assert_has mitre ".show functions | where Name startswith 'Car' | count" "CAR functions created"
+assert_has mitre ".show tables | where TableName startswith 'car_' | count" "materialized CAR tables created (mitre.car_*)"
 
 # =============================================================================
 section "Process fixtures through the real evtx lane (EvtxECmd)"
@@ -175,39 +175,51 @@ python3 -m get_sybers_dfir.ingest --only evtx --processed-dir "$PROC_DIR" \
 assert_has host "EvtxEcmdJson | count" "EvtxEcmdJson populated"
 
 # =============================================================================
-# The heart of the test: CORRECTNESS. Each CAR object must return rows AND its
-# EvtxPayload-derived fields must be populated (all empty under the XML bug),
-# and where a fixture value is known, it must be present.
-section "CAR correctness assertions (Sysmon EID 1/3/5/6/7/8/11/12/13)"
+# Normalize the processed evtx into finished CAR (PIIAT-MitreCar engine) and
+# ingest the car_<object>.jsonl into the materialized mitre.car_* tables. This is
+# the real CAR path now — extraction happens in the engine, KQL just stores it.
+section "Normalize to CAR + ingest (materialized mitre.car_*)"
+python3 -m get_sybers_dfir.mitrecar --in "$OUT_DIR" --out "$PROC_DIR/car/windows_logs_sysmon" >/dev/null 2>&1 \
+    || die "CAR normalize (build-car) failed."
+python3 -m get_sybers_dfir.ingest --only car --processed-dir "$PROC_DIR" \
+    --host 127.0.0.1 --port "$SMOKE_PORT" --container "$SMOKE_CONTAINER" >/dev/null 2>&1 \
+    || die "CAR ingest failed."
 
-assert_has  mitre "CarDriver_Sysmon()   | where isnotempty(image_path) and isnotempty(signer) | count" \
-    "CarDriver (EID6): image_path + signer populated"
-assert_has  mitre "CarDriver_Sysmon()   | where image_path has 'VBoxDrv.sys' | count" \
-    "CarDriver: known BYOVD driver VBoxDrv.sys present"
+# =============================================================================
+# The heart of the test: CORRECTNESS. Each CAR object table must return rows AND
+# its extracted fields must be populated (all empty under the old XML bug), and
+# where a fixture value is known, it must be present. Numeric-looking columns are
+# strings (honest verbatim values), so assert isnotempty() rather than > 0.
+section "CAR correctness assertions (Sysmon EID 1/3/5/6/7/8/11/12/13 -> mitre.car_*)"
 
-assert_has  mitre "CarModule_Sysmon()   | where isnotempty(module_path) and pid > 0 | count" \
-    "CarModule (EID7): module_path + pid populated"
+assert_has  mitre "car_driver   | where isnotempty(image_path) and isnotempty(signer) | count" \
+    "car_driver (EID6): image_path + signer populated"
+assert_has  mitre "car_driver   | where image_path has 'VBoxDrv.sys' | count" \
+    "car_driver: known BYOVD driver VBoxDrv.sys present"
 
-assert_has  mitre "CarThread_Sysmon()   | where action == 'remote_create' and tgt_pid > 0 and isnotempty(start_address) | count" \
-    "CarThread (EID8): tgt_pid + start_address populated"
+assert_has  mitre "car_module   | where isnotempty(module_path) and isnotempty(pid) | count" \
+    "car_module (EID7): module_path + pid populated"
 
-assert_has  mitre "CarProcess_Sysmon()  | where action == 'create' and isnotempty(command_line) | count" \
-    "CarProcess (EID1): command_line populated (EvtxPayload)"
-assert_has  mitre "CarProcess_Sysmon()  | where action == 'terminate' | count" \
-    "CarProcess (EID5): terminate rows present"
+assert_has  mitre "car_thread   | where car_action == 'remote_create' and isnotempty(tgt_pid) and isnotempty(start_address) | count" \
+    "car_thread (EID8): tgt_pid + start_address populated"
 
-assert_has  mitre "CarFlow_Sysmon()     | where isnotempty(src_ip) and dest_port > 0 | count" \
-    "CarFlow (EID3): src_ip + dest_port populated (EvtxPayload)"
+assert_has  mitre "car_process  | where car_action == 'create' and isnotempty(command_line) | count" \
+    "car_process (EID1): command_line populated"
+assert_has  mitre "car_process  | where car_action == 'terminate' | count" \
+    "car_process (EID5): terminate rows present"
 
-assert_has  mitre "CarFile_Sysmon()     | where isnotempty(file_path) | count" \
-    "CarFile (EID11): file_path populated"
+assert_has  mitre "car_flow     | where isnotempty(src_ip) and isnotempty(dest_port) | count" \
+    "car_flow (EID3): src_ip + dest_port populated"
 
-assert_has  mitre "CarRegistry_Sysmon() | where isnotempty(key) | count" \
-    "CarRegistry (EID12/13): key populated"
+assert_has  mitre "car_file     | where isnotempty(file_path) | count" \
+    "car_file (EID11): file_path populated"
 
-# The roll-up objects (per-artefact unions) must also surface the Sysmon rows.
-assert_has  mitre "CarDriver()   | count" "CarDriver() roll-up returns rows"
-assert_has  mitre "CarThread()   | count" "CarThread() roll-up returns rows"
+assert_has  mitre "car_registry | where isnotempty(key) | count" \
+    "car_registry (EID12/13): key populated"
+
+# The cross-object timeline and the superset relationship edges must surface too.
+assert_has  mitre "Car() | count" "Car() cross-object CAR timeline returns rows"
+assert_has  mitre "car_relationships | count" "car_relationships (superset edges) populated"
 
 # =============================================================================
 echo
