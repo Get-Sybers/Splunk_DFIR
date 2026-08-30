@@ -121,3 +121,36 @@ hand is STARTTLS-encrypted — an empty `car_email` table is the honest output.
   (never into canonical columns).
 - The authentication↔user_session LUID join writes
   `native.target_session_guid` / `native.subject_session_guid` with its tier.
+
+## Additional inference rules discovered from ingested data (epic #86, Phase C)
+
+Phase C mines the REAL per-source stores for within-source join keys the cascade
+does not yet exploit. Every rule below is **within one `car.db`** (per-source,
+scoped per `source_host`) and is a **candidate — not yet implemented**; each is
+grounded in a measured key in the ingested evidence. Implementation (adding them
+to `relationships.yml` + `enrich.py`) is gated behind this catalogue.
+Cross-source correlation (memory + disk + network) is a separate very-end stage
+— see `docs/CAR-CrossSource.md` — and is explicitly out of Phase C scope.
+
+| # | rule | join key (tier) | fills | evidence (measured) | status |
+|---|---|---|---|---|---|
+| R1 | **user_session lifecycle** — pair logout→login, close the session | TS id24 by `SessionID`+user; Security 4634 by `TargetLogonId` LUID (definitive within window; well-known LUID heuristic) | session `end_time`, duration, still-open-at-EOL flag | lonewolf evtx: 831 login / 49 logout rows sit **unpaired** today | candidate |
+| R2 | **process lifetime bounding** — pair terminate→create; then reject a pid-owner that had already exited before the spoke ts | ProcessGuid (definitive) / pid+window (heuristic) | process `end_time`; **tightens** the owner/parent pid-window heuristic | Sysmon: 14 create / **3 terminate**; evtx 4689 where audited (0 here). `_match` currently checks only create≤ts | candidate |
+| R3 | **zeek uid spoke→flow** — link each http/file to its connection | `uid` (definitive within capture); `fuid` = file identity | http/file inherit the conn 5-tuple (src/dst ip+port), transport, duration | zeek exterior: `uid` on flow(5520), http(1309), file(1232); http/file carry **no** owner link today | candidate |
+| R4 | **BITS transfer correlation** — assemble one transfer from its events | `transferId` GUID (definitive) | final bytes/URL, completion; owner from the BITS job-created event's process | lonewolf: id59 start ×114 + id60 complete ×101, 114 distinct `transferId`; **13 never completed = interrupted (signal)** | candidate |
+| R5 | **thread injection dual-link** — link BOTH source and target process | source + target ProcessGuid (both native, definitive) | the injection relationship (src → tgt), not just one owner | Sysmon id8 remote_create ×3, single-linked (2/3) today | candidate |
+| R6 | **auth caller-process owner** — link an auth to the process that requested it | 4624/4625 Payload `ProcessId`+`ProcessName` → owning_pid (heuristic pid+window) | auth `owning_guid` (today auth links only to its *session* via LUID) | verified present (`ProcessId`=0x4…); **honest null** for network logons where it is System/`-` | candidate |
+| R7 | **service→process by image** (weak) — link a 7045 install to a run of its binary | 7045 `ImagePath` ↔ 4688 `NewProcessName` exe+window (heuristic) | service `owning_guid` | low confidence: install time ≠ run time; SCM (not the installer) starts it | optional |
+
+**Deferred to the very-end aggregate stage (NOT Phase C — different `car.db`s):**
+service↔registry service-key writes (evtx and registry are *separate* sources),
+the WIN-1M3263ACE5D↔DESKTOP-PM6C56D rename lineage (a host-identity call — one
+box renamed, seen in one store but a cross-scope decision), and any
+`community_id` zeek↔host-flow bridge.
+
+**What the measured cascade already does right (baseline, lonewolf evtx):**
+parent link 36/40 (heuristic); auth↔session LUID join 1616/1616 (104
+definitive); user_session owner 692/880; well-known accounts unified (Local
+System ×790). `service`/`http`/`authentication` show 0 *owner* links because the
+artefact carries no owning-process key — honest nulls, and exactly what R3–R6
+above set out to add where a real key does exist.

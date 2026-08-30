@@ -1,15 +1,18 @@
-# Cross-source CAR enrichment — capability determination + data assessment
+# Cross-source CAR correlation — the VERY-END aggregate stage (deferred)
 
-*Epic [Get-Sybers/DX_DFIR#86](https://github.com/Get-Sybers/DX_DFIR#86), Phase C.
-This is the analysis that MUST precede any cross-source enrichment code (owner
-sequencing: capability → assessment → implementation). No enrichment is
-implemented here — this determines what is possible, what is impossible, and
-what must be built first.*
+*Epic [Get-Sybers/DX_DFIR#86](https://github.com/Get-Sybers/DX_DFIR#86).
+**This is NOT Phase C.** Phase C is within-source only (one `car.db`, its own
+additional inference rules — see `docs/CAR-Relations.md`). This document is the
+much-later **very-end** stage that correlates memory + disk + network **across**
+the per-source databases. It is DEFERRED: do not implement any of it until the
+per-source model is complete and an explicit investigation-scope grouping
+exists. It is captured here only so the analysis is not lost.*
 
-Scope reminder: per-source enrichment is self-contained and DONE (one source →
-one `car.db`, `docs/CAR-Pipeline.md`). "Cross-source" is the OPTIONAL final
-stage that correlates events **across** the per-source databases of the same
-investigation. It never mixes into the per-source products.
+Scope reminder: per-source enrichment is self-contained (one source → one
+`car.db`, `docs/CAR-Pipeline.md`) and its within-source inference cascade,
+including the Phase-C candidate rules, stays entirely inside that one database.
+This stage is the OPTIONAL final correlation **across** those databases. It
+never mixes into the per-source products.
 
 ## The sources may be completely unrelated origins (read first)
 
