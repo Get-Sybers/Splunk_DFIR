@@ -122,6 +122,17 @@ hand is STARTTLS-encrypted — an empty `car_email` table is the honest output.
 - The authentication↔user_session LUID join writes
   `native.target_session_guid` / `native.subject_session_guid` with its tier.
 
+## Adopted from MITRE CAR analytics (proven relationships)
+
+- **file → process by image path (CAR-2014-02-001)** — a file whose `file_path`
+  equals a process's `image_path` on the same `source_host` is the binary that
+  process executed. Implemented in `enrich.py` (`_link_file_to_process`):
+  surfaces `_native.executed_as_process_guid` (+ `_link` = heuristic — path
+  equality, not instance identity; `_count` when several processes ran the
+  path). This is MITRE CAR's own correlation, ported as a within-source edge.
+  Regression-tested against CAR's true-positive telemetry (`tests/
+  test_true_positives.py`, CreateRemoteThread guid cascade).
+
 ## Additional inference rules discovered from ingested data (epic #86, Phase C)
 
 Phase C mines the REAL per-source stores for within-source join keys the cascade
