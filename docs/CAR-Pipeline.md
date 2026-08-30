@@ -45,9 +45,16 @@ aggregate — never part of the per-source product (see §9, still to build).
 Run it:
 
 ```
-python -m get_sybers_dfir.mitrecar --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]
-# → <dir>/car.db  +  <dir>/car_<object>.jsonl   (one JSONL per populated object)
+dxdfir car                                  # batch: build every source under data_store/processed/
+dxdfir car --force                          # rebuild existing stores too (after a map/coverage change)
+dxdfir car --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]   # one source
+# → <dir>/car.db + <dir>/superset.db + <dir>/car_<object>.jsonl (one JSONL per populated object)
 ```
+
+Batch mode is **idempotent** — a source whose `car.db` already exists is skipped;
+`--force` rebuilds it, which is required after new maps land or the existing
+(stale) stores would keep skipping the newly-covered events. (`dxdfir car` fronts
+the same engine as `python -m get_sybers_dfir.mitrecar`.)
 
 ## 3. Components (the vendored `third_party/piiat-mitrecar` submodule)
 

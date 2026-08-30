@@ -272,6 +272,46 @@ def verify_car(
     raise typer.Exit(carcheck.main(["--host", host, "--port", str(port)]))
 
 
+@app.command(name="car")
+def car(
+    processed_dir: str = typer.Argument(
+        None, help="Processed tree to batch (default: <repo>/data_store/processed). Ignored with --in."),
+    in_path: str = typer.Option(None, "--in", help="Single-source: one processed file/dir → one car.db."),
+    out: str = typer.Option(None, "--out", help="Output dir (single-source: this source's car dir; batch: the car/ root)."),
+    host: str = typer.Option(None, "--host", help="Single-source: fallback source_host where the map derives none."),
+    artefacts: str = typer.Option(None, "--artefacts", help="Single-source: comma-separated artefact map keys (default: route by filename)."),
+    force: bool = typer.Option(False, "--force", help="Batch: rebuild sources whose car.db already exists."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Normalize processed evidence into per-source CAR stores (car.db + superset.db).
+
+    Batch mode (default): discover every source under the processed tree and build
+    each one's car.db + superset.db + car_<object>.jsonl. Single-source mode (--in):
+    one file/dir → one car.db.
+
+    Batch is idempotent — a source whose car.db already exists is skipped. Pass
+    --force to rebuild after a coverage/map change, otherwise the existing (stale)
+    stores are kept and newly-mapped events are never ingested.
+    """
+    from . import mitrecar
+    if in_path:
+        argv = ["--in", in_path]
+        for flag, val in (("--out", out), ("--host", host), ("--artefacts", artefacts)):
+            if val:
+                argv += [flag, val]
+    else:
+        batch = processed_dir or str(_repo_root(repo_root) / "data_store" / "processed")
+        argv = ["--batch", batch]
+        if out:
+            argv += ["--out", out]
+        if force:
+            argv.append("--force")
+    proc = mitrecar.run(argv)
+    sys.stdout.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    raise typer.Exit(proc.returncode)
+
+
 @app.command(name="car-timeline")
 def car_timeline(
     car_dir: str = typer.Argument(..., help="A source's car directory, or a tree to aggregate."),
