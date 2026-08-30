@@ -146,9 +146,11 @@ on Windows), or drive it with `curl` — the deploy banner prints the endpoints.
 Start in the `mitre` database:
 
 ```kusto
-CarCoverage()          // which CAR objects have data right now
-CarProcess() | take 50
-CarFlow() | where dest_port == 445
+CarObjects()                          // which CAR objects have data right now
+car_process | take 50
+car_flow | where dest_port == "445"   // columns are strings; cast where needed
+Car() | take 100                      // every object on one timeline
+car_relationships | take 50           // the superset relationship edges
 ```
 
 ---

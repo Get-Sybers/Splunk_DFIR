@@ -126,8 +126,9 @@ dxdfir detect                       # sweep detections across whatever is presen
 dxdfir --help                       # every command; `man dxdfir` for the manual
 ```
 
-Query the results in KQL against the emulator at `127.0.0.1:8080` — the MITRE CAR
-functions (`CarProcess()`, `CarFlow()`, …) and `DetectionsLatest()`.
+Query the results in KQL against the emulator at `127.0.0.1:8080` — the
+materialized MITRE CAR tables (`car_process`, `car_flow`, …; `Car()` for the
+cross-object timeline, `car_relationships` for the edges) and `DetectionsLatest()`.
 
 Installing the CLI by hand instead of via the setup script (needs Python 3 + Docker):
 
@@ -155,13 +156,13 @@ processor). The ✅/⚠️ states reflect real runs on the author's corpus.
 | VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
 | PCAP → Zeek JSON logs | ✅ Works | the zeek lane (`dxdfir process zeek`); `use_json=T`, ISO8601 timestamps |
 | Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
-| Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, feeding `CarUserSession`/`CarProcess`/`CarService` (real 4624/4688/7045) |
+| Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, then normalised by the CAR engine into `mitre.car_user_session`/`car_process`/`car_service` (real 4624/4688/7045) |
 | Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
 | Velociraptor offline collectors (EZ Tools) | ❌ Not provided | Collecting artefacts off endpoints is out of scope here — the repo processes collector output you supply (same Zimmerman parsers, no Kroll licence constraint) |
 | Velociraptor processing | ⚠️ Partial | Normalisation script exists |
 | **Kusto emulator deploy** | ✅ Runs | `dxdfir deploy` (the `dfir_deploy_adx` role) — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
 | **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor collector output |
-| **MITRE CAR field mapping (KQL)** | ✅ **9/9 validated live** | CAR objects as KQL functions in the `mitre` database — `CarFlow()`, `CarProcess()`, `CarUserSession()`, `CarService()`, `CarFile()`, `CarRegistry()`, `CarDriver()`, `CarModule()`, `CarThread()`, plus `CarCoverage()`. **All 9 objects return real rows** on the live emulator. See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
+| **MITRE CAR (materialized)** | ✅ **validated live** | The engine normalises each source into finished CAR events; the pipeline ingests one `car_<object>.jsonl` per object as the 13 `mitre.car_*` tables (+ `car_relationships`). `Car()` unions them into one timeline; `CarObjects()` counts them. Validated on the emulator (`verify-car`: populated, value-sane, traceable; car_action checked against the engine's model vocabulary). See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
 | **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `get_sybers_dfir.signatures` (the `dfir_signatures` role); **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
 | Chainsaw | ❌ Not started | Not built |
 
@@ -246,13 +247,13 @@ local Data Explorer emulator.
 ## Envisioned Endstate
 <a name="envisioned-endstate"></a>
 
-**This is the goal, not a working example.** The CAR functions that would make
-this query return these results exist but are unverified.
+The materialized CAR makes this query real — `car_process` is populated by the
+engine and validated on the emulator (`verify-car`, and the smoke test).
 
 ```kusto
-CarProcess()
+car_process
 | where isnotempty(command_line)
-| project dtg = Timestamp, hostname, user, command_line, artifact = SourceType
+| project dtg = todatetime(timestamp), hostname, user, command_line, artifact = source_artefact
 ```
 
 | dtg                 | hostname       | user         | command_line                                              | artifact                 |
