@@ -41,17 +41,24 @@ dxdfir ingest --only car            # load the CAR stores into the mitre.car_* t
 dxdfir detect                       # sweep detections over what's present -> misc.Detections
 ```
 
-Query at `127.0.0.1:8080`: the materialised CAR — `car_process`, `car_flow`, … ;
-`Car()` for the cross-object timeline, `car_relationships` for the edges — plus
-`DetectionsLatest()`. `dxdfir --help` lists every command (`man dxdfir` for the
-manual); `dxdfir car-timeline <car-dir>` writes a property-rich, time-ordered
-timeline JSONL.
+Query at `127.0.0.1:8080`. The CAR objects live in the **`mitre` database** —
+select it, then use the bare table names (`mitre.car_process` isn't valid KQL):
+`car_process`, `car_flow`, …; `Car()` for the cross-object timeline,
+`car_relationships` for the edges — plus `DetectionsLatest()`. `dxdfir --help`
+lists every command (`man dxdfir` for the manual); `dxdfir car-timeline <car-dir>`
+writes a property-rich, time-ordered timeline JSONL.
 
-## What it produces
+## How it runs
+<a name="how-it-runs"></a>
 
 A three-layer stack — the **`dxdfir` CLI** → the **`get_sybers.dfir` Ansible
-collection** (one role per source) → the **`get_sybers_dfir` Python package** —
-targeting the Kusto emulator (default) or SOF-ELK (`--pipeline sofelk`).
+collection** (one role per source, one action per task) → the **`get_sybers_dfir`
+Python package** — targeting the Kusto emulator (default) or SOF-ELK
+(`--pipeline sofelk`). Each source runs as `dxdfir process <source>` (driving the
+matching `dfir_<source>` role); processors are also runnable as
+`python -m get_sybers_dfir.<source>`.
+
+## What it produces
 
 | Source | Command | Lands in |
 |:---|:---|:---|
@@ -59,7 +66,7 @@ targeting the Kusto emulator (default) or SOF-ELK (`--pipeline sofelk`).
 | PCAP (Zeek) | `process zeek` | `network.ZeekConn` (typed) + generic `network.Zeek` |
 | Windows event logs + Sysmon (EvtxECmd) | `process evtx` | `host.EvtxEcmdJson` |
 | Memory (Volatility 3 / PIIAT-Mem) | `process volatility` | `memory.VolatilityJson` |
-| EZ-Tools artefacts — SRUM, registry, … | `process zimmerman` | processed EZ-tool output |
+| EZ-Tools artefacts — SRUM, registry, … | `process zimmerman` | processed output → CAR (`mitre.car_*`, via `build-car`) |
 | YARA / Suricata / Hayabusa | `process signatures` | JSONL under `processed/signatures/` |
 
 The **CAR layer is materialised**: the [PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)
