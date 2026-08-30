@@ -105,6 +105,7 @@ faked into a canonical column.
 | **Zeek** | `zeek_conn`, `zeek_http`, `zeek_smtp`, `zeek_files` | flow, http, email, file |
 | **Plaso execution** | `plaso_exec_prefetch/winreg/cron` | process |
 | **Plaso filesystem + Linux** | `l2t_filestat/mft/usnjrnl/utmp/utmpx/text` | file, user_session |
+| **EZ-Tools registry + SRUM** (the Zimmerman lane's output) | `recmd`, `plaso_registry`, `plaso_srum` | registry, flow, process |
 | **Memory** (PIIAT-Mem) | passthrough | all 10 memory objects (finished CAR) |
 
 Windows event-log EventIds covered: 4624/4625/4634/4647/4672/4688 (Security),
@@ -114,10 +115,14 @@ a Plaso record is adapted to the EvtxECmd shape and run through the identical
 maps (verified: Plaso-parsed LoneWolf → byte-identical CAR to the EvtxECmd run,
 including definitive Sysmon ProcessGuid links).
 
+SRUM and RECmd are now covered: the **Zimmerman lane** (`get_sybers_dfir.zimmerman`)
+produces the real EZ-tool output — RECmd's batch JSON and, for SRUM, plaso's
+`esedb/srum` parse of `SRUDB.dat` (SrumECmd is .NET-only) — which the `recmd`,
+`plaso_registry` and `plaso_srum` maps turn into registry / flow / process CAR.
+
 Honest non-coverage: `email` has no live source yet (the only smtp capture is
 STARTTLS-encrypted); Zeek dns/ssl/x509/dhcp/ntp/snmp/ocsp/weird/pe have no
-dedicated CAR object (flow-detail, routed to `[]` explicitly); SRUM/RECmd is
-**parked** pending real EZ-tool (SrumECmd/RECmd) output.
+dedicated CAR object (flow-detail, routed to `[]` explicitly).
 
 ## 6. The mapping engine
 

@@ -244,9 +244,12 @@ confirm "Do you wish to proceed?" || { echo "Setup cancelled."; exit 1; }
 # before the chown/chmod below so the freshly checked-out files inherit them too.
 if [[ -f "$REPO_ROOT_DIR/.gitmodules" ]]; then
     echo "🔗 Initialising git submodules (recursive)..."
-    git config --global --add safe.directory "$REPO_ROOT_DIR" 2>/dev/null || true
-    git -C "$REPO_ROOT_DIR" submodule sync --recursive >/dev/null 2>&1 || true
-    git -C "$REPO_ROOT_DIR" submodule update --init --recursive \
+    # safe.directory is scoped to THIS invocation with `-c` (the repo may be owned
+    # by a different user until the chown below) — never `git config --global`,
+    # which is a persistent, accumulating change to the operator's own git config.
+    GIT_SAFE=(-c "safe.directory=$REPO_ROOT_DIR" -c "safe.directory=*")
+    git "${GIT_SAFE[@]}" -C "$REPO_ROOT_DIR" submodule sync --recursive >/dev/null 2>&1 || true
+    git "${GIT_SAFE[@]}" -C "$REPO_ROOT_DIR" submodule update --init --recursive \
         || die "Failed to initialise git submodules recursively (need network + git access)."
     echo "✅ Submodules checked out (incl. PIIAT-MitreCar's nested car + attack-datasources)."
 else

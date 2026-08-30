@@ -70,8 +70,6 @@
 !/processed/log2timeline/.gitkeep
 !/processed/software_logs/
 !/processed/software_logs/.gitkeep
-!/processed/velociraptor/
-!/processed/velociraptor/README.md
 !/processed/windows_logs/
 !/processed/windows_logs/.gitkeep
 !/processed/windows_logs/hostname1/

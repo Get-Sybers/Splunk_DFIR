@@ -2,7 +2,15 @@
 import os
 import sys
 
+import pytest
+
 from get_sybers_dfir import volatility as vol
+
+# The conformance guard below shells the PIIAT-Mem CLI, so it needs the vendored
+# submodule checked out — skip (don't fail the suite) when it isn't, mirroring
+# the mitrecar lane's submodule gating.
+_HAVE_PIIAT_MEM = os.path.isfile(
+    os.path.join(vol._PIIAT_MEM_DIR, "piiat_mem", "__init__.py"))
 
 
 def test_is_memory_image_extensions():
@@ -52,6 +60,8 @@ def test_default_plugins_include_car_set():
     assert vol.DEFAULT_PLUGINS[0] == "banners.Banners"
 
 
+@pytest.mark.skipif(not _HAVE_PIIAT_MEM,
+                    reason="third_party/piiat-mem submodule not initialised")
 def test_car_set_covers_the_tools_default_plugins():
     """Conformance guard (not runtime coupling): the CAR set is named by PIIAT-Mem's
     public plugin names, so a tool-side rename must not silently drift. Shell the

@@ -130,10 +130,11 @@ def _plugin_done(dest: str, plugin: str) -> bool:
 
 def _run_piiat_mem(img, dest, plugins, symbols_dir, image, native, symbols_online) -> None:
     """One `python -m piiat_mem` invocation for `plugins` over `img` into `dest`.
-    Progress goes to the tool's stderr (captured, not forwarded, so our stdout stays
-    a clean summary). We do NOT gate on the exit code — rc=1 just means every plugin
-    produced nothing (the retryable Windows-without-symbols case); success is judged
-    per file by `_valid_jsonl`."""
+    The tool's stdout+stderr (its progress) are STREAMED to ``<dest>/piiat_mem.log``
+    rather than captured in memory — a big or verbose run then stays bounded and
+    debuggable, and our own stdout stays a clean summary. We do NOT gate on the
+    exit code — rc=1 just means every plugin produced nothing (the retryable
+    Windows-without-symbols case); success is judged per file by `_valid_jsonl`."""
     py = native or sys.executable
     argv = [py, "-m", "piiat_mem",
             "-f", img, "-o", dest,
@@ -147,7 +148,8 @@ def _run_piiat_mem(img, dest, plugins, symbols_dir, image, native, symbols_onlin
         argv.append("--native")
     env = dict(os.environ)
     env["PYTHONPATH"] = _PIIAT_MEM_DIR + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-    subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, check=False)
+    with open(os.path.join(dest, "piiat_mem.log"), "wb") as log:
+        subprocess.run(argv, stdout=log, stderr=subprocess.STDOUT, env=env, check=False)
 
 
 def process(memory_dir, out_dir, symbols_dir, image=_IMAGE, plugins=None,
