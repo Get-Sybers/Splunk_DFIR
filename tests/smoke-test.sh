@@ -41,7 +41,7 @@ cd "$REPO_ROOT" || exit 1
 SMOKE_CONTAINER="${SMOKE_CONTAINER:-kusto-smoke}"
 SMOKE_PORT="${SMOKE_PORT:-8090}"
 KEEP="${KEEP:-0}"
-FIXTURE_DIR="data_store/raw/other_raw_data/WinEvt/sysmon-attack-samples"
+FIXTURE_DIR="data_store/raw/logs/winevt/sysmon-attack-samples"
 OUT_DIR="$(mktemp -d)"
 PROC_DIR="$(mktemp -d)"
 

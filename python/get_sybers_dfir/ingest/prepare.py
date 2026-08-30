@@ -7,7 +7,6 @@ columns alongside the original record before staging:
 
   zeek (non-conn) -> {"LogType", "SourceFile", "Record"}   (conn is the typed table's job)
   volatility      -> {"Plugin",  "SourceFile", "Record"}
-  velociraptor    -> {"Artefact","SourceFile", "Record"}
   plaso l2t       -> {"SourceImage","Timestamp","Parser","Record"}, one table per top parser
 
 These functions are pure (path in, list-of-JSONL-strings out) so they unit-test
@@ -104,15 +103,8 @@ def volatility_wrap(path: str, source_rel: str) -> list[str]:
     return wrap(path, "Plugin", volatility_plugin(path), source_rel)
 
 
-def velociraptor_artefact(path: str) -> str:
-    return os.path.basename(path)[: -len(".json")] if path.lower().endswith(".json") else os.path.basename(path)
 
 
-def velociraptor_wrap(path: str, source_rel: str) -> list[str]:
-    return wrap(path, "Artefact", velociraptor_artefact(path), source_rel)
-
-
-# ---- plaso l2t: fan one json_line file out into per-parser tables ----------
 def table_name(parser: str) -> str:
     """Top-level parser -> table name: filestat -> L2tFilestat,
     winreg/appcompatcache -> L2tWinreg, firefox_cache -> L2tFirefoxCache."""

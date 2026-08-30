@@ -52,8 +52,8 @@ REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 # package, unzip backs the velociraptor lane, tar backs the image tarballs
 # written by save-docker-images.sh, curl fetches sample fixtures.
 # ca-certificates and gnupg are needed to add the Docker repo itself.
-APT_DEPS=(ca-certificates curl gnupg unzip python3 python3-venv tar)
-REQUIRED_CMDS=(curl python3 unzip tar realpath readlink)
+APT_DEPS=(ca-certificates curl git gnupg unzip python3 python3-venv tar)
+REQUIRED_CMDS=(curl git python3 unzip tar realpath readlink)
 
 ASSUME_YES=false
 
@@ -227,10 +227,34 @@ echo -e "\n================== Setup Actions ==================\n"
 echo "1. ✅ Check and install Docker (completed)"
 echo "2. ✅ Install required userland tools (completed)"
 echo "3. ✅ Set up Docker group permissions (completed)"
-echo "4. 🔧 Set ownership and permissions on the DX_DFIR repository"
+echo "4. 🔧 Initialise the git submodules (recursively)"
+echo "5. 🔧 Set ownership and permissions on the DX_DFIR repository"
 echo -e "\n==================================================\n"
 
 confirm "Do you wish to proceed?" || { echo "Setup cancelled."; exit 1; }
+
+################################################################################
+# Pull the git submodules — RECURSIVELY.
+#
+# The CAR lane (get_sybers_dfir.mitrecar) drives the vendored PIIAT-MitreCar
+# engine in third_party/piiat-mitrecar, which reconstructs its object model LIVE
+# from ITS OWN pinned submodules (third_party/car, third_party/attack-datasources).
+# A plain `git submodule update --init` leaves those nested modules empty and the
+# `dxdfir` CAR/timeline commands then fail, so the init MUST be recursive. Runs
+# before the chown/chmod below so the freshly checked-out files inherit them too.
+if [[ -f "$REPO_ROOT_DIR/.gitmodules" ]]; then
+    echo "🔗 Initialising git submodules (recursive)..."
+    # safe.directory is scoped to THIS invocation with `-c` (the repo may be owned
+    # by a different user until the chown below) — never `git config --global`,
+    # which is a persistent, accumulating change to the operator's own git config.
+    GIT_SAFE=(-c "safe.directory=$REPO_ROOT_DIR" -c "safe.directory=*")
+    git "${GIT_SAFE[@]}" -C "$REPO_ROOT_DIR" submodule sync --recursive >/dev/null 2>&1 || true
+    git "${GIT_SAFE[@]}" -C "$REPO_ROOT_DIR" submodule update --init --recursive \
+        || die "Failed to initialise git submodules recursively (need network + git access)."
+    echo "✅ Submodules checked out (incl. PIIAT-MitreCar's nested car + attack-datasources)."
+else
+    echo "ℹ️  No .gitmodules found — skipping submodule init."
+fi
 
 ################################################################################
 # Set ownership and permissions for DX_DFIR.

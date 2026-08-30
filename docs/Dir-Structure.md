@@ -7,7 +7,7 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
 ```
   $DX_DFIR
     └── python/                                       # get_sybers_dfir package + the dxdfir CLI — the front-end
-    │   └── get_sybers_dfir/                          # processors (zeek/plaso/volatility/evtx/velociraptor/signatures), ingest/, cli.py
+    │   └── get_sybers_dfir/                          # processors (zeek/plaso/volatility/evtx/signatures), ingest/, cli.py
     │   └── man/                                      # dxdfir.1 man page
     │   └── tests/                                    # pytest unit tests (pure logic, no Docker)
     │
@@ -76,7 +76,6 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
             └── signatures/
             │   └── yara/ suricata/ hayabusa/         # detection JSONL (YARA matches / Suricata EVE / Hayabusa Sigma)
             │
-            └── velociraptor/                         # Velociraptor collector output (EZ Tools) -> host.VelociraptorJson
 ```
 
 The Splunk-era tree (`splunk/` with its eight apps, and a since-removed
@@ -84,6 +83,5 @@ in-container provisioning `ansible/` — **unrelated to today's
 `get_sybers.dfir` collection** under `ansible/collections/`) was retired when
 the SIEM moved to the Kusto emulator, and the KAPE automation
 (`processed/kape/`, the two PowerShell scripts) was removed in favour of
-Velociraptor offline collectors running the EZ Tools. All of it
 survives in git history and on the frozen
 [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) branch.

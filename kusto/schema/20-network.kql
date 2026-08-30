@@ -15,7 +15,7 @@
 //   ZeekConn  typed, because conn.log is stable, high-volume, and the one Zeek
 //             log the MITRE CAR mapping needs (CarFlow)
 //   Zeek      every other log type, semi-structured — one dynamic Record column,
-//             the same shape memory.VolatilityJson and host.VelociraptorJson use
+//             the same shape memory.VolatilityJson uses
 //
 // The generic table IS populated now (it was not under the TSV path): every
 // non-conn log is wrapped {LogType, SourceFile, Record} by the ingest loader's
@@ -100,7 +100,7 @@
 // LogType, SourceFile and Ts are per-file/per-record values .ingest cannot
 // inject from the raw log, so the ingest loader's zeek wrap rewrites
 // each JSON line as {LogType, SourceFile, Record} before loading — the same
-// constant-injection pattern the Volatility and Velociraptor loaders use.
+// constant-injection pattern the Volatility loader uses.
 //=============================================================================
 .create-merge table Zeek (
     LogType:    string,

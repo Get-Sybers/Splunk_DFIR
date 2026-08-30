@@ -49,18 +49,14 @@ SOURCES = [
     {"key": "volatility", "label": "Volatility 3 -> memory.VolatilityJson", "subdir": "volatility",
      "glob": "*.jsonl", "db": "memory", "table": "VolatilityJson",
      "mapping": "VolatilityJsonMapping", "fmt": "multijson", "hdr": False, "wrap": "volatility"},
-    {"key": "velociraptor", "label": "Velociraptor -> host.VelociraptorJson", "subdir": "velociraptor",
-     "glob": "*.json", "db": "host", "table": "VelociraptorJson",
-     "mapping": "VelociraptorJsonMapping", "fmt": "multijson", "hdr": False, "wrap": "velociraptor"},
 ]
 
 _WRAP_FUNCS = {
     "zeek": prepare.zeek_wrap,
     "volatility": prepare.volatility_wrap,
-    "velociraptor": prepare.velociraptor_wrap,
 }
 
-VALID_SOURCES = ("l2t", "zeek", "evtx", "volatility", "velociraptor")
+VALID_SOURCES = ("l2t", "zeek", "evtx", "volatility")
 
 
 # ---- helpers ---------------------------------------------------------------

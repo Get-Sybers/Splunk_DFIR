@@ -9,8 +9,7 @@ pipeline. The heavy per-item work (container runs, JSON reshaping) lives here; t
 Each source is a module runnable standalone or through its role:
 ```bash
 python -m get_sybers_dfir.zeek        --pcap-dir RAW/pcaps --out-dir PROCESSED/zeek
-python -m get_sybers_dfir.velociraptor --raw-dir RAW/velociraptor --out-dir PROCESSED/velociraptor
-python -m get_sybers_dfir.evtx        --evtx-dir RAW/WinEvt --out-dir PROCESSED/windows_logs --evtxecmd-dir DEPS/evtxecmd
+python -m get_sybers_dfir.evtx        --evtx-dir RAW/logs/winevt --out-dir PROCESSED/windows_logs --evtxecmd-dir DEPS/evtxecmd
 python -m get_sybers_dfir.volatility  --memory-dir RAW/memory --out-dir PROCESSED/volatility --symbols-dir DEPS/symbols --renderer … --plugins-dir …
 python -m get_sybers_dfir.plaso       --input-dir RAW/disk_images --out-dir PROCESSED/log2timeline --module dev-scripts/plaso/l2t_json_dfir.py
 python -m get_sybers_dfir.signatures  --output-dir PROCESSED/signatures --repo-root .

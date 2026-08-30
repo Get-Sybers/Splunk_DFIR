@@ -2,7 +2,7 @@
 
 This directory contains **host provisioning** scripts — installing the
 environment and seeding the analysis container images. Host artefacts are
-collected with **Velociraptor offline collectors running the EZ Tools**
+collected with **the hardened EZ-tool containers**
 (replacing the removed KAPE automation).
 
 > **The `dxdfir` CLI and the `get_sybers.dfir` collection are the supported
@@ -69,7 +69,7 @@ Deploy and ingest run through the framework — no shell scripts:
   idempotent). ⚠️ Sets `ACCEPT_EULA=Y` on your behalf.
 - **`dxdfir ingest`** drives the `dfir_ingest_adx` role
   (`get_sybers_dfir.ingest`): loads `data_store/processed` — **Plaso `L2t*`,
-  EvtxECmd, Zeek (conn typed + generic), Volatility, Velociraptor** — with an
+  EvtxECmd, Zeek (conn typed + generic), Volatility** — with an
   in-DB ledger for idempotence. `--only <source>` to load one.
 
 ## Provisioning scripts

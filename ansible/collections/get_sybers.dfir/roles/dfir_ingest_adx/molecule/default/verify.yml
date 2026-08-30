@@ -11,9 +11,9 @@
         method: POST
         body_format: json
         body:
-          db: host
+          db: memory
           csl: >-
-            VelociraptorJson | where Record.Marker == "DFIR_INGEST_MOLECULE" | count
+            VolatilityJson | where Record.Marker == "DFIR_INGEST_MOLECULE" | count
         return_content: true
       register: dfir_ingest_adx_probe
 
@@ -21,5 +21,5 @@
       ansible.builtin.assert:
         that:
           - (dfir_ingest_adx_probe.json.Tables[0].Rows[0][0] | int) >= 1
-        fail_msg: "the molecule dfir_ingest_adx_probe record was not found in host.VelociraptorJson"
+        fail_msg: "the molecule dfir_ingest_adx_probe record was not found in memory.VolatilityJson"
         quiet: true

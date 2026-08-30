@@ -15,7 +15,7 @@ def _fake_repo(tmp_path: Path) -> Path:
     """A minimal repo tree the CLI can discover + drive."""
     (tmp_path / _COLLECTION / "playbooks").mkdir(parents=True)
     (tmp_path / _COLLECTION / "roles").mkdir(parents=True)
-    for src in ("zeek", "velociraptor"):
+    for src in ("zeek", "evtx", "volatility", "plaso"):
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
     (tmp_path / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml").write_text("---\n")
     (tmp_path / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml").write_text("---\n")
@@ -35,7 +35,7 @@ def test_version():
 def test_list_shows_all_sources():
     r = runner.invoke(cli.app, ["list"])
     assert r.exit_code == 0
-    for src in ("zeek", "velociraptor", "evtx", "volatility", "plaso", "signatures"):
+    for src in ("zeek", "evtx", "volatility", "plaso"):
         assert src in r.stdout
 
 

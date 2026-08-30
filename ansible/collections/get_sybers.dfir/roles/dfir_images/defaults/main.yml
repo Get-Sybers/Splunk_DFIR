@@ -18,6 +18,41 @@ dfir_images_set:
   - volatility
   - plaso
   - evtxecmd
+  # The Eric Zimmerman tool family — all built from the ONE parameterized
+  # docker/eztool/Dockerfile (same recipe as evtxecmd), tool selected per image
+  # via build args (see dfir_images_build_overrides). SrumECmd and PECmd are
+  # deliberately ABSENT (Linux-container-first rule applied and exhausted):
+  # SrumECmd P/Invokes Windows' native ESE engine (esent.dll); PECmd carries a
+  # blanket non-Windows startup guard (verified: aborts even on uncompressed
+  # XP prefetch). Their artefacts are parsed by dfir/plaso instead
+  # (esedb/srum via libesedb; prefetch via libscca).
+  - recmd
+  - mftecmd
+  - amcacheparser
+  - appcompatcacheparser
+  - lecmd
+  - jlecmd
+  - sbecmd
+  - sqlecmd
+  - rbcmd
+  - wxtcmd
 
 # Rebuild even when an image already exists (docker build cache still applies).
 dfir_images_force: false
+
+# Per-image build context/dockerfile overrides. volatility is sourced from the
+# PIIAT-Mem submodule (its own docker/ context carries the shared harden.yml).
+dfir_images_build_overrides:
+  volatility:
+    context: "{{ dfir_images_repo_root }}/third_party/piiat-mem/docker"
+    dockerfile: "Dockerfile"
+  recmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RECmd"}}
+  mftecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "MFTECmd"}}
+  amcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AmcacheParser"}}
+  appcompatcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AppCompatCacheParser"}}
+  lecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "LECmd"}}
+  jlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "JLECmd"}}
+  sbecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SBECmd"}}
+  sqlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SQLECmd"}}
+  rbcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RBCmd"}}
+  wxtcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "WxTCmd"}}

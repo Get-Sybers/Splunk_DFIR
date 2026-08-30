@@ -44,10 +44,10 @@ _COLLECTION = "ansible/collections/get_sybers.dfir"
 
 class Source(str, enum.Enum):
     zeek = "zeek"
-    velociraptor = "velociraptor"
     evtx = "evtx"
     volatility = "volatility"
     plaso = "plaso"
+    zimmerman = "zimmerman"
     signatures = "signatures"
 
 
@@ -148,7 +148,7 @@ def process(
 
 @app.command()
 def ingest(
-    only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility|velociraptor."),
+    only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility."),
     force: bool = typer.Option(False, "--force", help="Re-ingest files already in the ledger."),
     dry_run: bool = typer.Option(False, "--dry-run", help="List what would be loaded; contact nothing."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
@@ -272,6 +272,33 @@ def verify_car(
     raise typer.Exit(carcheck.main(["--host", host, "--port", str(port)]))
 
 
+@app.command(name="car-timeline")
+def car_timeline(
+    car_dir: str = typer.Argument(..., help="A source's car directory, or a tree to aggregate."),
+    out: str = typer.Option(None, "--out", help="Output path (default: <car_dir>/timeline.jsonl)."),
+    host: str = typer.Option(None, help="Only events whose source_host matches."),
+    after: str = typer.Option(None, help="Only events at/after this ISO timestamp."),
+    before: str = typer.Option(None, help="Only events at/before this ISO timestamp."),
+) -> None:
+    """Build one property-rich, time-ordered CAR timeline from car.db + superset.db.
+
+    Unions the object events (every populated CAR property + native) and the
+    relationship edges (source→verb→target, confidence/method) from a source's
+    stores into <car_dir>/timeline.jsonl. Point it at one source's car directory,
+    or a tree to aggregate every source under it.
+    """
+    from . import mitrecar
+    argv = [car_dir]
+    for flag, val in (("--out", out), ("--host", host),
+                      ("--after", after), ("--before", before)):
+        if val:
+            argv += [flag, val]
+    proc = mitrecar.run_timeline(argv)
+    sys.stdout.write(proc.stdout)
+    sys.stderr.write(proc.stderr)
+    raise typer.Exit(proc.returncode)
+
+
 @app.command(name="verify-images")
 def verify_images() -> None:
     """Audit the hardened dfir/* tool-image inventory.
@@ -299,11 +326,12 @@ def verify_images() -> None:
 # file types that count as evidence there — mirrors the roles' input-dir defaults.
 _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "zeek":         (("pcaps",),                 (".pcap", ".pcapng", ".cap")),
-    "evtx":         (("other_raw_data/WinEvt",), (".evtx",)),
+    "evtx":         (("logs/winevt",), (".evtx",)),
     "volatility":   (("memory",),                (".dmp", ".mem", ".lime", ".vmem", ".raw", ".dump", ".bin")),
     "plaso":        (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
                                                    ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
-    "velociraptor": (("velociraptor",),          (".zip", ".json")),
+    "zimmerman":    (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
+                                                   ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
 }
 
 

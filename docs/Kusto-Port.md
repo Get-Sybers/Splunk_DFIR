@@ -152,7 +152,7 @@ than failing halfway and leaving a partial state.
 
 No schema inference. Every table needs explicit DDL, which means the port has
 to decide column types for each source up front — Plaso json_line, Zeek JSON,
-EvtxECmd JSON, Velociraptor and Volatility JSON. That is the bulk of Stage 2's work.
+EvtxECmd JSON and Volatility JSON. That is the bulk of Stage 2's work.
 
 One `.ingest into` locator is one file; multiple files go in one command as
 multiple locators, or via an external table over the directory.
@@ -166,7 +166,7 @@ later stage is needed to get value from an earlier one.
 |:--|:---|:---|
 | **1** | ✅ the `dfir_deploy_adx` role (`dxdfir deploy`) — container lifecycle, isolation, readiness, both-direction reachability check | — |
 | **2** | ✅ `kusto/schema/` — 5 databases, tables, ingestion mappings, applied by `get_sybers_dfir.deploy` (same role) | 1 |
-| **3** | ✅ `get_sybers_dfir.ingest` (`dxdfir ingest`, the `dfir_ingest_adx` role) — Plaso, EvtxECmd, Zeek (conn typed + all other logs generic), Volatility 3 and Velociraptor wired | 2 |
+| **3** | ✅ `get_sybers_dfir.ingest` (`dxdfir ingest`, the `dfir_ingest_adx` role) — Plaso, EvtxECmd, Zeek (conn typed + all other logs generic), Volatility 3 wired | 2 |
 | **4** | ✅ `kusto/schema/40-mitre.kql` — **all 9** CAR objects as KQL functions over MITRE's `car_data_model.json` | 3 |
 | **5** | ✅ Docs, checks, `THIRD_PARTY_NOTICES.md` entry | 1-4 |
 
@@ -180,7 +180,7 @@ Stated plainly so it is not mistaken for working:
   Operational events 6/7/8), which rides the EvtxECmd path into
   `host.EvtxEcmdJson`. Sysmon also enriches `process` (1/5), `flow` (3),
   `registry` (12/13/14) and `file` (11/23). `registry` additionally keeps its
-  Velociraptor/RECmd source. `CarCoverage()` returned real rows for all nine on
+  RECmd source (since removed with the Velociraptor lane). `CarCoverage()` returned real rows for all nine on
   the live engine.
 - **All ~69 Zeek log types are ingested.** `conn` is typed into `ZeekConn` by
   JSON path (the processor emits `use_json=T`), every other log lands in the
@@ -188,7 +188,7 @@ Stated plainly so it is not mistaken for working:
 - **Deploy/apply/ingest and all nine CAR objects have run against a real
   emulator** — see [docs/Runtime-Validation.md](/docs/Runtime-Validation.md).
   What is *still* unverified: the Zeek/EvtxECmd/Sysmon/Volatility-Windows/
-  Velociraptor **engines** producing that input (deterministic fixtures stood in
+  engines producing that input (deterministic fixtures stood in
   for the parts egress policy blocks or the corpus lacks), and a Windows disk
   image through Plaso (only filesystem test images were run, so
   `CarProcess`-from-Plaso is unexercised). The remaining list, ranked by blast

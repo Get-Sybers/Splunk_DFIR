@@ -4,7 +4,7 @@
   gather_facts: true
   vars:
     dfir_ingest_adx_processed_dir: /tmp/dfir_ingest_adx_molecule/processed
-    dfir_ingest_adx_only: velociraptor
+    dfir_ingest_adx_only: volatility
     dfir_ingest_adx_python_path: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
   tasks:
     - name: "converge | run dfir_ingest_adx"

@@ -12,8 +12,12 @@
     source: build
     force_source: "{{ dfir_images_force | bool }}"
     build:
-      path: "{{ dfir_images_context }}"
-      dockerfile: "{{ dfir_images_name }}/Dockerfile"
+      # Most images build from the shared docker/ context; an image may override
+      # its context+dockerfile (e.g. volatility builds from the PIIAT-Mem submodule).
+      path: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).context | default(dfir_images_context, true) }}"
+      dockerfile: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).dockerfile | default(dfir_images_name ~ '/Dockerfile', true) }}"
+      # parameterized builds (the shared eztool/Dockerfile) pass their tool via args
+      args: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).args | default(omit, true) }}"
 
 - name: "images-build | inspect dfir/{{ dfir_images_name }}"
   community.docker.docker_image_info:
@@ -71,4 +75,7 @@
       dfir/{{ dfir_images_name }} still carries a shell or python though its tool
       needs neither.
     quiet: true
-  when: dfir_images_name in ['suricata', 'zeek', 'evtxecmd']
+  when: dfir_images_name in ['suricata', 'zeek', 'evtxecmd',
+                             'recmd', 'mftecmd',
+                             'amcacheparser', 'appcompatcacheparser', 'lecmd',
+                             'jlecmd', 'sbecmd', 'sqlecmd', 'rbcmd', 'wxtcmd']

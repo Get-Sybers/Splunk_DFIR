@@ -39,14 +39,10 @@ argument_specs:
         type: str
         required: false
         description: "Volatility 3 symbol cache (passed as --symbols-dir); pre-seed when offline."
-      dfir_volatility_renderer:
+      dfir_volatility_piiat_mem_dir:
         type: str
         required: false
-        description: "Path to the jsonl_dfir_renderer.py (dev-scripts/volatility)."
-      dfir_volatility_plugins_dir:
-        type: str
-        required: false
-        description: "Custom plugins dir (dfir_processes, dfir_registry)."
+        description: "PIIAT-Mem submodule dir (third_party/piiat-mem); the standalone Volatility tool the lane drives via its CLI."
       dfir_volatility_image:
         type: str
         required: false

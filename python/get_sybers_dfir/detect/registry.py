@@ -34,7 +34,7 @@ medium/high/critical), ``attack`` (MITRE ATT&CK technique ids), ``target`` (the
 human-readable data source, shown in every hit's ``Source`` column).
 
 Detections are seeded across every processed lane the pipeline lands — Windows
-event logs, the Plaso timeline, Zeek, Volatility memory analysis, Velociraptor,
+event logs, the Plaso timeline, Zeek, Volatility memory analysis,
 and the three signature-lane outputs — several adapted from DetectRaptor's
 detection content where it maps onto DX_DFIR's tables. Adding a detection is
 adding an entry here; the runner needs no change.
@@ -260,26 +260,6 @@ database("memory").VolatilityJson
           Entity = strcat(Proc, " (pid ", tostring(Pid), ")"),
           Details = pack("MemoryImage", SourceFile, "Regions", Regions,
                          "Protections", Protections)
-""",
-    },
-    # ---- host: Velociraptor offline collections -----------------------------
-    {
-        "id": "velociraptor-run-key",
-        "title": "Autorun (Run/RunOnce) registry persistence",
-        "severity": "medium",
-        "attack": ["T1547.001"],
-        "kind": "kusto",
-        "target": "host.VelociraptorJson",
-        "requires": ["host.VelociraptorJson"],
-        # Registry artefacts collected by the Velociraptor offline collectors
-        # (EZ Tools / RECmd). Skipped, not failed, while that lane has no data.
-        "query": r"""
-database("host").VelociraptorJson
-| where Artefact matches regex @'(?i)(registry|recmd)'
-| extend KeyPath = tostring(coalesce(Record.KeyPath, Record.Key))
-| where KeyPath matches regex @'(?i)\\CurrentVersion\\Run(Once)?(\\|$)'
-| project Timestamp = todatetime(Record.LastWriteTimestamp),
-          Entity = KeyPath, Details = Record
 """,
     },
     # ---- signature lanes (JSONL outputs, not in Kusto) ----------------------

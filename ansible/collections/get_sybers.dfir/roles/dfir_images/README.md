@@ -3,6 +3,14 @@
 Build **every runtime tool container from source, in-repo, hardened** — and
 verify it. No third-party tool image is pulled at runtime: yara, suricata,
 zeek, volatility, plaso and evtxecmd are all built from `docker/<name>/Dockerfile`
+(volatility from the PIIAT-Mem submodule's context). The **Eric Zimmerman tool
+family** — recmd, mftecmd, amcacheparser, appcompatcacheparser,
+lecmd, jlecmd, sbecmd, sqlecmd, rbcmd, wxtcmd — builds from the ONE parameterized
+`docker/eztool/Dockerfile` (the same recipe as evtxecmd; the tool is selected
+per image via `dfir_images_build_overrides` args), so every Linux-capable EZ tool ships as an
+identical minimal-hardened .NET container (SrumECmd and PECmd are excluded — Windows-only
+dependencies (ESE engine; a blanket non-Windows guard); their artefacts parse
+via dfir/plaso: esedb/srum (libesedb) and prefetch (libscca)): no shell, no python, uid 2000
 by this role.
 
 ## Hardening: minimal, attack-surface-reduction posture
@@ -69,7 +77,7 @@ source; `dfir_deploy_adx` pulls it and confines it to localhost instead.
 | Variable | Default | Description |
 |---|---|---|
 | `dfir_images_context` | `<repo>/docker` | Build context (holds `<name>/Dockerfile` + `hardening/harden.yml`). |
-| `dfir_images_set` | all six | Images to build. |
+| `dfir_images_set` | all eighteen | Images to build. |
 | `dfir_images_force` | `false` | Rebuild existing images (layer cache applies). |
 
 ## Usage
