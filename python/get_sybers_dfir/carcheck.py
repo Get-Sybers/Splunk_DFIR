@@ -30,12 +30,26 @@ _OBJECTS = ("authentication", "driver", "email", "file", "flow", "http",
             "user_session")
 
 _IP = r"^[0-9a-fA-F:.]+$"
-# A canonical car_action is a lowercase snake-case token (create, remote_create,
-# value_edit, ...). Pinning an exact per-object whitelist proved brittle — the
-# engine's verb set grows with coverage — so the guard is the TOKEN SHAPE: it
-# catches garbage/typo/uppercase/spaced actions without failing a future corpus
-# that legitimately produces another valid verb.
-_ACTION = r"^[a-z_]+$"
+
+
+def _engine_actions():
+    """The canonical car_action vocabulary per object — RECONSTRUCTED from the
+    engine's model, exactly as PIIAT-MitreCar builds it: generated from the forked
+    `car` repo we own (third_party/piiat-mitrecar/third_party/car/data_model),
+    never hardcoded here. Returns {object: {actions}} or None if the engine model
+    can't be loaded (submodules not checked out)."""
+    import os
+    eng = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "third_party", "piiat-mitrecar")
+    if eng not in sys.path:
+        sys.path.insert(0, eng)
+    try:
+        from piiat_mitrecar import carmodel
+        m = carmodel.load()
+    except Exception:                       # noqa: BLE001 — model source unavailable
+        return None
+    return {obj: set(m[obj].get("actions", [])) for obj in m}
 
 
 class _Checker:
@@ -105,6 +119,11 @@ def run(host: str = "127.0.0.1", port: int = 8080) -> _Checker:
     c.has("mitre", ".show tables | where TableName startswith 'car_' | count",
           "materialized CAR tables present (mitre.car_*)")
     c.has("mitre", "Car() | count", "Car() cross-object timeline returns rows")
+    # The car_action vocabulary comes from the engine's model (forked car repo).
+    actions = _engine_actions()
+    if actions is None:
+        c._fail("CAR action vocabulary — engine model not loadable "
+                "(init submodules: git submodule update --init --recursive)")
 
     # -- per-object population + value sanity ---------------------------------
     for obj in _OBJECTS:
@@ -120,8 +139,11 @@ def run(host: str = "127.0.0.1", port: int = 8080) -> _Checker:
                f"{obj}: every row traces to one artefact (source_artefact)")
         c.zero("mitre", f"{tbl} | where isempty(car_action) | count",
                f"{obj}: every row has a car_action")
-        c.zero("mitre", f"{tbl} | where not(car_action matches regex @'{_ACTION}') | count",
-               f"{obj}: car_action is a clean canonical token")
+        # car_action ∈ the object's canonical vocabulary, from the engine model.
+        if actions and actions.get(obj):
+            vocab = ",".join(f"'{a}'" for a in sorted(actions[obj]))
+            c.zero("mitre", f"{tbl} | where car_action !in ({vocab}) | count",
+                   f"{obj}: car_action in the model's {obj} vocabulary")
 
     # -- value sanity, per object (only where the object was exercised) --------
     if c.has_rows("mitre", "car_process | count"):
