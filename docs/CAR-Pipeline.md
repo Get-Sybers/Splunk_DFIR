@@ -6,7 +6,7 @@ rules) and `car_data_model.json` (the authoritative MITRE model).*
 
 ## 1. What it is
 
-`get_sybers_dfir.car` turns each ingested evidence **source** into finished
+`piiat_mitrecar` (via `get_sybers_dfir.mitrecar`) turns each ingested evidence **source** into finished
 **MITRE CAR** — every extractable record becomes a CAR **object** performing an
 **action** at a **timestamp**, carrying that object's canonical **properties** —
 and emits it as **JSON** for ADX to ingest as `mitre.car_*` tables.
@@ -45,15 +45,21 @@ aggregate — never part of the per-source product (see §9, still to build).
 Run it:
 
 ```
-python -m get_sybers_dfir.car --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]
+python -m get_sybers_dfir.mitrecar --in <file-or-dir> --out <dir> [--host NAME] [--artefacts k1,k2]
 # → <dir>/car.db  +  <dir>/car_<object>.jsonl   (one JSONL per populated object)
 ```
 
-## 3. Components (`python/get_sybers_dfir/car/`)
+## 3. Components (the vendored `third_party/piiat-mitrecar` submodule)
+
+The engine is the standalone public **PIIAT-MitreCar** tool (Get-Sybers/PIIAT-MitreCar),
+vendored as a submodule and driven via its CLI by the thin
+`get_sybers_dfir/mitrecar.py` lane — exactly the PIIAT-Mem pattern. Its own
+repo houses the 100-test suite, the format adapters (`piiat_mitrecar/adapters/`)
+and the relationship rules as data (`piiat_mitrecar/relationships.yml`).
 
 | module | role |
 |---|---|
-| `carmodel.py` | loads repo-root `car_data_model.json` — the single source of truth for objects/actions/fields |
+| `piiat_mitrecar/carmodel.py` | loads repo-root `car_data_model.json` — the single source of truth for objects/actions/fields |
 | `mappings/` | per-artefact declarative maps (one file per family; auto-discovered) |
 | `normalize.py` | the marker engine: `normalize(artefact, record) → CAR event`, or `None` if unmapped |
 | `winevt_adapter.py` | Plaso winevt(x) record → EvtxECmd shape, so the evtx maps run unchanged |
