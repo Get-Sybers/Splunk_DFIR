@@ -7,6 +7,8 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-30
+
 ### Added
 - Materialized MITRE CAR: the engine (PIIAT-MitreCar) normalises each source to `car_<object>.jsonl`, ingested as the 13 `mitre.car_*` tables + `car_relationships`, with `Car()`/`CarObjects()` views.
 - `dxdfir build-car` (build the per-source CAR stores) and `dxdfir car-timeline` (one property-rich, time-ordered timeline from car.db + superset.db).
