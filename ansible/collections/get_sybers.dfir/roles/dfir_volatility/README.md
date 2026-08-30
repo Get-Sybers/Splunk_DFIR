@@ -2,7 +2,7 @@
 
 Process **memory images** with **Volatility 3** into per-plugin JSON Lines for the
 ADX or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs a
-preflight (docker reachable, memory dir present, the PIIAT-Mem tool runnable), then
+preflight (docker reachable, memory dir present, the [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) tool runnable), then
 invokes the `get_sybers_dfir.volatility` processor as a **single action**. One
 `<plugin>.jsonl` per plugin per image.
 

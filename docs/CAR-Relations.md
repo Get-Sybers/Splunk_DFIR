@@ -1,6 +1,6 @@
 # CAR relations — identity, joins, inheritance, limits
 
-The relational discipline of PIIAT-Mem's `car-store.md` §3, applied to the CAR
+The relational discipline of [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem)'s `car-store.md` §3, applied to the CAR
 objects the **memory artefact cannot supply** — determined from MITRE's own doc
 pages (car.mitre.org, field semantics read verbatim) and ratified against real
 evidence. The ten memory-fed objects are governed by

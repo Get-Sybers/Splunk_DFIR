@@ -10,13 +10,13 @@ is `0`, anything may change without notice.
 ## [0.6.0] - 2026-08-30
 
 ### Added
-- Materialized MITRE CAR: the engine (PIIAT-MitreCar) normalises each source to `car_<object>.jsonl`, ingested as the 13 `mitre.car_*` tables + `car_relationships`, with `Car()`/`CarObjects()` views.
+- Materialized MITRE CAR: the engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each source to `car_<object>.jsonl`, ingested as the 13 `mitre.car_*` tables + `car_relationships`, with `Car()`/`CarObjects()` views.
 - `dxdfir build-car` (build the per-source CAR stores) and `dxdfir car-timeline` (one property-rich, time-ordered timeline from car.db + superset.db).
 - `dxdfir ingest --only car` loads the CAR stores into `mitre.car_*`.
 - Zimmerman (EZ-Tools) lane: hardened `dfir/*` containers (RECmd, SRUM via Plaso, MFT, …) → CAR.
 
 ### Changed
-- CAR extraction moved into the PIIAT-MitreCar engine (pinned submodule); memory/Volatility driven via the PIIAT-Mem CLI. `40-mitre.kql` is now the materialized tables, schema generated from the engine model.
+- CAR extraction moved into the PIIAT-MitreCar engine (pinned submodule); memory/Volatility driven via the [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) CLI. `40-mitre.kql` is now the materialized tables, schema generated from the engine model.
 - `dxdfir verify-car` rewritten against the `mitre.car_*` tables; `car_action` validated against the engine model's vocabulary.
 
 ### Removed
