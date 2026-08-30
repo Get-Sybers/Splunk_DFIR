@@ -4,297 +4,113 @@
 [![checks](https://github.com/Get-Sybers/DX_DFIR/actions/workflows/checks.yml/badge.svg)](https://github.com/Get-Sybers/DX_DFIR/actions/workflows/checks.yml)
 [![licence](https://img.shields.io/badge/licence-Apache--2.0-blue)](/LICENSE)
 
-> **Pre-release software.** The version and its maturity are whatever the badge
-> above says — that reads the latest [Release](https://github.com/Get-Sybers/DX_DFIR/releases)
-> directly, so it is never out of date. Release notes are in
-> [CHANGELOG.md](/CHANGELOG.md).
->
-> Whatever the label, **nothing here has been verified against a running
-> emulator.** The core promise — normalised MITRE CAR fields you can query in
-> KQL — is built rather than absent, but built is not the same as working.
-> Read [What Actually Works](#what-actually-works) before you spend time here.
-
-Automates the processing of forensic evidence with
-**[Plaso (log2timeline)](https://github.com/log2timeline/plaso)**,
-**[Zeek](https://zeek.org/)**, and
+Point DX_DFIR at a disk image or a PCAP; it processes the evidence with
+**[Plaso](https://github.com/log2timeline/plaso)**, **[Zeek](https://zeek.org/)**,
 **[EvtxECmd](https://github.com/EricZimmerman/evtx)**,
-and loads it into a local, offline
-**[Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview)**
-— the real Kusto query engine in a container, no Azure, no account, no cloud —
-with field mappings aligned to the
-**[MITRE CAR Data Model](https://car.mitre.org/data_model/)** exposed as KQL
-functions.
+**[Volatility 3](https://github.com/volatilityfoundation/volatility3)** and the
+**[Zimmerman EZ-Tools](https://ericzimmerman.github.io/)**, normalises it into the
+**[MITRE CAR](https://car.mitre.org/data_model/)** data model, and loads it into a
+local **[Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview)**
+— the real Kusto engine in a container, no Azure, no account, no cloud. You get
+KQL over normalised `mitre.car_*` tables instead of a pile of CSVs.
 
----
+> **Pre-release software** — the version and maturity are whatever the badge above
+> says (it reads the latest [Release](https://github.com/Get-Sybers/DX_DFIR/releases)
+> live). Runs on the author's corpus; interfaces may still change. Release notes:
+> [CHANGELOG.md](/CHANGELOG.md).
 
-## Repo
+## Quick start
 
-- [1. Overview](#overview)
-- [2. Get-Started](/docs/Get-Started.md)
-- [3. Dir-Structure](/docs/Dir-Structure.md)
-- [4. Project-Progress](/project-progress.md)
-- [5. The Kusto backend](/docs/Kusto-Port.md) — design, schema, and known gaps
-- [6. Docs](/docs/)
-- [7. Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
-
-> The pre-beta code lives on the frozen
-> [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated)
-> branch. It is unsupported and keeps every defect later releases fixed.
-> Don't build on it.
-
-### This Page
-
-- [Overview](#overview)
-- [How It Runs](#how-it-runs)
-- [What Actually Works](#what-actually-works)
-- [Before You Run Anything](#before-you-run-anything)
-- [Why This Exists](#why-this-exists)
-- [The Problem - DeadBox Forensics](#the-problem---deadbox-forensics)
-- [Get-Sybers Solution](#get-sybers-solution)
-- [Benefits](#benefits)
-- [Envisioned Endstate](#envisioned-endstate)
-- [Licence](#licence)
-- [Notes](#notes)
-
----
-
-## Disclaimer
-
-Running DFIR tools in a containerized environment can be risky. Ensure you
-understand the implications and risks before proceeding. This project is
-intended for educational purposes only. Use at your own risk.
-
-This project is not affiliated with or endorsed by any of the tools used or
-organizations mentioned.
-
-## Overview
-<a name="overview"></a>
-
-Point it at a disk image or a PCAP, and it processes the evidence, loads the
-output into a local Kusto emulator, and gives you KQL over normalised tables
-instead of a pile of CSVs.
-
-That's the idea. Here's where it honestly stands.
-
-## How It Runs
-<a name="how-it-runs"></a>
-
-The pipeline is a three-layer design:
-
-- **`dxdfir` CLI** — the front-end (`python/`, Typer): `dxdfir process <source>`,
-  `dxdfir deploy`, `dxdfir ingest`, `dxdfir detect`, `dxdfir validate`,
-  `dxdfir list` (`man dxdfir` for the manual).
-- **`get_sybers.dfir` Ansible collection** — orchestration, one role per source,
-  one action per task; the CLI drives it with `ansible-playbook`.
-- **`get_sybers_dfir` Python package** — the per-item processing the roles invoke
-  (also runnable as `python -m get_sybers_dfir.<source>`).
-
-Each processor targets a backend with `--pipeline adx|sofelk`: **ADX** (the Kusto
-emulator, default) or **SOF-ELK** (`docker/sof-elk/`). `dxdfir deploy`/`ingest`
-cover the ADX pair; SOF-ELK deploy and delivery run from the collection's
-`dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml` playbooks.
-
-The `dxdfir` CLI and the collection are the supported front-end; the retired
-per-source `process-*.sh` scripts and the signature-lane shell scripts have been
-removed (their behaviour lives in the `get_sybers_dfir` processors — signatures
-included, as `get_sybers_dfir.signatures`). Install the CLI with
-`pip install ./python` — it provides the `dxdfir` entry point plus its dependencies
-(Typer and **ansible-core**, so `ansible-playbook` ships alongside it and the CLI
-finds it automatically). `scripts/setup-environment.sh` does this for you — see
-[Quick Start](#quick-start).
-
-## Quick Start
-<a name="quick-start"></a>
-
-On a fresh Debian/Ubuntu host — installs Docker **and** the `dxdfir` CLI (with its
-`ansible-playbook`):
+Fresh Debian/Ubuntu host — installs Docker and the `dxdfir` CLI:
 
 ```bash
-git clone https://github.com/Get-Sybers/DX_DFIR.git
+git clone --recursive https://github.com/Get-Sybers/DX_DFIR.git
 cd DX_DFIR
-./scripts/setup-environment.sh      # Docker + the dxdfir CLI; log out/in once for the docker group
+./scripts/setup-environment.sh      # Docker + dxdfir CLI (log out/in once for the docker group)
 ```
 
-Then deploy the backend and run the pipeline:
+Deploy the backend and run the pipeline:
 
 ```bash
 dxdfir deploy                       # Kusto emulator + schema (localhost-only, no auth; accepts the MS EULA)
-# drop evidence under data_store/raw/<type>/  (see data_store/README.md), then:
-dxdfir process zeek                 # process one source: zeek | evtx | volatility | plaso | signatures | velociraptor
-dxdfir ingest --only zeek           # load that source's output into the emulator
-dxdfir detect                       # sweep detections across whatever is present -> misc.Detections
-dxdfir --help                       # every command; `man dxdfir` for the manual
+# drop evidence under data_store/raw/<type>/ (see data_store/README.md), then per source:
+dxdfir process evtx                 # zeek | evtx | volatility | plaso | zimmerman | signatures
+dxdfir ingest --only evtx           # load that source's processed output into the emulator
+dxdfir build-car                    # normalise every source into per-source CAR stores
+dxdfir ingest --only car            # load the CAR stores into the mitre.car_* tables
+dxdfir detect                       # sweep detections over what's present -> misc.Detections
 ```
 
-Query the results in KQL against the emulator at `127.0.0.1:8080` — the
-materialized MITRE CAR tables (`car_process`, `car_flow`, …; `Car()` for the
-cross-object timeline, `car_relationships` for the edges) and `DetectionsLatest()`.
+Query at `127.0.0.1:8080`: the materialised CAR — `car_process`, `car_flow`, … ;
+`Car()` for the cross-object timeline, `car_relationships` for the edges — plus
+`DetectionsLatest()`. `dxdfir --help` lists every command (`man dxdfir` for the
+manual); `dxdfir car-timeline <car-dir>` writes a property-rich, time-ordered
+timeline JSONL.
 
-Installing the CLI by hand instead of via the setup script (needs Python 3 + Docker):
+## What it produces
 
-```bash
-pip install ./python                # provides dxdfir + ansible-core (ansible-playbook)
-```
+A three-layer stack — the **`dxdfir` CLI** → the **`get_sybers.dfir` Ansible
+collection** (one role per source) → the **`get_sybers_dfir` Python package** —
+targeting the Kusto emulator (default) or SOF-ELK (`--pipeline sofelk`).
 
-## What Actually Works
-<a name="what-actually-works"></a>
-
-This runs on the author's machine and has not been validated anywhere else.
-Nothing here is production-ready, nothing exercises the pipeline automatically,
-and interfaces may still change. What the current line buys you over the
-[pre-release line](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) is
-that the defects below are known and written down rather than waiting to be
-discovered.
-
-The **Notes** name the underlying tool; each source runs as `dxdfir process
-<source>` (driving the matching `dfir_<source>` role → the `get_sybers_dfir`
-processor). The ✅/⚠️ states reflect real runs on the author's corpus.
-
-| Capability | State | Notes |
+| Source | Command | Lands in |
 |:---|:---|:---|
-| Disk images → Plaso timeline JSON | ✅ Works | the plaso lane (`dxdfir process plaso`); `log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir` (our output module adds host/disk/volume ids). All image formats + VM exports → per-parser `host.L2t<Parser>` tables (routed by top-level Plaso parser; `L2tAll()` unions them) |
-| VMware VM exports → Plaso | ✅ Works | Added recently, lightly tested |
-| PCAP → Zeek JSON logs | ✅ Works | the zeek lane (`dxdfir process zeek`); `use_json=T`, ISO8601 timestamps |
-| Zeek → Kusto (all log types) | ✅ Works | `conn` typed into `ZeekConn` by JSON path; every other log into the generic `Zeek` table |
-| Raw EVTX → EvtxECmd JSON → CAR | ✅ Run on real logs | `dfir_evtx` role; bundled `dfir/evtxecmd` image (MIT, or operator-supplied). Validated on 103 real logs carved from the LoneWolf image — 55,638 rows into `host.EvtxEcmdJson`, then normalised by the CAR engine into `mitre.car_user_session`/`car_process`/`car_service` (real 4624/4688/7045) |
-| Sysmon → EvtxECmd JSON → CAR | ✅ Mapping validated (fixtures) | Rides the EvtxECmd path; sources `driver`/`module`/`thread` and enriches `process`/`flow`/`registry`/`file`. Engine not run here (no Sysmon log in corpus) |
-| Velociraptor offline collectors (EZ Tools) | ❌ Not provided | Collecting artefacts off endpoints is out of scope here — the repo processes collector output you supply (same Zimmerman parsers, no Kroll licence constraint) |
-| Velociraptor processing | ⚠️ Partial | Normalisation script exists |
-| **Kusto emulator deploy** | ✅ Runs | `dxdfir deploy` (the `dfir_deploy_adx` role) — localhost-only by default (the emulator has **no auth**), isolated network, real engine health check |
-| **Schema + ingestion** | ✅ Runs | 5 databases; typed tables + ingestion mappings for Plaso json_line (per-parser `L2t*`), EvtxECmd JSON, Zeek JSON (conn + generic), Volatility, Velociraptor collector output |
-| **MITRE CAR (materialized)** | ✅ **validated live** | The engine normalises each source into finished CAR events; the pipeline ingests one `car_<object>.jsonl` per object as the 13 `mitre.car_*` tables (+ `car_relationships`). `Car()` unions them into one timeline; `CarObjects()` counts them. Validated on the emulator (`verify-car`: populated, value-sane, traceable; car_action checked against the engine's model vocabulary). See [docs/Kusto-Port.md](/docs/Kusto-Port.md) |
-| **Signature detection (YARA / Suricata / Hayabusa)** | ✅ Works | `get_sybers_dfir.signatures` (the `dfir_signatures` role); **YARA** (files / mounted disk images / memory via Volatility `vadyarascan`), **Suricata** (pcaps → EVE), **Hayabusa** (EVTX → Sigma — validated 792 detections on LoneWolf). Emit JSONL to `processed/signatures/`; this output is not loaded into the backend |
-| Chainsaw | ❌ Not started | Not built |
+| Disk images / VM exports (Plaso) | `process plaso` | per-parser `host.L2t<Parser>` tables |
+| PCAP (Zeek) | `process zeek` | `network.ZeekConn` (typed) + generic `network.Zeek` |
+| Windows event logs + Sysmon (EvtxECmd) | `process evtx` | `host.EvtxEcmdJson` |
+| Memory (Volatility 3 / PIIAT-Mem) | `process volatility` | `memory.VolatilityJson` |
+| EZ-Tools artefacts — SRUM, registry, … | `process zimmerman` | processed EZ-tool output |
+| YARA / Suricata / Hayabusa | `process signatures` | JSONL under `processed/signatures/` |
 
-### Known limitations
+The **CAR layer is materialised**: the [PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)
+engine normalises each processed source into finished CAR events, and the pipeline
+ingests one `car_<object>.jsonl` per object as the 13 `mitre.car_<object>` tables
+plus `car_relationships`. Extraction happens once, in the engine, so the schema is
+generated from the model and can't drift from what it emits.
 
-- **No pipeline tests.** `./tests/run-checks.sh` runs the static and
-  behavioural repo checks in CI (shell syntax, shellcheck, path resolution,
-  the container-lifecycle library, Kusto schema consistency, evidence
-  gitignore, secrets, doc links) — but nothing exercises the actual pipeline.
-  Every "✅" above still means "worked when the author last ran it by hand."
-- **Nothing has run against a real emulator.** The deploy, schema apply,
-  ingestion and CAR functions are verified against fakes and fixtures only.
-  The runtime checklist is
-  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14).
-- **Scripts `chmod -R 777` their working directories.** Convenient, not safe.
-  Don't run this on a shared host.
-- **Deploying accepts Microsoft's licence terms for you** via `ACCEPT_EULA=Y`,
-  and the emulator is provided *as-is* and documented as "generally unsuitable
-  for production workloads" — see
+**Validated on the Kusto emulator** by the CI **smoke test** (the real
+EVTX → EvtxECmd → CAR path over pinned Sysmon fixtures) and by **`dxdfir verify-car`**
+(each CAR table populated, values sane — IPs, ports, SIDs — `car_action` checked
+against the engine's model vocabulary, every row traceable to a source). The other
+lanes (Plaso, Zeek, Volatility, Zimmerman) are run by hand on the author's corpus.
+The signature-lane JSONL is not loaded into the backend.
+
+## Before you run anything
+
+- **The emulator has no security** — no auth, no access control, plaintext HTTP,
+  no encryption at rest (documented properties, not misconfigurations). `dxdfir
+  deploy` binds it to `127.0.0.1` and refuses any other address unless
+  `dfir_deploy_adx_expose=true`; it runs on an isolated network by default. That
+  binding is the only control there is. See [SECURITY.md](/SECURITY.md).
+- **Deploying accepts Microsoft's licence terms for you** (`ACCEPT_EULA=Y`); the
+  emulator is provided *as-is* and "generally unsuitable for production" — see
   [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
-- **The `_time`/timestamp normalisation story is inconsistent** across
-  sources. Plaso and Zeek are good; everything else is unverified.
+- **This handles real evidence.** `data_store/` is gitignored deny-by-default, so
+  unknown/extensionless formats are covered — a safety net, not a guarantee. Check
+  `git status` before you commit.
 
-## Before You Run Anything
-<a name="before-you-run-anything"></a>
+## Docs
 
-Three things that will bite you otherwise:
+- [Get started](/docs/Get-Started.md) · [Directory structure](/docs/Dir-Structure.md)
+- [The Kusto backend](/docs/Kusto-Port.md) — design, schema, the materialised CAR
+- [CAR pipeline](/docs/CAR-Pipeline.md) · [extraction rules](/docs/CAR-Extraction-Rules.md) · [relations](/docs/CAR-Relations.md)
+- [Task board](/project-progress.md) · [Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
 
-1. **The emulator has no security features at all.** No authentication, no
-   access control, plaintext HTTP, no encryption at rest — documented
-   properties, not misconfigurations. The deploy (`dxdfir deploy`, the
-   `dfir_deploy_adx` role) binds it to `127.0.0.1` and refuses any other bind
-   address unless `dfir_deploy_adx_expose=true` is set as well; that binding
-   is the only control there is. It also runs isolated by default —
-   no outbound network access. Not an airgap — see [SECURITY.md](/SECURITY.md).
-2. **Deploying accepts Microsoft's Software License Terms on your behalf**
-   (`ACCEPT_EULA=Y`), and Microsoft provides the emulator *as-is*, without
-   support or warranties. Whether that fits your engagement is your call to
-   make, not this project's.
-3. **This handles real evidence.** `data_store/` is gitignored
-   deny-by-default, so unknown and extensionless formats are covered. It is
-   still a safety net, not a guarantee — check `git status` before you commit,
-   every time.
-
-## Why This Exists
-<a name="why-this-exists"></a>
-
-Most SOCs have already figured this problem out. Unfortunately, DeadBox
-forensics still has its place, but it doesn't need to remain outdated. Learning
-DFIR via DeadBox analysis is common and arguably a great starting point. DFIR
-should be fast, efficient, and less tedious. This project automates messy
-tasks, lowering the barrier to entry and encouraging faster DFIR skill
-development by transforming forensic data into neatly mapped, standardized
-tables you can query in KQL — offline, on your own machine.
-
-## The Problem - DeadBox Forensics
-<a name="the-problem---deadbox-forensics"></a>
-
-DFIR analysts juggle mountains of fragmented artifacts and data produced by
-various tools, leading to extensive manual parsing. This slows junior DFIR
-analyst skill development and risks overlooking crucial details precisely when
-speed and accuracy matter most.
-
-## Get-Sybers Solution
-<a name="get-sybers-solution"></a>
-
-Automate and clarify the DeadBox DFIR data pipeline by normalizing data fields
-consistent with the [MITRE CAR Data Model](https://car.mitre.org/data_model/),
-queryable in [KQL](https://learn.microsoft.com/en-us/kusto/query/) against a
-local Data Explorer emulator.
-
-*Aspiration, not current state — see [What Actually Works](#what-actually-works).*
-
-## Benefits
-<a name="benefits"></a>
-
-- **Less Pain, More Gain**: Automate tedious tasks, focusing your time on investigations.
-- **Accuracy & Speed**: Consistent mappings and automated parsing reduce errors and accelerate response.
-- **Ready to Roll**: Quick-deployment scripts get you operational swiftly.
-- **Offline by Design**: The real ADX query engine with no cloud, no account, and no network.
-
-## Envisioned Endstate
-<a name="envisioned-endstate"></a>
-
-The materialized CAR makes this query real — `car_process` is populated by the
-engine and validated on the emulator (`verify-car`, and the smoke test).
-
-```kusto
-car_process
-| where isnotempty(command_line)
-| project dtg = todatetime(timestamp), hostname, user, command_line, artifact = source_artefact
-```
-
-| dtg                 | hostname       | user         | command_line                                              | artifact                 |
-|---------------------|----------------|--------------|-----------------------------------------------------------|--------------------------|
-| 2025-01-01T10:14:29 | WKS-1          | analyst01    | `powershell.exe -nop -exec bypass Invoke-Mimikatz.ps1`    | Prefetch                 |
-| 2025-01-01T11:05:52 | DC-1           | svc_backup   | `powershell.exe Get-ChildItem -Path \\server\share`       | WinEVTX:Security         |
-| 2025-01-01T11:45:17 | WKS-2          | jdoe         | `powershell.exe -EncodedCommand JABzAD0AbgBlAHQAIAB1AH...`| Volatile:Get-Process     |
+> The pre-beta code lives on the frozen
+> [`deprecated`](https://github.com/Get-Sybers/DX_DFIR/tree/deprecated) branch —
+> unsupported, keeps every defect later releases fixed. Don't build on it.
 
 ## Licence
-<a name="licence"></a>
 
-Apache-2.0 — see [LICENSE](/LICENSE).
-
-Apache-2.0 was chosen by following the vendored code rather than by
-preference. `car_data_model.json` comes from
-[MITRE CAR](https://github.com/mitre-attack/car) (Apache-2.0), and earlier
-releases vendored substantially more Apache-2.0 code (Splunk Security Content
-lookups, splunk-ansible playbooks — since retired with the Splunk stack, but
-still in git history). Matching that licence keeps the project compatible with
-everything it has ever redistributed.
-
-**Mixed licensing.** The repository root is Apache-2.0 (above). The pipeline code is
-offered under the more permissive **MIT** licence as self-contained, reusable
-components: the `get_sybers_dfir` Python package + `dxdfir` CLI
-(`python/`, per its `pyproject.toml`) and the `get_sybers.dfir` Ansible collection
-(`ansible/collections/`, per `galaxy.yml` and each role's `meta/main.yml`). MIT and
-Apache-2.0 are compatible; each subtree carries its own declared licence.
-
-Third-party components, the tools this pipeline drives, and the licensing
-obligations that fall on *you* rather than on this code are documented in
-[THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md). Attribution required by
-Apache-2.0 §4 is in [NOTICE](/NOTICE).
+Apache-2.0 at the repository root (see [LICENSE](/LICENSE)) — matched to the
+vendored `car_data_model.json` from [MITRE CAR](https://github.com/mitre-attack/car).
+The pipeline code is offered under the more permissive **MIT** licence as
+self-contained components: the `get_sybers_dfir` package + `dxdfir` CLI
+(`python/`) and the `get_sybers.dfir` collection (`ansible/collections/`); each
+subtree carries its own declared licence. Third-party tool obligations that fall
+on *you* are in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md); Apache-2.0 §4
+attribution is in [NOTICE](/NOTICE).
 
 ---
-
-## Notes
-<a name="notes"></a>
-
-- Ensure your Docker environment is correctly set up before running scripts.
-- The emulator holds your evidence with no authentication — keep it on
-  `127.0.0.1` and treat the host as sensitive.
-- Changes are tracked in [CHANGELOG.md](/CHANGELOG.md).
 
 🚀 **Happy hunting!**

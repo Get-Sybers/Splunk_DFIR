@@ -45,8 +45,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
 | [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
-| Velociraptor offline collectors ([EZ Tools](https://ericzimmerman.github.io/)) | ✅ the velociraptor lane (unpack collection) | json | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
-| [Velociraptor](https://github.com/Velocidex/velociraptor)     | ⚠️            | json            | ✅ `host.VelociraptorJson` | ✅ (`registry`) |
+| [EZ-Tools](https://ericzimmerman.github.io/) (Zimmerman) artefacts | ✅ the zimmerman lane (`dxdfir process zimmerman`) | json / csv | ✅ `mitre.car_*` (via build-car) | ✅ (`registry`/`flow`/`process`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ the volatility lane | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
 | [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
 | Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tText`/`L2tUtmp` | ✅ (`user_session` utmp+ssh, `process` cron) |
@@ -54,9 +53,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dfir.signatures` (yara lane) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
 | [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dfir.signatures` (suricata lane) | json (EVE) | ⏳ `processed/signatures/suricata` | ⏳ |
 | [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
-| [Chainsaw](https://github.com/countercept/chainsaw)           | ❌            |                 |              |               |
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
-| [Zimmerman](https://github.com/EricZimmerman)                 | (via Velociraptor) |            |              |               |
 
 **CAR is materialized.** The engine (PIIAT-MitreCar) normalises each evidence
 source into finished CAR events; the pipeline ingests one `car_<object>.jsonl`
@@ -96,9 +93,6 @@ Things that are broken or unsafe right now.
   below and is worth more than any further code —
   [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
   checklist.
-- ⬜ Velociraptor: the ingest loader is wired (`host.VelociraptorJson` via
-  `velociraptor_prepare`), but the upstream offline-collector path that feeds it
-  isn't built, and nothing has run against a real emulator.
 
 ### Data Models & MITRE CAR Mapping
 - Validate the CAR field mappings against real Windows event logs, Zeek logs,
@@ -115,17 +109,6 @@ Things that are broken or unsafe right now.
   schema consistency, gitignore, secrets, doc links). The count is whatever
   the harness prints; it is deliberately not restated here.
 - ⬜ A smoke test that runs the pipeline against a small public sample image.
-
-### Velociraptor offline collectors (EZ Tools) & Raw EVTX
-- Build the offline-collector path: Velociraptor collectors running the EZ
-  Tools for artefact collection and parsing — the replacement for the removed
-  KAPE automation. Same Zimmerman parsers and field names, so the retired
-  `KapeJson` mapping in git history is the starting point; re-sources the
-  `registry` CAR object when it lands. If the collectors emit EZ-tool CSV,
-  the answer is typed per-artefact tables or JSON conversion — a CSV mapping
-  cannot populate a `dynamic` column.
-- ✅ Verify the EvtxECmd path against a real event log — done (see Known
-  Limitations; 103 real LoneWolf logs → `host.EvtxEcmdJson` → CAR).
 
 ### Environment & Dependencies
 - Create a guide for **setting up the development environment**.
@@ -147,7 +130,7 @@ Things that are broken or unsafe right now.
 every parser's event into a lowest-common-denominator schema and dropped the rest
 (imphash, sha256, pe_type, pathspec, the typed utmp/cron/ssh fields…). New
 `host.L2tJson` table: a `dynamic Record` per event (same shape as
-`VolatilityJson`/`VelociraptorJson`), Timestamp lifted from Plaso's microsecond
+`VolatilityJson`), Timestamp lifted from Plaso's microsecond
 `timestamp` in the ingest prepare hook. The 4 Plaso-fed CAR functions
 (`CarFile`/`CarProcess`/`CarUserSession`/`CarService`) were rewritten to read
 `Record.data_type` + typed fields instead of the CSV's `SourceLong`/message
@@ -207,7 +190,7 @@ populated (`0x1a4` → 420).
 against the live engine with format-accurate fixtures — the tool engines
 themselves are blocked by egress policy here.
 ✅ **Memory** processed with Volatility 3 → `memory.VolatilityJson`,
-proving the constant-column injection the Velociraptor loader needs
+proving the constant-column injection the JSON loaders need
 ([#16](https://github.com/Get-Sybers/DX_DFIR/issues/16)).
 ✅ **Android and macOS** artefacts processed with real Plaso parsers into
 `host.L2tCsv`: Android `LOG`/"Android SMS messages"·"Android Call History"
