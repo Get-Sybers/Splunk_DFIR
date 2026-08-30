@@ -76,6 +76,6 @@
       needs neither.
     quiet: true
   when: dfir_images_name in ['suricata', 'zeek', 'evtxecmd',
-                             'recmd', 'srumecmd', 'mftecmd', 'pecmd',
+                             'recmd', 'mftecmd', 'pecmd',
                              'amcacheparser', 'appcompatcacheparser', 'lecmd',
                              'jlecmd', 'sbecmd', 'sqlecmd', 'rbcmd', 'wxtcmd']

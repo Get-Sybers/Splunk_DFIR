@@ -4,11 +4,12 @@ Build **every runtime tool container from source, in-repo, hardened** — and
 verify it. No third-party tool image is pulled at runtime: yara, suricata,
 zeek, volatility, plaso and evtxecmd are all built from `docker/<name>/Dockerfile`
 (volatility from the PIIAT-Mem submodule's context). The **Eric Zimmerman tool
-family** — recmd, srumecmd, mftecmd, pecmd, amcacheparser, appcompatcacheparser,
+family** — recmd, mftecmd, pecmd, amcacheparser, appcompatcacheparser,
 lecmd, jlecmd, sbecmd, sqlecmd, rbcmd, wxtcmd — builds from the ONE parameterized
 `docker/eztool/Dockerfile` (the same recipe as evtxecmd; the tool is selected
-per image via `dfir_images_build_overrides` args), so every EZ tool ships as an
-identical minimal-hardened .NET container: no shell, no python, uid 2000
+per image via `dfir_images_build_overrides` args), so every Linux-capable EZ tool ships as an
+identical minimal-hardened .NET container (SrumECmd is excluded — Windows-only
+ESE dependency; SRUM parses via dfir/plaso's libesedb-based esedb/srum parser): no shell, no python, uid 2000
 by this role.
 
 ## Hardening: minimal, attack-surface-reduction posture
