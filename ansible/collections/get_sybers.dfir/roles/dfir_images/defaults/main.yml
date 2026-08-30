@@ -20,13 +20,14 @@ dfir_images_set:
   - evtxecmd
   # The Eric Zimmerman tool family — all built from the ONE parameterized
   # docker/eztool/Dockerfile (same recipe as evtxecmd), tool selected per image
-  # via build args (see dfir_images_build_overrides). SrumECmd is deliberately
-  # ABSENT: it P/Invokes Windows' native ESE engine (esent.dll) and cannot
-  # parse on Linux — SRUM is parsed by dfir/plaso's esedb/srum parser
-  # (libesedb) instead.
+  # via build args (see dfir_images_build_overrides). SrumECmd and PECmd are
+  # deliberately ABSENT (Linux-container-first rule applied and exhausted):
+  # SrumECmd P/Invokes Windows' native ESE engine (esent.dll); PECmd carries a
+  # blanket non-Windows startup guard (verified: aborts even on uncompressed
+  # XP prefetch). Their artefacts are parsed by dfir/plaso instead
+  # (esedb/srum via libesedb; prefetch via libscca).
   - recmd
   - mftecmd
-  - pecmd
   - amcacheparser
   - appcompatcacheparser
   - lecmd
@@ -47,7 +48,6 @@ dfir_images_build_overrides:
     dockerfile: "Dockerfile"
   recmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RECmd"}}
   mftecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "MFTECmd"}}
-  pecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "PECmd"}}
   amcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AmcacheParser"}}
   appcompatcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AppCompatCacheParser"}}
   lecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "LECmd"}}
