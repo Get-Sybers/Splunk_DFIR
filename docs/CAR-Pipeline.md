@@ -22,7 +22,7 @@ input source ──▶ artefact map(s) ──▶ normalize ──▶ its own car
                                                    car_<object>.jsonl → ADX
 ```
 
-It is the pipeline-wide application of what shipped in **PIIAT-Mem v1.0.0** for
+It is the pipeline-wide application of what shipped in **[PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) v1.0.0** for
 memory: the mapping/inference logic lives in the processor we own, the store is
 finished CAR, and the query layer just reads the model instead of re-deriving it.
 
@@ -58,7 +58,7 @@ skipping the newly-covered events. (`dxdfir build-car` fronts the same engine as
 
 ## 3. Components (the vendored `third_party/piiat-mitrecar` submodule)
 
-The engine is the standalone public **PIIAT-MitreCar** tool (Get-Sybers/PIIAT-MitreCar),
+The engine is the standalone public **[PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)** tool,
 vendored as a submodule and driven via its CLI by the thin
 `get_sybers_dfir/mitrecar.py` lane — exactly the PIIAT-Mem pattern.
 

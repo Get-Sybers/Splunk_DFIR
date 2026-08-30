@@ -65,7 +65,7 @@ matching `dfir_<source>` role); processors are also runnable as
 | Disk images / VM exports (Plaso) | `process plaso` | per-parser `host.L2t<Parser>` tables |
 | PCAP (Zeek) | `process zeek` | `network.ZeekConn` (typed) + generic `network.Zeek` |
 | Windows event logs + Sysmon (EvtxECmd) | `process evtx` | `host.EvtxEcmdJson` |
-| Memory (Volatility 3 / PIIAT-Mem) | `process volatility` | `memory.VolatilityJson` |
+| Memory (Volatility 3 / [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem)) | `process volatility` | `memory.VolatilityJson` |
 | EZ-Tools artefacts — SRUM, registry, … | `process zimmerman` | processed output → CAR (`mitre.car_*`, via `build-car`) |
 | YARA / Suricata / Hayabusa | `process signatures` | JSONL under `processed/signatures/` |
 

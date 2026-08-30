@@ -60,7 +60,7 @@ mapping.
 ## MITRE CAR is materialized
 
 The `mitre` database is the CAR model as **ingested tables**, not query-time
-views. The engine (PIIAT-MitreCar) normalises each evidence source into finished
+views. The engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each evidence source into finished
 CAR events and the pipeline ingests one `car_<object>.jsonl` per object as the
 13 `mitre.car_<object>` tables, plus `car_relationships` (the superset
 relationship edges). `Car()` unions the objects into one timestamp-ordered

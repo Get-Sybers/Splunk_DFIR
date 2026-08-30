@@ -55,7 +55,7 @@ Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
 | [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
 
-**CAR is materialized.** The engine (PIIAT-MitreCar) normalises each evidence
+**CAR is materialized.** The engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each evidence
 source into finished CAR events; the pipeline ingests one `car_<object>.jsonl`
 per object as the 13 `mitre.car_<object>` tables plus `car_relationships` (the
 superset relationship edges). `Car()` unions the objects into one timeline;
