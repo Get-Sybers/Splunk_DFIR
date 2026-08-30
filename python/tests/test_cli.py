@@ -106,23 +106,24 @@ def test_failing_command_propagates_exit_code(tmp_path):
     assert r.exit_code == 3
 
 
-def test_car_batch_defaults_to_processed_tree_with_force(tmp_path):
+def test_build_car_batch_defaults_to_processed_tree_and_rebuild(tmp_path):
     from get_sybers_dfir import mitrecar
     repo = _fake_repo(tmp_path)
     fake = subprocess.CompletedProcess([], 0, stdout="[]\n", stderr="")
     with mock.patch.object(mitrecar, "run", return_value=fake) as m:
-        r = runner.invoke(cli.app, ["car", "--force", "--repo-root", str(repo)])
+        r = runner.invoke(cli.app, ["build-car", "--rebuild", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
     argv = m.call_args.args[0]
+    # user-facing --rebuild maps to the engine's own --force
     assert "--batch" in argv and "--force" in argv
     assert argv[argv.index("--batch") + 1] == str(repo / "data_store" / "processed")
 
 
-def test_car_single_source_passes_in_out_host(tmp_path):
+def test_build_car_single_source_passes_in_out_host(tmp_path):
     from get_sybers_dfir import mitrecar
     fake = subprocess.CompletedProcess([], 0, stdout="{}\n", stderr="")
     with mock.patch.object(mitrecar, "run", return_value=fake) as m:
-        r = runner.invoke(cli.app, ["car", "--in", "/x/a.jsonl", "--out", "/y", "--host", "H"])
+        r = runner.invoke(cli.app, ["build-car", "--in", "/x/a.jsonl", "--out", "/y", "--host", "H"])
     assert r.exit_code == 0, r.stdout
     argv = m.call_args.args[0]
     assert argv[:2] == ["--in", "/x/a.jsonl"]

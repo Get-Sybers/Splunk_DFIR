@@ -272,26 +272,26 @@ def verify_car(
     raise typer.Exit(carcheck.main(["--host", host, "--port", str(port)]))
 
 
-@app.command(name="car")
-def car(
+@app.command(name="build-car")
+def build_car(
     processed_dir: str = typer.Argument(
-        None, help="Processed tree to batch (default: <repo>/data_store/processed). Ignored with --in."),
+        None, help="Processed tree to build from (default: <repo>/data_store/processed). Ignored with --in."),
     in_path: str = typer.Option(None, "--in", help="Single-source: one processed file/dir → one car.db."),
     out: str = typer.Option(None, "--out", help="Output dir (single-source: this source's car dir; batch: the car/ root)."),
     host: str = typer.Option(None, "--host", help="Single-source: fallback source_host where the map derives none."),
     artefacts: str = typer.Option(None, "--artefacts", help="Single-source: comma-separated artefact map keys (default: route by filename)."),
-    force: bool = typer.Option(False, "--force", help="Batch: rebuild sources whose car.db already exists."),
+    rebuild: bool = typer.Option(False, "--rebuild", help="Rebuild CAR stores that already exist (e.g. after a map/coverage change)."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """Normalize processed evidence into per-source CAR stores (car.db + superset.db).
+    """Build the per-source CAR stores (car.db + superset.db) from processed evidence.
 
-    Batch mode (default): discover every source under the processed tree and build
-    each one's car.db + superset.db + car_<object>.jsonl. Single-source mode (--in):
-    one file/dir → one car.db.
+    Default (batch): discover every source under the processed tree and build each
+    one's car.db + superset.db + car_<object>.jsonl. Single-source (--in): one
+    file/dir → one car.db.
 
-    Batch is idempotent — a source whose car.db already exists is skipped. Pass
-    --force to rebuild after a coverage/map change, otherwise the existing (stale)
-    stores are kept and newly-mapped events are never ingested.
+    A source whose car.db already exists is left as-is; pass --rebuild to re-derive
+    it from the current maps — required after a coverage/map change, otherwise the
+    existing (stale) stores keep skipping the newly-mapped events.
     """
     from . import mitrecar
     if in_path:
@@ -304,7 +304,7 @@ def car(
         argv = ["--batch", batch]
         if out:
             argv += ["--out", out]
-        if force:
+        if rebuild:                      # the engine's own flag for "rebuild existing"
             argv.append("--force")
     proc = mitrecar.run(argv)
     sys.stdout.write(proc.stdout)
