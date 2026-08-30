@@ -47,6 +47,7 @@ class Source(str, enum.Enum):
     evtx = "evtx"
     volatility = "volatility"
     plaso = "plaso"
+    zimmerman = "zimmerman"
     signatures = "signatures"
 
 
@@ -301,6 +302,8 @@ _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "evtx":         (("logs/winevt",), (".evtx",)),
     "volatility":   (("memory",),                (".dmp", ".mem", ".lime", ".vmem", ".raw", ".dump", ".bin")),
     "plaso":        (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
+                                                   ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
+    "zimmerman":    (("disk_images", "VM_files"), (".e01", ".ex01", ".dd", ".raw", ".img", ".vmdk",
                                                    ".vhd", ".vhdx", ".001", ".aff4", ".vmx", ".ova")),
 }
 

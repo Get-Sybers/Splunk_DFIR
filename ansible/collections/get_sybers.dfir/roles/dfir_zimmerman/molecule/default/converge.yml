@@ -1,0 +1,13 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dfir_zimmerman_pipeline: adx
+    dfir_zimmerman_input_dir: /tmp/dfir_zimmerman_molecule/in
+    dfir_zimmerman_vm_dir: /tmp/dfir_zimmerman_molecule/vm
+    dfir_zimmerman_adx_out_dir: /tmp/dfir_zimmerman_molecule/out
+  tasks:
+    - name: "converge | run dfir_zimmerman (ADX)"
+      ansible.builtin.include_role:
+        name: dfir_zimmerman

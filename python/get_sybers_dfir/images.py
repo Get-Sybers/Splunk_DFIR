@@ -31,6 +31,18 @@ HARDENED_IMAGES = (
     "dfir/volatility:latest",
     "dfir/plaso:latest",
     "dfir/evtxecmd:latest",
+    # The Eric Zimmerman tool family (dfir_zimmerman lane) — all built from the
+    # one parameterized docker/eztool/Dockerfile (see dfir_images_set).
+    "dfir/recmd:latest",
+    "dfir/mftecmd:latest",
+    "dfir/amcacheparser:latest",
+    "dfir/appcompatcacheparser:latest",
+    "dfir/lecmd:latest",
+    "dfir/jlecmd:latest",
+    "dfir/sbecmd:latest",
+    "dfir/sqlecmd:latest",
+    "dfir/rbcmd:latest",
+    "dfir/wxtcmd:latest",
 )
 # Other dfir/* images that legitimately exist but are not tool containers, so
 # they are exempt from the hardened-tool contract (but still allow-listed, so

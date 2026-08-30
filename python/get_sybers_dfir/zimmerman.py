@@ -1,0 +1,613 @@
+"""Zimmerman EZ-Tools processor — disk images -> per-host EZ-Tool artefact parse.
+
+The evtx/plaso lanes get their bytes straight off the image via Plaso's
+``image_export.py`` (see ``imageexport``); this lane does the same for the
+artefact set Eric Zimmerman's tools (RECmd, JLECmd, LECmd, AmcacheParser,
+AppCompatCacheParser, SBECmd, RBCmd, MFTECmd) understand, then runs each
+hardened ``dfir/<tool>`` container over what was pulled out. SRUM has no
+Windows-only dependency here: SrumECmd is .NET-only, so plaso's own
+``esedb/srum`` plugin parses ``SRUDB.dat`` instead (log2timeline -> psort
+json_line, exactly the l2t two-step in ``plaso.py``, just scoped to one file).
+
+Extraction uses a plaso **YAML** collection filter (``plaso.engine.yaml_filter_file``),
+NOT ``--artifact_filters`` (the WindowsEventLogs artifact set the evtx lane uses) —
+verified against the built ``dfir/plaso`` image: ANY file passed to ``-f`` is parsed
+as YAML unconditionally (``engine.BuildCollectionFilters`` always builds a
+``YAMLFilterFile``), so the plain-text "one path per line" format the ``--help``
+text describes is not actually reachable through this flag on this plaso version.
+A filter document is ``description``/``type: include``/``path_separator: '/'``/
+``paths:`` (REGEX per path segment, matched case-insensitively by dfVFS — the
+path string itself needs no ``%SystemRoot%``-style expansion, which is an
+``--artifact_filters``-only mechanism; a plain absolute path split on '/' already
+resolves to the right dfVFS ``location_regex`` segments).
+
+Prefetch is deliberately NOT extracted or duplicated here: PECmd is Windows-only
+(.NET) and the main log2timeline lane already parses ``.pf`` files inline as part
+of the normal disk-image timeline — a second, EZ-Tools-only prefetch pass would
+just be redundant CAR input for the same object.
+
+Output isolation follows the CAR pipeline's rule (docs/CAR-Pipeline.md §2 — "one
+source, one database"): each image gets its OWN
+``data_store/processed/zimmerman/<host>/``, holding the raw extraction
+(``_extracted/``), the EZ-Tool container outputs (one sub-dir per tool), and a
+combined run log. Idempotent at the HOST level: a host dir that already holds any
+non-empty file is skipped whole unless ``--force`` — a partial prior run is
+reprocessed entirely rather than guessed at file-by-file.
+
+WxTCmd (Windows Timeline / ActivitiesCache.db) is wired as a pure argv builder
+(``wxtcmd_argv``, unit-tested) but deliberately NOT invoked by ``process_image`` —
+its SQLite interop needs a writable unpack path the tool's own working directory
+provides, which the hardened read-only-rootfs base image does not; verifying that
+against a real ActivitiesCache.db is deferred to issue #88. See its docstring.
+
+    python -m get_sybers_dfir.zimmerman --image-src RAW/disk_images --out-dir PROCESSED/zimmerman
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+import yaml
+
+from . import container, imageexport
+
+PLASO_IMAGE = imageexport.PLASO_IMAGE
+_RECMD_IMAGE = "dfir/recmd:latest"
+_JLECMD_IMAGE = "dfir/jlecmd:latest"
+_LECMD_IMAGE = "dfir/lecmd:latest"
+_AMCACHEPARSER_IMAGE = "dfir/amcacheparser:latest"
+_APPCOMPATCACHEPARSER_IMAGE = "dfir/appcompatcacheparser:latest"
+_SBECMD_IMAGE = "dfir/sbecmd:latest"
+_RBCMD_IMAGE = "dfir/rbcmd:latest"
+_MFTECMD_IMAGE = "dfir/mftecmd:latest"
+_WXTCMD_IMAGE = "dfir/wxtcmd:latest"  # TODO(#88): built but not invoked — see wxtcmd_argv()
+
+# Baked into the dfir/recmd image (docker/recmd) — Eric Zimmerman's own curated
+# batch definition; not something the operator needs to supply.
+_RECMD_BATCH_FILE = "/opt/eztool/BatchExamples/Kroll_Batch.reb"
+
+
+# ---- the artefact filter (plaso yaml_filter_file format, NOT --artifact_filters) --
+# Each dict is one YAML document in the rendered filter file. path_separator '/' —
+# dfVFS location matching is per-segment and separator-agnostic, so a plain
+# forward-slash path needs no %variable expansion (that's an artifact_filters-only
+# mechanism); "paths" entries are per-segment regex, matched case-insensitively.
+ARTIFACT_GROUPS: list[dict] = [
+    {
+        "description": "Amcache (program-execution inventory hive + dirty-hive logs)",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Windows/AppCompat/Programs/Amcache\.hve",
+            r"/Windows/AppCompat/Programs/Amcache\.hve\.LOG1",
+            r"/Windows/AppCompat/Programs/Amcache\.hve\.LOG2",
+        ],
+    },
+    {
+        "description": "System-wide registry hives + dirty-hive transaction logs",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Windows/System32/config/SYSTEM",
+            r"/Windows/System32/config/SYSTEM\.LOG1",
+            r"/Windows/System32/config/SYSTEM\.LOG2",
+            r"/Windows/System32/config/SOFTWARE",
+            r"/Windows/System32/config/SOFTWARE\.LOG1",
+            r"/Windows/System32/config/SOFTWARE\.LOG2",
+            r"/Windows/System32/config/SAM",
+            r"/Windows/System32/config/SAM\.LOG1",
+            r"/Windows/System32/config/SAM\.LOG2",
+            r"/Windows/System32/config/SECURITY",
+            r"/Windows/System32/config/SECURITY\.LOG1",
+            r"/Windows/System32/config/SECURITY\.LOG2",
+        ],
+    },
+    {
+        # Dirty-hive replay (RECmd/SBECmd) needs the .LOG1/.LOG2 transaction logs
+        # sitting ALONGSIDE the hive — never extract one without the other.
+        "description": "Per-user registry hives (NTUSER.DAT / UsrClass.dat) + logs",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Users/.*/NTUSER\.DAT",
+            r"/Users/.*/NTUSER\.DAT\.LOG1",
+            r"/Users/.*/NTUSER\.DAT\.LOG2",
+            r"/Users/.*/AppData/Local/Microsoft/Windows/UsrClass\.dat",
+            r"/Users/.*/AppData/Local/Microsoft/Windows/UsrClass\.dat\.LOG1",
+            r"/Users/.*/AppData/Local/Microsoft/Windows/UsrClass\.dat\.LOG2",
+        ],
+    },
+    {
+        "description": "Jump lists and .lnk shortcuts (Explorer \"Recent\")",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Users/.*/AppData/Roaming/Microsoft/Windows/Recent/.*\.lnk",
+            r"/Users/.*/AppData/Roaming/Microsoft/Windows/Recent/AutomaticDestinations/.*",
+            r"/Users/.*/AppData/Roaming/Microsoft/Windows/Recent/CustomDestinations/.*",
+        ],
+    },
+    {
+        "description": "Recycle Bin $I metadata records",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/\$Recycle\.Bin/.*/\$I.*",
+        ],
+    },
+    {
+        "description": "Windows Timeline activity database (WxTCmd input; see #88)",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Users/.*/AppData/Local/ConnectedDevicesPlatform/.*/ActivitiesCache\.db",
+        ],
+    },
+    {
+        "description": "System Resource Usage Monitor (SRUM) database",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/Windows/System32/sru/SRUDB\.dat",
+        ],
+    },
+    {
+        "description": "Master File Table, when resident (MFTECmd input)",
+        "type": "include",
+        "path_separator": "/",
+        "paths": [
+            r"/\$MFT",
+        ],
+    },
+]
+
+
+def build_filter_yaml(groups: list[dict] = ARTIFACT_GROUPS) -> str:
+    """Render ``groups`` as the multi-document YAML ``image_export.py -f`` expects.
+    Pure (no I/O) — the caller writes the result to a file for the container to mount."""
+    return yaml.safe_dump_all(groups, sort_keys=False)
+
+
+# ---- extraction (image -> stage dir), via a YAML filter file, not --artifact_filters --
+def image_export_argv(image, out_dir, filter_file, *, plaso_image=PLASO_IMAGE,
+                      vss=False) -> list[str]:
+    """The ``docker run`` argv for one ``image_export.py`` extraction using a
+    filter FILE (``-f``) instead of ``--artifact_filters`` — the zimmerman artefact
+    set has no named forensic-artifact-definitions entry, so it's declared as our
+    own YAML filter (``build_filter_yaml``) and mounted in read-only. Pure (no I/O).
+    """
+    return container.run(
+        plaso_image,
+        ["image_export.py", "-q", "--partitions", "all",
+         "--vss_stores", "all" if vss else "none",
+         "-f", "/filter.yaml",
+         "-w", "/out",
+         f"/data/{os.path.basename(image)}"],
+        mounts=[f"{os.path.dirname(image)}:/data:ro", f"{out_dir}:/out",
+                f"{filter_file}:/filter.yaml:ro"],
+        workdir="/tmp",
+    )
+
+
+def extract_artifacts(image, stage_dir, *, plaso_image=PLASO_IMAGE, vss=False) -> list[str]:
+    """Extract the zimmerman artefact set from one image into ``stage_dir``
+    (the filter YAML is written alongside as ``_filter.yaml`` for debugging, and
+    excluded from the returned file list). Returns files written (absolute
+    paths). Raises ``CalledProcessError`` if image_export fails."""
+    image = os.path.realpath(image)
+    stage_dir = os.path.realpath(stage_dir)
+    os.makedirs(stage_dir, exist_ok=True)
+    try:
+        # image_export runs as a non-root uid inside the plaso container.
+        os.chmod(stage_dir, 0o777)
+    except OSError:
+        pass
+    filter_path = os.path.join(stage_dir, "_filter.yaml")
+    with open(filter_path, "w") as fh:
+        fh.write(build_filter_yaml())
+    subprocess.run(
+        image_export_argv(image, stage_dir, filter_path, plaso_image=plaso_image, vss=vss),
+        capture_output=True, check=True,
+    )
+    written = []
+    for root, _dirs, files in os.walk(stage_dir):
+        for name in files:
+            if os.path.join(root, name) == filter_path:
+                continue
+            written.append(os.path.join(root, name))
+    return sorted(written)
+
+
+# ---- discovery / naming -----------------------------------------------------
+def discover_images(path: str) -> list[str]:
+    """Disk images to process — the SAME extension-based discovery the evtx and
+    plaso lanes' extraction step uses (``imageexport.discover_images``)."""
+    return imageexport.discover_images(path)
+
+
+def host_name(image_path: str) -> str:
+    """Per-host output-dir label for an image: its filename stem (extension
+    dropped), spaces folded — one image, one host, one directory."""
+    stem = os.path.splitext(os.path.basename(image_path))[0]
+    return stem.replace(" ", "_")
+
+
+def find_file(root: str, name: str) -> str | None:
+    """First file under ``root`` (any depth) whose basename matches ``name``
+    case-insensitively; sorted for a deterministic pick among duplicates
+    (e.g. the same hive staged under more than one path). None if absent."""
+    target = name.lower()
+    matches = [os.path.join(cur, f) for cur, _dirs, files in os.walk(root)
+               for f in files if f.lower() == target]
+    return sorted(matches)[0] if matches else None
+
+
+# ---- per-tool container argv builders (pure — no I/O, no docker) ------------
+def recmd_argv(hives_dir, out_dir) -> list[str]:
+    """RECmd's ``-d`` recurses the whole directory looking for hives, so pointing
+    it at the FULL extraction root processes every system + per-user hive (with
+    its .LOG1/.LOG2) in one batch pass — no per-hive invocation needed."""
+    return container.run(
+        _RECMD_IMAGE,
+        ["-d", "/in", "--bn", _RECMD_BATCH_FILE, "--json", "/out",
+         "--jsonf", "recmd_batch.json", "--nl"],
+        mounts=[f"{hives_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def srum_l2t_argv(srudb_dir, out_dir, *, plaso_image=PLASO_IMAGE) -> list[str]:
+    """SRUM step 1/2: SrumECmd is Windows-only (.NET), so plaso's own
+    ``esedb/srum`` plugin parses the ESE database into a durable .plaso store —
+    the same log2timeline half of the two-step ``plaso.py`` runs, scoped to one file."""
+    return container.run(
+        plaso_image,
+        ["log2timeline.py", "--status_view", "none", "--parsers", "esedb/srum",
+         "--storage-file", "/out/srum.plaso", "/in/SRUDB.dat"],
+        mounts=[f"{srudb_dir}:/in:ro", f"{out_dir}:/out"],
+        workdir="/tmp",
+    )
+
+
+def srum_psort_argv(out_dir, *, plaso_image=PLASO_IMAGE) -> list[str]:
+    """SRUM step 2/2: render the .plaso store to json_line. MUST be named
+    ``.jsonl`` — the CAR lane's raw-l2t source detector (mitrecar/sources.py)
+    keys off that extension."""
+    return container.run(
+        plaso_image,
+        ["psort.py", "--status_view", "none", "-o", "json_line",
+         "-w", "/out/srum.jsonl", "/out/srum.plaso"],
+        mounts=[f"{out_dir}:/out"],
+        workdir="/tmp",
+    )
+
+
+def jlecmd_argv(recent_dir, out_dir) -> list[str]:
+    """JLECmd's ``-d`` recurses; pointing it at the whole extraction root is safe
+    (that tree holds only the filtered artefact set, never the rest of the
+    filesystem) and needs no per-user Recent-folder lookup."""
+    return container.run(
+        _JLECMD_IMAGE,
+        ["-d", "/in", "--json", "/out", "--jsonf", "jlecmd.json"],
+        mounts=[f"{recent_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def lecmd_argv(recent_dir, out_dir) -> list[str]:
+    """LECmd's ``-d`` recurses the same way JLECmd's does. No ``-q``: unlike its
+    sibling EZ-Tools, this recipe wants LECmd's full per-file detail, not the
+    quiet/fast summary path."""
+    return container.run(
+        _LECMD_IMAGE,
+        ["-d", "/in", "--json", "/out"],
+        mounts=[f"{recent_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def amcacheparser_argv(amcache_dir, out_dir) -> list[str]:
+    """``amcache_dir`` must be the directory holding a file literally named
+    ``Amcache.hve`` (its .LOG1/.LOG2 are read from the same directory
+    automatically) — located by ``find_file(stage_dir, "Amcache.hve")``."""
+    return container.run(
+        _AMCACHEPARSER_IMAGE,
+        ["-f", "/in/Amcache.hve", "--csv", "/out", "--csvf", "amcache.csv", "-i"],
+        mounts=[f"{amcache_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def appcompatcacheparser_argv(system_dir, out_dir) -> list[str]:
+    """``system_dir`` must hold a file literally named ``SYSTEM`` (its
+    .LOG1/.LOG2 are needed alongside for a dirty hive) — located by
+    ``find_file(stage_dir, "SYSTEM")``."""
+    return container.run(
+        _APPCOMPATCACHEPARSER_IMAGE,
+        ["-f", "/in/SYSTEM", "--csv", "/out", "--csvf", "appcompatcache.csv"],
+        mounts=[f"{system_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def sbecmd_argv(user_dir, out_dir) -> list[str]:
+    """SBECmd's ``-d`` looks for hives under the given directory; pointed at the
+    whole extraction root it picks up every user's NTUSER.DAT/UsrClass.dat."""
+    return container.run(
+        _SBECMD_IMAGE,
+        ["-d", "/in", "--json", "/out", "--jsonf", "sbecmd.json"],
+        mounts=[f"{user_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def rbcmd_argv(recyclebin_dir, out_dir) -> list[str]:
+    """RBCmd's ``-d`` recurses looking for $I records; the whole extraction root
+    is safe to hand it (only $Recycle.Bin/*/$I* was ever extracted there)."""
+    return container.run(
+        _RBCMD_IMAGE,
+        ["-d", "/in", "--csv", "/out", "--csvf", "rbcmd.csv"],
+        mounts=[f"{recyclebin_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def mftecmd_argv(mft_dir, out_dir) -> list[str]:
+    """``mft_dir`` must hold a file literally named ``$MFT`` — located by
+    ``find_file(stage_dir, "$MFT")``. Only run when a resident $MFT was
+    actually extracted (most images won't have one at the root)."""
+    return container.run(
+        _MFTECMD_IMAGE,
+        ["-f", "/in/$MFT", "--json", "/out", "--jsonf", "mftecmd.json"],
+        mounts=[f"{mft_dir}:/in:ro", f"{out_dir}:/out"],
+    )
+
+
+def wxtcmd_argv(activitiescache_dir, out_dir) -> list[str]:
+    """TODO(#88): NOT invoked by ``process_image`` yet. WxTCmd's SQLite interop
+    (it copies ActivitiesCache.db before opening it) needs a WRITABLE working
+    area — the hardened base image's rootfs is read-only, so an extra tmpfs at
+    ``/opt/eztool`` (its own working directory, uid/gid 2000 to match the
+    container's non-root user) is the fix described in the epic #86 Phase-D
+    comment. Kept here as a pure, unit-tested argv builder so the shape is ready
+    to wire in once a real ActivitiesCache.db run confirms it (issue #88) — the
+    alternative (breaking the rest of the lane chasing this one tool) is worse.
+    """
+    return container.run(
+        _WXTCMD_IMAGE,
+        ["-f", "/in/ActivitiesCache.db", "--csv", "/out"],
+        mounts=[f"{activitiescache_dir}:/in:ro", f"{out_dir}:/out"],
+        tmpfs=("/opt/eztool:rw,nosuid,nodev,exec,size=256m,uid=2000,gid=2000",),
+    )
+
+
+# ---- running + idempotence ---------------------------------------------------
+def _nonempty(path: str) -> bool:
+    try:
+        return os.path.getsize(path) > 0
+    except OSError:
+        return False
+
+
+def _has_output(dir_path: str) -> bool:
+    """True if dir_path (any depth) holds at least one non-empty file."""
+    if not os.path.isdir(dir_path):
+        return False
+    for cur, _dirs, files in os.walk(dir_path):
+        for f in files:
+            if _nonempty(os.path.join(cur, f)):
+                return True
+    return False
+
+
+def _run(argv: list[str], log_path: str) -> bool:
+    """One tool container invocation, appended to log_path (never our own
+    stdout — that carries only the JSON summary). True on a clean exit."""
+    with open(log_path, "a") as logfh:
+        result = subprocess.run(argv, stdout=logfh, stderr=subprocess.STDOUT, check=False)
+    return result.returncode == 0
+
+
+def _run_step(argv: list[str], out_dir: str, log_path: str) -> dict:
+    """Run one EZ-Tool container into out_dir; report {ran, ok}. "ok" needs both
+    a clean exit AND actual output — a tool that exits 0 having found nothing
+    (e.g. no hives matched a filter) is not silently counted as done."""
+    os.makedirs(out_dir, exist_ok=True)
+    try:
+        os.chmod(out_dir, 0o777)
+    except OSError:
+        pass
+    ok = _run(argv, log_path)
+    return {"ran": True, "ok": ok and _has_output(out_dir)}
+
+
+def process_image(image, host_out_dir, *, plaso_image=PLASO_IMAGE, force=False,
+                  vss=False) -> dict:
+    """Extract + run every EZ-Tools step for one disk image into ``host_out_dir``
+    (== ``processed/zimmerman/<host>/`` — one host, one directory, per the CAR
+    isolation rule in docs/CAR-Pipeline.md §2). Idempotent at the HOST level: a
+    host dir that already holds any non-empty file is skipped whole unless
+    ``force`` (a partial prior run is reprocessed entirely, not resumed
+    file-by-file — simpler and safer than guessing which step half-completed).
+    """
+    host_out_dir = os.path.realpath(host_out_dir)
+    result: dict = {"image": image, "host_dir": host_out_dir, "steps": {}, "skipped": False}
+    if not force and _has_output(host_out_dir):
+        result["skipped"] = True
+        return result
+
+    os.makedirs(host_out_dir, exist_ok=True)
+    try:
+        os.chmod(host_out_dir, 0o777)
+    except OSError:
+        pass
+    log_path = os.path.join(host_out_dir, "zimmerman.log")
+
+    stage_dir = os.path.join(host_out_dir, "_extracted")
+    try:
+        extracted = extract_artifacts(image, stage_dir, plaso_image=plaso_image, vss=vss)
+    except subprocess.CalledProcessError:
+        result["error"] = "image_export failed"
+        return result
+    result["extracted_files"] = len(extracted)
+
+    # Directory-recursive tools: point each at the whole extraction root (it
+    # holds only the filtered artefact set, so scanning it whole is both
+    # correct and cheap — no per-user directory lookup needed).
+    recmd_out = os.path.join(host_out_dir, "recmd")
+    result["steps"]["recmd"] = _run_step(recmd_argv(stage_dir, recmd_out), recmd_out, log_path)
+
+    jlecmd_out = os.path.join(host_out_dir, "jlecmd")
+    result["steps"]["jlecmd"] = _run_step(jlecmd_argv(stage_dir, jlecmd_out), jlecmd_out, log_path)
+
+    lecmd_out = os.path.join(host_out_dir, "lecmd")
+    result["steps"]["lecmd"] = _run_step(lecmd_argv(stage_dir, lecmd_out), lecmd_out, log_path)
+
+    sbecmd_out = os.path.join(host_out_dir, "sbecmd")
+    result["steps"]["sbecmd"] = _run_step(sbecmd_argv(stage_dir, sbecmd_out), sbecmd_out, log_path)
+
+    rbcmd_out = os.path.join(host_out_dir, "rbcmd")
+    result["steps"]["rbcmd"] = _run_step(rbcmd_argv(stage_dir, rbcmd_out), rbcmd_out, log_path)
+
+    # SRUM (two-step plaso run) — only when SRUDB.dat was actually extracted.
+    srudb = find_file(stage_dir, "SRUDB.dat")
+    if srudb:
+        srum_out = os.path.join(host_out_dir, "srum")
+        os.makedirs(srum_out, exist_ok=True)
+        try:
+            os.chmod(srum_out, 0o777)
+        except OSError:
+            pass
+        ok1 = _run(srum_l2t_argv(os.path.dirname(srudb), srum_out, plaso_image=plaso_image), log_path)
+        ok2 = ok1 and _run(srum_psort_argv(srum_out, plaso_image=plaso_image), log_path)
+        result["steps"]["srum"] = {"ran": True, "ok": ok2 and _nonempty(os.path.join(srum_out, "srum.jsonl"))}
+    else:
+        result["steps"]["srum"] = {"ran": False, "reason": "no SRUDB.dat extracted"}
+
+    # Single-file tools — only when their specific file was actually extracted.
+    amcache_hive = find_file(stage_dir, "Amcache.hve")
+    if amcache_hive:
+        amcache_out = os.path.join(host_out_dir, "amcache")
+        result["steps"]["amcache"] = _run_step(
+            amcacheparser_argv(os.path.dirname(amcache_hive), amcache_out), amcache_out, log_path)
+    else:
+        result["steps"]["amcache"] = {"ran": False, "reason": "no Amcache.hve extracted"}
+
+    system_hive = find_file(stage_dir, "SYSTEM")
+    if system_hive:
+        appcompat_out = os.path.join(host_out_dir, "appcompatcache")
+        result["steps"]["appcompatcache"] = _run_step(
+            appcompatcacheparser_argv(os.path.dirname(system_hive), appcompat_out),
+            appcompat_out, log_path)
+    else:
+        result["steps"]["appcompatcache"] = {"ran": False, "reason": "no SYSTEM hive extracted"}
+
+    mft = find_file(stage_dir, "$MFT")
+    if mft:
+        mftecmd_out = os.path.join(host_out_dir, "mftecmd")
+        result["steps"]["mftecmd"] = _run_step(
+            mftecmd_argv(os.path.dirname(mft), mftecmd_out), mftecmd_out, log_path)
+    else:
+        result["steps"]["mftecmd"] = {"ran": False, "reason": "no $MFT extracted"}
+
+    # WxTCmd — TODO(#88): needs a writable /opt/eztool tmpfs; not run here. See
+    # wxtcmd_argv()'s docstring for why, and what would need verifying first.
+    result["steps"]["wxtcmd"] = {"ran": False, "reason": "deferred to #88 (writable-rootfs TODO)"}
+
+    return result
+
+
+def process_source(image_src, out_dir, *, plaso_image=PLASO_IMAGE, force=False, vss=False) -> dict:
+    """Process every disk image under ONE source (``image_src``: a file or a
+    directory of them) into ``out_dir/<host>/``."""
+    out_dir = os.path.realpath(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
+    images = discover_images(image_src)
+
+    summary = {
+        "source": os.path.realpath(image_src),
+        "out_dir": out_dir,
+        "images": len(images),
+        "processed": 0,
+        "skipped": 0,
+        # An image with none of the zimmerman artefact set (e.g. a non-Windows
+        # image) is normal, not a failure — counted apart like evtx's "empty".
+        "empty": 0,
+        "failed": 0,
+        "results": [],
+    }
+    for img in images:
+        host = host_name(img)
+        host_dir = os.path.join(out_dir, host)
+        res = process_image(img, host_dir, plaso_image=plaso_image, force=force, vss=vss)
+        res["host"] = host
+        if res.get("skipped"):
+            summary["skipped"] += 1
+        elif res.get("error"):
+            summary["failed"] += 1
+        else:
+            any_ok = any(s.get("ok") for s in res["steps"].values())
+            if any_ok:
+                summary["processed"] += 1
+            elif res.get("extracted_files", 0) == 0:
+                summary["empty"] += 1
+            else:
+                summary["failed"] += 1
+        summary["results"].append(res)
+    return summary
+
+
+def process(input_dir, out_dir, *, vm_dir="", plaso_image=PLASO_IMAGE, force=False,
+           vss=False) -> dict:
+    """Process disk images under ``input_dir`` and (if given) ``vm_dir`` into
+    ``out_dir/<host>/`` — the same two-source shape as ``plaso.process``.
+    ``vm_dir`` is optional and tolerated when absent/empty (a VM-export folder
+    holds a plain ``.vmdk``, which ``discover_images`` finds like any other
+    image; it does not get plaso.py's descriptor-vs-extent disambiguation, so
+    keep VM exports to a single base/snapshot descriptor per folder for now).
+    """
+    sources = [os.path.realpath(input_dir)]
+    if vm_dir and os.path.isdir(vm_dir):
+        sources.append(os.path.realpath(vm_dir))
+
+    summary = {"tool": "zimmerman", "out_dir": os.path.realpath(out_dir), "sources": [],
+              "images": 0, "processed": 0, "skipped": 0, "empty": 0, "failed": 0}
+    for src in sources:
+        s = process_source(src, out_dir, plaso_image=plaso_image, force=force, vss=vss)
+        summary["sources"].append(s)
+        for k in ("images", "processed", "skipped", "empty", "failed"):
+            summary[k] += s.get(k, 0)
+    return summary
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(
+        prog="get_sybers_dfir.zimmerman",
+        description="disk images -> Eric Zimmerman EZ-Tools artefact parse (registry, "
+                    "Amcache, AppCompatCache, jump lists/lnk, ShellBags, Recycle Bin, "
+                    "MFT, SRUM), one output dir per host",
+    )
+    ap.add_argument("--input-dir", required=True,
+                    help="disk image (E01/raw/VMDK/...) or a directory of them")
+    ap.add_argument("--vm-dir", default="",
+                    help="VMware VM export folders (one per VM); optional")
+    ap.add_argument("--out-dir", required=True,
+                    help="output dir; one sub-dir per host (image stem)")
+    ap.add_argument("--plaso-image", default=PLASO_IMAGE,
+                    help="container image providing image_export.py/log2timeline.py/psort.py "
+                         "(default: %(default)s)")
+    ap.add_argument("--vss", action="store_true",
+                    help="also extract from Volume Shadow Copies")
+    ap.add_argument("--force", action="store_true",
+                    help="reprocess hosts that already have output")
+    args = ap.parse_args(argv)
+
+    summary = process(args.input_dir, args.out_dir, vm_dir=args.vm_dir,
+                      plaso_image=args.plaso_image, force=args.force, vss=args.vss)
+    json.dump(summary, sys.stdout)
+    sys.stdout.write("\n")
+    # Fail only when the run produced nothing AND nothing was already done — see
+    # the same rationale in evtx.py/volatility.py/plaso.py: a source that can
+    # never produce output for a given image must not flip an otherwise-complete,
+    # idempotent re-run into a failure.
+    return 1 if summary["failed"] and not summary["processed"] and not summary["skipped"] else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

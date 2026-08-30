@@ -1,0 +1,29 @@
+---
+# dfir_zimmerman: disk images -> EZ-Tools artefact parse, one output dir per host.
+# The role GROUPS; the playbook DECIDES. Idempotence (skip a host dir that already
+# has output) lives in the Python processor, not in a task's `when:`.
+
+- name: "zimmerman | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dfir_zimmerman_pipeline in ['adx', 'sofelk']
+      - dfir_zimmerman_input_dir | length > 0
+    fail_msg: >-
+      dfir_zimmerman needs dfir_zimmerman_pipeline (adx|sofelk) and a non-empty
+      dfir_zimmerman_input_dir.
+    quiet: true
+  tags: [always]
+
+# Fact-find + preconditions BEFORE any container runs or files are written.
+- name: "zimmerman | preflight"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+# The pipeline decision (adx|sofelk) is carried by the resolved
+# dfir_zimmerman_out_dir default — the tasks themselves are pipeline-agnostic,
+# so there is ONE task file to maintain instead of a drifting pair.
+- name: "zimmerman | process"
+  ansible.builtin.include_tasks: process.yml
