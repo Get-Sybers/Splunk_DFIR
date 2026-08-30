@@ -254,13 +254,20 @@ def run_car(client, processed_dir, container, staging_dir, seen, dry_run, summar
             "found": len(files), "ingested": 0, "skipped": len(files)}
         return
     ingested = 0
+    empty = 0            # a source with zero of an object (e.g. car_relationships)
+    empty_hashes = []
     for f in todo:
         rel = os.path.relpath(f, processed_dir)
         obj = os.path.basename(f)[len("car_"):-len(".jsonl")]   # car_<object>.jsonl
         table = f"car_{obj}"
         fh = _file_hash(rel)
-        if os.path.getsize(f) == 0:        # a source with zero of this object
-            continue                       # (e.g. car_relationships for 0 edges)
+        if os.path.getsize(f) == 0:
+            # nothing to ingest, but ledger it like any loaded file so it is not
+            # reconsidered every run and found == ingested + skipped stays true.
+            empty += 1
+            if not dry_run:
+                empty_hashes.append(fh)
+            continue
         if dry_run:
             summary["submitted"] += 1
             continue
@@ -272,8 +279,11 @@ def run_car(client, processed_dir, container, staging_dir, seen, dry_run, summar
                            "multijson", False, [dest], dry_run, summary):
             record_hashes(client, [fh])
             ingested += 1
+    if empty_hashes:
+        record_hashes(client, empty_hashes)
     summary["sources"]["CAR -> mitre.car_*"] = {
-        "found": len(files), "ingested": ingested, "skipped": len(files) - len(todo)}
+        "found": len(files), "ingested": ingested,
+        "skipped": (len(files) - len(todo)) + empty}
 
 
 def process(processed_dir, only=None, dry_run=False, force=False,

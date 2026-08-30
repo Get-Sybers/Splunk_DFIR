@@ -1,15 +1,16 @@
 """CAR run-through — expected FIELD VALUES at the ADX level (materialized CAR).
 
-The promotion gate for CAR correctness. CAR is MATERIALIZED (epic #86): the
-engine normalises each source into finished CAR events and the pipeline ingests
-one `car_<object>.jsonl` per object into the `mitre.car_<object>` tables (plus
+The promotion gate for CAR correctness. CAR is MATERIALIZED: the engine normalises
+each source into finished CAR events and the pipeline ingests one
+`car_<object>.jsonl` per object into the `mitre.car_<object>` tables (plus
 `car_relationships`). Extraction faithfulness (a CAR field == its single source
 record) is proven IN THE ENGINE's own test suite; this gate asserts what lands in
 ADX: each exercised object returns rows, its key fields are POPULATED, its values
 are SANE (IPs are IPs, ports are ports, SIDs are SIDs, actions are in the object's
-vocabulary), every row TRACES TO ONE ARTEFACT (source_artefact + source_host
-non-empty — never data compiled together), and the relationship edges reference
-real endpoints.
+vocabulary), every row TRACES TO ONE ARTEFACT (a non-empty source_artefact —
+never data compiled together; source_host is honestly null for artefacts with no
+host identity, e.g. Linux utmp / network capture), and the relationship edges
+reference real endpoints.
 
 Asserts against an ALREADY-POPULATED emulator — run the pipeline first
 (dxdfir deploy && dxdfir process <lanes> && dxdfir build-car && dxdfir ingest).
