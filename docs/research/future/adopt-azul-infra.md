@@ -53,6 +53,43 @@ Shared library for Azul models and operations.
   `msginflight/conversion_avro.go`.
   ([bedrock README — Avro compatibility](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/blob/main/README.md))
 
+  Current schema version is **v6**. Key event types:
+
+  | Schema file | Event type | Primary fields |
+  |---|---|---|
+  | `v6/1_binary.json` | `BinaryEvent` | `model_version`, `kafka_key`, `timestamp`, `author{name,version,category,security}`, `source{name,references,path[],settings}`, `entity{sha256,sha512,sha1,md5,ssdeep,tlsh,size,mime,features[],datastreams[]}`, `action`, `flags` |
+  | `v6/2_plugin.json` | `PluginEvent` | `author{name,version,contact}`, `entity{features[{name,type,tags[]}],config{}}` |
+  | `v6/2_status.json` | `StatusEvent` | Plugin execution status / error |
+  | `v6/2_delete.json` | `DeleteEvent` | Binary deletion events |
+  | `v6/2_insert.json` | `InsertEvent` | Binary ingest notification |
+  | `v6/2_retrohunt.json` | `RetrohuntEvent` | Re-scan / retrohunt trigger |
+
+  ([azul-bedrock/gosrc/events/schemas/v6/](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/tree/main/gosrc/events/schemas/v6))
+
+  The `BinaryEvent.action` field is a `BinaryAction` enum that controls routing and
+  validation at the Dispatcher. The five values are:
+
+  | Value | Meaning | Required in `entity.datastreams` |
+  |---|---|---|
+  | `Sourced` | New sighting from an external source | `label=content` stream |
+  | `Extracted` | Binary extracted from an archive/container | `label=content` stream |
+  | `Augmented` | Existing binary with additional data streams | `label=content` + at least one other label |
+  | `Enriched` | Metadata enrichment only — no file content supplied | None |
+  | `Mapped` | Association/mapping data — no content label in streams | None |
+
+  For a DFIR timeline enrichment plugin, `Enriched` is the correct action since
+  DX_DFIR produces metadata (timeline events) rather than binary content.
+  ([azul-bedrock/gosrc/events/event_binary.go](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/blob/main/gosrc/events/event_binary.go))
+
+  **Kafka key and retention model:** Each `Source` carries its own Kafka configuration.
+  Sources with `expire_events_after="0"` use `cleanup.policy=compact` (log compaction
+  — keeps the latest value per key; suitable for deduplication of the CAR index).
+  Time-bounded sources use `cleanup.policy=delete` + `retention.ms`. Partition key
+  construction: `source.<MD5 of sorted key-value reference pairs>` for source tracking;
+  `parent_sha256.child_sha256.timestamp.category.name.version` for link tracking.
+  ([azul-bedrock/azul_bedrock/models_settings.py](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/blob/main/azul_bedrock/models_settings.py),
+  [event_binary.go — UpdateTrackingFields](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/blob/main/gosrc/events/event_binary.go))
+
 - Contains **`identify.yaml`** — a 771-line YARA-x-based file type taxonomy that
   Azul plugins use to filter which files they should process. Its type strings (e.g.
   `text/plain`, `document/`, `executable/windows/pe`) are the values used in a
@@ -469,6 +506,13 @@ Register in `docker/sof-elk/pipelines.yml`:
 The `document_id => guid` makes every bulk ingest idempotent: re-delivering the same
 CAR JSONL will overwrite rather than duplicate.
 ([Logstash Elasticsearch output — `document_id`](https://www.elastic.co/guide/en/logstash/current/plugins-outputs-elasticsearch.html#plugins-outputs-elasticsearch-document_id))
+
+> **SOF-ELK contribution note:** The SOF-ELK project requires custom parsers to be
+> placed in `configfiles-UNSUPPORTED/` when submitted as PRs — they are only moved
+> to `configfiles/` after maintainer review for universal applicability. Since
+> `car.conf` is DX_DFIR-specific it should live in the DX_DFIR `docker/sof-elk/`
+> overlay rather than being upstreamed to SOF-ELK.
+> ([SOF-ELK PULLREQUESTS.md](https://github.com/philhagen/sof-elk/blob/main/PULLREQUESTS.md))
 
 #### 2c. OpenSearch / Elasticsearch index templates
 
