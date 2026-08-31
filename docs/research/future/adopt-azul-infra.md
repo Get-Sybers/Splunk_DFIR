@@ -237,7 +237,7 @@ DX_DFIR's `docker/sof-elk/` compose stack provides:
 
 - **Elasticsearch 9.4.3** — single-node, no security, localhost-only, with
   persistent volume `esdata`. Health-probed with `/_cluster/health`.
-  ([docker-compose.yml](../../docker/sof-elk/docker-compose.yml))
+  ([docker-compose.yml](../../../docker/sof-elk/docker-compose.yml))
 
 - **SOF-ELK container (from source)** — Logstash + co-located Filebeat, built from
   `philhagen/sof-elk` (main branch). The Dockerfile clones the SOF-ELK repo to
@@ -245,22 +245,22 @@ DX_DFIR's `docker/sof-elk/` compose stack provides:
   own declared list (`ansible/roles/logstash/defaults/main.yaml`), seeds GeoLite2
   databases from the bundled plugin copies, and applies one upstream patch: making
   the Elasticsearch output host configurable via `${ES_HOSTS}`.
-  ([Dockerfile](../../docker/sof-elk/Dockerfile),
+  ([Dockerfile](../../../docker/sof-elk/Dockerfile),
   [SOF-ELK upstream](https://github.com/philhagen/sof-elk))
 
 - **Filebeat** (co-located in the SOF-ELK container) — watches
   `/logstash/<type>/` directories using SOF-ELK's per-type input prospectors
   (`/usr/local/sof-elk/lib/filebeat_inputs/*.yml`); ships to Logstash on
   `localhost:5044`. Each `<type>/` subdirectory maps to a SOF-ELK pipeline.
-  ([filebeat.yml](../../docker/sof-elk/filebeat.yml))
+  ([filebeat.yml](../../../docker/sof-elk/filebeat.yml))
 
 - **Logstash** — loads SOF-ELK's order-prefixed parsing configs as one pipeline
   (`/usr/local/sof-elk/configfiles/*.conf`). The output config is patched to read
   the Elasticsearch host from `${ES_HOSTS}`.
-  ([pipelines.yml](../../docker/sof-elk/pipelines.yml))
+  ([pipelines.yml](../../../docker/sof-elk/pipelines.yml))
 
 - **Kibana 9.4.3** — standard Kibana pointing at the Elasticsearch service.
-  ([docker-compose.yml](../../docker/sof-elk/docker-compose.yml))
+  ([docker-compose.yml](../../../docker/sof-elk/docker-compose.yml))
 
 ### 4.2 What does not exist today
 
@@ -283,24 +283,24 @@ backend. The complete path today:
 ### 5.1 Plaso lane
 
 1. `log2timeline.py` parses the image into a `.plaso` storage database.
-   ([plaso.py — `run_plaso()`](../../python/get_sybers_dfir/plaso.py))
+   ([plaso.py — `run_plaso()`](../../../python/get_sybers_dfir/plaso.py))
 
 2. `psort.py` renders the `.plaso` db through a baked wrapper
    (`/opt/dfir/psort_wrapper.py`) that imports the custom
    `l2t_json_dfir` output module, which adds four attribution fields
    (`image_hostname`, `username`, `disk_id`, `volume_id`) to **every** event by
    reading them once from the `.plaso` storage's `system_configuration` container.
-   ([dev-scripts/plaso/l2t_json_dfir.py](../../dev-scripts/plaso/l2t_json_dfir.py))
+   ([dev-scripts/plaso/l2t_json_dfir.py](../../../dev-scripts/plaso/l2t_json_dfir.py))
 
 3. The output is named `<image_hostname>.jsonl` under
    `data_store/processed/log2timeline/jsonl/`. Idempotence is via a `.host` marker
    file; a failed psort (no marker) is not mistaken for done.
-   ([plaso.py — `_already_done()`](../../python/get_sybers_dfir/plaso.py))
+   ([plaso.py — `_already_done()`](../../../python/get_sybers_dfir/plaso.py))
 
 4. On `dxdfir ingest`, `run_l2t()` streams each JSONL (never fully buffering —
    the files can be multi-GB), splits by parser into per-table staging files, and
    ingests them into `host.L2t<Parser>` tables in the ADX emulator via `.ingest into`.
-   ([ingest/__init__.py — `run_l2t()`](../../python/get_sybers_dfir/ingest/__init__.py))
+   ([ingest/__init__.py — `run_l2t()`](../../../python/get_sybers_dfir/ingest/__init__.py))
 
 ### 5.2 CAR lane
 
@@ -311,8 +311,8 @@ backend. The complete path today:
    - `car_<object>.jsonl` (one file per populated object)
    - `car_relationships.jsonl`
    - `sources.yaml` manifest
-   ([mitrecar.py](../../python/get_sybers_dfir/mitrecar.py),
-   [CAR-Pipeline.md](../../docs/CAR-Pipeline.md))
+   ([mitrecar.py](../../../python/get_sybers_dfir/mitrecar.py),
+   [CAR-Pipeline.md](../../../docs/CAR-Pipeline.md))
 
 2. `dxdfir ingest --only car` invokes `run_car()`, which:
    - walks `data_store/processed/car/` for `car_*.jsonl` files;
@@ -322,14 +322,14 @@ backend. The complete path today:
    - runs `.ingest into table car_<object> (locator) with (format="multijson")`
      in batches of 50;
    - records the file's SHA-1 hash in `host._DfirIngestLedger` for idempotence.
-   ([ingest/__init__.py — `run_car()`](../../python/get_sybers_dfir/ingest/__init__.py))
+   ([ingest/__init__.py — `run_car()`](../../../python/get_sybers_dfir/ingest/__init__.py))
 
 3. Kusto tables are defined in `kusto/schema/40-mitre.kql`. Every column name is
    bracket-quoted because many CAR fields collide with KQL keywords (`from`, `to`,
    `type`, `user`, `group`, `key`, `value`, `data`). Numeric-looking fields (`pid`,
    `port`, `bytes`) are stored as strings because evidence is type-inconsistent.
    `native` is a `dynamic` column (KQL's JSON blob type).
-   ([40-mitre.kql](../../kusto/schema/40-mitre.kql))
+   ([40-mitre.kql](../../../kusto/schema/40-mitre.kql))
 
 ### 5.3 The 13 CAR objects and the relationships table
 
@@ -391,7 +391,7 @@ currently loses or encodes into a flat `Record` blob.
 per-event hostname which is the login source for remote events), `disk_id`, and
 `volume_id` — fields that are not present in the standard elastic output. These are
 essential for the current per-host isolation model.
-([dev-scripts/plaso/l2t_json_dfir.py](../../dev-scripts/plaso/l2t_json_dfir.py))
+([dev-scripts/plaso/l2t_json_dfir.py](../../../dev-scripts/plaso/l2t_json_dfir.py))
 
 **Decision options:**
 
@@ -403,14 +403,14 @@ essential for the current per-host isolation model.
 
 **Files to change in DX_DFIR for Option A:**
 
-- [`python/get_sybers_dfir/plaso.py`](../../python/get_sybers_dfir/plaso.py) —
+- [`python/get_sybers_dfir/plaso.py`](../../../python/get_sybers_dfir/plaso.py) —
   add a second `psort` invocation after the existing one, passing
   `["python3", _PSORT_WRAPPER_PATH, ..., "-o", "elastic", "--server", es_host, "--port", es_port, "--index_name", f"plaso-{hostname}"]`
   using the Elasticsearch host from environment or config.
-- [`docker/sof-elk/docker-compose.yml`](../../docker/sof-elk/docker-compose.yml) —
+- [`docker/sof-elk/docker-compose.yml`](../../../docker/sof-elk/docker-compose.yml) —
   expose Elasticsearch host/port as environment variables consumable by the Plaso
   container.
-- [`dev-scripts/plaso/l2t_json_dfir.py`](../../dev-scripts/plaso/l2t_json_dfir.py) —
+- [`dev-scripts/plaso/l2t_json_dfir.py`](../../../dev-scripts/plaso/l2t_json_dfir.py) —
   document as the PIIAT mapping path output; add upstream proposal note.
 
 ---
@@ -431,7 +431,7 @@ PIIAT-MitreCar or the `car.db`/`superset.db` contract.
 Add a new input prospector under the SOF-ELK image for CAR JSONL. The SOF-ELK
 Filebeat config loads all prospectors from
 `/usr/local/sof-elk/lib/filebeat_inputs/*.yml` at startup.
-([filebeat.yml](../../docker/sof-elk/filebeat.yml),
+([filebeat.yml](../../../docker/sof-elk/filebeat.yml),
 [SOF-ELK filebeat_inputs](https://github.com/philhagen/sof-elk/tree/main/lib/filebeat_inputs))
 
 New file: `docker/sof-elk/filebeat_inputs/car.yml` (baked into the image, or
@@ -454,11 +454,11 @@ The `labels.type: car` field is how SOF-ELK's Logstash configs route events to t
 correct parsing pipeline. The `SOFELK_INGEST_DIR` volume mount (already present in
 `docker-compose.yml`) exposes the host-side ingest directory at `/logstash/` inside
 the container.
-([docker-compose.yml — `SOFELK_INGEST_DIR`](../../docker/sof-elk/docker-compose.yml))
+([docker-compose.yml — `SOFELK_INGEST_DIR`](../../../docker/sof-elk/docker-compose.yml))
 
 `dxdfir sofelk` delivers processed output into the watch directory via SHA-1-keyed
 idempotence. Adding a `car/` subdirectory delivery step to
-[`sofelk.py` — `deliver()`](../../python/get_sybers_dfir/sofelk.py) would route CAR
+[`sofelk.py` — `deliver()`](../../../python/get_sybers_dfir/sofelk.py) would route CAR
 JSONL through the same path.
 
 #### 2b. Logstash CAR pipeline
@@ -520,7 +520,7 @@ Create `kusto/opensearch/car_index_templates.json` — one index template per CA
 object type plus one for relationships.
 
 Design principles derived directly from `40-mitre.kql`:
-([40-mitre.kql](../../kusto/schema/40-mitre.kql),
+([40-mitre.kql](../../../kusto/schema/40-mitre.kql),
 [OpenSearch index templates](https://opensearch.org/docs/latest/im-plugin/index-templates/))
 
 - `guid` → `keyword`; used as `_id` → natural document-level idempotence.
@@ -530,7 +530,7 @@ Design principles derived directly from `40-mitre.kql`:
 - `pid`, `port`, `bytes`, `size` and other numeric-looking fields → `keyword`
   (matching the KQL schema's deliberate choice to keep them as strings because
   evidence is type-inconsistent; cast at query time as
-  [`40-mitre.kql`](../../kusto/schema/40-mitre.kql) notes).
+  [`40-mitre.kql`](../../../kusto/schema/40-mitre.kql) notes).
 - `native` → `object` with `dynamic: true` (preserves the structured JSON that
   currently maps to KQL's `dynamic` column type).
 - Index pattern: `car-*` — one index per CAR object (e.g. `car-process`,
@@ -589,10 +589,10 @@ def run_car_elastic(processed_dir, es_host, es_port, seen, dry_run, summary):
 
 This replaces the `docker cp` + `.ingest into` path with a direct bulk API call.
 ([opensearch-py bulk helpers](https://opensearch-project.github.io/opensearch-py/api-ref/helpers.html),
-[ingest/__init__.py](../../python/get_sybers_dfir/ingest/__init__.py))
+[ingest/__init__.py](../../../python/get_sybers_dfir/ingest/__init__.py))
 
 Add `--backend elastic` flag to `dxdfir ingest` in
-[`cli.py`](../../python/get_sybers_dfir/cli.py), defaulting to `adx` until the
+[`cli.py`](../../../python/get_sybers_dfir/cli.py), defaulting to `adx` until the
 elastic path is validated end-to-end.
 
 ---
@@ -606,34 +606,34 @@ elastic path is validated end-to-end.
 
 1. **Make `run_car_elastic()` the default** in `ingest/__init__.py`; deprecate
    `run_car()` (keep it, gate it behind `--backend adx`).
-   ([ingest/__init__.py](../../python/get_sybers_dfir/ingest/__init__.py))
+   ([ingest/__init__.py](../../../python/get_sybers_dfir/ingest/__init__.py))
 
 2. **Archive `kusto/` schema** to `docs/research/legacy/kusto/` so the column
    definitions remain as a human-readable reference. The OpenSearch templates in
    `kusto/opensearch/` become the live schema source.
 
 3. **Remove the ADX emulator service** from
-   [`docker-compose.yml`](../../docker/sof-elk/docker-compose.yml) and from the
+   [`docker-compose.yml`](../../../docker/sof-elk/docker-compose.yml) and from the
    `dfir_deploy_adx` Ansible role.
 
-4. **Update `dxdfir deploy`** in [`cli.py`](../../python/get_sybers_dfir/cli.py)
+4. **Update `dxdfir deploy`** in [`cli.py`](../../../python/get_sybers_dfir/cli.py)
    to deploy the SOF-ELK stack by default instead of the ADX emulator. The
    `dfir_deploy_sofelk` Ansible role handles this today; make it the primary path.
 
 5. **Update `dxdfir validate`** / `carcheck.py` to query OpenSearch instead of
    Kusto. The current `CarObjects()` / `Car()` KQL functions (defined in
    `40-mitre.kql`) have OpenSearch DSL equivalents.
-   ([carcheck.py](../../python/get_sybers_dfir/carcheck.py),
-   [40-mitre.kql](../../kusto/schema/40-mitre.kql))
+   ([carcheck.py](../../../python/get_sybers_dfir/carcheck.py),
+   [40-mitre.kql](../../../kusto/schema/40-mitre.kql))
 
 6. **Update the test suite**: `python/tests/test_ingest.py` must cover the
    OpenSearch backend path before the Kusto path is removed.
-   ([test_ingest.py](../../python/tests/test_ingest.py))
+   ([test_ingest.py](../../../python/tests/test_ingest.py))
 
 7. **Update documentation**: `docs/Kusto-Port.md`, `docs/Get-Started.md`, and
    `README.md` reference the ADX emulator explicitly; rewrite these sections.
-   ([Kusto-Port.md](../../docs/Kusto-Port.md),
-   [Get-Started.md](../../docs/Get-Started.md))
+   ([Kusto-Port.md](../../../docs/Kusto-Port.md),
+   [Get-Started.md](../../../docs/Get-Started.md))
 
 ---
 
@@ -1042,7 +1042,7 @@ rules:
 
 The pattern: **CAR observation = primary; Azul enrichment = annotating note**.
 ([result_document.md](https://github.com/AustralianCyberSecurityCentre/azul-docs/blob/main/docs/developer-guide/components/core/metastore/docs/result_document.md),
-[CAR-Relations.md](../../docs/CAR-Relations.md))
+[CAR-Relations.md](../../../docs/CAR-Relations.md))
 
 ```json
 {
@@ -1125,7 +1125,7 @@ functionality, and Google-style docstrings.
 | STIX export plugin or metastore command | Maintainers have stated STIX/OpenCTI is a future direction; a `piiat_stix_export` metastore command or plugin that transforms result documents into STIX 2.1 bundles could be contributed | [Issue #4 — maintainer comment](https://github.com/AustralianCyberSecurityCentre/azul/issues/4#issuecomment-3949198963), [metastore README](https://github.com/AustralianCyberSecurityCentre/azul-metastore/blob/main/README.md) |
 | DFIR timeline enrichment plugin | An `azul-plugin-dfir-pe` plugin that processes Windows PE executables discovered during incident response, emitting `pe_compile_time`, `pe_imphash`, `pe_pdb_path` features with DFIR-specific context | [runner plugin development guide](https://github.com/AustralianCyberSecurityCentre/azul-docs/blob/main/docs/developer-guide/components/core/runner/docs/index.md) |
 | OpenSearch CAR index templates | Contribute validated OpenSearch index templates for CAR objects as a reference for DFIR use cases in the Azul ecosystem | [metastore README](https://github.com/AustralianCyberSecurityCentre/azul-metastore/blob/main/README.md), [binary2.md](https://github.com/AustralianCyberSecurityCentre/azul-docs/blob/main/docs/developer-guide/components/core/metastore/docs/binary2.md) |
-| `image_hostname` contribution to Plaso elastic output | Upstream the `image_hostname`/`disk_id`/`volume_id` fields into Plaso's `ElasticSearchOutputModule` to match what the custom `l2t_json_dfir` module already emits | [Plaso output module source](https://github.com/log2timeline/plaso/tree/main/plaso/output), [dev-scripts/plaso/l2t_json_dfir.py](../../dev-scripts/plaso/l2t_json_dfir.py) |
+| `image_hostname` contribution to Plaso elastic output | Upstream the `image_hostname`/`disk_id`/`volume_id` fields into Plaso's `ElasticSearchOutputModule` to match what the custom `l2t_json_dfir` module already emits | [Plaso output module source](https://github.com/log2timeline/plaso/tree/main/plaso/output), [dev-scripts/plaso/l2t_json_dfir.py](../../../dev-scripts/plaso/l2t_json_dfir.py) |
 | `azul-generator` boilerplate for DFIR-domain plugins | A generator template for DFIR-context Azul plugins that pre-populates file type filters for PE, OLE, PDF (artefact types commonly encountered in IR) | [contributing.md — create basic source repository](https://github.com/AustralianCyberSecurityCentre/azul-docs/blob/main/docs/developer-guide/components/core/runner/docs/index.md) |
 
 ---
@@ -1154,7 +1154,7 @@ PyPI registry before running `uv sync`.
 | Risk | Detail | Mitigation |
 |---|---|---|
 | `l2t_json_dfir` custom fields absent from Plaso elastic output | `image_hostname`, `disk_id`, `volume_id` are not emitted by `-o elastic`; PIIAT mapping fidelity depends on them | Run both outputs (Phase 1 Option A); contribute upstream (contribution opportunity) |
-| ADX emulator limitations discovered late | The emulator has no security, persistence caveats, and no benchmarking permitted ([Kusto-Port.md](../../docs/Kusto-Port.md)); these already motivate the migration | Phase 2 validates parity before Phase 3 removes ADX |
+| ADX emulator limitations discovered late | The emulator has no security, persistence caveats, and no benchmarking permitted ([Kusto-Port.md](../../../docs/Kusto-Port.md)); these already motivate the migration | Phase 2 validates parity before Phase 3 removes ADX |
 | Azul's `uv.lock` private registry pin | External use requires deleting `uv.lock` ([bedrock README](https://github.com/AustralianCyberSecurityCentre/azul-bedrock/blob/main/README.md)) | Document requirement in `third_party/` README; script the delete + reinstall step |
 | Kafka ordering within topic | Only guaranteed within a partition; using the wrong key allows cross-host event interleaving | Key must be `source_host` (or composite); documented in Phase 4 topic design |
 | Azul's binary2 index routing | All documents for a sha256 must land on the same OpenSearch shard (`binary2.{sha256[0]}`); custom index templates must honour the same shard routing logic ([binary2.md](https://github.com/AustralianCyberSecurityCentre/azul-docs/blob/main/docs/developer-guide/components/core/metastore/docs/binary2.md)) | CAR indices use a different keying scheme (guid not sha256) — no collision; document clearly |
@@ -1200,16 +1200,16 @@ PyPI registry before running `uv sync`.
 - [Kafka KRaft mode](https://kafka.apache.org/documentation/#kraft)
 - [OpenSearch index templates](https://opensearch.org/docs/latest/im-plugin/index-templates/)
 - [opensearch-py bulk helpers](https://opensearch-project.github.io/opensearch-py/api-ref/helpers.html)
-- [docs/CAR-Pipeline.md](../../docs/CAR-Pipeline.md)
-- [docs/CAR-Relations.md](../../docs/CAR-Relations.md)
-- [docs/Kusto-Port.md](../../docs/Kusto-Port.md)
-- [kusto/schema/40-mitre.kql](../../kusto/schema/40-mitre.kql)
-- [docker/sof-elk/docker-compose.yml](../../docker/sof-elk/docker-compose.yml)
-- [docker/sof-elk/Dockerfile](../../docker/sof-elk/Dockerfile)
-- [docker/sof-elk/filebeat.yml](../../docker/sof-elk/filebeat.yml)
-- [docker/sof-elk/pipelines.yml](../../docker/sof-elk/pipelines.yml)
-- [python/get_sybers_dfir/plaso.py](../../python/get_sybers_dfir/plaso.py)
-- [python/get_sybers_dfir/ingest/__init__.py](../../python/get_sybers_dfir/ingest/__init__.py)
-- [python/get_sybers_dfir/cli.py](../../python/get_sybers_dfir/cli.py)
-- [python/get_sybers_dfir/sofelk.py](../../python/get_sybers_dfir/sofelk.py)
-- [dev-scripts/plaso/l2t_json_dfir.py](../../dev-scripts/plaso/l2t_json_dfir.py)
+- [docs/CAR-Pipeline.md](../../../docs/CAR-Pipeline.md)
+- [docs/CAR-Relations.md](../../../docs/CAR-Relations.md)
+- [docs/Kusto-Port.md](../../../docs/Kusto-Port.md)
+- [kusto/schema/40-mitre.kql](../../../kusto/schema/40-mitre.kql)
+- [docker/sof-elk/docker-compose.yml](../../../docker/sof-elk/docker-compose.yml)
+- [docker/sof-elk/Dockerfile](../../../docker/sof-elk/Dockerfile)
+- [docker/sof-elk/filebeat.yml](../../../docker/sof-elk/filebeat.yml)
+- [docker/sof-elk/pipelines.yml](../../../docker/sof-elk/pipelines.yml)
+- [python/get_sybers_dfir/plaso.py](../../../python/get_sybers_dfir/plaso.py)
+- [python/get_sybers_dfir/ingest/__init__.py](../../../python/get_sybers_dfir/ingest/__init__.py)
+- [python/get_sybers_dfir/cli.py](../../../python/get_sybers_dfir/cli.py)
+- [python/get_sybers_dfir/sofelk.py](../../../python/get_sybers_dfir/sofelk.py)
+- [dev-scripts/plaso/l2t_json_dfir.py](../../../dev-scripts/plaso/l2t_json_dfir.py)
