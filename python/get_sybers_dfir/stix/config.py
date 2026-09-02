@@ -71,9 +71,15 @@ def _read_file(path: str) -> dict:
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     if path.lower().endswith((".yml", ".yaml")):
-        doc = yaml.safe_load(text)
+        try:
+            doc = yaml.safe_load(text)
+        except yaml.YAMLError as e:
+            raise ValueError(f"{path}: invalid YAML: {e}") from e
     else:
-        doc = json.loads(text) if text.strip() else {}
+        try:
+            doc = json.loads(text) if text.strip() else {}
+        except json.JSONDecodeError as e:
+            raise ValueError(f"{path}: invalid JSON: {e}") from e
     if doc is None:
         return {}
     if not isinstance(doc, dict):

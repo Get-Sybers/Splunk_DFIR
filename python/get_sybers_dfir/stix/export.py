@@ -61,7 +61,10 @@ def rules_pattern_source(rules_dir: str) -> PatternSource:
             if not os.path.isfile(path):
                 continue
             with open(path, encoding="utf-8") as fh:
-                doc = yaml.safe_load(fh)
+                try:
+                    doc = yaml.safe_load(fh)
+                except yaml.YAMLError as e:
+                    raise ValueError(f"{path}: invalid YAML: {e}") from e
             if isinstance(doc, dict) and doc.get("query") and doc.get("language"):
                 found = (str(doc["query"]).strip(), str(doc["language"]))
             break

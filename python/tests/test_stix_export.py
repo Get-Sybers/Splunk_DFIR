@@ -378,6 +378,13 @@ def test_opencti_client_refuses_to_start_without_endpoint_or_token():
         opencti.OpenCTIClient("https://x.test", "", transport=RecordingTransport())
 
 
+def test_opencti_client_refuses_non_https_endpoint():
+    # the bearer token must never go over cleartext: http:// or a schemeless URL is refused
+    for bad in ("http://opencti.test", "opencti.test/graphql"):
+        with pytest.raises(ValueError):
+            opencti.OpenCTIClient(bad, "t", transport=RecordingTransport())
+
+
 # ---- config + the verb -----------------------------------------------------
 def test_config_layers_file_env_and_overrides(tmp_path):
     f = tmp_path / "stix.json"

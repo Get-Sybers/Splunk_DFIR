@@ -21,6 +21,7 @@ import urllib.request
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Protocol
+from urllib.parse import urlparse
 
 from .objects import DEFAULT_PRODUCER, global_id
 
@@ -74,6 +75,13 @@ class PushResult:
 
 def graphql_url(endpoint: str) -> str:
     base = endpoint.strip().rstrip("/")
+    # Refuse a non-HTTPS endpoint up front: the client sends a bearer token, and
+    # http:// (or a schemeless URL) would put it on the wire in cleartext.
+    scheme = urlparse(base).scheme.lower()
+    if scheme != "https":
+        raise ValueError(
+            "OpenCTI endpoint must be https:// (refusing to send the bearer token over "
+            f"{scheme or 'a schemeless URL'}): {endpoint!r}")
     return base if base.endswith("/graphql") else base + "/graphql"
 
 
