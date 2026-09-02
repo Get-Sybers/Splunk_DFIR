@@ -182,6 +182,8 @@ def test_technique_ids_normalises_and_dedupes():
         ["T1112"]
     assert registry._technique_ids(None) == [] and registry._technique_ids("") == []
     assert registry._technique_ids("no ids here") == []
+    # a set has no first-seen order, so it is sorted first for a deterministic result
+    assert registry._technique_ids({"T1204", "t1059.003"}) == ["T1204", "T1059.003"]
 
 
 def test_match_hayabusa_extracts_mitre_tags():

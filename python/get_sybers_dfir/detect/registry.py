@@ -63,13 +63,18 @@ _MITRE_META_KEY_RE = re.compile(r"att.?ck|mitre|technique", re.IGNORECASE)
 
 
 def _technique_ids(value) -> list[str]:
-    """ATT&CK technique ids found in ``value`` (a string, or a list/tuple/dict of
-    them), normalised to canonical upper-case dotted form (``T1059.003``) and
-    de-duplicated in first-seen order. Non-technique tags are ignored; ``''`` /
-    ``None`` / no match yields ``[]``. Pure."""
+    """ATT&CK technique ids found in ``value`` (a string, or a list/tuple/set/dict
+    of them), normalised to canonical upper-case dotted form (``T1059.003``) and
+    de-duplicated in first-seen order (a ``set`` input is sorted first, as it has
+    no first-seen order). Non-technique tags are ignored; ``''`` / ``None`` / no
+    match yields ``[]``. Pure."""
     if not value:
         return []
-    if isinstance(value, (list, tuple, set)):
+    if isinstance(value, (set, frozenset)):
+        # A set has no meaningful "first-seen" order, and string hashing is
+        # randomised per process, so sort it to keep the output deterministic.
+        text = " ".join(str(v) for v in sorted(value, key=str))
+    elif isinstance(value, (list, tuple)):
         text = " ".join(str(v) for v in value)
     elif isinstance(value, dict):
         text = " ".join(str(v) for v in value.values())
