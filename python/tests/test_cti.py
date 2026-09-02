@@ -117,6 +117,10 @@ def test_validate_pattern_mapping_and_template_reject_drift():
     bad["index_patterns"] = ["logs-*"]
     with pytest.raises(ValueError, match="cti-"):
         ind.validate_template(bad, m)
+    bad = copy.deepcopy(t)
+    bad["index_patterns"] = ["cti-"]              # an empty dataset after "cti-" is not a valid index
+    with pytest.raises(ValueError, match="cti-"):
+        ind.validate_template(bad, m)
 
 
 # ---- the pattern reader ----------------------------------------------------
@@ -155,7 +159,7 @@ def test_indicators_become_cti_docs_with_threat_indicator_fields():
     assert h["type"] == "file" and h["file"]["hash"] == {"sha256": SHA256, "md5": MD5} and h["confidence"] == "Medium"
     assert by_id[IND_HASH]["stix"]["valid_until"] == "2027-01-01T00:00:00.000Z"
     d = by_id[IND_DOMAIN]["threat"]["indicator"]
-    assert d["url"] == {"domain": "evil.example"} and d["confidence"] == "None"    # the != comparison is no atomic
+    assert d["url"] == {"domain": "evil.example"} and d["confidence"] == "None"    # the != comparison is not atomic
     assert d["marking"] == {"tlp": "AMBER+STRICT", "tlp_version": "2.0"}         # resolved through its marking object
     u = by_id[IND_URL]
     assert u["threat"]["indicator"]["url"] == {"original": "https://evil.example/p?q=1"} and u["stix"]["revoked"] is True
@@ -289,6 +293,11 @@ def test_pull_indicators_reports_refusals_and_max_pages():
     page = _page([_node(IND_IP, "[ipv4-addr:value = '1.1.1.1']")], "c", True)
     capped = pull(page, page, page, max_pages=2)
     assert capped.ok and capped.pages == 2 and "max_pages" in capped.message and capped.indicators == 1
+    # non-positive paging is rejected up front, before any request
+    with pytest.raises(ValueError, match="page_size"):
+        pull(page_size=0)
+    with pytest.raises(ValueError, match="max_pages"):
+        pull(max_pages=0)
     # an empty platform is an empty (valid) result; a bad --since is refused before any request
     empty = pull(_page([], None, False))
     assert empty.ok and empty.indicators == 0 and empty.bundle["objects"] == []
