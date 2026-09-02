@@ -22,18 +22,19 @@ data_store/
    │
    ├── dependencies/               # Operator-supplied tools (e.g. EvtxECmd)
    │
-   └── processed/                  # Ingest-ready output, one subtree per source
+   └── processed/                  # One subtree per source — what `dxdfir build-car` reads
        ├── log2timeline/
        │   ├── plaso/              # .plaso databases (reusable by Timesketch / SOF-ELK)
-       │   ├── jsonl/              # Plaso json_line  -> host.L2t<Parser> (one table per parser)
+       │   ├── jsonl/              # Plaso json_line, one file per host
        │   └── logs/               # Job logs
-       ├── windows_logs/           # EvtxECmd JSON     -> host.EvtxEcmdJson
-       ├── zeek/<capture>/         # Zeek JSON (conn.json, dns.json, …) -> network.ZeekConn + network.Zeek
-       ├── volatility/<image>/     # Volatility 3 JSONL per plugin      -> memory.VolatilityJson
-       ├── velociraptor/           # Velociraptor collector JSON        -> host.VelociraptorJson
+       ├── windows_logs/           # EvtxECmd JSON, per host
+       ├── zeek/<capture>/         # Zeek JSON (conn.json, dns.json, …)
+       ├── volatility/<image>/     # Volatility 3 JSONL per plugin
+       ├── zimmerman/              # EZ-Tools artefacts (RECmd, SRUM, MFT, …)
        ├── signatures/             # yara/ suricata/ hayabusa/ detection JSONL
        ├── linux_logs/             # syslog/auth/utmp/… (not yet wired into the backend)
-       └── sofelk/<tool>/          # --pipeline sofelk output, delivered into SOF-ELK
+       ├── car/<source>/           # the materialised CAR: car.db + car_<object>.jsonl (+ car_relationships.jsonl)
+       └── sofelk/<tool>/          # --pipeline sofelk output, delivered by dfir-ingest-sofelk.yml
 ```
 
 ---
@@ -50,22 +51,24 @@ dxdfir process plaso        # disk images / VM exports
 dxdfir process zeek         # pcaps
 dxdfir process evtx         # Windows event logs
 dxdfir process volatility   # memory
-dxdfir process velociraptor # Velociraptor collections
+dxdfir process zimmerman    # EZ-Tools artefacts from disk images
 dxdfir process signatures   # yara / suricata / hayabusa
 ```
 
-Add `--pipeline sofelk` to target the SOF-ELK backend instead of ADX (output
-lands under `processed/sofelk/<tool>/`).
+Add `--pipeline sofelk` to write the retiring SOF-ELK delivery tree instead of the
+default processed tree (output lands under `processed/sofelk/<tool>/`).
 
-**3. Load into the analysis backend** (ADX / Kusto emulator):
+**3. Build and verify the CAR:**
 
 ```bash
-dxdfir deploy               # stand up the emulator + apply schema
-dxdfir ingest               # load data_store/processed into it
+dxdfir build-car            # every source -> processed/car/<source>/car_<object>.jsonl
+dxdfir verify-car           # the correctness gate over what was written
 ```
 
-The equivalent scripts are `./scripts/deploy-kusto.sh`,
-`./scripts/apply-kusto-schema.sh` and `./scripts/ingest-kusto.sh`.
+**4. Bring up the analysis backend** — the Elastic-native stack under
+[`docker/elastic/`](/docker/elastic/README.md) (docker compose, localhost-only,
+security on). Filebeat ships the delivered evidence tree into `logs-dfir.<type>-*`
+data streams; see [Get-Started](/docs/Get-Started.md) steps 7–9.
 
 ---
 
@@ -74,6 +77,6 @@ The equivalent scripts are `./scripts/deploy-kusto.sh`,
 - **Verify hashes** when moving forensic images (`.E01`).
 - **Never commit evidence.** `data_store/` is gitignored deny-by-default, but it
   is a safety net, not a guarantee — check `git status` before every commit.
-- Follow the layout above so ingest finds each source.
+- Follow the layout above so the CAR lane and the shipper find each source.
 
 🚀 **Stay organized, process efficiently, and hunt smart!**

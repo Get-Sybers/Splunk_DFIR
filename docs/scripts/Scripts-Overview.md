@@ -8,12 +8,11 @@ collected with **the hardened EZ-tool containers**
 > **The `dxdfir` CLI and the `get_sybers.dfir` collection are the supported
 > front-end** — see [How It Runs](/README.md#how-it-runs). Every data-pipeline
 > shell script has been retired: the per-source `process-*.sh` scripts, the
-> signature-lane scripts, and the deploy/apply/ingest scripts
-> (`deploy-kusto.sh`, `apply-kusto-schema.sh`, `ingest-kusto.sh`,
-> `scripts/lib/`). Their behaviour lives in the `get_sybers_dfir` package and
-> the collection's roles: `dxdfir process <source>`, `dxdfir deploy`
-> (the `dfir_deploy_adx` role + `get_sybers_dfir.deploy`), and `dxdfir ingest`
-> (the `dfir_ingest_adx` role + `get_sybers_dfir.ingest`).
+> signature-lane scripts, and the deploy/apply/ingest scripts of the retired
+> Kusto backend (`scripts/lib/`). Their behaviour lives in the `get_sybers_dfir`
+> package and the collection's roles: `dxdfir process <source>` and the CAR lane
+> (`dxdfir build-car` / `dxdfir verify-car`); the analysis backend is the Elastic
+> stack under `docker/elastic/`, brought up with docker compose.
 
 ---
 
@@ -57,20 +56,20 @@ than needing a `/dev/fuse` mount.
 
 ---
 
-## Deployment & ingest
+## CAR and the backend
 
-Deploy and ingest run through the framework — no shell scripts:
+No shell scripts here either:
 
-- **`dxdfir deploy`** drives the `dfir_deploy_adx` role: pulls + runs the
-  **Kusto emulator** localhost-only (the emulator has **no auth**), attaches it
-  to a masquerade-off isolated network, verifies the port bindings and egress,
-  waits for the engine, then creates the databases and applies the schema
-  (tables, ingestion mappings, MITRE CAR functions — `get_sybers_dfir.deploy`,
-  idempotent). ⚠️ Sets `ACCEPT_EULA=Y` on your behalf.
-- **`dxdfir ingest`** drives the `dfir_ingest_adx` role
-  (`get_sybers_dfir.ingest`): loads `data_store/processed` — **Plaso `L2t*`,
-  EvtxECmd, Zeek (conn typed + generic), Volatility** — with an
-  in-DB ledger for idempotence. `--only <source>` to load one.
+- **`dxdfir build-car`** drives the vendored PIIAT-MitreCar engine over the
+  processed tree: one `car.db` + `superset.db` and one `car_<object>.jsonl` per
+  populated object per source, under `data_store/processed/car/<source>/`.
+  **`dxdfir verify-car`** (`get_sybers_dfir.carcheck`) is the gate over what was
+  written; **`dxdfir car-timeline`** unions a tree into one timeline JSONL.
+- The **Elastic-native backend** (`docker/elastic/`) is brought up with
+  `docker compose` (see its README). Filebeat ships the delivered evidence tree
+  (`playbooks/dfir-ingest-sofelk.yml` delivers it) into `logs-dfir.<type>-*` data
+  streams; the CAR→ECS load into `logs-car.*` is the next phase
+  ([risk gate](/docs/riskgate.md)).
 
 ## Provisioning scripts
 
@@ -79,7 +78,7 @@ The analysis container images are catalogued in [Containers](/docs/Containers.md
 | Script | Description |
 |---|---|
 | `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
-| `save-docker-images.sh` | Save the built hardened `dfir/*` images (+ the two unbuildable pulls) as tarballs; `--load` / `--verify` restore them and assert the hardened inventory. |
+| `save-docker-images.sh` | Save the built hardened `dfir/*` images (+ the pulled .NET runtime) as tarballs; `--load` / `--verify` restore them and assert the hardened inventory. |
 | `package-offline.sh` | Build ONE portable air-gap bundle: images, `dxdfir` CLI + deps as wheels, pinned collections, the repo, and `data_store/dependencies/` (YARA/Suricata/Hayabusa rulesets + binary, Volatility symbols, EvtxECmd) under a `MANIFEST.sha256`. |
 | `setup-offline.sh` | Set up from that bundle with zero network: manifest-verify everything, unpack the repo + detection dependencies, load images, install CLI/collections offline, finish with `dxdfir verify-images`. |
 
@@ -90,11 +89,10 @@ The Splunk-era and KAPE PowerShell scripts were retired (git history and the fro
 
 ## Licensing before you run
 
-- **`dxdfir deploy` accepts Microsoft's Software License Terms for you**
-  (`ACCEPT_EULA=Y`). The emulator is *as-is*, unsupported, and documented as
-  generally unsuitable for production.
-
-Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+The tools this pipeline runs are Apache/BSD/MIT; the Elastic stack runs under the
+Elastic License 2.0 with only the free Basic-tier features enabled; the fetched
+rulesets and sample corpora carry their own terms. Read
+[THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md) before commercial use.
 
 ## Usage
 
@@ -103,9 +101,9 @@ Full detail in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
   [`data_store/README.md`](/data_store/README.md) for raw data sources).
 
 ```bash
-dxdfir deploy
 dxdfir process zeek
-dxdfir ingest --only zeek
+dxdfir build-car
+dxdfir verify-car
 ```
 
 > ⚠️ The processing lanes `chmod 777` their working directories under

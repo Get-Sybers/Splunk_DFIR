@@ -44,10 +44,11 @@ The most useful contributions right now, roughly in order:
 
 1. **Tests.** There are none. Anything that makes a "✅" on the task board
    checkable rather than a claim is the highest-value change available.
-2. **Verify the MITRE CAR mapping.** The KQL functions are built but have
-   never run against a live emulator. Confirming which fields actually
-   populate — and which are silently null — is worth more than adding more
-   mappings. The ranked checklist is issue #14.
+2. **Verify the MITRE CAR mapping.** The engine's artefact maps are proven on
+   the author's corpus and by the smoke test's Sysmon fixtures; confirming
+   which fields actually populate for the other lanes — and which are
+   silently null — is worth more than adding more mappings. `dxdfir
+   verify-car` is the gate; the ranked checklist is issue #14.
 3. **EVTX ingest.** Built via EvtxECmd, never run against a real event log.
 
 ## Ground rules
@@ -85,10 +86,11 @@ Run this before submitting anything:
 ./tests/run-checks.sh          # static checks; -v to see each one
 ```
 
-It covers shell syntax, shellcheck, repo-root path resolution, the shared
-container-lifecycle library (behavioural tests included), Kusto schema and
-ingestion consistency, evidence-gitignore coverage, secret patterns, and
-documentation links. It exits non-zero on failure.
+It covers shell syntax, shellcheck, the collection's pinned requirements,
+ansible-lint (production profile), repo-root path resolution, the Python
+package's unit tests (when pytest is installed), version and documentation
+consistency, evidence-gitignore coverage, secret patterns, and documentation
+links. It exits non-zero on failure.
 
 It does **not** test the pipeline — nothing does yet. That is the single most
 valuable contribution available (see above), and it runs in CI on every push via

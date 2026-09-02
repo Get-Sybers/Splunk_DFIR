@@ -81,8 +81,9 @@ scripts/save-docker-images.sh --load
 The images managed are:
 - `dfir/*` hardened tool images — built in-repo by
   `ansible-playbook playbooks/dfir-build-images.yml` (see docs/Containers.md)
-- `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` — the Kusto
-  emulator (analysis backend)
+- `mcr.microsoft.com/dotnet/runtime:9.0` — the stock .NET runtime for the evtx
+  lane's operator-supplied mode (the only pulled image; the Elastic-native
+  backend under `docker/elastic/` is compose-managed and not part of this set)
 
 Tarballs are written to `data_store/docker_images/`.
 

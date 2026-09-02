@@ -52,6 +52,7 @@ aggregate stage in [CAR-CrossSource.md](CAR-CrossSource.md).
 ## Where this lives
 
 Extraction runs in the engine, one map per artefact family, producing per-source
-CAR stores; the pipeline ingests those as the materialized `mitre.car_*` tables
-(see [CAR-Pipeline.md](CAR-Pipeline.md)). The four principles hold regardless of
-backend, so the per-artefact mapping work is portable if the backend ever changes.
+CAR stores and the materialised `car_<object>.jsonl` every sink reads (see
+[CAR-Pipeline.md](CAR-Pipeline.md)). The four principles hold regardless of
+backend, so the per-artefact mapping work is portable if the backend ever changes
+— as it did when the Kusto emulator gave way to the Elastic-native stack.

@@ -1,7 +1,7 @@
 # DX_DFIR Pipeline Task Board
 
 Tracks tasks for the DFIR automation project — from forensic data processing to
-the Kusto-emulator analysis backend.
+the Elastic-native analysis backend.
 
 Current release and its maturity: see the badge in
 [README.md](/README.md) — it reads the latest
@@ -14,12 +14,14 @@ branch.
 
 The pipeline has been rebuilt as a three-layer stack: the **`dxdfir` CLI** →
 the **`get_sybers.dfir` Ansible collection** (one role per source) → the
-**`get_sybers_dfir` Python package**, driving two backends via
-`--pipeline adx|sofelk` (ADX / Kusto emulator + SOF-ELK). All ten roles, the CLI
-and the from-source SOF-ELK stack exist on `dev`; the per-source `process-*.sh`
-scripts have been retired (removed) — their behaviour lives in the
-`get_sybers_dfir` processors. The tables below track the processing / ingest layer
-by source — see [How It Runs](/README.md#how-it-runs).
+**`get_sybers_dfir` Python package**, writing the processed tree the CAR lane
+builds from (`--pipeline elastic`, the default) or the retiring SOF-ELK delivery
+tree (`--pipeline sofelk`). The analysis backend is the Elastic-native stack
+(`docker/elastic`); the Kusto/ADX emulator it replaced has been retired. The
+processing roles, the CLI, the CAR lane and both stacks exist on `dev`; the
+per-source `process-*.sh` scripts have been retired (removed) — their behaviour
+lives in the `get_sybers_dfir` processors. The tables below track the processing
+/ CAR layer by source — see [How It Runs](/README.md#how-it-runs).
 
 A note on what the ticks mean, because the previous version of this board was
 generous with them:
@@ -28,7 +30,7 @@ generous with them:
 |:---:|:---|
 | ✅ | Ran end-to-end by hand and produced correct output |
 | ⚠️ | Runs, but incomplete, fragile, or unverified |
-| ◑ | Built and internally consistent, never run against a live emulator |
+| ◑ | Built and internally consistent, never run against a live backend |
 | ❌ | Not working, or not started |
 
 Nothing on this board is covered by pipeline tests. "✅" is the author's
@@ -38,31 +40,34 @@ word, not a test result.
 
 # Data Pipeline Progress
 
-Processing = the evidence-side scripts. Ingest / CAR = the Kusto backend.
+Processing = the evidence-side lanes. CAR = the materialised CAR the engine
+writes from each lane's output (`dxdfir build-car`) — the contract the
+Elastic-native backend reads.
 
-| Processing Tool / Artefact                                    | Automate Data | File Type      | Kusto Ingest | CAR Functions |
+| Processing Tool / Artefact                                    | Automate Data | File Type      | Processed output (`data_store/processed/`) | CAR objects |
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
-| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅           |     ✅ (`file`) |
-| [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ (`conn` typed + all other logs generic) | ✅ (`flow`) |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
-| [EZ-Tools](https://ericzimmerman.github.io/) (Zimmerman) artefacts | ✅ the zimmerman lane (`dxdfir process zimmerman`) | json / csv | ✅ `mitre.car_*` (via build-car) | ✅ (`registry`/`flow`/`process`) |
-| [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ the volatility lane | json (per plugin) | ✅ `memory.VolatilityJson` | n/a (memory ≠ CAR dead-box object) |
-| [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ per-parser `host.L2t<Parser>` | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
-| Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ `host.L2tText`/`L2tUtmp` | ✅ (`user_session` utmp+ssh, `process` cron) |
-| [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `host.EvtxEcmdJson` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
-| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dfir.signatures` (yara lane) | json (matches) | ⏳ `processed/signatures/yara` | ⏳ detection enrichment (follow-up) |
-| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dfir.signatures` (suricata lane) | json (EVE) | ⏳ `processed/signatures/suricata` | ⏳ |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ⏳ `processed/signatures/hayabusa` | ⏳ |
+| [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅ `log2timeline/jsonl/`           |     ✅ (`file`) |
+| [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ `zeek/<capture>/` (`conn` + all other logs) | ✅ (`flow`) |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ `windows_logs/<host>/` (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
+| [EZ-Tools](https://ericzimmerman.github.io/) (Zimmerman) artefacts | ✅ the zimmerman lane (`dxdfir process zimmerman`) | json / csv | ✅ `zimmerman/` | ✅ (`registry`/`flow`/`process`) |
+| [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ the volatility lane | json (per plugin) | ✅ `volatility/<image>/` | n/a (memory ≠ CAR dead-box object) |
+| [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ `log2timeline/jsonl/`, one file per host | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
+| Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ via the plaso lane | ✅ (`user_session` utmp+ssh, `process` cron) |
+| [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `windows_logs/<host>/` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
+| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dfir.signatures` (yara lane) | json (matches) | ✅ `signatures/yara/` | ⏳ detection enrichment (follow-up) |
+| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dfir.signatures` (suricata lane) | json (EVE) | ✅ `signatures/suricata/` | ⏳ |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ✅ `signatures/hayabusa/` | ⏳ |
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
 
 **CAR is materialized.** The engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each evidence
-source into finished CAR events; the pipeline ingests one `car_<object>.jsonl`
-per object as the 13 `mitre.car_<object>` tables plus `car_relationships` (the
-superset relationship edges). `Car()` unions the objects into one timeline;
-`CarObjects()` counts them. Extraction happens once, in the engine, so KQL just
-stores the result — the table schemas are generated from the engine model and
-cannot drift. `dxdfir build-car` produces the stores; `dxdfir ingest --only car`
-loads them. See [docs/CAR-Pipeline.md](/docs/CAR-Pipeline.md) and
+source into finished CAR events and writes one `car_<object>.jsonl` per object
+(13 objects) plus `car_relationships.jsonl` (the superset relationship edges)
+under `processed/car/<source>/` — the materialised CAR every sink reads; the
+Elastic-native path projects it to ECS (`logs-car.*`, the
+[risk gate](/docs/riskgate.md)). Extraction happens once, in the engine, so the
+JSON cannot drift from the model. `dxdfir build-car` produces the stores,
+`dxdfir verify-car` gates them, `dxdfir car-timeline` unions them into one
+timeline. See [docs/CAR-Pipeline.md](/docs/CAR-Pipeline.md) and
 [docs/CAR-Extraction-Rules.md](/docs/CAR-Extraction-Rules.md).
 
 ---
@@ -74,13 +79,14 @@ Things that are broken or unsafe right now.
 - **`chmod -R 777` on data directories.** Processing scripts widen permissions
   on `data_store/` to work around Docker UID mismatches. Don't run on a shared
   host.
-- **The emulator has no security features at all** — no auth, no access
-  control, plaintext HTTP, no encryption at rest. The `127.0.0.1` binding is
-  the only control; see [SECURITY.md](/SECURITY.md).
+- **The retiring SOF-ELK stack has no security at all** (dead-box posture); the
+  Elastic-native stack runs with security on, but Kibana is plain HTTP on the
+  loopback interface and Filebeat writes as the superuser for now. The
+  `127.0.0.1` bindings are the control; see [SECURITY.md](/SECURITY.md).
 - ~~**Raw EVTX processing is built but unverified.**~~ **Resolved.** The `dfir_evtx`
   role ran on **103 real event logs** carved from the LoneWolf image (bundled
-  `dfir/evtxecmd` image), 55,638 rows into `host.EvtxEcmdJson`, feeding
-  `CarUserSession`/`CarProcess`/`CarService` from real 4624/4688/7045.
+  `dfir/evtxecmd` image), 55,638 EvtxECmd rows, feeding the
+  `user_session`/`process`/`service` CAR objects from real 4624/4688/7045.
 
 ---
 
@@ -89,26 +95,33 @@ Things that are broken or unsafe right now.
 ## To Do
 
 ### Run the backend to ground — *the blocker for everything*
-- ⬜ **Run it.** Nothing has touched a real emulator. That gates everything
-  below and is worth more than any further code —
-  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
-  checklist.
+- ⬜ **Run the Elastic-native backend to ground.** The Phase-0
+  [risk gate](/docs/riskgate.md) was authored without a cluster; its first live
+  run on `docker/elastic` gates everything built on top (the CAR→ECS load into
+  `logs-car.*`, the detection rules, the CTI exchange) and is worth more than
+  any further code.
 
 ### Data Models & MITRE CAR Mapping
 - Validate the CAR field mappings against real Windows event logs, Zeek logs,
-  and forensic artifacts (KQL functions exist; values unverified).
+  and forensic artifacts beyond the author's corpus (`dxdfir verify-car` is the
+  gate; the smoke test covers the Sysmon lane) —
+  [issue #14](https://github.com/Get-Sybers/DX_DFIR/issues/14) is the ranked
+  checklist.
 - Extend lookups for event IDs, log sources, and mapped MITRE techniques —
   potentially from CTI STIX data and
   https://github.com/ForensicArtifacts/artifacts.
-- A visualisation story for CAR-mapped events (the emulator has no dashboard
-  layer; Kusto.Explorer or a thin web UI are the candidates).
+- A visualisation story for CAR-mapped events — Kibana over the `logs-car.*`
+  data streams once the CAR→ECS load lands.
 
 ### Testing — *partly done*
-- ✅ Syntax/lint gating — `tests/run-checks.sh` (`bash -n`, shellcheck, path
-  resolution, the container-lifecycle library's behavioural tests, Kusto
-  schema consistency, gitignore, secrets, doc links). The count is whatever
-  the harness prints; it is deliberately not restated here.
-- ⬜ A smoke test that runs the pipeline against a small public sample image.
+- ✅ Syntax/lint gating — `tests/run-checks.sh` (`bash -n`, shellcheck, the
+  pinned collection requirements, ansible-lint, path resolution, the Python
+  unit tests, gitignore, secrets, doc links). The count is whatever the harness
+  prints; it is deliberately not restated here.
+- ✅ A smoke test (`tests/smoke-test.sh`, the `smoke` workflow) runs the real
+  evtx lane over sha256-pinned public Sysmon fixtures, normalises to CAR and
+  asserts the extracted field values, then runs the `verify-car` gate.
+- ⬜ The same for a small public disk image (the plaso / zimmerman lanes).
 
 ### Environment & Dependencies
 - Create a guide for **setting up the development environment**.
@@ -124,6 +137,17 @@ Things that are broken or unsafe right now.
 ---
 
 ## Done
+
+### Kusto/ADX retired — the Elastic-native path is the backend
+✅ Removed the whole Azure Data Explorer emulator layer: `kusto/schema/`, the
+`dfir_deploy_adx` / `dfir_ingest_adx` / `dfir_detect_adx` roles and playbooks,
+`get_sybers_dfir.deploy`, the `get_sybers_dfir.ingest` package, the Kusto
+detection runner and registry, the `dxdfir deploy` / `ingest` / `detect` verbs,
+`docs/Kusto-Port.md` and the emulator's licensing notices. `--pipeline adx` is
+now `--pipeline elastic`. `dxdfir verify-car` and the smoke test assert the
+materialised `car_<object>.jsonl` directly instead of querying an emulator.
+The Done entries below that mention Kusto/KQL are history — they describe the
+backend as it was when that work landed.
 
 ### Plaso pipeline migrated CSV → JSON (json_line), with a Plaso output module
 ✅ **Plaso now outputs `json_line`, not the flat 23-column CSV** — the CSV forced

@@ -15,7 +15,8 @@ the `dfir_deploy_sofelk` role has a real stack to run.
   (as on the SOF-ELK box — Filebeat ships the `/logstash/<type>/` dirs to Logstash on
   `localhost:5044`). An entrypoint starts Filebeat, then Logstash.
 - **`docker-compose.yml`** — **Elasticsearch** + the SOF-ELK image + **Kibana**,
-  localhost-only, no security (dead-box posture, like the ADX emulator).
+  localhost-only, no security (dead-box posture; `docker/elastic` — which is
+  replacing this stack — runs with security on).
 
 Pinned to Elastic **9.4.3** (SOF-ELK `main`'s pin) — override with `ELASTIC_VERSION`.
 

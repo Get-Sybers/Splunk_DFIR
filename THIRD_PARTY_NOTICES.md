@@ -25,9 +25,10 @@ Code that ships inside this repository.
 ### MITRE CAR
 
 `car_data_model.json` is the MITRE CAR object/field/action model. Apache-2.0,
-attribution required — hence `NOTICE`. The check harness pins the CAR functions
-in `kusto/schema/40-mitre.kql` against it, so it is load-bearing, not
-decorative.
+attribution required — hence `NOTICE`. It is the reference copy of the model
+the pipeline's CAR output follows (`docs/CAR-Pipeline.md` verifies it against
+`car.mitre.org`); the CAR engine itself reconstructs its model from the `car`
+repo it vendors as a submodule.
 
 ### DFIR test samples — catalogued, not redistributed
 
@@ -88,7 +89,9 @@ Terms still bind the operator who fetches, and they are layered:
 
 Removed from the working tree, but **still in git history** — their
 attributions continue to apply to anyone working from an older commit. All of
-these left with the Splunk stack when the SIEM moved to the Kusto emulator.
+these left with the Splunk stack when the SIEM moved to the Kusto emulator
+(itself since retired in favour of the Elastic-native stack; nothing of it was
+vendored, so no attribution debt remains).
 
 ### splunk-ansible (Apache-2.0)
 
@@ -133,9 +136,9 @@ repository.**
 |---|---|---|---|
 | [Plaso / log2timeline](https://github.com/log2timeline/plaso) | `log2timeline/plaso:latest` container | Apache-2.0 | None |
 | [Zeek](https://zeek.org/) | `zeek/zeek:latest` container | BSD-3-Clause | None |
-| [Azure Data Explorer Kusto emulator](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview) | `mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest` container — **the analysis backend** | **Proprietary** — Microsoft Software License Terms | See below |
+| [Elastic Stack](https://www.elastic.co/) (Elasticsearch, Kibana, Elastic Agent / Fleet Server, Filebeat) | `docker.elastic.co/*` images at a pinned `ELASTIC_VERSION` — **the analysis backend** (`docker/elastic/`) | [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license) (default distribution; only the free Basic-tier features are enabled) | See below |
 | [EvtxECmd](https://github.com/EricZimmerman/evtx) | `get_sybers_dfir.evtx` runs `EvtxECmd.dll` in a .NET container — either the bundled `dfir/evtxecmd` image (`docker/evtxecmd`, fetches the release at build time) or an operator-supplied release | **MIT** | None — no commercial-use restriction |
-| [Velociraptor](https://github.com/Velocidex/velociraptor) | JSON output normalised by `dev-scripts/`; Kusto loader not yet implemented | AGPL-3.0 | None — output ingestion does not trigger AGPL |
+| [Velociraptor](https://github.com/Velocidex/velociraptor) | Formerly: JSON output normalised by `dev-scripts/` (the lane was removed in 0.6.0) | AGPL-3.0 | None — output ingestion does not trigger AGPL |
 
 No tool binaries are vendored in this repository — every tool above is either
 pulled as a container image, fetched at image-build time from its upstream release
@@ -149,41 +152,26 @@ the sharpest licensing constraint this project carried. Nothing of KAPE was
 ever vendored, so no attribution debt remains; the scripts are in git
 history.
 
-### Azure Data Explorer Kusto emulator — read before commercial use
+### Elastic Stack — the analysis backend
 
-The Kusto emulator is the analysis backend, deployed by `dxdfir deploy`
-(the `dfir_deploy_adx` role). It is **not vendored** — the image is pulled from
-Microsoft's registry — so this is a constraint on you rather than on this
-code.
+The Elastic-native stack (`docker/elastic/`) pulls the official
+`docker.elastic.co` images at a pinned `ELASTIC_VERSION`; nothing of it is
+vendored, so this is a constraint on you rather than on this code. The
+default distribution ships under the
+[Elastic License 2.0](https://www.elastic.co/licensing/elastic-license); this
+project enables only the free Basic-tier features
+(`xpack.license.self_generated.type: basic`). ELv2 permits self-hosted use in
+your own casework; it restricts providing the software to third parties as a
+hosted or managed service and circumventing licence keys — read it if either
+is on the table for an engagement. The ES|QL / EQL detection rules, the
+CAR→ECS projection and the index templates under `python/get_sybers_dfir/`
+are this project's own work under MIT.
 
-Microsoft's own documentation states the emulator is:
-
-- **"Provided *as-is*, without any support or warranties"**
-- **"generally unsuitable for production workloads"**
-
-and its licence terms prohibit publishing benchmark results, since the emulator
-is not optimised for that.
-
-Three consequences worth stating plainly:
-
-1. **`ACCEPT_EULA=Y` is set on your behalf** by the deploy (`dxdfir deploy` /
-   the `dfir_deploy_adx` role). You are
-   accepting Microsoft's Software License Terms by running it. Read them if
-   that matters for your engagement.
-2. **Whether "unsuitable for production" bars use in paid DFIR work is a
-   question this project cannot answer for you.** It is Microsoft's framing of
-   the tool's fitness, not an explicit non-commercial clause — but it is close
-   enough to the same class of question to deserve care. For casework where
-   the answer matters, read the EULA — or use a licensed Azure Data Explorer
-   cluster, to which the same KQL schema applies.
-3. The emulator has **no security features at all** — no authentication, no
-   access control, plaintext HTTP, no encryption at rest. That is a documented
-   property, not a misconfiguration. The deploy binds it to localhost
-   and requires an explicit override variable to do otherwise; see
-   [docs/Kusto-Port.md](/docs/Kusto-Port.md).
-
-Kusto Query Language itself, and the CAR mappings in `kusto/schema/`, are this
-project's own work under Apache-2.0.
+**Formerly invoked: the Azure Data Explorer Kusto emulator** (proprietary,
+Microsoft Software License Terms, `ACCEPT_EULA=Y`) was the analysis backend
+until the Elastic-native path superseded it. It was never vendored — the image
+was pulled at deploy time — so no attribution debt remains; the KQL schema and
+its deploy/ingest code are in git history.
 
 ---
 
