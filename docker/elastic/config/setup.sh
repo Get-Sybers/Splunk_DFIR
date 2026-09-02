@@ -10,6 +10,10 @@ set -euo pipefail
 
 CERTS=/usr/share/elasticsearch/config/certs
 ES_URL=https://elasticsearch:9200
+# The Elasticsearch image bundles a JDK but not necessarily `unzip`, so ZIP
+# output from elasticsearch-certutil is extracted with the JDK `jar` tool
+# (a .jar is a .zip) — no dependency on unzip being present in the image.
+JAR=/usr/share/elasticsearch/jdk/bin/jar
 
 : "${ELASTIC_PASSWORD:?ELASTIC_PASSWORD must be set (docker/elastic/.env)}"
 : "${KIBANA_SYSTEM_PASSWORD:?KIBANA_SYSTEM_PASSWORD must be set (docker/elastic/.env)}"
@@ -24,7 +28,7 @@ done
 if [ ! -f "${CERTS}/ca/ca.crt" ]; then
   echo "setup | generating the CA"
   /usr/share/elasticsearch/bin/elasticsearch-certutil ca --silent --pem --out "${CERTS}/ca.zip"
-  unzip -q "${CERTS}/ca.zip" -d "${CERTS}"
+  ( cd "${CERTS}" && "${JAR}" xf ca.zip )
 fi
 
 if [ ! -f "${CERTS}/es01/es01.crt" ]; then
@@ -42,13 +46,16 @@ EOF
     --in "${CERTS}/instances.yml" \
     --ca-cert "${CERTS}/ca/ca.crt" --ca-key "${CERTS}/ca/ca.key" \
     --out "${CERTS}/certs.zip"
-  unzip -q "${CERTS}/certs.zip" -d "${CERTS}"
+  ( cd "${CERTS}" && "${JAR}" xf certs.zip )
 fi
 
 # Readable by the stack's service users (uid 1000, group 0), nobody else.
 chown -R root:0 "${CERTS}"
 find "${CERTS}" -type d -exec chmod 750 {} \;
 find "${CERTS}" -type f -exec chmod 640 {} \;
+# The CA private key is only needed during bootstrap (cert generation); keep it
+# root-only so a group-0 service container cannot read it afterwards.
+[ -f "${CERTS}/ca/ca.key" ] && chmod 600 "${CERTS}/ca/ca.key"
 
 echo "setup | waiting for Elasticsearch at ${ES_URL}"
 until curl -s --cacert "${CERTS}/ca/ca.crt" "${ES_URL}" | grep -q "missing authentication credentials"; do
