@@ -111,7 +111,9 @@ loaded inventory is confirmed to be the expected hardened set. Nothing reaches
 the network.
 
 The SOF-ELK stack (`docker/sof-elk/`, from-source build) is handled separately
-by `dfir_deploy_sofelk`.
+by `dfir_deploy_sofelk`. It is retiring in favour of Byakugan's own Elastic-native
+stack (`docker/elastic/` — security on, Fleet, Filebeat instead of Logstash; see
+its README).
 
 **Not containers:** **Hayabusa** ships as a self-contained Rust binary (no
 official image) — operator-supplied: download the pinned release into
