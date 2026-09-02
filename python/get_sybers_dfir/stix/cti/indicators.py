@@ -49,7 +49,7 @@ _SPEC_TLP_NAMES = {mid: level.upper() for level, mid in o.TLP_MARKING_IDS.items(
 _INDICATOR_ID_RE = re.compile(r"^indicator--[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _FIELD_RE = re.compile(r"^[@a-z][a-z0-9_]*(?:\.[A-Za-z0-9_]+)*$")
 _SCO_TYPE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-_INDEX_RE = re.compile(r"^cti-[a-z0-9_.*-]*$")       # a cti-* pattern or a concrete cti- name
+_INDEX_RE = re.compile(r"^cti-[a-z0-9_.*-]+$")       # a cti-* pattern or a concrete cti- name (>=1 char after "cti-")
 _ES_TYPES = {"ip": ("ip",), "integer": ("long", "integer", "short"), "string": ("keyword", "wildcard", "text")}
 
 # One STIX comparison expression: an object path (type:property, property

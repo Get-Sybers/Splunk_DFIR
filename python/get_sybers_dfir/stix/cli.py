@@ -4,8 +4,8 @@
     dxdfir stix pull --out cti.ndjson [--since 2026-01-01T00:00:00Z]        # OpenCTI -> cti-* copy
     dxdfir stix sightings --alerts alerts.json --out sightings.json [--push]  # matches -> OpenCTI
 
-Exit codes: 0 done (and pushed, if asked); 1 the bundle failed validation, the
-push was refused, or the pull was; 2 bad input / missing configuration.
+Exit codes: 0 done (and pushed, if asked); 1 the bundle failed validation or a
+push or pull was refused; 2 bad input / missing configuration.
 """
 from __future__ import annotations
 

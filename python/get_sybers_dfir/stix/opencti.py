@@ -330,6 +330,10 @@ class OpenCTIClient:
         given), paged, as one STIX 2.1 bundle with the markings and identities
         they reference. ``max_pages`` is a safety valve — the result says when
         it stopped the pull short."""
+        if page_size <= 0:
+            raise ValueError(f"page_size must be a positive integer, got {page_size!r}")
+        if max_pages is not None and max_pages <= 0:
+            raise ValueError(f"max_pages must be a positive integer or None, got {max_pages!r}")
         objects: dict[str, dict] = {}
         after: str | None = None
         pages = skipped = count = status = 0
