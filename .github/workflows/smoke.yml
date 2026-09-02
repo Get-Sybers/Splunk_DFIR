@@ -1,14 +1,16 @@
 name: smoke
 
 # Runs the pipeline for real and asserts CORRECTNESS — the coverage `checks`
-# deliberately does not provide (issue #10). It deploys a throwaway Kusto
-# emulator, processes sha256-pinned Sysmon .evtx through the real evtx lane
-# (EvtxECmd), ingests, and asserts every Sysmon-sourced CAR object returns rows
-# with its EvtxPayload-derived fields correctly populated. The EvtxPayload
-# XML→JSON break that zeroed those fields passes `checks` but fails this.
+# deliberately does not provide (issue #10). It processes sha256-pinned Sysmon
+# .evtx through the real evtx lane (EvtxECmd), normalises the output into
+# materialised CAR with the vendored PIIAT-MitreCar engine, asserts every
+# Sysmon-sourced CAR object has rows with its EvtxPayload-derived fields
+# correctly populated, and runs the verify-car gate over the same tree. The
+# EvtxPayload XML→JSON break that zeroed those fields passes `checks` but fails
+# this.
 #
-# Kept OUT of the every-push `checks` job because it builds an image and runs the
-# kustainer emulator (minutes, not seconds). It runs:
+# Kept OUT of the every-push `checks` job because it builds an image and runs
+# real tools (minutes, not seconds). It runs:
 #   - on PRs that touch the pipeline itself (the changes that can break it)
 #   - nightly, as a standing regression signal
 #   - on demand (workflow_dispatch)
@@ -20,18 +22,18 @@ on:
     - cron: "0 6 * * *"
   pull_request:
     paths:
-      - "kusto/schema/**"
       - "python/get_sybers_dfir/evtx.py"
       - "python/get_sybers_dfir/imageexport.py"
-      - "python/get_sybers_dfir/ingest/**"
-      - "python/get_sybers_dfir/deploy.py"
-      - "python/get_sybers_dfir/cli.py"
+      - "python/get_sybers_dfir/container.py"
+      - "python/get_sybers_dfir/images.py"
+      - "python/get_sybers_dfir/mitrecar.py"
+      - "python/get_sybers_dfir/carcheck.py"
       - "python/pyproject.toml"
       - "docker/evtxecmd/**"
       - "docker/hardening/**"
       - "docker/runtime/**"
-      - "ansible/collections/get_sybers.dfir/roles/dfir_deploy_adx/**"
-      - "ansible/collections/get_sybers.dfir/playbooks/dfir-deploy-adx.yml"
+      - ".gitmodules"
+      - "third_party/**"
       - "tests/smoke-test.sh"
       - "dev-scripts/fetch-samples.sh"
       - "dev-scripts/samples-manifest.tsv"
@@ -49,7 +51,7 @@ jobs:
         with:
           # the CAR lane (get_sybers_dfir.mitrecar) reconstructs its model live
           # from the nested car / attack-datasources submodules — check out
-          # recursively so build-car works.
+          # recursively so build-car (and the gate's action vocabulary) work.
           submodules: recursive
 
       - name: Set up Python
@@ -57,17 +59,12 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The smoke test deploys the throwaway emulator through the framework:
-      # `dxdfir deploy` drives the dfir_deploy_adx role. Installing the package
-      # brings the CLI (typer) and ansible-core; the collection itself is
-      # resolved in-repo (the CLI sets ANSIBLE_ROLES_PATH), but its
-      # community.docker dependency — and the `requests` library those modules
-      # need — must be installed. The processors (evtx/ingest/imageexport)
-      # stay pure stdlib.
-      - name: Install the dxdfir CLI + collection dependencies
-        run: |
-          python -m pip install --quiet ./python requests
-          ansible-galaxy collection install -r ansible/collections/get_sybers.dfir/requirements.yml
+      # The smoke test drives the processors and the CAR lane directly
+      # (python -m get_sybers_dfir.<module> on PYTHONPATH=python). Installing
+      # the package brings its declared dependencies (PyYAML for the engine's
+      # model sources, typer for the CLI); nothing else is needed.
+      - name: Install the dxdfir package
+        run: python -m pip install --quiet ./python
 
       # The evtx lane runs EvtxECmd from the bundled image; build it once here
       # (the smoke test asserts its presence and fails loudly if absent).
