@@ -10,6 +10,7 @@ processing the roles invoke.
     dxdfir detect                        # run every applicable registered detection
     dxdfir deploy                        # stand up + schema-load the emulator
     dxdfir validate                      # run the check harness
+    dxdfir stix export                   # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
 ``process`` drives the collection with ``ansible-playbook`` (preflight → process →
 verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
@@ -29,6 +30,7 @@ from pathlib import Path
 import typer
 
 from . import __version__
+from .stix.cli import app as stix_app
 
 app = typer.Typer(
     help="DX_DFIR forensic pipeline front-end (process / ingest / detect / deploy / validate).",
@@ -38,6 +40,8 @@ app = typer.Typer(
     # inheritance, each subcommand — so `dxdfir -h`, `dxdfir process -h`, etc. all work.
     context_settings={"help_option_names": ["-h", "--help"]},
 )
+# The STIX / OpenCTI exchange verbs live in their own sub-app (get_sybers_dfir.stix.cli).
+app.add_typer(stix_app, name="stix")
 
 _COLLECTION = "ansible/collections/get_sybers.dfir"
 
