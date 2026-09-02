@@ -218,6 +218,10 @@ def _check_esql(rule: dict, stripped: str) -> list[str]:
     for head in heads:
         if head not in _ESQL_PIPE_CMDS:
             problems.append(f"unknown ES|QL command {head!r}")
+    # Only STATS collapses rows into groups (an aggregate alert). INLINESTATS
+    # augments each row without collapsing it, so an INLINESTATS query stays
+    # non-aggregating here: it still emits one alert per matched document, so it
+    # must request METADATA and its evidence is a line, not an aggregate.
     aggregating = "STATS" in heads
     if not aggregating and not set(_ESQL_METADATA) <= meta:
         problems.append("non-aggregating ES|QL must request METADATA "
@@ -444,8 +448,10 @@ def validate_car_detections(template: dict, join_keys: dict) -> None:
         raise ValueError("car-detections: template must set index.mode: lookup (LOOKUP JOIN needs it)")
     mapped = _mapped_fields(((template.get("template") or {}).get("mappings") or {}).get("properties"))
     name = join_keys.get("lookup_index")
+    # Glob -> regex: escape every metacharacter first (so a '.' in a pattern is
+    # literal, not "any char"), then turn the escaped '*' back into '.*'.
     if not isinstance(name, str) or not any(
-            re.fullmatch(p.replace("*", ".*"), name) for p in patterns):
+            re.fullmatch(re.escape(p).replace(r"\*", ".*"), name) for p in patterns):
         raise ValueError("car-detections: join-keys lookup_index must match the template's index_patterns")
     joins = join_keys.get("join")
     if not isinstance(joins, list) or not joins:
@@ -494,9 +500,14 @@ def main(argv: list[str] | None = None) -> int:
         description="Load and validate the Elastic detection rules-as-code set; print a JSON summary.")
     ap.add_argument("--rules-dir", default=RULES_DIR)
     args = ap.parse_args(argv)
+    # Validate the car-detections contract from the SAME rules dir, so a custom
+    # --rules-dir is checked against its own car-detections/, not the built-in one.
+    car_dir = os.path.join(args.rules_dir, "car-detections")
     try:
         rules = list_rules(args.rules_dir)
-        validate_car_detections(*load_car_detections())
+        validate_car_detections(*load_car_detections(
+            os.path.join(car_dir, "car-detections.index-template.json"),
+            os.path.join(car_dir, "join-keys.yml")))
     except (ValueError, OSError) as e:
         print(json.dumps({"tool": "rules", "error": str(e)}), file=sys.stderr)
         return 1
