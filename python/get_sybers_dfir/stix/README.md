@@ -58,9 +58,54 @@ the push is tested with a stub and no platform — see
 
 Config precedence: file < environment (`DXDFIR_OPENCTI_URL`,
 `DXDFIR_OPENCTI_TOKEN`, `DXDFIR_OPENCTI_CONNECTOR_ID`, `DXDFIR_STIX_CASE`,
-`DXDFIR_STIX_TLP`, `DXDFIR_STIX_RULES_DIR`) < flags. See
+`DXDFIR_STIX_TLP`, `DXDFIR_STIX_RULES_DIR`, `DXDFIR_CTI_INDEX`) < flags. See
 [`config.py`](config.py) for the file shape.
 
+## CTI: OpenCTI indicators in, sightings back out (`pull` / `sightings`)
+
+OpenCTI stays the wire; the matching is Elastic's own indicator-match rule.
+The CTI direction runs through the same client and the same stubbed transport:
+
 ```bash
-cd python && python -m pytest tests/test_stix_export.py
+dxdfir stix pull --out cti.ndjson [--since 2026-08-01T00:00:00Z] [--bundle-out pulled.json]
+curl -sS -XPOST "$ES/_bulk" -H 'Content-Type: application/x-ndjson' --data-binary @cti.ndjson
+dxdfir stix sightings --alerts alerts.json --case CASE-17 --push
+```
+
+1. **Pull** — `OpenCTIClient.pull_indicators()` pages the platform's STIX 2.1
+   indicators (with the markings and creator identities they reference) into
+   one bundle; `--since` makes it incremental (`modified` after the watermark).
+2. **Copy** — [`cti/indicators.py`](cti/indicators.py) breaks every pattern
+   into its `=` comparisons and lands each value under the ECS
+   `threat.indicator.*` field that [`cti/pattern-mapping.yml`](cti/pattern-mapping.yml)
+   names (`[ipv4-addr:value = '…']` -> `threat.indicator.ip`,
+   `file:hashes.'SHA-256'` -> `threat.indicator.file.hash.sha256`, …), plus
+   `threat.indicator.{id,type,name,confidence,provider,marking.tlp,…}`,
+   `stix.{pattern,valid_from,valid_until,revoked,…}` and
+   `opencti.{id,score,detection}`. Out come `_bulk` lines keyed on the STIX id
+   (`_id`, so a re-pull upserts) for the `cti-*` index that
+   [`cti/cti.index-template.json`](cti/cti.index-template.json) describes
+   (`PUT _index_template/cti`; strict mapping — the copy refuses to emit a
+   field the template does not map). YARA/Sigma patterns, CIDRs and unmapped
+   observables are skipped and counted. `--from-bundle` normalises an
+   already-pulled bundle offline, no platform needed.
+3. **Match** — the indicator-match rule
+   [`detect/rules/cti/cti-indicator-match.yml`](../detect/rules/cti/cti-indicator-match.yml)
+   compares `logs-dfir.*` / `logs-car.*` evidence fields with `threat.indicator.*`
+   (`threat_mapping`); its alerts carry `threat.enrichments[]` — the indicator's
+   fields and `matched.{field,atomic,id,index}`.
+4. **Sightings back** — [`cti/sightings.py`](cti/sightings.py) turns those
+   alerts into one `sighting` per (indicator, host, matched value) whose
+   `sighting_of_ref` is the platform's own indicator id (the indicator is not
+   re-emitted), the matched value as the spec's SCO in an `observed-data`, the
+   host as `where_sighted_refs`, alerts of the same match collapsed into
+   `count`; case-scoped ids, pushed through `push_bundle`.
+
+`cti.index` / `DXDFIR_CTI_INDEX` / `--index` names the concrete `cti-*` index
+the bulk lines target (default `cti-opencti`). Both verbs are exercised in
+[`test_cti.py`](../../tests/test_cti.py) against recording transports — no
+platform, no Elasticsearch, no secrets.
+
+```bash
+cd python && python -m pytest tests/test_stix_export.py tests/test_cti.py
 ```

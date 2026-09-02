@@ -248,6 +248,24 @@ def ip_address(value) -> dict | None:
             "id": sco_id(stix_type, {"value": v}), "value": v}
 
 
+def domain_name(value) -> dict | None:
+    """A ``domain-name`` SCO (spec id over the lower-cased name, trailing dot
+    dropped), or ``None`` when ``value`` is not a name."""
+    v = str(value or "").strip().rstrip(".").lower()
+    if not v or " " in v or "/" in v:
+        return None
+    return {"type": "domain-name", "spec_version": SPEC_VERSION,
+            "id": sco_id("domain-name", {"value": v}), "value": v}
+
+
+def url(value) -> dict | None:
+    """A ``url`` SCO (spec id over the value as given), or ``None`` when empty."""
+    v = str(value or "").strip()
+    if not v or " " in v:
+        return None
+    return {"type": "url", "spec_version": SPEC_VERSION, "id": sco_id("url", {"value": v}), "value": v}
+
+
 def file_observable(name: str | None = None, hashes: dict | None = None) -> dict | None:
     """A ``file`` SCO. Id-contributing properties per §2.9: ONE hash (MD5 >
     SHA-1 > SHA-256 > SHA-512) and the name, whichever are present."""
