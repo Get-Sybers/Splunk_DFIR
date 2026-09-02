@@ -1,7 +1,7 @@
 # dfir_volatility
 
 Process **memory images** with **Volatility 3** into per-plugin JSON Lines for the
-ADX or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs a
+Elastic-native or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs a
 preflight (docker reachable, memory dir present, the [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) tool runnable), then
 invokes the `get_sybers_dfir.volatility` processor as a **single action**. One
 `<plugin>.jsonl` per plugin per image.
@@ -27,9 +27,9 @@ PIIAT-Mem owns the runner, the `jsonl_dfir` renderer, the custom plugins
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_volatility_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_volatility_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
 | `dfir_volatility_memory_dir` | `<repo>/data_store/raw/memory` | Memory-image tree to process (recursed). |
-| `dfir_volatility_adx_out_dir` | `<repo>/data_store/processed/volatility` | ADX-path output. |
+| `dfir_volatility_elastic_out_dir` | `<repo>/data_store/processed/volatility` | Elastic-path output. |
 | `dfir_volatility_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/volatility` | SOF-ELK-path output. |
 | `dfir_volatility_symbols_dir` | `<repo>/data_store/dependencies/volatility3-symbols` | Volatility 3 kernel-symbol cache (passed as `--symbols-dir`). |
 | `dfir_volatility_piiat_mem_dir` | `<repo>/third_party/piiat-mem` | PIIAT-Mem submodule — the standalone Volatility tool the lane drives via `python -m piiat_mem` (owns the runner, renderer and custom plugins). |
@@ -53,7 +53,7 @@ verify gate is "some plugin produced output, or there were no images", not
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-volatility.yml -e dfir_volatility_pipeline=adx
+ansible-playbook playbooks/dfir-process-volatility.yml -e dfir_volatility_pipeline=elastic
 ```
 
 ## Testing

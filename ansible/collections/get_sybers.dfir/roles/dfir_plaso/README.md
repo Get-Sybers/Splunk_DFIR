@@ -1,7 +1,7 @@
 # dfir_plaso
 
 Process **forensic disk images** and **VMware VM exports** with **Plaso**
-(log2timeline + psort) into enriched JSON Lines for the ADX or SOF-ELK pipeline. The
+(log2timeline + psort) into enriched JSON Lines for the Elastic-native or SOF-ELK pipeline. The
 role is structure only — it asserts inputs, runs a preflight (docker, input dir, the
 `l2t_json_dfir` output module), then invokes the `get_sybers_dfir.plaso` Python
 processor as a **single action** (the two-step container work happens inside
@@ -11,10 +11,10 @@ the durable `.plaso` storage db and a per-image log.
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_plaso_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_plaso_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
 | `dfir_plaso_input_dir` | `<repo>/data_store/raw/disk_images` | Disk-image tree (E01/raw/img/dd/vmdk/vhd/vhdx/aff), recursed. |
 | `dfir_plaso_vm_dir` | `<repo>/data_store/raw/VM_files` | VMware VM export folders (one per VM); optional. |
-| `dfir_plaso_adx_out_dir` | `<repo>/data_store/processed/log2timeline` | ADX-path output (`jsonl/`, `plaso/`, `logs/`). |
+| `dfir_plaso_elastic_out_dir` | `<repo>/data_store/processed/log2timeline` | Elastic-path output (`jsonl/`, `plaso/`, `logs/`). |
 | `dfir_plaso_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/log2timeline` | SOF-ELK-path output. |
 | `dfir_plaso_module` | `<repo>/dev-scripts/plaso/l2t_json_dfir.py` | Custom psort output module. |
 | `dfir_plaso_image` | `dfir/plaso:latest` | The hardened in-repo Plaso image (`playbooks/dfir-build-images.yml`). |
@@ -38,7 +38,7 @@ no sources".
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-plaso.yml -e dfir_plaso_pipeline=adx
+ansible-playbook playbooks/dfir-process-plaso.yml -e dfir_plaso_pipeline=elastic
 ```
 
 ## Testing

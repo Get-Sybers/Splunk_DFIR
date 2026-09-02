@@ -17,13 +17,13 @@ argument_specs:
       dfir_signatures_pipeline:
         type: str
         required: false
-        default: adx
-        choices: [adx, sofelk]
+        default: elastic
+        choices: [elastic, sofelk]
         description: "Which backend to target; selects the output destination."
-      dfir_signatures_adx_out_dir:
+      dfir_signatures_elastic_out_dir:
         type: str
         required: false
-        description: "ADX-path output base (default data_store/processed/signatures)."
+        description: "Elastic-path output base (default data_store/processed/signatures)."
       dfir_signatures_sofelk_out_dir:
         type: str
         required: false
@@ -33,7 +33,7 @@ argument_specs:
         required: false
         description: >-
           Resolved output base for the selected pipeline (defaults to the
-          adx/sofelk out dir per dfir_signatures_pipeline); override to send
+          elastic/sofelk out dir per dfir_signatures_pipeline); override to send
           output to a custom location.
       dfir_signatures_lanes:
         type: list

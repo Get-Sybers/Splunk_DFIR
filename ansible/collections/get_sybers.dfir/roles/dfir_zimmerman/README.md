@@ -3,7 +3,7 @@
 Process **forensic disk images** and **VMware VM exports** with Eric Zimmerman's
 **EZ-Tools** (RECmd, JLECmd, LECmd, AmcacheParser, AppCompatCacheParser, SBECmd,
 RBCmd, MFTECmd) plus a plaso-driven SRUM parse, into per-host artefact output for
-the ADX or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs
+the Elastic-native or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs
 a preflight (docker, input dir, the `get_sybers_dfir.zimmerman` module, every
 tool image it drives), then invokes the processor as a **single action** (the
 extraction + nine container runs happen inside Python). One output dir per host.
@@ -49,10 +49,10 @@ EZ-Tool, and a combined `zimmerman.log`.
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_zimmerman_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_zimmerman_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
 | `dfir_zimmerman_input_dir` | `<repo>/data_store/raw/disk_images` | Disk-image tree (E01/raw/img/dd/vmdk/vhd/vhdx/aff), recursed. |
 | `dfir_zimmerman_vm_dir` | `<repo>/data_store/raw/VM_files` | VMware VM export folders (one per VM); optional. |
-| `dfir_zimmerman_adx_out_dir` | `<repo>/data_store/processed/zimmerman` | ADX-path output. |
+| `dfir_zimmerman_elastic_out_dir` | `<repo>/data_store/processed/zimmerman` | Elastic-path output. |
 | `dfir_zimmerman_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/zimmerman` | SOF-ELK-path output. |
 | `dfir_zimmerman_plaso_image` | `dfir/plaso:latest` | Used for both artefact extraction and the SRUM two-step. |
 | `dfir_zimmerman_vss` | `false` | Also extract from Volume Shadow Copies. |
@@ -80,7 +80,7 @@ rather than risk breaking the rest of the lane chasing one tool.
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-zimmerman.yml -e dfir_zimmerman_pipeline=adx
+ansible-playbook playbooks/dfir-process-zimmerman.yml -e dfir_zimmerman_pipeline=elastic
 ```
 
 ## Testing

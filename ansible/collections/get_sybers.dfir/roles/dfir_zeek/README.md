@@ -1,6 +1,6 @@
 # dfir_zeek
 
-Process PCAPs into **Zeek JSON logs** for the ADX or SOF-ELK pipeline. The role is
+Process PCAPs into **Zeek JSON logs** for the Elastic-native or SOF-ELK pipeline. The role is
 structure only — it asserts inputs, runs a preflight, then invokes the
 `get_sybers_dfir.zeek` Python processor as a **single action** (one container run
 per capture happens inside Python). One folder of `*.json` per capture.
@@ -8,9 +8,9 @@ per capture happens inside Python). One folder of `*.json` per capture.
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_zeek_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_zeek_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
 | `dfir_zeek_pcap_dir` | `<repo>/data_store/raw/pcaps` | Capture tree to process (recursed). |
-| `dfir_zeek_adx_out_dir` | `<repo>/data_store/processed/zeek` | ADX-path output. |
+| `dfir_zeek_elastic_out_dir` | `<repo>/data_store/processed/zeek` | Elastic-path output. |
 | `dfir_zeek_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/zeek` | SOF-ELK-path output. |
 | `dfir_zeek_image` | `dfir/zeek:latest` | The hardened in-repo Zeek image (`playbooks/dfir-build-images.yml`). |
 | `dfir_zeek_python_path` | `<repo>/python` | PYTHONPATH to `get_sybers_dfir` (in-repo runs). |
@@ -23,7 +23,7 @@ captures is `changed=true`; a second immediate run is `changed=false`.
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=adx
+ansible-playbook playbooks/dfir-process-zeek.yml -e dfir_zeek_pipeline=elastic
 ```
 
 ## Testing

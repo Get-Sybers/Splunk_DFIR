@@ -68,10 +68,14 @@ large image from inside. An escape or exfiltration then needs a defect in the
 tool plus the kernel/runtime, against dropped capabilities and no network —
 not a convenient interpreter.
 
-## The one deviation
+## What is not built here
 
-The Kusto emulator (`kustainer`) is proprietary and cannot be built from
-source; `dfir_deploy_adx` pulls it and confines it to localhost instead.
+The analysis backend is not a tool image: the Elastic stack under
+`docker/elastic/` (Elasticsearch, Kibana, Fleet Server, Filebeat — the official
+Elastic images, version-pinned) is brought up with docker compose, published on
+`127.0.0.1` only, with security on. No other third-party image is pulled at
+runtime (the stock .NET runtime image is used only by the evtx lane's
+operator-supplied mode).
 
 ## Role variables
 | Variable | Default | Description |

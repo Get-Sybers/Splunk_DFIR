@@ -1,17 +1,17 @@
 ---
 # Backend to target; the playbook overrides this to select the pipeline.
-dfir_evtx_pipeline: adx
+dfir_evtx_pipeline: elastic
 
 # Repo root is five levels up from this role
 # (roles/dfir_evtx -> get_sybers.dfir -> collections -> ansible -> repo).
 dfir_evtx_repo_root: "{{ role_path }}/../../../../.."
 
 dfir_evtx_evtx_dir: "{{ dfir_evtx_repo_root }}/data_store/raw/logs/winevt"
-dfir_evtx_adx_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
+dfir_evtx_elastic_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs"
 dfir_evtx_sofelk_out_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/sofelk/windows_logs"
 # Resolved output base for the selected pipeline — consumed by
 # tasks/process.yml. Override directly to send output to a custom location.
-dfir_evtx_out_dir: "{{ dfir_evtx_adx_out_dir if dfir_evtx_pipeline == 'adx' else dfir_evtx_sofelk_out_dir }}"
+dfir_evtx_out_dir: "{{ dfir_evtx_elastic_out_dir if dfir_evtx_pipeline == 'elastic' else dfir_evtx_sofelk_out_dir }}"
 
 # Disk-image inputs (optional): a disk image (E01/raw/VMDK) or a directory of them.
 # When set, WindowsEventLogs (.evtx) are extracted with log2timeline/plaso
@@ -21,7 +21,7 @@ dfir_evtx_image_src: ""
 # Where --image-src extractions land. Per-image subdirs, reused across runs (an
 # image whose logs are already staged is not re-pulled). Pinned to ONE canonical
 # stage for BOTH pipelines — the same default the dfir_signatures hayabusa lane
-# uses — so the adx run, the sofelk run and the detection lane all share the
+# uses — so the elastic run, the sofelk run and the detection lane all share the
 # extraction instead of each re-pulling the image.
 dfir_evtx_stage_dir: "{{ dfir_evtx_repo_root }}/data_store/processed/windows_logs/_extracted_evtx"
 # Include Volume Shadow Copies when extracting from a disk image.

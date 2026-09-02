@@ -1,5 +1,5 @@
 ---
-# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+# FIND FACTS -> check existence AND location -> (then elastic/sofelk MODIFY + VERIFY).
 # dfir_plaso_vm_dir is optional (the processor tolerates its absence), so it is not
 # asserted here.
 

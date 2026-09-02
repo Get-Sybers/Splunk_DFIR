@@ -1,5 +1,5 @@
 ---
-# Pipeline-agnostic processing — identical for ADX and SOF-ELK; only the
+# Pipeline-agnostic processing — identical for the Elastic-native and SOF-ELK pipelines; only the
 # output base differs, resolved into dfir_zimmerman_out_dir by defaults/main.yml
 # from dfir_zimmerman_pipeline.
 #

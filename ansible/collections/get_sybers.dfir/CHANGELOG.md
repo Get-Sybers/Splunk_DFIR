@@ -7,6 +7,14 @@ root [CHANGELOG.md](../../../CHANGELOG.md).
 
 ### Removed
 
+- The Kusto/ADX layer — the `dfir_deploy_adx`, `dfir_ingest_adx` and `dfir_detect_adx` roles (with their molecule scenarios) and the `dfir-deploy-adx` / `dfir-ingest-adx` / `dfir-detect-adx` playbooks. The Elastic-native path (`docker/elastic`, the ES|QL/EQL rules-as-code, the CAR->ECS projection) supersedes the emulator; detection is no longer a role.
+
+### Changed
+
+- The processing roles' pipeline axis is `elastic|sofelk` (was `adx|sofelk`): `dfir_<role>_pipeline` defaults to `elastic`, and `dfir_<role>_adx_out_dir` is now `dfir_<role>_elastic_out_dir` — the same default path (`data_store/processed/<source>`, the tree the CAR lane builds from). `dfir_<role>_out_dir` still carries the resolved choice.
+
+### Removed (earlier)
+
 - The Velociraptor lane — `dfir_velociraptor` role, the `dfir-process-velociraptor` playbook, the ingest source and the `host.VelociraptorJson` table: Velociraptor is no longer part of this project (SRUM/RECmd evidence now comes from the hardened EZ-tool containers directly).
 
 ## 0.4.0

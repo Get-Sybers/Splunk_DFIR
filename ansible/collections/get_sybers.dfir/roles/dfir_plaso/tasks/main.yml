@@ -6,10 +6,10 @@
 - name: "plaso | assert inputs"
   ansible.builtin.assert:
     that:
-      - dfir_plaso_pipeline in ['adx', 'sofelk']
+      - dfir_plaso_pipeline in ['elastic', 'sofelk']
       - dfir_plaso_input_dir | length > 0
     fail_msg: >-
-      dfir_plaso needs dfir_plaso_pipeline (adx|sofelk) and a non-empty
+      dfir_plaso needs dfir_plaso_pipeline (elastic|sofelk) and a non-empty
       dfir_plaso_input_dir.
     quiet: true
   tags: [always]
@@ -22,7 +22,7 @@
       tags: [always]
   tags: [always]
 
-# The pipeline decision (adx|sofelk) is carried by the resolved
+# The pipeline decision (elastic|sofelk) is carried by the resolved
 # dfir_plaso_out_dir default — the tasks themselves are pipeline-agnostic,
 # so there is ONE task file to maintain instead of a drifting pair.
 - name: "plaso | process"
