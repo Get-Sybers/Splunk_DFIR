@@ -88,8 +88,8 @@ def _repo(image: str) -> str:
 def require(image: str) -> None:
     """Assert one image is a known hardened dfir/* tool image before the lane
     runs it. Raises RuntimeError with the reason otherwise. A non-dfir image
-    (the documented operator-supplied .NET runtime, the Kusto emulator) is out
-    of scope and passes untouched."""
+    (the documented operator-supplied .NET runtime) is out of scope and passes
+    untouched."""
     if not image.startswith("dfir/"):
         return
     repo = _repo(image)

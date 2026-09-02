@@ -5,18 +5,18 @@ The three layers of epic #46 meet here: this CLI holds the user-facing verbs, th
 one action per task), and the ``get_sybers_dfir`` package holds the heavy per-item
 processing the roles invoke.
 
-    dxdfir process zeek --pipeline adx   # drive the dfir_zeek role
-    dxdfir ingest --only zeek            # load processed output into the ADX emulator
-    dxdfir detect                        # run every applicable registered detection
-    dxdfir deploy                        # stand up + schema-load the emulator
-    dxdfir validate                      # run the check harness
-    dxdfir stix export                   # detections -> STIX 2.1 sightings (+ OpenCTI push)
+    dxdfir process zeek --pipeline elastic   # drive the dfir_zeek role
+    dxdfir build-car                         # normalise every processed source into CAR
+    dxdfir verify-car                        # the CAR correctness gate over the materialised CAR
+    dxdfir validate                          # run the check harness
+    dxdfir stix export                       # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
 ``process`` drives the collection with ``ansible-playbook`` (preflight → process →
 verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
-the tight loop. ``ingest``, ``detect`` and ``deploy`` drive the ``dfir_ingest_adx``
-/ ``dfir_detect_adx`` / ``dfir_deploy_adx`` roles the same way; ``validate`` runs
-the repo's check harness (``tests/run-checks.sh``).
+the tight loop. The analysis backend is the Elastic-native stack
+(``docker/elastic``, deployed with compose; the Elastic detection rules live as
+data under ``get_sybers_dfir/detect/rules``); ``validate`` runs the repo's check
+harness (``tests/run-checks.sh``).
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ from . import __version__
 from .stix.cli import app as stix_app
 
 app = typer.Typer(
-    help="DX_DFIR forensic pipeline front-end (process / ingest / detect / deploy / validate).",
+    help="DX_DFIR forensic pipeline front-end (process / build-car / verify-car / validate).",
     no_args_is_help=True,
     add_completion=False,
     # Accept -h as well as --help at every level: the group and, by context
@@ -56,7 +56,9 @@ class Source(str, enum.Enum):
 
 
 class Pipeline(str, enum.Enum):
-    adx = "adx"
+    # elastic: the processed tree the CAR lane builds from (the Elastic-native
+    # path); sofelk: the retiring SOF-ELK delivery tree (processed/sofelk/).
+    elastic = "elastic"
     sofelk = "sofelk"
 
 
@@ -122,7 +124,7 @@ def _ansible_playbook() -> str:
 @app.command()
 def process(
     source: Source = typer.Argument(..., help="Which evidence source to process."),
-    pipeline: Pipeline = typer.Option(Pipeline.adx, "--pipeline", "-p", help="Backend to target."),
+    pipeline: Pipeline = typer.Option(Pipeline.elastic, "--pipeline", "-p", help="Backend to target."),
     force: bool = typer.Option(False, "--force", help="Reprocess inputs that already have output."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
     extra_var: list[str] = typer.Option(
@@ -151,102 +153,6 @@ def process(
 
 
 @app.command()
-def ingest(
-    only: str = typer.Option(None, "--only", help="Load one source: l2t|zeek|evtx|volatility."),
-    force: bool = typer.Option(False, "--force", help="Re-ingest files already in the ledger."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="List what would be loaded; contact nothing."),
-    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
-    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
-) -> None:
-    """Load processed output into the ADX (Kusto) emulator by driving dfir_ingest_adx."""
-    _ap = _ansible_playbook()
-    repo = _repo_root(repo_root)
-    playbook = repo / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml"
-    if not playbook.is_file():
-        typer.secho(f"ingest playbook not found: {playbook}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
-    if only:
-        cmd += ["-e", f"dfir_ingest_adx_only={only}"]
-    if force:
-        cmd += ["-e", "dfir_ingest_adx_force=true"]
-    if dry_run:
-        cmd += ["-e", "dfir_ingest_adx_dry_run=true"]
-    for kv in extra_var or []:
-        cmd += ["-e", kv]
-    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
-    typer.secho("ingesting processed → ADX emulator", fg=typer.colors.GREEN)
-    _run(cmd, cwd=repo, env=env)
-
-
-@app.command()
-def detect(
-    only: str = typer.Option(None, "--only", help="Run only these detection id(s), comma-separated."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Report targeting decisions; execute nothing."),
-    limit: int = typer.Option(None, "--limit", help="Max hits recorded per detection."),
-    jsonl_out: Path = typer.Option(None, "--jsonl-out", help="Also export the sweep's hits as JSON Lines."),
-    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
-    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
-) -> None:
-    """Sweep the processed data with every applicable registered detection (dfir_detect_adx).
-
-    The detection orchestrator surveys which processed data is actually present
-    (ADX tables + signature-lane JSONL) and runs only the registered detections
-    whose target data is there; hits land uniformly tagged in misc.Detections.
-    """
-    _ap = _ansible_playbook()
-    repo = _repo_root(repo_root)
-    playbook = repo / _COLLECTION / "playbooks" / "dfir-detect-adx.yml"
-    if not playbook.is_file():
-        typer.secho(f"detect playbook not found: {playbook}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
-    if only:
-        cmd += ["-e", f"dfir_detect_adx_only={only}"]
-    if dry_run:
-        cmd += ["-e", "dfir_detect_adx_dry_run=true"]
-    if limit is not None:
-        cmd += ["-e", f"dfir_detect_adx_limit={limit}"]
-    if jsonl_out is not None:
-        cmd += ["-e", f"dfir_detect_adx_jsonl_out={jsonl_out}"]
-    for kv in extra_var or []:
-        cmd += ["-e", kv]
-    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
-    typer.secho("running detections over processed data → misc.Detections", fg=typer.colors.GREEN)
-    _run(cmd, cwd=repo, env=env)
-
-
-@app.command()
-def deploy(
-    persist: bool = typer.Option(False, "--persist", help="Persist emulator data (opt-in)."),
-    port: int = typer.Option(None, "--port", help="Emulator port override."),
-    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
-    extra_var: list[str] = typer.Option(None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
-) -> None:
-    """Deploy the ADX (Kusto) emulator + schema by driving dfir_deploy_adx.
-
-    ⚠️ Running this accepts Microsoft's EULA on your behalf (ACCEPT_EULA=Y); the
-    emulator has no auth and is localhost-only by default.
-    """
-    _ap = _ansible_playbook()
-    repo = _repo_root(repo_root)
-    playbook = repo / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml"
-    if not playbook.is_file():
-        typer.secho(f"deploy playbook not found: {playbook}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    cmd = [_ap, "-i", "localhost,", "-c", "local", str(playbook)]
-    if persist:
-        cmd += ["-e", "dfir_deploy_adx_persist=true"]
-    if port is not None:
-        cmd += ["-e", f"dfir_deploy_adx_port={port}"]
-    for kv in extra_var or []:
-        cmd += ["-e", kv]
-    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
-    typer.secho("deploying ADX emulator + schema", fg=typer.colors.GREEN)
-    _run(cmd, cwd=repo, env=env)
-
-
-@app.command()
 def validate(
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
@@ -262,18 +168,22 @@ def validate(
 
 @app.command(name="verify-car")
 def verify_car(
-    host: str = typer.Option("127.0.0.1", help="Emulator host."),
-    port: int = typer.Option(8080, help="Emulator port."),
+    car_dir: Path = typer.Option(
+        None, "--car-dir", help="The materialised CAR tree (default: <repo>/data_store/processed/car)."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """CAR run-through: assert EXPECTED FIELD VALUES at the ADX level for every lane.
+    """CAR run-through: assert EXPECTED FIELD VALUES in the materialised CAR.
 
-    The promotion gate for CAR correctness against a populated emulator — expected
-    values per source, round-trip fidelity (normalized == native), per-artefact
-    identity, roll-up no-fabrication, and no-producer sources empty. Run the
-    pipeline first (deploy -> process -> ingest).
+    The promotion gate for CAR correctness over the car_<object>.jsonl the engine
+    wrote — each exercised object populated, values sane (IPs, ports, SIDs,
+    car_action in the model's vocabulary), every row traceable to one artefact,
+    relationship edges naming real endpoints. Run the pipeline first
+    (process -> build-car).
     """
     from . import carcheck
-    raise typer.Exit(carcheck.main(["--host", host, "--port", str(port)]))
+    if car_dir is None:
+        car_dir = _repo_root(repo_root) / "data_store" / "processed" / "car"
+    raise typer.Exit(carcheck.main(["--car-dir", str(car_dir)]))
 
 
 @app.command(name="build-car")
@@ -421,7 +331,7 @@ def main(
         False, "--version", callback=_version_cb, is_eager=True, help="Show version and exit."
     ),
 ) -> None:
-    """DX_DFIR forensic processing pipeline — process evidence, then deploy/ingest/validate."""
+    """DX_DFIR forensic processing pipeline — process evidence, build + verify CAR, validate."""
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 """Unit tests for the Elastic detection rules-as-code loader (no Elastic needed).
 
-The rule files are data; these tests are what makes them a contract: every
-registry detection has exactly one rule file, ported rules carry structurally
-sound ES|QL/EQL that stamps what their evidence contract promises, stubs are
-explicit about what is still missing, and the car-detections lookup index
-agrees with the loader's join keys.
+The rule files are data; these tests are what makes them a contract: the rule
+set is pinned (a detection can neither be dropped silently nor added unnoticed),
+ported rules carry structurally sound ES|QL/EQL that stamps what their evidence
+contract promises, stubs are explicit about what is still missing, and the
+car-detections lookup index agrees with the loader's join keys.
 """
 import copy
 import os
@@ -13,8 +13,18 @@ import re
 import pytest
 import yaml
 
-from get_sybers_dfir.detect import registry, rules_loader
 from get_sybers_dfir.detect import rules_loader as rl
+
+# The detection set, pinned. These are the ids the retired Kusto registry carried
+# — each rule file keeps its provenance in `source` — so a rule cannot disappear
+# silently, and a new one is a deliberate addition here.
+EXPECTED_IDS = (
+    "sig-hayabusa-high", "sig-suricata-alert", "sig-yara-match",
+    "vol-malfind-injection",
+    "win-defender-tamper", "win-eventlog-cleared", "win-prefetch-dualuse-tool",
+    "win-service-suspicious-path",
+    "zeek-dns-oversized-query", "zeek-notice-promoted",
+)
 
 
 @pytest.fixture(scope="module")
@@ -27,10 +37,10 @@ def test_seeded_rules_validate(rules):
     rl.validate(rules)                      # list_rules() already did; explicit
 
 
-def test_every_registry_detection_has_exactly_one_rule_file(rules):
-    # The full Kusto detection set is enumerated in Elastic — ported or stub —
-    # never silently dropped, and no rule exists that the registry does not know.
-    assert sorted(r["id"] for r in rules) == sorted(d["id"] for d in registry.DETECTIONS)
+def test_rule_set_is_pinned(rules):
+    # The full detection set is enumerated in Elastic — ported or stub — never
+    # silently dropped, and no rule exists that is not pinned above.
+    assert sorted(r["id"] for r in rules) == sorted(EXPECTED_IDS)
     assert all(r["source"]["registry"] == r["id"] for r in rules)
 
 
@@ -53,19 +63,20 @@ def test_required_fields_present(rules):
         assert r["risk_score"] == rl.RISK_SCORES[r["severity"]]   # defaulted on load
 
 
-def test_rules_mirror_registry_metadata(rules):
-    # Severity / ATT&CK / source kind travel unchanged from the Kusto registry
-    # (severity "info" would map to "low"; no seeded detection uses it).
-    by_id = {d["id"]: d for d in registry.DETECTIONS}
+def test_rules_keep_their_source_provenance(rules):
+    # Each rule records what it was ported from: the verbatim KQL of a query
+    # detection, or the signature-lane matcher's name — the record outlives the
+    # retired registry, so a port can always be checked against its source.
     for r in rules:
-        d = by_id[r["id"]]
-        assert r["attack"] == d["attack"]
-        assert r["severity"] == d["severity"]
-        assert r["source"]["kind"] == d["kind"]
-        if d["kind"] == "kusto":
-            assert r["source"]["kql"].strip() == d["query"].strip()
+        src = r["source"]
+        assert src["kind"] in rl.SOURCE_KINDS
+        if src["kind"] == "kusto":
+            assert src["kql"].strip()
+            assert "match" not in src
         else:
-            assert r["source"]["match"] == d["match"].__name__
+            assert src["match"].startswith("match_")
+            assert "kql" not in src
+    assert {r["source"]["kind"] for r in rules} == set(rl.SOURCE_KINDS)
 
 
 def test_at_least_three_ported_rules_well_formed(rules):
@@ -111,7 +122,7 @@ def test_stubs_are_explicit(rules):
 
 
 def test_ported_plus_stub_is_the_whole_set(rules):
-    assert len(rl.ported(rules)) + len(rl.stubs(rules)) == len(rules) == len(registry.DETECTIONS)
+    assert len(rl.ported(rules)) + len(rl.stubs(rules)) == len(rules) == len(EXPECTED_IDS)
 
 
 def test_summary_counts(rules):
@@ -336,13 +347,3 @@ def test_validate_car_detections_rejects_drift(car_contract):
     with pytest.raises(ValueError, match="example_query"):
         rl.validate_car_detections(template, bad)
 
-
-# ---- additive: the Kusto side is untouched ---------------------------------
-def test_kusto_registry_still_validates_and_loader_does_not_import_it():
-    import inspect
-    registry.validate()
-    # The rule set must stay loadable after Kusto retires (D1): the loader
-    # shares ids with the registry but never imports it.
-    src = inspect.getsource(rules_loader)
-    assert "from .registry" not in src and "import registry" not in src
-    assert not hasattr(rules_loader, "DETECTIONS")

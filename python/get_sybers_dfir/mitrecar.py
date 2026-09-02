@@ -6,7 +6,8 @@ standalone public project; this module only decides what to run and invokes
 
 The tool turns each processed evidence SOURCE into its own MITRE CAR database
 (one SQLite table per CAR object) plus per-object ``car_<object>.jsonl`` — the
-JSON the ADX ingest lane loads as the ``mitre.car_*`` tables (epic #86).
+materialised CAR every sink reads (epic #86): ``dxdfir verify-car`` gates it,
+and the Elastic-native path projects it to ECS.
 
     python -m get_sybers_dfir.mitrecar --batch data_store/processed
     python -m get_sybers_dfir.mitrecar --in <file-or-dir> --out <dir> [--host H]

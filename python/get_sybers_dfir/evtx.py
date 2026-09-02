@@ -160,9 +160,10 @@ def _has_records(path: str) -> bool:
 
     EvtxECmd exits 0 on a log with no events and still writes a file — just a UTF-8
     BOM (3 bytes) and nothing else. That is NOT a real output: it has size > 0 but
-    zero records, and if left on disk it (a) miscounts as ``processed`` and (b) makes
-    the ADX multi-file ingest batch reject the whole batch ("0 bytes / ill formed").
-    So the emptiness test must look past the BOM/whitespace, not at the byte size.
+    zero records, and if left on disk it (a) miscounts as ``processed`` and (b) is
+    an ill-formed input for whatever reads the output tree next (the CAR lane, a
+    shipper). So the emptiness test must look past the BOM/whitespace, not at the
+    byte size.
     """
     try:
         with open(path, "r", encoding="utf-8-sig") as fh:
@@ -264,8 +265,8 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
             summary["results"].append({"log": rel, "output": os.path.join(host, json_out)})
         else:
             # EvtxECmd exits 0 on an empty log and writes a BOM-only file — drop it
-            # so it isn't ingested (an empty file fails the ADX batch) or miscounted
-            # as processed. This is expected, not a failure.
+            # so it is neither picked up downstream as an ill-formed input nor
+            # miscounted as processed. This is expected, not a failure.
             for p in (json_path, os.path.join(dest_dir, xml_out)):
                 if os.path.exists(p):
                     os.remove(p)
