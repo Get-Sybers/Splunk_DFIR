@@ -75,9 +75,19 @@ def scan_directory(hb_bin, scan_dir, rules_dir) -> str:
     # TOCTOU-prone tempfile.mktemp(); the dir (and file) are cleaned up on exit.
     with tempfile.TemporaryDirectory() as tmpd:
         tmp_out = os.path.join(tmpd, "timeline.jsonl")
+        # `--profile verbose` so each JSONL detection carries its MITRE ATT&CK
+        # columns (%MitreTactics% / %MitreTags%) — the default (standard) profile
+        # omits them, which is what made the detect lane emit empty AttackIds. The
+        # detect registry's match_hayabusa_high parses MitreTags into technique ids
+        # (get_sybers_dfir.detect.registry). A leaner custom profile (minimal +
+        # the two Mitre columns) would need authoring into the operator-supplied
+        # config/profiles.yaml, which isn't present to write to/verify here, so
+        # the built-in verbose profile — guaranteed to emit both — is used; the
+        # matcher keeps only the columns it needs, so the extra fields are inert.
         argv = [
             hb_bin, "json-timeline", "--directory", scan_dir, "--output", tmp_out,
-            "--JSONL-output", "--no-wizard", "--UTC", "--quiet",
+            "--JSONL-output", "--profile", "verbose",
+            "--no-wizard", "--UTC", "--quiet",
         ]
         if rules_dir:
             argv += ["--rules", rules_dir]
