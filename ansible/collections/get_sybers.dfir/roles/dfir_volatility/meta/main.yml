@@ -4,7 +4,7 @@ galaxy_info:
   namespace: get_sybers
   author: Get-Sybers
   description: >-
-    Process memory images with Volatility 3 into per-plugin JSON Lines for the ADX
+    Process memory images with Volatility 3 into per-plugin JSON Lines for the Elastic-native
     or SOF-ELK pipeline. Invokes the get_sybers_dfir.volatility Python processor;
     one <plugin>.jsonl per image via the custom jsonl_dfir renderer.
   company: Get-Sybers

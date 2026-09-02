@@ -17,19 +17,27 @@ python -m get_sybers_dfir.signatures  --output-dir PROCESSED/signatures --repo-r
 Every processor prints a machine-readable JSON summary (`processed`/`skipped`/
 `failed`/…) so its role can set an honest `changed_when`.
 
+The CAR lane sits on top of the processed tree: `python -m get_sybers_dfir.mitrecar`
+drives the vendored [PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)
+engine (one `car.db` + `car_<object>.jsonl` per source), and
+`python -m get_sybers_dfir.carcheck` is the correctness gate over what it wrote.
+The Elastic detection rules live as data under `get_sybers_dfir/detect/rules/`
+(`python -m get_sybers_dfir.detect.rules_loader` validates them).
+
 ## The `dxdfir` CLI
 ```bash
-dxdfir process zeek --pipeline adx      # drive the dfir_zeek role (preflight → process → verify)
+dxdfir process zeek --pipeline elastic  # drive the dfir_zeek role (preflight → process → verify)
 dxdfir process signatures -e '{"dfir_signatures_lanes":["yara"]}'
-dxdfir ingest --only zeek               # load processed output into the ADX emulator
-dxdfir deploy                           # stand up + schema-load the emulator
+dxdfir build-car                        # normalise every processed source into per-source CAR stores
+dxdfir verify-car                       # the CAR correctness gate over the materialised CAR
 dxdfir validate                         # run the check harness
 dxdfir list                             # list processable sources
 man dxdfir                              # the manual (python/man/dxdfir.1)
 ```
 `process` drives the collection with `ansible-playbook` (the role's one action calls
-the matching `python -m get_sybers_dfir.<source>` for the tight loop). `ingest` and
-`deploy` drive the `dfir_ingest_adx` / `dfir_deploy_adx` roles the same way;
+the matching `python -m get_sybers_dfir.<source>` for the tight loop). `build-car` and
+`verify-car` drive the CAR lane; the analysis backend is the Elastic-native stack
+(`docker/elastic`, brought up with compose), fed from the processed tree.
 `validate` runs the repo's check harness (`tests/run-checks.sh`). The repo is
 auto-detected (or pass `--repo-root` / `$DFIR_REPO_ROOT`).
 
@@ -44,5 +52,5 @@ In-repo runs need no install — set `PYTHONPATH=python` (the roles do this via
 
 ## Test
 ```bash
-cd python && PYTHONPATH=. python -m pytest        # 81 unit tests (pure logic; no docker)
+cd python && PYTHONPATH=. python -m pytest        # unit tests (pure logic; no docker)
 ```

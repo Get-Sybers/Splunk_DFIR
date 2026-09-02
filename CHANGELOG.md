@@ -7,6 +7,38 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Removed
+- **The Kusto/ADX layer.** The Azure Data Explorer emulator was the analysis
+  backend from 0.2.0; the Elastic-native path (`docker/elastic`, the ES|QL/EQL
+  detection rules-as-code, the CAR→ECS projection and its Phase-0 risk gate,
+  the STIX/CTI exchange) supersedes it, so the whole stack is gone:
+  `kusto/schema/` (databases, tables, ingestion mappings, the generated
+  `mitre.car_*` tables and views), the `dfir_deploy_adx` / `dfir_ingest_adx` /
+  `dfir_detect_adx` roles and playbooks, `get_sybers_dfir.deploy`, the
+  `get_sybers_dfir.ingest` package (the Kusto REST client, the `.ingest` loader
+  and its record shaping), the Kusto detection runner and registry
+  (`get_sybers_dfir.detect` keeps only the Elastic rules-as-code loader), the
+  `dxdfir deploy` / `ingest` / `detect` verbs, `docs/Kusto-Port.md`, the ADX
+  check groups in `tests/run-checks.sh`, and the emulator's EULA/licensing
+  notices. The `smoke` workflow no longer deploys an emulator.
+
+### Changed
+- `--pipeline adx` is now `--pipeline elastic` (the default): the processed
+  tree the CAR lane builds from. The roles' `dfir_<role>_adx_out_dir` variables
+  are now `dfir_<role>_elastic_out_dir` (same default paths); `sofelk` is
+  unchanged.
+- **`dxdfir verify-car`** reads the materialised CAR directly
+  (`data_store/processed/car/<source>/car_<object>.jsonl`, or `--car-dir`)
+  instead of querying the emulator — the same assertions (populated,
+  value-sane, `car_action` in the engine model's vocabulary, traceable,
+  relationship edges naming real endpoints) over the JSON that is the contract
+  every sink reads.
+- The **smoke test** asserts the Sysmon-derived CAR fields in the
+  `car_<object>.jsonl` the engine writes and then runs the `verify-car` gate
+  over the same tree; it needs no backend.
+- `tests/run-checks.sh` (and the `checks` workflow) now run the Python unit
+  tests when pytest is installed.
+
 ## [0.6.0] - 2026-08-30
 
 ### Added

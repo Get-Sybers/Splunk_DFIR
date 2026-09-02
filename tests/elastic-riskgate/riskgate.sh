@@ -1,0 +1,88 @@
+#!/bin/bash
+# ==============================================================================
+# Byakugan Phase-0 RISK GATE — the proof harness for the two load-bearing
+# assumptions of the Elastic-native detection design (docs/riskgate.md):
+#
+#   1. a detection can be run ON DEMAND over an EVIDENCE-TIME window — dead-box
+#      evidence whose @timestamps lie years in the past — with no silent drop,
+#      re-stamp or age-out of old data;
+#   2. ES|QL LOOKUP JOIN against the car-detections lookup index (the wave-1
+#      contract under python/get_sybers_dfir/detect/rules/) flags logs-car.*
+#      rows in place — the tagged-evidence-line model — on Elasticsearch 9.4.3.
+#
+# Stands up NOTHING: docker/elastic (the Byakugan stack: security on, TLS, Basic
+# licence) must already be up. This wrapper only discovers how to reach it —
+# the password from docker/elastic/.env and the CA from the stack's `certs`
+# volume — and hands over to riskgate.py, which loads a small synthetic fixture
+# into a `riskgate` namespace, runs the proofs and removes the fixture again.
+#
+#   ./tests/elastic-riskgate/riskgate.sh               # load, proof 1, proof 2, probe, clean
+#   ./tests/elastic-riskgate/riskgate.sh --keep        # ... leave the fixture for inspection
+#   ./tests/elastic-riskgate/riskgate.sh clean         # remove the fixture
+#   ./tests/elastic-riskgate/riskgate.sh selftest      # offline consistency check (no cluster)
+#   ./tests/elastic-riskgate/riskgate.sh load|proof1|proof2|probe
+#
+# Overrides (all optional): ES_URL (https://127.0.0.1:9200), ES_USER (elastic),
+# ES_PASSWORD (else docker/elastic/.env), ES_CA (else fetched from the stack),
+# RISKGATE_INSECURE=1 (skip TLS verification — last resort, loopback only).
+#
+# FAILS LOUDLY, never skips: a gate that no-ops when the stack is missing would
+# be a green tick that proved nothing. Missing prerequisite -> non-zero + why.
+# ==============================================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$REPO_ROOT" || exit 1
+
+ELASTIC_DIR="$REPO_ROOT/docker/elastic"
+RUNNER="$SCRIPT_DIR/riskgate.py"
+
+die()  { echo "❌ riskgate | $*" >&2; exit 1; }
+note() { echo "riskgate | $*"; }
+
+command -v python3 >/dev/null 2>&1 || die "python3 is required (the runner is stdlib-only)"
+
+# The offline self-test and --help need no cluster and no credentials.
+case "${1:-}" in
+    selftest|-h|--help) exec python3 "$RUNNER" "$@" ;;
+esac
+
+ES_URL="${ES_URL:-https://127.0.0.1:9200}"
+ES_USER="${ES_USER:-elastic}"
+RISKGATE_INSECURE="${RISKGATE_INSECURE:-0}"
+
+# --- password: the environment, else the stack's own .env -------------------
+if [[ -z "${ES_PASSWORD:-}" ]]; then
+    if [[ -f "$ELASTIC_DIR/.env" ]]; then
+        ES_PASSWORD="$(sed -n 's/^ELASTIC_PASSWORD=//p' "$ELASTIC_DIR/.env" | tail -n 1 | sed -e "s/^[\"']//" -e "s/[\"']\$//")"
+        note "ELASTIC_PASSWORD read from docker/elastic/.env"
+    fi
+fi
+[[ -n "${ES_PASSWORD:-}" ]] || die "ES_PASSWORD is not set and $ELASTIC_DIR/.env has no ELASTIC_PASSWORD — bring up docker/elastic first (its README), or export ES_PASSWORD"
+case "$ES_PASSWORD" in
+    *change-me*) die "ELASTIC_PASSWORD still holds the .env.example placeholder — the stack would not have started with it" ;;
+esac
+
+# --- CA: the environment, else copied out of the stack's certs volume ---------
+TMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TMP_DIR"' EXIT
+if [[ -z "${ES_CA:-}" && "$RISKGATE_INSECURE" != "1" && "$ES_URL" == https://* ]]; then
+    if [[ -f "$ELASTIC_DIR/docker-compose.yml" ]] && command -v docker >/dev/null 2>&1; then
+        if docker compose -f "$ELASTIC_DIR/docker-compose.yml" cp \
+              elasticsearch:/usr/share/elasticsearch/config/certs/ca/ca.crt "$TMP_DIR/ca.crt" >/dev/null 2>&1 \
+           && [[ -s "$TMP_DIR/ca.crt" ]]; then
+            ES_CA="$TMP_DIR/ca.crt"
+            note "CA fetched from the elasticsearch container (certs volume)"
+        fi
+    fi
+    [[ -n "${ES_CA:-}" ]] || die "no CA for $ES_URL: is the elasticsearch container running? (docker compose -f docker/elastic/docker-compose.yml ps) — or set ES_CA to the stack's ca.crt, or RISKGATE_INSECURE=1"
+fi
+[[ -z "${ES_CA:-}" || -s "$ES_CA" ]] || die "ES_CA=$ES_CA is not a readable file"
+
+export ES_URL ES_USER ES_PASSWORD RISKGATE_INSECURE
+[[ -n "${ES_CA:-}" ]] && export ES_CA
+
+note "target $ES_URL as $ES_USER"
+# Not exec: the EXIT trap must still remove the copied CA when the runner returns.
+python3 "$RUNNER" "$@"

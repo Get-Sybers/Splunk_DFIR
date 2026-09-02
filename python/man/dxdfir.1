@@ -10,42 +10,45 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .B dxdfir process
 .I SOURCE
 .RB [ --pipeline
-.IR adx | sofelk ]
+.IR elastic | sofelk ]
 .RB [ --force ]
 .RB [ --repo-root
 .IR PATH ]
 .RB [ --extra-var
 .IR KEY=VALUE ]...
 .br
-.B dxdfir ingest
-.RB [ --only
-.IR SOURCE ]
-.RB [ --force ]
-.RB [ --dry-run ]
-.br
-.B dxdfir detect
-.RB [ --only
-.IR IDS ]
-.RB [ --dry-run ]
-.RB [ --limit
-.IR N ]
-.RB [ --jsonl-out
+.B dxdfir build-car
+.RI [ PROCESSED_DIR ]
+.RB [ --in
 .IR PATH ]
+.RB [ --out
+.IR DIR ]
+.RB [ --rebuild ]
 .br
-.B dxdfir deploy
-.RB [ --persist ]
-.RB [ --port
-.IR PORT ]
+.B dxdfir verify-car
+.RB [ --car-dir
+.IR DIR ]
+.br
+.B dxdfir car-timeline
+.I CAR_DIR
+.RB [ --out
+.IR PATH ]
 .br
 .B dxdfir validate
 .br
+.B dxdfir verify-images
+.br
 .B dxdfir list
+.br
+.B dxdfir stix
+.I SUBCOMMAND
 .SH DESCRIPTION
 .B dxdfir
 is the user-facing front-end of the DX_DFIR pipeline \(em an offline,
 container-based digital-forensics workflow that turns raw evidence (packet
-captures, disk images, memory, Windows event logs, Velociraptor collections) into
-normalised JSON and detection events for the analysis backend.
+captures, disk images, memory, Windows event logs) into normalised JSON,
+materialised MITRE CAR and detection events for the Elastic-native analysis
+backend.
 .PP
 It is the top of a three-layer design: this command holds the verbs, the
 .B get_sybers.dfir
@@ -60,49 +63,59 @@ drives a source's role with
 \(em preflight, then process, then verify \(em and the role's single action calls
 .RB \(lq python \-m get_sybers_dfir. SOURCE \(rq
 for the tight loop.
-.BR ingest ", " detect " and " deploy
-likewise drive roles \(em
-.BR dfir_ingest_adx ", " dfir_detect_adx " and " dfir_deploy_adx
-\(em while
+.BR build-car ", " verify-car " and " car-timeline
+drive the CAR lane (the vendored PIIAT-MitreCar engine and the
+.B get_sybers_dfir.carcheck
+gate) directly, while
 .B validate
 fronts the repository's check harness
 .RB ( tests/run-checks.sh ).
+The analysis backend itself (the Elastic stack under
+.IR docker/elastic )
+is brought up with docker compose; see its README.
 .SH COMMANDS
 .TP
 .BI "process " SOURCE
 Process one evidence source. \fISOURCE\fR is one of
-.BR zeek ", " velociraptor ", " evtx ", " volatility ", " plaso ", " signatures .
+.BR zeek ", " evtx ", " volatility ", " plaso ", " zimmerman ", " signatures .
 Idempotent: inputs that already have output are skipped (use
 .B --force
 to reprocess).
 .TP
-.B ingest
-Load processed output into the ADX (Kusto) emulator by driving the
-.B dfir_ingest_adx
-role. Idempotent: an in-DB ledger records every loaded file, so a re-run loads
-only new files (use
-.B --force
-to re-ingest).
+.BI "build-car " [PROCESSED_DIR]
+Build the per-source CAR stores (car.db + superset.db + one
+.IR car_<object>.jsonl
+per object) from the processed tree \(em every source under it by default, or
+one file/dir with
+.BR --in .
+A source whose store already exists is left alone unless
+.B --rebuild
+is given.
 .TP
-.B detect
-Run the detection orchestrator by driving the
-.B dfir_detect_adx
-role: survey which processed data is actually present (ADX tables and
-signature-lane JSONL outputs), run only the registered detections whose target
-data is there, and collect every hit \(em uniformly tagged \(em in
-.IR misc.Detections .
-Sweeps are append-only under a per-sweep RunId; the
-.IR DetectionsLatest ()/ DetectionSummary ()
-views read the newest sweep.
+.B verify-car
+The CAR correctness gate over the materialised CAR
+.RI ( data_store/processed/car
+by default, or
+.BR --car-dir ):
+each exercised object populated, values sane (IPs, ports, SIDs,
+.I car_action
+in the engine model's vocabulary), every row traceable to one artefact, the
+relationship edges naming real endpoints. Run the pipeline first
+(process, then build-car).
 .TP
-.B deploy
-Deploy the ADX (Kusto) emulator and apply the schema by driving the
-.B dfir_deploy_adx
-role.
+.BI "car-timeline " CAR_DIR
+Build one property-rich, time-ordered CAR timeline JSONL from a source's
+car.db + superset.db (or aggregate a whole tree).
 .TP
 .B validate
 Run the repository check harness (fronts
 .IR tests/run-checks.sh ).
+.TP
+.B verify-images
+Audit the hardened
+.I dfir/*
+tool-image inventory: every expected image present and hardened, nothing
+unexpected in the namespace.
 .TP
 .B list
 Inventory the evidence staged under
@@ -110,6 +123,11 @@ Inventory the evidence staged under
 for each source that
 .B process
 reads, the input directory and how many evidence files are present.
+.TP
+.BI "stix " SUBCOMMAND
+The STIX 2.1 / OpenCTI exchange verbs (detections to sightings, indicators in,
+sightings back); see
+.BR "dxdfir stix -h" .
 .SH OPTIONS
 .SS Global
 .TP
@@ -122,9 +140,12 @@ Show help and exit. Accepted at every level, e.g.\&
 Each level shows its own options.
 .SS process
 .TP
-.BR --pipeline ", " -p " " \fIadx\fR|\fIsofelk\fR
+.BR --pipeline ", " -p " " \fIelastic\fR|\fIsofelk\fR
 Backend to target; selects the output destination. Default:
-.BR adx .
+.BR elastic
+(the processed tree the CAR lane builds from);
+.B sofelk
+writes the retiring SOF-ELK delivery tree instead.
 .TP
 .B --force
 Reprocess inputs that already have output.
@@ -139,60 +160,24 @@ a role default, e.g.
 .RB \(lq -e\  dfir_zeek_pcap_dir=/evidence/pcaps \(rq
 or
 .RB \(lq -e\  \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq \(rq.
-.SS deploy
+.SS build-car
 .TP
-.B --persist
-Persist the emulator's data (opt-in; it is ephemeral by default).
+.BI --in " PATH"
+Single-source mode: one processed file or directory, one car.db.
 .TP
-.BI --port " PORT"
-Emulator port override.
+.BI --out " DIR"
+Output directory (single-source: this source's car dir; batch: the car/ root).
 .TP
-.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
-As for
-.B process
-above; use
-.B -e
-to override role variables (e.g.
-.IR dfir_deploy_adx_host ).
-.SS ingest
+.BI --host " HOST"
+Single-source mode: fallback source_host where the map derives none.
 .TP
-.BI --only " SOURCE"
-Load one source only:
-.BR l2t ", " zeek ", " evtx ", " volatility ", " velociraptor .
+.B --rebuild
+Rebuild CAR stores that already exist (after a map/coverage change).
+.SS verify-car
 .TP
-.B --force
-Re-ingest files already recorded in the ledger (additive; duplicates rows).
-.TP
-.B --dry-run
-List what would be loaded; contact nothing.
-.TP
-.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
-As for
-.B process
-above.
-.SS detect
-.TP
-.BI --only " IDS"
-Run only these registry detection id(s), comma-separated (see
-.RB \(lq python\ -m\ get_sybers_dfir.detect\ --list \(rq).
-.TP
-.B --dry-run
-Report which detections would run against the present data; execute nothing.
-Unlike
-.BR "ingest --dry-run" ,
-targeting requires reading which tables are present, so the emulator is still
-queried (read-only).
-.TP
-.BI --limit " N"
-Max hits recorded per detection per sweep (default 1000).
-.TP
-.BI --jsonl-out " PATH"
-Also export the sweep's hits as JSON Lines.
-.TP
-.BR --repo-root " " \fIPATH\fR ", " --extra-var ", " -e " " \fIKEY=VALUE\fR
-As for
-.B process
-above.
+.BI --car-dir " DIR"
+The materialised CAR tree to check. Default:
+.IR <repo>/data_store/processed/car .
 .SH ENVIRONMENT
 .TP
 .B DFIR_REPO_ROOT
@@ -203,7 +188,7 @@ directory, then from the installed package's location.
 .TP
 .B ANSIBLE_ROLES_PATH
 Set by
-.BR process ", " ingest ", " detect " and " deploy
+.B process
 to the collection's roles directory so the roles resolve without installing the
 collection.
 .SH EXIT STATUS
@@ -212,16 +197,17 @@ exits
 .B 0
 on success and propagates the exit status of the underlying
 .BR ansible-playbook (1)
-run or script on failure;
+run or tool on failure;
 .B 2
-for a usage/lookup error (e.g. the repo or a playbook could not be found) and
+for a usage/lookup error (e.g. the repo or a playbook could not be found, or no
+materialised CAR to verify) and
 .B 127
 if a required tool is not on
 .BR PATH .
 .SH EXAMPLES
 .TP
-Process packet captures for the ADX backend:
-.B dxdfir process zeek --pipeline adx
+Process packet captures for the Elastic-native path:
+.B dxdfir process zeek --pipeline elastic
 .TP
 Reprocess memory images, overriding the input directory:
 .B dxdfir process volatility --force -e dfir_volatility_memory_dir=/evidence/mem
@@ -229,11 +215,11 @@ Reprocess memory images, overriding the input directory:
 Run only the YARA signature lane:
 .B dxdfir process signatures -e \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq
 .TP
-Stand up the emulator, then load Zeek output:
-.B dxdfir deploy && dxdfir ingest --only zeek
+Normalise everything processed into CAR, then gate it:
+.B dxdfir build-car && dxdfir verify-car
 .TP
-Sweep everything present with the applicable detections:
-.B dxdfir detect --jsonl-out /tmp/detections.jsonl
+One timeline across every source:
+.B dxdfir car-timeline data_store/processed/car --out /tmp/timeline.jsonl
 .SH FILES
 .TP
 .I ansible/collections/get_sybers.dfir/
@@ -245,7 +231,11 @@ The processing package (also runnable as
 .RB \(lq python\ -m\ get_sybers_dfir. SOURCE \(rq).
 .TP
 .I data_store/
-Raw evidence and processed output (gitignored).
+Raw evidence and processed output (gitignored); the materialised CAR lands under
+.IR data_store/processed/car/ .
+.TP
+.I docker/elastic/
+The Elastic-native analysis backend (docker compose).
 .SH SEE ALSO
 .BR ansible-playbook (1),
 .BR docker (1).

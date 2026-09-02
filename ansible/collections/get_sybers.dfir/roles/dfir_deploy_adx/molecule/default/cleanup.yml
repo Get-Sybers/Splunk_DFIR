@@ -1,9 +1,0 @@
----
-- name: Cleanup
-  hosts: localhost
-  gather_facts: false
-  tasks:
-    - name: "molecule-cleanup | remove the test emulator"
-      community.docker.docker_container:
-        name: kusto-emulator-moltest
-        state: absent

@@ -4,9 +4,10 @@
 #
 # The runtime tool images (dfir/*) are BUILT in-repo
 # (`ansible-playbook playbooks/dfir-build-images.yml`), not pulled — so this
-# script `docker save`s the local builds. Only the two images that cannot be
-# built from source are pulled first: the proprietary Kusto emulator and the
-# stock .NET runtime for evtxecmd's operator-supplied mode.
+# script `docker save`s the local builds. Only the one image that cannot be
+# built from source is pulled first: the stock .NET runtime for evtxecmd's
+# operator-supplied mode. (The Elastic-native analysis backend, docker/elastic,
+# is compose-managed — its images are not part of this set.)
 #
 # This is the image half of the offline lifecycle. For a complete portable
 # bundle (images + the dxdfir CLI wheels + the ansible collections + the repo),
@@ -41,7 +42,6 @@ BUILT_IMAGES=(
 )
 # Unbuildable images — pulled from a registry (online side only).
 PULL_IMAGES=(
-    "mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest"
     "mcr.microsoft.com/dotnet/runtime:9.0"
 )
 ALL_IMAGES=("${BUILT_IMAGES[@]}" "${PULL_IMAGES[@]}")

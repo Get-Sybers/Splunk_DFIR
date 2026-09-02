@@ -1,5 +1,5 @@
 ---
-# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+# FIND FACTS -> check existence AND location -> (then elastic/sofelk MODIFY + VERIFY).
 
 - name: "evtx-preflight | docker daemon reachable"
   ansible.builtin.command: docker version

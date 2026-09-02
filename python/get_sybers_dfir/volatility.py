@@ -2,7 +2,7 @@
 
 Drive the standalone **PIIAT-Mem** tool (the vendored ``third_party/piiat-mem``
 submodule) over each memory image, one CLI invocation per image, and collect the
-raw per-plugin JSON Lines it writes for the CAR/ADX ingest. PIIAT-Mem owns the
+raw per-plugin JSON Lines it writes for the CAR lane. PIIAT-Mem owns the
 Volatility runner, the ``jsonl_dfir`` renderer, the custom plugins and the
 hardened container; this module is only its *automation*: it discovers images,
 decides (per plugin) what still needs running, invokes ``python -m piiat_mem``,
@@ -11,9 +11,8 @@ through its public CLI — never by importing its internals.
 
 The tool writes ``<dest>/plugins/<plugin>.jsonl`` (one flat JSON object per
 TreeGrid node); we pass ``--no-timeline`` because the pipeline builds its own
-timeline downstream. The ingest loader wraps each line as
-``{Plugin, SourceFile, Record}`` into memory.VolatilityJson, where the plugin's
-fields are reachable as ``Record.FieldName`` in KQL.
+timeline downstream — the CAR lane (``dxdfir build-car``) normalises these
+per-plugin files, and the file name carries the plugin.
 
 ⚠️ SYMBOLS. Windows plugins resolve the kernel against ISF symbol tables Volatility
 fetches from the symbol servers on first use — that needs outbound network. On an

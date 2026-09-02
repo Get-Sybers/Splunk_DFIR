@@ -18,8 +18,6 @@ def _fake_repo(tmp_path: Path) -> Path:
     (tmp_path / _COLLECTION / "roles").mkdir(parents=True)
     for src in ("zeek", "evtx", "volatility", "plaso"):
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
-    (tmp_path / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml").write_text("---\n")
-    (tmp_path / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml").write_text("---\n")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "run-checks.sh").write_text("#!/bin/bash\n")
     return tmp_path
@@ -50,19 +48,34 @@ def test_process_builds_playbook_command(tmp_path):
     with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
             mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, [
-            "process", "zeek", "--pipeline", "adx", "--force",
+            "process", "zeek", "--pipeline", "elastic", "--force",
             "--repo-root", str(repo), "-e", "dfir_zeek_pcap_dir=/x",
         ])
     assert r.exit_code == 0, r.stdout
     cmd = m.call_args.args[0]
     assert cmd[0] == "ansible-playbook"
     assert str(repo / _COLLECTION / "playbooks" / "dfir-process-zeek.yml") in cmd
-    assert "dfir_zeek_pipeline=adx" in cmd
+    assert "dfir_zeek_pipeline=elastic" in cmd
     assert "dfir_zeek_force=true" in cmd
     assert "dfir_zeek_pcap_dir=/x" in cmd
     # role path is exported so the collection resolves without install
     env = m.call_args.kwargs["env"]
     assert env["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
+
+
+def test_process_defaults_to_the_elastic_pipeline(tmp_path):
+    repo = _fake_repo(tmp_path)
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
+        r = runner.invoke(cli.app, ["process", "zeek", "--repo-root", str(repo)])
+    assert r.exit_code == 0, r.stdout
+    assert "dfir_zeek_pipeline=elastic" in m.call_args.args[0]
+
+
+def test_process_rejects_the_retired_adx_pipeline(tmp_path):
+    repo = _fake_repo(tmp_path)
+    r = runner.invoke(cli.app, ["process", "zeek", "--pipeline", "adx", "--repo-root", str(repo)])
+    assert r.exit_code != 0
 
 
 def test_process_unknown_source_rejected(tmp_path):
@@ -71,39 +84,25 @@ def test_process_unknown_source_rejected(tmp_path):
     assert r.exit_code != 0
 
 
-def test_ingest_drives_the_role(tmp_path):
-    repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
-            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
-        r = runner.invoke(cli.app, ["ingest", "--only", "zeek", "--force", "--repo-root", str(repo)])
-    assert r.exit_code == 0, r.stdout
-    cmd = m.call_args.args[0]
-    assert cmd[0] == "ansible-playbook"
-    assert str(repo / _COLLECTION / "playbooks" / "dfir-ingest-adx.yml") in cmd
-    assert "dfir_ingest_adx_only=zeek" in cmd
-    assert "dfir_ingest_adx_force=true" in cmd
-    assert m.call_args.kwargs["env"]["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
-
-
-def test_deploy_drives_the_role(tmp_path):
-    repo = _fake_repo(tmp_path)
-    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
-            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
-        r = runner.invoke(cli.app, ["deploy", "--persist", "--port", "8090", "--repo-root", str(repo)])
-    assert r.exit_code == 0, r.stdout
-    cmd = m.call_args.args[0]
-    assert cmd[0] == "ansible-playbook"
-    assert str(repo / _COLLECTION / "playbooks" / "dfir-deploy-adx.yml") in cmd
-    assert "dfir_deploy_adx_persist=true" in cmd
-    assert "dfir_deploy_adx_port=8090" in cmd
-
-
 def test_failing_command_propagates_exit_code(tmp_path):
     repo = _fake_repo(tmp_path)
     with mock.patch.object(cli.subprocess, "call", return_value=3), \
             mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
-        r = runner.invoke(cli.app, ["ingest", "--repo-root", str(repo)])
+        r = runner.invoke(cli.app, ["process", "zeek", "--repo-root", str(repo)])
     assert r.exit_code == 3
+
+
+def test_verify_car_defaults_to_the_processed_car_tree(tmp_path):
+    from get_sybers_dfir import carcheck
+    repo = _fake_repo(tmp_path)
+    with mock.patch.object(carcheck, "main", return_value=0) as m:
+        r = runner.invoke(cli.app, ["verify-car", "--repo-root", str(repo)])
+    assert r.exit_code == 0, r.stdout
+    assert m.call_args.args[0] == ["--car-dir", str(repo / "data_store" / "processed" / "car")]
+    with mock.patch.object(carcheck, "main", return_value=1) as m:
+        r = runner.invoke(cli.app, ["verify-car", "--car-dir", "/x/car"])
+    assert r.exit_code == 1
+    assert m.call_args.args[0] == ["--car-dir", "/x/car"]
 
 
 def test_build_car_batch_defaults_to_processed_tree_and_rebuild(tmp_path):

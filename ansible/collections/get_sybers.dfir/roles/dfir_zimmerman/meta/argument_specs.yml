@@ -17,8 +17,8 @@ argument_specs:
       dfir_zimmerman_pipeline:
         type: str
         required: false
-        default: adx
-        choices: [adx, sofelk]
+        default: elastic
+        choices: [elastic, sofelk]
         description: "Which backend to target; selects the output destination."
       dfir_zimmerman_input_dir:
         type: str
@@ -28,10 +28,10 @@ argument_specs:
         type: str
         required: false
         description: "VMware VM export folders (one sub-folder per VM); optional."
-      dfir_zimmerman_adx_out_dir:
+      dfir_zimmerman_elastic_out_dir:
         type: str
         required: false
-        description: "ADX-path output dir (default data_store/processed/zimmerman)."
+        description: "Elastic-path output dir (default data_store/processed/zimmerman)."
       dfir_zimmerman_sofelk_out_dir:
         type: str
         required: false
@@ -41,7 +41,7 @@ argument_specs:
         required: false
         description: >-
           Resolved output base for the selected pipeline (defaults to the
-          adx/sofelk out dir per dfir_zimmerman_pipeline); override to send
+          elastic/sofelk out dir per dfir_zimmerman_pipeline); override to send
           output to a custom location.
       dfir_zimmerman_plaso_image:
         type: str

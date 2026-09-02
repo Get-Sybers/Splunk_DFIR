@@ -1,6 +1,6 @@
 ---
 # Backend to target; the playbook overrides this to select the pipeline.
-dfir_zimmerman_pipeline: adx
+dfir_zimmerman_pipeline: elastic
 
 # Repo root is five levels up from this role
 # (roles/dfir_zimmerman -> get_sybers.dfir -> collections -> ansible -> repo).
@@ -12,11 +12,11 @@ dfir_zimmerman_repo_root: "{{ role_path }}/../../../../.."
 dfir_zimmerman_input_dir: "{{ dfir_zimmerman_repo_root }}/data_store/raw/disk_images"
 # VMware VM export folders (one per VM) — optional, mirrors dfir_plaso.
 dfir_zimmerman_vm_dir: "{{ dfir_zimmerman_repo_root }}/data_store/raw/VM_files"
-dfir_zimmerman_adx_out_dir: "{{ dfir_zimmerman_repo_root }}/data_store/processed/zimmerman"
+dfir_zimmerman_elastic_out_dir: "{{ dfir_zimmerman_repo_root }}/data_store/processed/zimmerman"
 dfir_zimmerman_sofelk_out_dir: "{{ dfir_zimmerman_repo_root }}/data_store/processed/sofelk/zimmerman"
 # Resolved output base for the selected pipeline — consumed by
 # tasks/process.yml. Override directly to send output to a custom location.
-dfir_zimmerman_out_dir: "{{ dfir_zimmerman_adx_out_dir if dfir_zimmerman_pipeline == 'adx' else dfir_zimmerman_sofelk_out_dir }}"
+dfir_zimmerman_out_dir: "{{ dfir_zimmerman_elastic_out_dir if dfir_zimmerman_pipeline == 'elastic' else dfir_zimmerman_sofelk_out_dir }}"
 # The hardened in-repo Plaso image, used for artefact extraction (image_export.py)
 # and the SRUM two-step (log2timeline.py/psort.py) — build with dfir-build-images.
 dfir_zimmerman_plaso_image: "dfir/plaso:latest"
