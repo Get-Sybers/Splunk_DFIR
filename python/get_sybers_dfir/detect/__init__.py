@@ -124,12 +124,18 @@ def kusto_command(det: dict, run_id: str, limit: int) -> str:
 
 
 def hits_to_csv(det: dict, hits: list[dict], run_id: str) -> str:
-    """jsonl-lane hits as inline-ingest CSV rows (column order = table order)."""
-    attack = ",".join(det.get("attack", []))
+    """jsonl-lane hits as inline-ingest CSV rows (column order = table order).
+
+    AttackIds is per-hit: a hit that parsed its own ATT&CK technique ids (from
+    Hayabusa MitreTags, a Suricata alert's ``mitre_technique_id``, or a YARA
+    rule's meta) carries them; a hit without falls back to the detection's static
+    ``attack`` list — '' for the signature lanes, which declare none."""
+    default_attack = det.get("attack", [])
     now = _utc_now_iso()
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     for h in hits:
+        attack = ",".join(h.get("AttackIds") or default_attack)
         w.writerow([
             run_id, det["id"], det["title"], det["severity"], attack, det["target"],
             iso_timestamp(h.get("Timestamp")), str(h.get("Entity", "") or ""),

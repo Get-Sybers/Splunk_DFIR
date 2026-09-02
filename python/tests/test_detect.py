@@ -104,6 +104,30 @@ def test_hits_to_csv_column_order_and_dynamic_json():
     assert len(row) == len(detect._COLUMNS)
 
 
+def test_hits_to_csv_attack_ids_are_per_hit():
+    # The signature lanes declare no static attack ids, so AttackIds must come
+    # from each hit: a hit that parsed its own techniques carries them, a tagless
+    # hit stays ''.
+    det = {"id": "sig-x", "title": "T", "severity": "low", "attack": [],
+           "target": "signatures/x"}
+    out = detect.hits_to_csv(det, [
+        {"Entity": "a", "Details": {}, "AttackIds": ["T1059.003", "T1204.002"]},
+        {"Entity": "b", "Details": {}},                       # no tags -> ''
+    ], "RUNZ")
+    rows = list(csv.reader(io.StringIO(out)))
+    assert rows[0][4] == "T1059.003,T1204.002"                # AttackIds column
+    assert rows[1][4] == ""
+
+
+def test_hits_to_csv_static_attack_is_the_fallback():
+    # A hit without its own AttackIds still inherits a detection's static list
+    # (kusto detections keep theirs; this keeps jsonl behaviour uniform).
+    det = {"id": "x", "title": "T", "severity": "low", "attack": ["T9"],
+           "target": "t"}
+    out = detect.hits_to_csv(det, [{"Entity": "a", "Details": {}}], "R")
+    assert next(csv.reader(io.StringIO(out)))[4] == "T9"
+
+
 # ---- applicability gating --------------------------------------------------
 def test_applicable_kusto_gates_on_presence_and_rows():
     det = {"requires": ["host.A", "network.B"]}
@@ -145,6 +169,51 @@ def test_match_yara_trims_string_data():
     assert hit["Details"]["StringIds"] == ["$a"]
     assert "data" not in json.dumps(hit["Details"])
     assert registry.match_yara({"tool": "other", "rule": "R"}) is None
+
+
+# ---- ATT&CK technique-id propagation (the tag-leak fix) ---------------------
+def test_technique_ids_normalises_and_dedupes():
+    # canonical dotted upper-case, first-seen order; ET Open underscore form and
+    # a plain string both parse; non-technique tags (tactics, software/CAR ids)
+    # are dropped; empties yield [].
+    assert registry._technique_ids(["t1059.003", "T1204", "t1059_003"]) == \
+        ["T1059.003", "T1204"]
+    assert registry._technique_ids("attack.t1112, attack.ta0005, S0002, TA0002") == \
+        ["T1112"]
+    assert registry._technique_ids(None) == [] and registry._technique_ids("") == []
+    assert registry._technique_ids("no ids here") == []
+
+
+def test_match_hayabusa_extracts_mitre_tags():
+    hit = registry.match_hayabusa_high({
+        "Level": "high", "Computer": "PC1", "RuleTitle": "R",
+        "MitreTactics": "Execution", "MitreTags": "T1059.001 ¦ T1204.002"})
+    assert hit["AttackIds"] == ["T1059.001", "T1204.002"]
+    # a high hit with no MITRE columns simply carries no per-hit tags
+    assert "AttackIds" not in registry.match_hayabusa_high(
+        {"Level": "high", "Computer": "PC1"})
+
+
+def test_match_suricata_reads_mitre_technique_id():
+    hit = registry.match_suricata_alert({
+        "event_type": "alert", "src_ip": "1.1.1.1", "dest_ip": "2.2.2.2",
+        "dest_port": 80,
+        "alert": {"signature": "SIG", "metadata": {
+            "mitre_technique_id": ["t1204"], "mitre_tactic_id": ["TA0002"]}}})
+    assert hit["AttackIds"] == ["T1204"]
+    # an alert without ATT&CK metadata carries no per-hit tags
+    assert "AttackIds" not in registry.match_suricata_alert({
+        "event_type": "alert", "alert": {"signature": "SIG"}})
+
+
+def test_match_yara_reads_meta_attack():
+    hit = registry.match_yara({
+        "tool": "yara", "rule": "R", "target": "t.bin",
+        "meta": {"description": "x", "attack": "T1027"}})
+    assert hit["AttackIds"] == ["T1027"]
+    # no meta -> no per-hit tags (the lane does not always emit meta)
+    assert "AttackIds" not in registry.match_yara(
+        {"tool": "yara", "rule": "R", "target": "t.bin"})
 
 
 # ---- process() error paths (no emulator contact needed) ---------------------

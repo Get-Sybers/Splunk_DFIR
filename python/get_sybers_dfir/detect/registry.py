@@ -26,8 +26,12 @@ Two kinds of entry, matching the two places processed data lives:
     ``data_store/processed`` (those files are not in Kusto). ``subdir``/``glob``
     locate the files; ``match(record)`` returns None for a non-hit, or a dict
     with the same three keys (Timestamp ISO-ish string or None, Entity str,
-    Details dict). The runner streams the files, applies the predicate, and
-    ingests the hits into the same ``misc.Detections`` table.
+    Details dict) and an OPTIONAL ``AttackIds`` (list of ATT&CK technique ids
+    parsed from the record's own tags — Hayabusa MitreTags, Suricata
+    ``mitre_technique_id``, a YARA rule's meta); when present it fills the hit's
+    ``AttackIds`` column, otherwise the detection's static ``attack`` list does.
+    The runner streams the files, applies the predicate, and ingests the hits
+    into the same ``misc.Detections`` table.
 
 Shared metadata: ``id`` (stable, kebab-case), ``title``, ``severity`` (info/low/
 medium/high/critical), ``attack`` (MITRE ATT&CK technique ids), ``target`` (the
@@ -41,8 +45,56 @@ adding an entry here; the runner needs no change.
 """
 from __future__ import annotations
 
+import re
+
 SEVERITIES = ("info", "low", "medium", "high", "critical")
 KINDS = ("kusto", "jsonl")
+
+# A MITRE ATT&CK technique id: T#### with an optional .### sub-technique. The
+# lanes render tags in different shapes (Hayabusa joins several tags in one
+# string, Suricata metadata is a list, ET Open sometimes writes t1059_003), so
+# every per-hit tag source is run through _technique_ids() below, which pulls the
+# technique ids out of whatever it is given and drops everything else (tactic
+# names/ids, software/group ids, CAR ids).
+_TECHNIQUE_RE = re.compile(r"T\d{4}(?:[._]\d{3})?", re.IGNORECASE)
+# Meta keys that name an ATT&CK reference (attack / att&ck / att_ck / mitre_attack
+# / mitre / technique). Matches "attack" but not "pattern"/"attribute".
+_MITRE_META_KEY_RE = re.compile(r"att.?ck|mitre|technique", re.IGNORECASE)
+
+
+def _technique_ids(value) -> list[str]:
+    """ATT&CK technique ids found in ``value`` (a string, or a list/tuple/dict of
+    them), normalised to canonical upper-case dotted form (``T1059.003``) and
+    de-duplicated in first-seen order. Non-technique tags are ignored; ``''`` /
+    ``None`` / no match yields ``[]``. Pure."""
+    if not value:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        text = " ".join(str(v) for v in value)
+    elif isinstance(value, dict):
+        text = " ".join(str(v) for v in value.values())
+    else:
+        text = str(value)
+    out: list[str] = []
+    seen: set[str] = set()
+    for tok in _TECHNIQUE_RE.findall(text):
+        tid = tok.upper().replace("_", ".")
+        if tid not in seen:
+            seen.add(tid)
+            out.append(tid)
+    return out
+
+
+def _yara_meta_attack(meta) -> list[str]:
+    """Technique ids declared in a YARA rule's ``meta``. Prefers values under an
+    ATT&CK-named key (``attack``, ``mitre_technique``, ...); with no such key,
+    falls back to scanning every value (the technique-id pattern is distinctive).
+    Pure."""
+    if not isinstance(meta, dict):
+        return _technique_ids(meta)
+    keyed = [v for k, v in meta.items() if _MITRE_META_KEY_RE.search(str(k))]
+    return _technique_ids(keyed) or _technique_ids(list(meta.values()))
+
 
 # A JSON-shape EvtxECmd Payload field, extracted inline so the registry does not
 # depend on the mitre database's EvtxPayload() helper being deployed. Used inside
@@ -53,16 +105,25 @@ _EVTX_FIELD = r'"@Name":"%s","#text":"((?:[^"\\]|\\.)*)"'
 # --------------------------------------------------------------------- jsonl matchers
 def match_hayabusa_high(rec: dict):
     """Hayabusa (Sigma over EVTX) already scored the event — promote the ones it
-    called high/critical into the unified detections output."""
+    called high/critical into the unified detections output.
+
+    The Sigma rule's ATT&CK technique ids ride along in the ``MitreTags`` column
+    (emitted by the lane's ``--profile verbose``); they are parsed out and
+    attached as ``AttackIds`` so the hit carries its real techniques instead of
+    the detection's empty static list."""
     if str(rec.get("Level", "")).lower() not in ("high", "crit", "critical"):
         return None
-    return {
+    hit = {
         "Timestamp": rec.get("Timestamp"),
         "Entity": str(rec.get("Computer", "") or ""),
         "Details": {k: rec[k] for k in
                     ("RuleTitle", "Level", "Channel", "EventID", "RecordID",
                      "RuleID", "Details") if k in rec},
     }
+    attack = _technique_ids([rec.get("MitreTags"), rec.get("MitreTactics")])
+    if attack:
+        hit["AttackIds"] = attack
+    return hit
 
 
 def match_suricata_alert(rec: dict):
@@ -71,7 +132,7 @@ def match_suricata_alert(rec: dict):
     if rec.get("event_type") != "alert":
         return None
     alert = rec.get("alert") or {}
-    return {
+    hit = {
         "Timestamp": rec.get("timestamp"),
         "Entity": "%s -> %s:%s" % (rec.get("src_ip", "?"), rec.get("dest_ip", "?"),
                                    rec.get("dest_port", "?")),
@@ -84,6 +145,14 @@ def match_suricata_alert(rec: dict):
             "AppProto": rec.get("app_proto"),
         },
     }
+    # ET Open populates rule metadata with mitre_technique_id (a list) for many
+    # rules; carry the techniques through as the hit's AttackIds when present.
+    metadata = alert.get("metadata")
+    if isinstance(metadata, dict):
+        attack = _technique_ids(metadata.get("mitre_technique_id"))
+        if attack:
+            hit["AttackIds"] = attack
+    return hit
 
 
 def match_yara(rec: dict):
@@ -93,7 +162,7 @@ def match_yara(rec: dict):
     if rec.get("tool") != "yara" or not rec.get("rule"):
         return None
     strings = rec.get("strings") or []
-    return {
+    hit = {
         "Timestamp": None,   # a YARA match has no event time
         "Entity": str(rec.get("target", "") or rec.get("match", "") or ""),
         "Details": {
@@ -103,6 +172,11 @@ def match_yara(rec: dict):
             "StringIds": sorted({s.get("id", "?") for s in strings if isinstance(s, dict)}),
         },
     }
+    # When the rule's meta carries ATT&CK technique ids, surface them as AttackIds.
+    attack = _yara_meta_attack(rec.get("meta"))
+    if attack:
+        hit["AttackIds"] = attack
+    return hit
 
 
 # --------------------------------------------------------------------- the registry
