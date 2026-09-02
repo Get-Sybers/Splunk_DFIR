@@ -18,6 +18,8 @@ Config file shape (every key optional)::
       url: https://opencti.example.internal
       token: ...                 # prefer DXDFIR_OPENCTI_TOKEN
       connector_id: ...          # optional; a deterministic default otherwise
+    cti:
+      index: cti-opencti         # the cti-* index `dxdfir stix pull` writes for
 """
 from __future__ import annotations
 
@@ -36,15 +38,18 @@ ENV_CONNECTOR_ID = "DXDFIR_OPENCTI_CONNECTOR_ID"
 ENV_CASE = "DXDFIR_STIX_CASE"
 ENV_TLP = "DXDFIR_STIX_TLP"
 ENV_RULES_DIR = "DXDFIR_STIX_RULES_DIR"
+ENV_CTI_INDEX = "DXDFIR_CTI_INDEX"
+DEFAULT_CTI_INDEX = "cti-opencti"
 
 _ENV_KEYS = {ENV_URL: "opencti_url", ENV_TOKEN: "opencti_token",
              ENV_CONNECTOR_ID: "opencti_connector_id", ENV_CASE: "case_id",
-             ENV_TLP: "tlp", ENV_RULES_DIR: "rules_dir"}
+             ENV_TLP: "tlp", ENV_RULES_DIR: "rules_dir", ENV_CTI_INDEX: "cti_index"}
 _FILE_KEYS = {"case": "case_id", "case_id": "case_id", "producer": "producer", "tlp": "tlp",
               "out": "out", "rules_dir": "rules_dir", "push": "push", "timeout": "timeout",
               "opencti_url": "opencti_url", "opencti_token": "opencti_token",
-              "opencti_connector_id": "opencti_connector_id"}
+              "opencti_connector_id": "opencti_connector_id", "cti_index": "cti_index"}
 _OPENCTI_KEYS = {"url": "opencti_url", "token": "opencti_token", "connector_id": "opencti_connector_id"}
+_CTI_KEYS = {"index": "cti_index"}
 
 
 @dataclass
@@ -59,6 +64,7 @@ class StixConfig:
     opencti_url: str | None = None
     opencti_token: str | None = None
     opencti_connector_id: str | None = None
+    cti_index: str = DEFAULT_CTI_INDEX
 
     def redacted(self) -> dict:
         """For summaries and logs: the token is only ever shown as present/absent."""
@@ -88,6 +94,8 @@ def _read_file(path: str) -> dict:
     for k, v in doc.items():
         if k == "opencti" and isinstance(v, dict):
             out.update({_OPENCTI_KEYS[kk]: vv for kk, vv in v.items() if kk in _OPENCTI_KEYS})
+        elif k == "cti" and isinstance(v, dict):
+            out.update({_CTI_KEYS[kk]: vv for kk, vv in v.items() if kk in _CTI_KEYS})
         elif k in _FILE_KEYS:
             out[_FILE_KEYS[k]] = v
     return out
@@ -119,6 +127,7 @@ def load_config(path: str | None = None, env: Mapping[str, str] | None = None,
         v = getattr(cfg, k)
         if v is not None:
             setattr(cfg, k, str(v))
+    cfg.cti_index = str(cfg.cti_index or DEFAULT_CTI_INDEX)
     return cfg
 
 

@@ -59,6 +59,24 @@ RULES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rules")
 CAR_DETECTIONS_DIR = os.path.join(RULES_DIR, "car-detections")
 CAR_DETECTIONS_TEMPLATE = os.path.join(CAR_DETECTIONS_DIR, "car-detections.index-template.json")
 CAR_DETECTIONS_JOIN_KEYS = os.path.join(CAR_DETECTIONS_DIR, "join-keys.yml")
+# The CTI indicator-match rule contract (rules/cti/): one Detection Engine
+# threat_match rule as data, checked against the cti-* index template the
+# exchange package (stix/cti) writes — by path only; nothing is imported.
+CTI_DIR = os.path.join(RULES_DIR, "cti")
+CTI_RULE = os.path.join(CTI_DIR, "cti-indicator-match.yml")
+CTI_TEMPLATE = os.path.normpath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), os.pardir, "stix", "cti", "cti.index-template.json"))
+THREAT_MATCH = "threat_match"
+# Elastic's names for the Kibana query languages a threat_match rule speaks
+# (not the Kusto "KQL" the rules' source column keeps).
+KIBANA_LANGUAGES = ("kuery", "lucene")
+THREAT_MAPPING_TYPES = ("mapping",)
+THREAT_MATCH_REQUIRED = ("id", "name", "type", "status", "severity", "attack", "language", "index",
+                         "query", "threat_index", "threat_language", "threat_indicator_path",
+                         "threat_mapping", "evidence", "car_join")
+# What the sightings push (stix/cti/sightings.py) reads off an indicator-match
+# alert: the platform's indicator id and the value that matched.
+ROUND_TRIP_FIELDS = ("threat.enrichments.indicator.id", "threat.enrichments.matched.atomic")
 
 # Elastic's severity set (the registry's "info" maps to "low") and the Detection
 # Engine's canonical risk score for each — used when a rule declares none.
@@ -340,7 +358,7 @@ def validate(rules: list[dict] | None = None) -> None:
                 raise ValueError(prefix + "a stub needs a non-empty todo.blockers list (why it is a stub)")
 
 
-def _validate_evidence(prefix: str, r: dict) -> None:
+def _validate_evidence(prefix: str, r: dict, engine_prefixes: tuple[str, ...] = ("kibana.alert.",)) -> None:
     ev = r.get("evidence")
     if not isinstance(ev, dict):
         raise ValueError(prefix + "evidence must be a mapping (shape, stamped_by, fields)")
@@ -351,8 +369,9 @@ def _validate_evidence(prefix: str, r: dict) -> None:
     fields = ev.get("fields")
     if not _str_list(fields) or not fields or not all(_FIELD_RE.match(f) for f in fields):
         raise ValueError(prefix + "evidence.fields must be a non-empty list of field paths")
-    if ev["stamped_by"] == "engine" and not all(f.startswith("kibana.alert.") for f in fields):
-        raise ValueError(prefix + "engine-stamped evidence fields are the Detection Engine's kibana.alert.* fields")
+    if ev["stamped_by"] == "engine" and not all(f.startswith(engine_prefixes) for f in fields):
+        raise ValueError(prefix + "engine-stamped evidence fields are the Detection Engine's "
+                         + " / ".join(p + "*" for p in engine_prefixes) + " fields")
     if ev["stamped_by"] == "query":
         has_technique = "threat.technique.id" in fields
         if r.get("attack") and not has_technique:
@@ -480,6 +499,166 @@ def validate_car_detections(template: dict, join_keys: dict) -> None:
         raise ValueError("car-detections: example_query must LOOKUP JOIN the lookup index ON a join key")
 
 
+# ------------------------------------------------- the CTI indicator-match contract
+def load_cti_contract(rule_path: str = CTI_RULE, template_path: str = CTI_TEMPLATE) -> tuple[dict, dict]:
+    """The indicator-match rule (rules/cti/) and the cti-* index template it
+    reads, both as data: ``(rule, template)``. The rule gets ``_path`` and a
+    defaulted ``risk_score`` exactly as :func:`load` gives the rule set."""
+    with open(rule_path, encoding="utf-8") as fh:
+        try:
+            rule = yaml.safe_load(fh)
+        except yaml.YAMLError as e:
+            raise ValueError(f"{rule_path}: not valid YAML: {e}") from e
+    if not isinstance(rule, dict):
+        raise ValueError(f"{rule_path}: a rule file must be exactly one YAML mapping")
+    rule["_path"] = rule_path
+    if "risk_score" not in rule and rule.get("severity") in RISK_SCORES:
+        rule["risk_score"] = RISK_SCORES[rule["severity"]]
+    with open(template_path, encoding="utf-8") as fh:
+        template = json.load(fh)
+    return rule, template
+
+
+def _covered(pattern: str, index_patterns: list[str]) -> bool:
+    """True when ``pattern`` is one of the template's index patterns, or a
+    name / narrower glob one of them matches (glob -> regex as above)."""
+    return any(pattern == p or re.fullmatch(re.escape(p).replace(r"\*", ".*"), pattern)
+               for p in index_patterns)
+
+
+def _mapping_node(template: dict, path: str) -> dict | None:
+    """The template's mapping definition at dotted ``path``, or None."""
+    node: dict = {"properties": ((template.get("template") or {}).get("mappings") or {}).get("properties") or {}}
+    for seg in path.split("."):
+        nxt = (node.get("properties") or {}).get(seg)
+        if not isinstance(nxt, dict):
+            return None
+        node = nxt
+    return node
+
+
+def validate_indicator_match(rule: dict, template: dict | None = None) -> None:
+    """Fail fast on a malformed indicator-match rule (``rules/cti/``) — the
+    Detection Engine's ``threat_match`` shape: a Kibana-language query over
+    the evidence streams, the threat index, the indicator path and the
+    field-to-field mapping — with :func:`validate`'s rigor (first problem
+    raises ValueError prefixed with the rule id). Given the cti-* index
+    ``template``, every indicator-side field the mapping reads must be mapped
+    there under the indicator path, and every ``threat_index`` pattern must
+    be one the template covers."""
+    if not isinstance(rule, dict):
+        raise ValueError("indicator-match rule: a rule must be a mapping")
+    rid = rule.get("id", "")
+    prefix = f"rule {rid!r}: "
+    if not isinstance(rid, str) or not _ID_RE.match(rid):
+        raise ValueError(prefix + "id must be non-empty kebab-case")
+    path = rule.get("_path")
+    if path and os.path.splitext(os.path.basename(path))[0] != rid:
+        raise ValueError(prefix + f"file must be named <id>.yml, not {os.path.basename(path)}")
+    if rule.get("type") != THREAT_MATCH:
+        raise ValueError(prefix + f"type must be {THREAT_MATCH!r} (an indicator-match rule)")
+    missing = [k for k in THREAT_MATCH_REQUIRED if k not in rule]
+    if missing:
+        raise ValueError(prefix + f"missing required field(s) {missing}")
+    name = rule.get("name")
+    if not isinstance(name, str) or not name.strip() or '"' in name or "\\" in name:
+        raise ValueError(prefix + "name must be non-empty, without quotes/backslashes")
+    if rule.get("status") != "ported" or "todo" in rule:
+        raise ValueError(prefix + "an indicator-match rule has no stub form (the indicators are the query): "
+                         "status must be 'ported', without a todo block")
+    if rule.get("severity") not in SEVERITIES:
+        raise ValueError(prefix + f"severity must be one of {SEVERITIES}")
+    score = rule.get("risk_score", RISK_SCORES[rule["severity"]])
+    if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= 100:
+        raise ValueError(prefix + "risk_score must be an integer 0..100")
+    attack = rule.get("attack")
+    if not isinstance(attack, list) or not all(
+            isinstance(t, str) and _TECHNIQUE_RE.match(t) for t in attack):
+        raise ValueError(prefix + "attack must be a list of ATT&CK technique ids (T1234 / T1234.001)")
+    tactics = rule.get("tactics", [])
+    if not isinstance(tactics, list) or not all(
+            isinstance(t, str) and _TACTIC_RE.match(t) for t in tactics):
+        raise ValueError(prefix + "tactics must be a list of ATT&CK tactic ids (TA0001)")
+    for key in ("language", "threat_language"):
+        if rule.get(key) not in KIBANA_LANGUAGES:
+            raise ValueError(prefix + f"{key} must be one of {KIBANA_LANGUAGES} (Elastic's names for the Kibana query languages)")
+    index = rule.get("index")
+    if not _str_list(index) or not index or not all(_INDEX_RE.match(i) for i in index):
+        raise ValueError(prefix + "index must be a non-empty list of logs-<dataset>-* data stream patterns")
+    for key in ("query", "threat_query"):
+        q = rule.get(key)
+        if key == "threat_query" and q is None:
+            continue                                    # optional: no filter on the indicators
+        if not isinstance(q, str) or not q.strip():
+            raise ValueError(prefix + f"{key} must be a non-empty Kibana-language query")
+        if re.match(r"^\s*FROM\s", q, re.I):
+            raise ValueError(prefix + f"{key} is ES|QL; an indicator-match rule speaks {KIBANA_LANGUAGES}")
+        for leftover in _KQL_LEFTOVERS:
+            m = leftover.search(q)
+            if m:
+                raise ValueError(prefix + f"{key}: KQL left-over {m.group(0)!r} in an Elastic query")
+        try:
+            bad = _unbalanced(_strip_strings(q))
+        except ValueError as e:
+            bad = str(e)
+        if bad:
+            raise ValueError(prefix + f"{key}: {bad}")
+    threat_index = rule.get("threat_index")
+    if not _str_list(threat_index) or not threat_index:
+        raise ValueError(prefix + "threat_index must be a non-empty list of index patterns (cti-*)")
+    if template is not None:
+        patterns = template.get("index_patterns")
+        if not _str_list(patterns) or not patterns:
+            raise ValueError(prefix + "the cti-* template has no index_patterns")
+        for ti in threat_index:
+            if not _covered(ti, patterns):
+                raise ValueError(prefix + f"threat_index {ti!r} is not covered by the cti-* template's index_patterns {patterns}")
+    tip = rule.get("threat_indicator_path")
+    if not isinstance(tip, str) or not _FIELD_RE.match(tip):
+        raise ValueError(prefix + "threat_indicator_path must be a field path (threat.indicator)")
+    mapped: set[str] | None = None
+    if template is not None:
+        node = _mapping_node(template, tip)
+        if not node or not isinstance(node.get("properties"), dict):
+            raise ValueError(prefix + f"threat_indicator_path {tip} is not mapped as an object in the cti-* template")
+        mapped = _mapped_fields(((template.get("template") or {}).get("mappings") or {}).get("properties"))
+    groups = rule.get("threat_mapping")
+    if not isinstance(groups, list) or not groups:
+        raise ValueError(prefix + "threat_mapping must be a non-empty list of {entries: [...]} groups")
+    seen_pairs: set[tuple[str, str]] = set()
+    for g in groups:
+        entries = g.get("entries") if isinstance(g, dict) else None
+        if not isinstance(entries, list) or not entries:
+            raise ValueError(prefix + "each threat_mapping group needs a non-empty entries list")
+        for e in entries:
+            if not isinstance(e, dict) or e.get("type") not in THREAT_MAPPING_TYPES:
+                raise ValueError(prefix + "threat_mapping entries are {field, type: mapping, value}")
+            field, value = e.get("field"), e.get("value")
+            if not isinstance(field, str) or not _FIELD_RE.match(field):
+                raise ValueError(prefix + f"threat_mapping field {field!r} must be an evidence field path")
+            if not isinstance(value, str) or not _FIELD_RE.match(value) or not value.startswith(tip + "."):
+                raise ValueError(prefix + f"threat_mapping value {value!r} must be a field under {tip}.")
+            if mapped is not None and value not in mapped:
+                raise ValueError(prefix + f"threat_mapping value {value} is not mapped in the cti-* template")
+            if (field, value) in seen_pairs:
+                raise ValueError(prefix + f"threat_mapping maps {field} -> {value} twice")
+            seen_pairs.add((field, value))
+    for key in ("items_per_search", "concurrent_searches"):
+        v = rule.get(key)
+        if v is not None and (not isinstance(v, int) or isinstance(v, bool) or v < 1):
+            raise ValueError(prefix + f"{key} must be a positive integer")
+    _validate_evidence(prefix, rule, engine_prefixes=("kibana.alert.", "threat.enrichments."))
+    ev = rule["evidence"]
+    if ev.get("stamped_by") != "engine" or ev.get("shape") != "line":
+        raise ValueError(prefix + "an indicator match is one engine-enriched alert per matched evidence "
+                         "document: evidence.shape line, stamped_by engine")
+    if not set(ROUND_TRIP_FIELDS) <= set(ev["fields"]):
+        raise ValueError(prefix + "evidence.fields must carry the round-trip pair the sightings push reads: "
+                         + ", ".join(ROUND_TRIP_FIELDS))
+    _validate_car_join(prefix, rule.get("car_join"))
+    _validate_fields(prefix, rule.get("fields"))
+
+
 # ---------------------------------------------------------------------- summary
 def summary(rules: list[dict]) -> dict:
     by_language: dict[str, int] = {}
@@ -503,11 +682,17 @@ def main(argv: list[str] | None = None) -> int:
     # Validate the car-detections contract from the SAME rules dir, so a custom
     # --rules-dir is checked against its own car-detections/, not the built-in one.
     car_dir = os.path.join(args.rules_dir, "car-detections")
+    cti_rule = os.path.join(args.rules_dir, "cti", "cti-indicator-match.yml")
     try:
         rules = list_rules(args.rules_dir)
         validate_car_detections(*load_car_detections(
             os.path.join(car_dir, "car-detections.index-template.json"),
             os.path.join(car_dir, "join-keys.yml")))
+        # The CTI indicator-match contract is one per deployment, not per
+        # detection: a rules dir that carries it is checked against the
+        # built-in cti-* template; one that does not is not made to.
+        if os.path.isfile(cti_rule):
+            validate_indicator_match(*load_cti_contract(cti_rule, CTI_TEMPLATE))
     except (ValueError, OSError) as e:
         print(json.dumps({"tool": "rules", "error": str(e)}), file=sys.stderr)
         return 1

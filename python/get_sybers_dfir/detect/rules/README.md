@@ -130,6 +130,32 @@ fields against the CAR row's flattened native bag (`via: provenance`) — e.g.
 `log.file.path` + `winlog.record_id` for an EVTX-sourced rule. Requires
 Elasticsearch 9.x (`LOOKUP JOIN` GA; technical preview in 8.18); Basic licence.
 
+## The CTI indicator-match rule (`cti/`)
+
+[`cti/cti-indicator-match.yml`](cti/cti-indicator-match.yml) is the one
+Detection Engine **`threat_match`** rule: it compares `logs-dfir.*` /
+`logs-car.*` evidence fields (`source.ip`, `destination.ip`, `dns.question.name`,
+`url.original`, `file.hash.*`, `process.hash.*`, `registry.key`) with the
+`threat.indicator.*` atomics of the **`cti-*`** index — the Elasticsearch copy
+of OpenCTI's STIX indicators that `dxdfir stix pull` writes
+([`stix/cti/cti.index-template.json`](../../stix/cti/cti.index-template.json);
+which STIX comparison lands where is
+[`stix/cti/pattern-mapping.yml`](../../stix/cti/pattern-mapping.yml)). Same
+file shape as the rules above plus the threat-match keys: `type: threat_match`,
+`language: kuery` (Elastic's name for the Kibana query language), `threat_index`,
+`threat_query`, `threat_indicator_path`, `threat_mapping` (each list item an OR
+alternative, its entries ANDed). The alert is the matched evidence document
+plus the engine's `threat.enrichments[]` (the indicator's fields and
+`matched.{field,atomic,id,index}`), which `dxdfir stix sightings` turns into
+STIX sightings of the platform's own indicator.
+
+It is Byakugan-native, not a registry port, so it lives beside the top-level
+rule set (which the tests pin to the Kusto registry) rather than in it:
+[`rules_loader.load_cti_contract()` / `validate_indicator_match()`](../rules_loader.py)
+check it against the cti-* template — every `threat_mapping` value must be a
+field the copy fills, every `threat_index` pattern one the template covers —
+and the loader's CLI validates it alongside the rule set.
+
 ## Coverage: KQL -> ES|QL / EQL
 
 Every registry detection, ported or stub (the tests fail if one goes missing):

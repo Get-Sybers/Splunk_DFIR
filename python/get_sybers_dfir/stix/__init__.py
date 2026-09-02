@@ -24,15 +24,24 @@ OpenCTI through a thin client whose transport is an interface, so the exchange
 is unit-testable without a live platform (:mod:`.opencti`). Endpoint and token
 come from the environment / a config file, never from the tree.
 
+The CTI direction runs through the same client (:mod:`.cti`): OpenCTI's STIX
+indicators are pulled and copied into the Elastic ``cti-*`` index — atomics
+under ECS ``threat.indicator.*`` — for Elastic's own indicator-match rule to
+flag evidence against, and the alerts that rule raises go back as sightings of
+the platform's indicators. The engine is Elastic's; OpenCTI is the wire.
+
     dxdfir stix export --hits detections.jsonl --bundle piiat.json --out bundle.json [--push]
+    dxdfir stix pull --out cti.ndjson
+    dxdfir stix sightings --alerts alerts.json --out sightings.json [--push]
 """
 from .config import StixConfig, load_config
 from .export import build_bundle, run_export, validate_bundle
 from .hits import Hit, hit_from_document, read_hits
-from .opencti import OpenCTIClient, PushResult, Transport
+from .opencti import OpenCTIClient, PullResult, PushResult, Transport
+from .cti import run_pull, run_sightings, to_cti_docs
 
 __all__ = [
-    "Hit", "OpenCTIClient", "PushResult", "StixConfig", "Transport",
+    "Hit", "OpenCTIClient", "PullResult", "PushResult", "StixConfig", "Transport",
     "build_bundle", "hit_from_document", "load_config", "read_hits",
-    "run_export", "validate_bundle",
+    "run_export", "run_pull", "run_sightings", "to_cti_docs", "validate_bundle",
 ]
