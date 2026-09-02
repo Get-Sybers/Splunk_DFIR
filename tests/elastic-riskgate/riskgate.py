@@ -264,6 +264,11 @@ def compare_table(result: dict, expected: dict) -> tuple[bool, str]:
     missing = [c for c in expected["columns"] if c not in cols]
     if missing:
         return False, f"result lacks column(s) {missing}; got {cols}"
+    extra = [c for c in cols if c not in expected["columns"]]
+    if extra:
+        # the expected table pins the query's KEEP contract, so extra columns
+        # (a query change, or ES returning more) are a failure, not a pass.
+        return False, f"result has unexpected column(s) {extra}; the query must KEEP exactly {expected['columns']}"
     idx = [cols.index(c) for c in expected["columns"]]
     got = sorted(json.dumps([row[i] for i in idx]) for row in result.get("values", []))
     want = sorted(json.dumps(row) for row in expected["rows"])
@@ -437,7 +442,11 @@ def cmd_proof2(es: Es, rep: Report) -> None:
     if status == 200:
         for index, spec in doc.items():
             for field, fspec in (spec.get("mappings") or {}).items():
-                (leaf,) = fspec.get("mapping", {"?": {}}).values()
+                # An unmapped field yields an empty mapping (and a conflict yields
+                # several); either way record "?" so check 2.3 fails cleanly rather
+                # than the harness aborting on a bad unpack.
+                vals = list((fspec.get("mapping") or {}).values())
+                leaf = vals[0] if len(vals) == 1 else {}
                 types.setdefault(index, {})[field] = leaf.get("type", "?")
     wrong = [f"{i}: {f}={t}" for i, fs in types.items() for f, t in fs.items() if t != "keyword"]
     lacking = [i for i, fs in types.items() if {"event.id", "process.entity_id"} - set(fs)]
@@ -606,6 +615,14 @@ def main(argv: list[str] | None = None) -> int:
                 cmd_clean(es, rep)
     except RiskgateError as e:
         print(f"\n❌ riskgate | {e}", file=sys.stderr)
+        return 2
+    except Exception as e:  # noqa: BLE001
+        # Any other failure (missing fixture/template, JSON parse, transport) is
+        # still "the harness could not run" -> documented exit 2, not a traceback.
+        # Set RISKGATE_DEBUG=1 to re-raise for debugging.
+        if os.environ.get("RISKGATE_DEBUG"):
+            raise
+        print(f"\n❌ riskgate | unexpected error: {type(e).__name__}: {e}", file=sys.stderr)
         return 2
     return rep.summary()
 
