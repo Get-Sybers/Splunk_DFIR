@@ -8,6 +8,11 @@ exclude_paths:
   - .claude/
   - data_store/
   - ansible/collections/get_sybers.dfir/.ansible/
+  # Elastic detection rules-as-code: these are rule DATA (ES|QL/EQL definitions
+  # with long query lines), not ansible. ansible-lint auto-discovers the YAML
+  # but has no business linting it — the rules have their own gate
+  # (detect/rules_loader.py validation + tests/test_rules.py).
+  - python/get_sybers_dfir/detect/rules/
 
 # The collection's task names use the Get-Sybers house prefix
 # "<role>-<stage> | lowercase description"; the leading-uppercase idiom is
