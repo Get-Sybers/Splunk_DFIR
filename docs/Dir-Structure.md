@@ -18,7 +18,7 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
     └── scripts/                                      # Deploy/apply/ingest + signature lanes (bash)
     │   └── lib/                                      # Shared bash libraries: docker lifecycle, Kusto REST API
     │
-    └── docker/                                       # Container builds — the from-source SOF-ELK stack (sof-elk/)
+    └── docker/                                       # Container builds — Byakugan's Elastic-native stack (elastic/), the retiring SOF-ELK stack (sof-elk/)
     │
     └── dev-scripts/                                  # Experimental/one-off helpers, unsupported (e.g. the Plaso output module)
     │

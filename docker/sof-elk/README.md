@@ -1,5 +1,10 @@
 # SOF-ELK container (from source)
 
+> **Retiring.** Byakugan's own Elastic-native stack — security ON, Fleet, Filebeat
+> instead of Logstash — lives in [`docker/elastic/`](../elastic/README.md) and
+> replaces this one. This directory stays only until `dfir_deploy_sofelk` (which
+> builds from it) is retired with it.
+
 SOF-ELK® ([philhagen/sof-elk](https://github.com/philhagen/sof-elk)) ships as a VM,
 so there is no canonical public image. This builds one **from the upstream repo** so
 the `dfir_deploy_sofelk` role has a real stack to run.
