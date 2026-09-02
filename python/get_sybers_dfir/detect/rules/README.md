@@ -1,18 +1,19 @@
 # Elastic detection rules-as-code (Byakugan)
 
-The detections of [`../registry.py`](../registry.py), re-expressed for **Elastic's
-own Detection Engine** as data: one YAML file per rule, ES|QL or EQL, each
-carrying the contract for the **tagged evidence line** it produces. Loaded and
-validated by [`../rules_loader.py`](../rules_loader.py), pinned by
+The detections of the retired Kusto registry (`registry.py`, gone with the ADX
+emulator), re-expressed for **Elastic's own Detection Engine** as data: one YAML
+file per rule, ES|QL or EQL, each carrying the contract for the **tagged
+evidence line** it produces. Loaded and validated by
+[`../rules_loader.py`](../rules_loader.py), pinned by
 `python/tests/test_rules.py`.
 
-> **Additive.** Nothing in the Kusto path changes: `registry.py`, the runner in
-> `detect/__init__.py`, the emulator and `kusto/schema/50-detections.kql` stay as
-> they are until Kusto/ADX retires at the **end of phase 2 (decision D1)**. This
-> directory is the phase-2 enabler that lets that retirement happen. The loader
-> does not import the registry, so the rule set outlives it; the ids are shared,
-> and the tests pin the two id sets equal (a detection can neither be dropped
-> silently nor exist twice under different names).
+> **The Kusto path has retired (decision D1, done).** The registry, the runner
+> in `detect/__init__.py`, the emulator and `kusto/schema/` are gone; this
+> directory is what enabled that. The loader never imported the registry, so
+> the rule set outlived it: the ids are pinned in `test_rules.py` (a detection
+> can neither be dropped silently nor exist twice under different names), and
+> each rule's `source` block keeps its provenance — the verbatim KQL or the
+> jsonl matcher name it was ported from.
 
 ```bash
 cd python && PYTHONPATH=. python -m get_sybers_dfir.detect.rules_loader   # JSON summary, exit 1 on a bad rule
@@ -150,7 +151,7 @@ plus the engine's `threat.enrichments[]` (the indicator's fields and
 STIX sightings of the platform's own indicator.
 
 It is Byakugan-native, not a registry port, so it lives beside the top-level
-rule set (which the tests pin to the Kusto registry) rather than in it:
+rule set (whose ids the tests pin) rather than in it:
 [`rules_loader.load_cti_contract()` / `validate_indicator_match()`](../rules_loader.py)
 check it against the cti-* template — every `threat_mapping` value must be a
 field the copy fills, every `threat_index` pattern one the template covers —
@@ -158,7 +159,8 @@ and the loader's CLI validates it alongside the rule set.
 
 ## Coverage: KQL -> ES|QL / EQL
 
-Every registry detection, ported or stub (the tests fail if one goes missing):
+Every detection the retired registry carried, ported or stub (the tests fail if
+one goes missing):
 
 | registry id | Kusto source | Elastic | reads | status | note |
 |---|---|---|---|---|---|
@@ -187,4 +189,3 @@ name in `source`, so nothing is silently dropped.
   `fields` blocks are their specification.
 - **Sigma compiled to Elastic at build time** — a later phase; it will add rule
   files here in the same shape.
-- **Retiring the Kusto path** — end of phase 2 (D1), not now.

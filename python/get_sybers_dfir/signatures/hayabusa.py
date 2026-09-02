@@ -77,13 +77,14 @@ def scan_directory(hb_bin, scan_dir, rules_dir) -> str:
         tmp_out = os.path.join(tmpd, "timeline.jsonl")
         # `--profile verbose` so each JSONL detection carries its MITRE ATT&CK
         # columns (%MitreTactics% / %MitreTags%) — the default (standard) profile
-        # omits them, which is what made the detect lane emit empty AttackIds. The
-        # detect registry's match_hayabusa_high parses MitreTags into technique ids
-        # (get_sybers_dfir.detect.registry). A leaner custom profile (minimal +
-        # the two Mitre columns) would need authoring into the operator-supplied
-        # config/profiles.yaml, which isn't present to write to/verify here, so
-        # the built-in verbose profile — guaranteed to emit both — is used; the
-        # matcher keeps only the columns it needs, so the extra fields are inert.
+        # omits them, which is what once made the detection lane emit empty
+        # technique ids. Downstream readers (the sig-hayabusa-high rule's
+        # matcher contract, the STIX exporter) parse MitreTags into technique
+        # ids. A leaner custom profile (minimal + the two Mitre columns) would
+        # need authoring into the operator-supplied config/profiles.yaml, which
+        # isn't present to write to/verify here, so the built-in verbose profile
+        # — guaranteed to emit both — is used; readers keep only the columns
+        # they need, so the extra fields are inert.
         argv = [
             hb_bin, "json-timeline", "--directory", scan_dir, "--output", tmp_out,
             "--JSONL-output", "--profile", "verbose",

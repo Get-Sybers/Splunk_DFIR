@@ -1,7 +1,7 @@
 # dfir_signatures
 
 Run the **YARA**, **Suricata** and **Hayabusa** detection lanes over the evidence and
-land their native events as JSON Lines for the ADX or SOF-ELK pipeline. The role is
+land their native events as JSON Lines for the Elastic-native or SOF-ELK pipeline. The role is
 structure only — it asserts inputs, runs a preflight (docker, the `data_store`
 anchor, the module), then invokes the `get_sybers_dfir.signatures` Python processor
 as a **single action**. One `<lane>/` folder of detections under the output base.
@@ -27,8 +27,8 @@ as a **single action**. One `<lane>/` folder of detections under the output base
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_signatures_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
-| `dfir_signatures_adx_out_dir` | `<repo>/data_store/processed/signatures` | ADX-path output base. |
+| `dfir_signatures_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_signatures_elastic_out_dir` | `<repo>/data_store/processed/signatures` | Elastic-path output base. |
 | `dfir_signatures_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/signatures` | SOF-ELK-path output base. |
 | `dfir_signatures_lanes` | `[]` (all) | Lanes to run — any of `yara`, `suricata`, `hayabusa`. |
 | `dfir_signatures_stage_dir` | `""` (evtx processor's stage) | Where the hayabusa lane stages disk-image EVTX extractions; already-staged images are reused, never re-extracted. |
@@ -92,7 +92,7 @@ processor, never in a task `when:`. The verify gate tolerates a zero-detection r
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-signatures.yml -e dfir_signatures_pipeline=adx
+ansible-playbook playbooks/dfir-process-signatures.yml -e dfir_signatures_pipeline=elastic
 # one lane:
 ansible-playbook playbooks/dfir-process-signatures.yml -e '{"dfir_signatures_lanes":["yara"]}'
 ```

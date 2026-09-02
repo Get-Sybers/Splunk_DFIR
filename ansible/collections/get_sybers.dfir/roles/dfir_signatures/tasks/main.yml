@@ -6,10 +6,10 @@
 - name: "signatures | assert inputs"
   ansible.builtin.assert:
     that:
-      - dfir_signatures_pipeline in ['adx', 'sofelk']
+      - dfir_signatures_pipeline in ['elastic', 'sofelk']
       - dfir_signatures_lanes | difference(['yara', 'suricata', 'hayabusa']) | length == 0
     fail_msg: >-
-      dfir_signatures needs dfir_signatures_pipeline (adx|sofelk); dfir_signatures_lanes
+      dfir_signatures needs dfir_signatures_pipeline (elastic|sofelk); dfir_signatures_lanes
       may only contain yara/suricata/hayabusa.
     quiet: true
   tags: [always]
@@ -22,7 +22,7 @@
       tags: [always]
   tags: [always]
 
-# The pipeline decision (adx|sofelk) is carried by the resolved
+# The pipeline decision (elastic|sofelk) is carried by the resolved
 # dfir_signatures_out_dir default — the tasks themselves are pipeline-agnostic,
 # so there is ONE task file to maintain instead of a drifting pair.
 - name: "signatures | process"

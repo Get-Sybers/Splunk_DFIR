@@ -1,8 +1,8 @@
 # 01_Containers
 
-Every tool container the pipeline runs is **built in-repo, hardened** — nothing
-third-party is pulled at runtime except the proprietary Kusto emulator. This
-page lists the images, how they are built, and the posture they enforce.
+Every tool container the pipeline runs is **built in-repo, hardened** — no
+third-party tool image is pulled at runtime. This page lists the images, how
+they are built, and the posture they enforce.
 
 ---
 
@@ -70,20 +70,19 @@ policing a large image from inside.
 ## Pulled (unbuildable) images
 
 ```sh
-mcr.microsoft.com/azuredataexplorer/kustainer-linux:latest   # analysis backend (Kusto emulator — proprietary)
 mcr.microsoft.com/dotnet/runtime:9.0                         # evtxecmd operator-supplied mode only
 ```
 
-The emulator cannot be built from source; `dfir_deploy_adx` confines it to
-localhost instead (a non-local bind is refused unless
-`dfir_deploy_adx_expose=true` is set deliberately).
+The analysis backend is not a tool image: the Elastic stack (`docker/elastic/`)
+is the official Elastic images, version-pinned (`ELASTIC_VERSION`), brought up
+with docker compose on `127.0.0.1` with security on — see its README.
 
 ## Offline / air-gapped hosts
 
 Two levels:
 
 **Images only** — `save-docker-images.sh` saves the built `dfir/*` images plus
-the two pulled ones into `data_store/docker_images/`:
+the pulled .NET runtime into `data_store/docker_images/`:
 
 ```bash
 scripts/save-docker-images.sh --build     # online: build the dfir/* images, then save all
@@ -125,8 +124,7 @@ official image) — operator-supplied: download the pinned release into
 - [Zeek](https://zeek.org/) · [Suricata](https://suricata.io/) · [YARA](https://virustotal.github.io/yara/)
 - [Volatility 3](https://github.com/volatilityfoundation/volatility3) · [Plaso / GIFT PPA](https://launchpad.net/~gift)
 - [EvtxECmd (Eric Zimmerman)](https://github.com/EricZimmerman/evtx) · [Hayabusa (Yamato Security)](https://github.com/Yamato-Security/hayabusa)
-- [Azure Data Explorer Kusto emulator – Microsoft Learn](https://learn.microsoft.com/en-us/azure/data-explorer/kusto-emulator-overview)
+- [Elastic Stack](https://www.elastic.co/docs) — the analysis backend (`docker/elastic/`)
 
-Note: starting the Kusto emulator requires accepting Microsoft's Software
-License Terms (`ACCEPT_EULA=Y`) — the deploy (`dxdfir deploy`) does this on your
-behalf and says so. See [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).
+The obligations the tools and the backend place on the operator are recorded in
+[THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md).

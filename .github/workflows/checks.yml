@@ -2,17 +2,17 @@ name: checks
 
 # Runs everything that can be verified without Docker or evidence.
 #
-# What this DOES cover: shell syntax, shellcheck, repo-root path resolution,
-# the shared container-lifecycle library's behaviour, Kusto schema and
-# ingestion consistency, evidence gitignore coverage, secret patterns, and
-# documentation links.
+# What this DOES cover: shell syntax, shellcheck, the collection's pinned
+# requirements, ansible-lint (production profile), repo-root path resolution,
+# the Python package's unit tests, version and documentation consistency,
+# evidence gitignore coverage, secret patterns, and documentation links.
 #
 # What it does NOT cover: the pipeline. Nothing here processes a disk image,
-# a PCAP, or an event log, and nothing starts the Kusto emulator. That runtime
-# correctness coverage lives in the separate `smoke` workflow (smoke.yml), which
-# runs the real pipeline against pinned fixtures and asserts the CAR output. A
-# green tick HERE means the repository is internally consistent, not that the
-# pipeline works — that is what `smoke` is for.
+# a PCAP, or an event log, and nothing runs a tool container or the Elastic
+# stack. That runtime correctness coverage lives in the separate `smoke`
+# workflow (smoke.yml), which runs the real pipeline against pinned fixtures and
+# asserts the CAR output. A green tick HERE means the repository is internally
+# consistent, not that the pipeline works — that is what `smoke` is for.
 
 on:
   push:
@@ -59,6 +59,10 @@ jobs:
           ansible-galaxy collection install --force \
             -r ansible/collections/get_sybers.dfir/requirements.yml \
             -p ansible/collections/get_sybers.dfir/.ansible/collections
+          # The package's unit tests run inside the harness: install the
+          # package (its declared deps — typer, PyYAML — are what the tests
+          # import) and pytest.
+          python -m pip install --quiet ./python pytest
 
       - name: Report tool versions
         run: |
@@ -66,6 +70,7 @@ jobs:
           echo "shellcheck  $(shellcheck --version | grep version: | head -1)"
           echo "python      $(python --version)"
           echo "ansible-lint $(ansible-lint --version | head -1)"
+          echo "pytest      $(python -m pytest --version 2>&1 | head -1)"
 
       - name: Run repository checks
         run: ./tests/run-checks.sh -v

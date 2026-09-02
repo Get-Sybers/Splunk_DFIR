@@ -1,5 +1,5 @@
 ---
-# FIND FACTS -> check existence AND location -> (then adx/sofelk MODIFY + VERIFY).
+# FIND FACTS -> check existence AND location -> (then elastic/sofelk MODIFY + VERIFY).
 # Per-lane inputs (rules, pcaps, evtx, images) are optional — each lane notes and
 # skips when its inputs/tools are missing — so only the repo anchor + docker + the
 # module are asserted here.

@@ -6,7 +6,7 @@
 # It assembles ONE portable bundle containing everything the offline host needs:
 #
 #   images/       the hardened dfir/* tool images (built + docker-saved) plus the
-#                 two unbuildable images (Kusto emulator, .NET runtime), as tars
+#                 one unbuildable image (the .NET runtime), as tars
 #   wheels/       the dxdfir CLI and every Python dependency, as wheels
 #                 (pip download — installed offline with --no-index)
 #   collections/  the pinned ansible collections (community.docker, ansible.posix)

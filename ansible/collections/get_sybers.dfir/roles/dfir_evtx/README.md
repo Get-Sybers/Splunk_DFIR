@@ -1,7 +1,7 @@
 # dfir_evtx
 
 Parse **Windows Event Logs (`.evtx`)** with **EvtxECmd** into normalised JSON for
-the ADX or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs a
+the Elastic-native or SOF-ELK pipeline. The role is structure only — it asserts inputs, runs a
 preflight (docker, input dir, **the EvtxECmd image or operator-supplied release**),
 then invokes the `get_sybers_dfir.evtx` Python processor as a **single action** (one
 container run per log happens inside Python). One `<base>_EvtxECmd_Output.json` per
@@ -30,9 +30,9 @@ the MIT-licensed release at build time; the repo ships the recipe, not the binar
 ## Role variables
 | Variable | Default | Description |
 |---|---|---|
-| `dfir_evtx_pipeline` | `adx` | `adx` or `sofelk` — selects the output destination (the **playbook** decides this). |
+| `dfir_evtx_pipeline` | `elastic` | `elastic` or `sofelk` — selects the output destination (the **playbook** decides this). |
 | `dfir_evtx_evtx_dir` | `<repo>/data_store/raw/logs/winevt` | `.evtx` tree to parse (recursed). |
-| `dfir_evtx_adx_out_dir` | `<repo>/data_store/processed/windows_logs` | ADX-path output. |
+| `dfir_evtx_elastic_out_dir` | `<repo>/data_store/processed/windows_logs` | Elastic-path output. |
 | `dfir_evtx_sofelk_out_dir` | `<repo>/data_store/processed/sofelk/windows_logs` | SOF-ELK-path output. |
 | `dfir_evtx_use_bundled_image` | `true` | Use the bundled `dfir/evtxecmd` image; `false` = mount an operator release. |
 | `dfir_evtx_bundled_image` | `dfir/evtxecmd:latest` | Bundled image tag (built from `docker/evtxecmd`). |
@@ -49,7 +49,7 @@ log; a zero-record output is removed and counted `failed`, not treated as done.
 
 ## Example
 ```bash
-ansible-playbook playbooks/dfir-process-evtx.yml -e dfir_evtx_pipeline=adx
+ansible-playbook playbooks/dfir-process-evtx.yml -e dfir_evtx_pipeline=elastic
 ```
 
 ## Testing

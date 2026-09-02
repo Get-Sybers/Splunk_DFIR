@@ -2,14 +2,16 @@
 
 *Companion docs: [CAR-Relations.md](CAR-Relations.md) (per-object
 identity/join/inheritance/limit rules), [CAR-Extraction-Rules.md](CAR-Extraction-Rules.md)
-(the extraction principles) and [Kusto-Port.md](Kusto-Port.md) (the ADX backend).*
+(the extraction principles) and [riskgate.md](riskgate.md) (the Elastic-native
+backend: the CAR→ECS projection and the Phase-0 proofs it rests on).*
 
 ## 1. What it is
 
 `piiat_mitrecar` (via `get_sybers_dfir.mitrecar`) turns each ingested evidence **source** into finished
 **MITRE CAR** — every extractable record becomes a CAR **object** performing an
 **action** at a **timestamp**, carrying that object's canonical **properties** —
-and emits it as **JSON** for ADX to ingest as `mitre.car_*` tables.
+and emits it as **JSON** — one `car_<object>.jsonl` per object, the materialised
+CAR every sink reads.
 
 The design is deliberately small and **repeatable**. One recipe, run per source:
 
@@ -19,7 +21,7 @@ input source ──▶ artefact map(s) ──▶ normalize ──▶ its own car
     or a dir)      property rules)      CAR event)     table/object)    contained)
                                                                           │
                                                         JSON out ◀────────┘
-                                                   car_<object>.jsonl → ADX
+                                                   car_<object>.jsonl → the backend (CAR→ECS)
 ```
 
 It is the pipeline-wide application of what shipped in **[PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) v1.0.0** for
@@ -174,14 +176,18 @@ style. All joins are **scoped per evidence host**, never across hosts.
 The full per-object identity/join/inheritance/**limit** rules — and the MITRE
 wording that grounds each — are in `CAR-Relations.md`.
 
-## 8. Output contract (JSON → ADX)
+## 8. Output contract (JSON → the backend)
 
 `store.export_jsonl()` writes one `car_<object>.jsonl` per populated object (plus
-`car_relationships.jsonl` for the superset edges); each line is a flat CAR event
-(`native` as a JSON object for a dynamic column). `dxdfir ingest --only car` loads
-these as the materialized `mitre.car_*` tables — the JSON is the ADX contract, and
-the table schemas are generated from the engine model so they cannot drift (see
-[Kusto-Port.md](Kusto-Port.md)).
+`car_relationships.jsonl` for the superset edges) under
+`data_store/processed/car/<source>/`; each line is a flat CAR event — the common
+header (`timestamp`, `car_action`, `guid`, `owning_guid`, `link_confidence`,
+`source_artefact`, `source_host`), `native` as a JSON object, then the object's
+CAR fields as strings. That JSON **is** the contract: `dxdfir verify-car` gates
+it, and the Elastic-native path projects it to ECS (`guid → event.id`,
+`owning_guid → process.entity_id`, … — see [riskgate.md](riskgate.md)) into the
+`logs-car.*` data streams. The shape is the engine model's own, so it cannot
+drift from what the engine emits.
 
 ## 9. Cross-source correlation (deferred)
 

@@ -6,13 +6,13 @@
 - name: "evtx | assert inputs"
   ansible.builtin.assert:
     that:
-      - dfir_evtx_pipeline in ['adx', 'sofelk']
+      - dfir_evtx_pipeline in ['elastic', 'sofelk']
       # At least one input source: loose .evtx (evtx_dir) or disk images (image_src).
       - (dfir_evtx_evtx_dir | length > 0) or (dfir_evtx_image_src | length > 0)
       # A release dir is required only in operator mode; bundled mode bakes it in.
       - dfir_evtx_use_bundled_image | bool or dfir_evtx_evtxecmd_dir | length > 0
     fail_msg: >-
-      dfir_evtx needs dfir_evtx_pipeline (adx|sofelk), an input source
+      dfir_evtx needs dfir_evtx_pipeline (elastic|sofelk), an input source
       (dfir_evtx_evtx_dir or dfir_evtx_image_src), and (in operator mode)
       dfir_evtx_evtxecmd_dir.
     quiet: true
@@ -26,7 +26,7 @@
       tags: [always]
   tags: [always]
 
-# The pipeline decision (adx|sofelk) is carried by the resolved
+# The pipeline decision (elastic|sofelk) is carried by the resolved
 # dfir_evtx_out_dir default — the tasks themselves are pipeline-agnostic,
 # so there is ONE task file to maintain instead of a drifting pair.
 - name: "evtx | process"
