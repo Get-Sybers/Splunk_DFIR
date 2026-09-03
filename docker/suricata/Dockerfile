@@ -31,5 +31,5 @@ ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["suricata"]
 LABEL org.opencontainers.image.title="dfir/suricata" \
-      org.opencontainers.image.description="Minimal hardened Suricata (offline pcap replay) for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as uid 2000." \
+      org.opencontainers.image.description="Minimal hardened Suricata (offline pcap replay) for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as a fixed non-root uid (default 2000)." \
       com.get-sybers.hardened="true"

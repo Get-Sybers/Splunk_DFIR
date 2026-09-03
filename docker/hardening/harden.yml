@@ -12,7 +12,8 @@
 #   - sudo/su/pkexec and the account-manipulation setuid suite are REMOVED,
 #     and every remaining setuid/setgid bit is stripped
 #   - package managers and pip are removed (nothing installable at runtime)
-#   - the tool runs as the fixed unprivileged user (USER 2000:2000)
+#   - the tool runs as the fixed unprivileged user (USER harden_uid:harden_gid,
+#     default 2000:2000)
 #
 # Contract verified after every build by the dfir_images role (static image
 # config + a `docker export` scan proving the removed binaries are absent).

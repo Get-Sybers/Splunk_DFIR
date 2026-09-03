@@ -1,6 +1,7 @@
 import json
 """Unit tests for the pure logic of the evtx processor (no docker/EvtxECmd needed)."""
 import os
+import subprocess
 
 from get_sybers_dfir import evtx
 
@@ -158,9 +159,12 @@ def test_process_counts_empty_log_apart_from_failed(tmp_path, monkeypatch):
     (evtx_dir / "Empty.evtx").write_bytes(b"x")
 
     def fake_run(evtx_file, dest_dir, json_out, xml_out, image, **kw):
-        # simulate EvtxECmd on an empty log: exits 0, writes a BOM-only file
+        # simulate EvtxECmd on an empty log: exits 0, writes a BOM-only file, and
+        # reports it OPENED the log (a records-found tally of 0)
         with open(os.path.join(dest_dir, json_out), "wb") as f:
             f.write(b"\xef\xbb\xbf")
+        return subprocess.CompletedProcess(
+            [], 0, stdout=b"Total event log records found: 0", stderr=b"")
 
     monkeypatch.setattr(evtx, "_run_evtxecmd", fake_run)
     s = evtx.process(str(evtx_dir), str(tmp_path / "out"), image="dfir/evtxecmd:latest")
@@ -169,6 +173,25 @@ def test_process_counts_empty_log_apart_from_failed(tmp_path, monkeypatch):
     assert s["processed"] == 0
     # the BOM-only artefact is dropped so it never reaches ingest
     assert not (tmp_path / "out" / "unspecified_host" / "Empty_EvtxECmd_Output.json").exists()
+
+
+def test_process_counts_unreadable_log_as_failed(tmp_path, monkeypatch):
+    evtx_dir = tmp_path / "in"
+    evtx_dir.mkdir()
+    (evtx_dir / "Locked.evtx").write_bytes(b"x")
+
+    def fake_run(evtx_file, dest_dir, json_out, xml_out, image, **kw):
+        # EvtxECmd that could not READ the input: exits 0, writes no output, and
+        # prints "does not exist" — it never reports a records-found tally.
+        return subprocess.CompletedProcess(
+            [], 0, stdout=b"/input/Locked.evtx does not exist! Exiting", stderr=b"")
+
+    monkeypatch.setattr(evtx, "_run_evtxecmd", fake_run)
+    s = evtx.process(str(evtx_dir), str(tmp_path / "out"), image="dfir/evtxecmd:latest")
+    assert s["failed"] == 1        # a log EvtxECmd could not read is a failure...
+    assert s["empty"] == 0         # ...not a benign empty
+    assert s["processed"] == 0
+    assert "did not read" in s["results"][0]["error"]
 
 
 def test_process_bundled_mode_needs_no_dll(tmp_path, monkeypatch):

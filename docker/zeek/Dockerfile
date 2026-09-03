@@ -40,5 +40,5 @@ ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["zeek"]
 LABEL org.opencontainers.image.title="dfir/zeek" \
-      org.opencontainers.image.description="Minimal hardened Zeek LTS (offline pcap parsing) for the DX_DFIR zeek lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, no zkg/zeekctl, runs as uid 2000." \
+      org.opencontainers.image.description="Minimal hardened Zeek LTS (offline pcap parsing) for the DX_DFIR zeek lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, no zkg/zeekctl, runs as a fixed non-root uid (default 2000)." \
       com.get-sybers.hardened="true"

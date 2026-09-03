@@ -8,9 +8,10 @@
 #
 # The calling lane supplies: dfir_lane_argv (the processor command — the one
 # genuinely per-lane piece), dfir_lane_python_path, the output dir + glob to
-# verify (dfir_lane_verify_dir / dfir_lane_verify_glob), and any extra gate
-# assertions (dfir_lane_gate) evaluated against the run's JSON summary
-# (dfir_lane_run.stdout) and the on-disk verification (dfir_lane_verify).
+# verify (dfir_lane_verify_dir / dfir_lane_verify_glob), and an optional
+# lane-specific output gate (dfir_lane_gate_extra) — a task file that asserts on
+# the run's JSON summary (dfir_lane_run.stdout) and the verification
+# (dfir_lane_verify).
 - name: "process | run, verify and gate | {{ dfir_lane_name }}"
   block:
     - name: "process | run the processor | {{ dfir_lane_name }}"
