@@ -7,6 +7,7 @@ No docker/ansible — pure filesystem.
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -99,3 +100,63 @@ def test_sort_is_idempotent_on_second_run(tmp_path):
 def test_sort_unknown_collection_raises(tmp_path):
     with pytest.raises(ValueError):
         collection.sort_into(tmp_path, "nope")
+
+
+# --- registration of hand-staged (unregistered) collections ------------------
+def test_unregistered_detection(tmp_path):
+    root = collection.collection_dir(tmp_path, "hand")
+    (root / "pcaps").mkdir(parents=True)
+    _write(root / "pcaps" / "c.pcap", _PCAP_MAGIC)
+    assert collection.unregistered(tmp_path) == ["hand"]
+    assert collection.list_collections(tmp_path) == []
+    assert not collection.is_registered(tmp_path, "hand")
+
+
+def test_register_marks_and_logs(tmp_path):
+    root = collection.collection_dir(tmp_path, "hand")
+    (root / "pcaps").mkdir(parents=True)
+    _write(root / "pcaps" / "c.pcap", _PCAP_MAGIC)
+    collection.register(tmp_path, "hand")
+    assert collection.is_registered(tmp_path, "hand")
+    assert collection.unregistered(tmp_path) == []
+    assert "registered" in [e["event"] for e in collection.read_log(tmp_path, "hand")]
+
+
+def test_register_missing_dir_raises(tmp_path):
+    with pytest.raises(ValueError):
+        collection.register(tmp_path, "nope")
+
+
+# --- integrity: per-file SHA-1 + collection rollup ---------------------------
+def test_hash_collection_is_deterministic_and_content_addressed(tmp_path):
+    collection.create(tmp_path, "case")
+    root = collection.collection_dir(tmp_path, "case")
+    _write(root / "pcaps" / "a.pcap", b"AAA")
+    _write(root / "memory" / "b.mem", b"BBB")
+    per_file, roll1 = collection.hash_collection(tmp_path, "case")
+    assert dict(per_file)["pcaps/a.pcap"] == hashlib.sha1(b"AAA").hexdigest()
+    # rollup == sha1 of the per-file sha1 strings, alphabetical, concatenated
+    expected = hashlib.sha1("".join(sorted(h for _r, h in per_file)).encode()).hexdigest()
+    assert roll1 == expected
+    assert collection.hash_collection(tmp_path, "case")[1] == roll1        # deterministic
+    _write(root / "memory" / "b.mem", b"CHANGED")
+    assert collection.hash_collection(tmp_path, "case")[1] != roll1        # content-addressed
+
+
+def test_write_manifest_persists_and_logs(tmp_path):
+    collection.create(tmp_path, "case")
+    root = collection.collection_dir(tmp_path, "case")
+    _write(root / "pcaps" / "a.pcap", b"AAA")
+    rollup, count = collection.write_manifest(tmp_path, "case")
+    assert count == 1 and collection.manifest_rollup(tmp_path, "case") == rollup
+    manifest = (root / ".collection.sha1").read_text()
+    assert "pcaps/a.pcap" in manifest and hashlib.sha1(b"AAA").hexdigest() in manifest
+    assert "hashed" in [e["event"] for e in collection.read_log(tmp_path, "case")]
+
+
+def test_manifest_excludes_own_dotfiles(tmp_path):
+    collection.create(tmp_path, "case")
+    _write(collection.collection_dir(tmp_path, "case") / "pcaps" / "a.pcap", b"AAA")
+    collection.write_manifest(tmp_path, "case")           # writes .collection.sha1
+    files = [r for r, _h in collection.hash_collection(tmp_path, "case")[0]]
+    assert files == ["pcaps/a.pcap"]                       # markers/log/manifest not hashed

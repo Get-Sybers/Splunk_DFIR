@@ -3,29 +3,35 @@
 A *collection* is a named case folder under
 ``data_store/raw/collections/<name>/`` holding the same per-lane subdirs the
 processing roles read from (``pcaps/``, ``logs/winevt/``, ``memory/``,
-``disk_images/``, ``VM_files/``).
+``disk_images/``, ``VM_files/``). A registered collection carries a
+``.collection`` marker and a ``.collection.log`` — an append-only record of what
+was created, registered, sorted and processed, so a case keeps its own history.
 
-Drop mixed evidence into the dropzone ``data_store/raw/sort/`` and
-``dxdfir collection sort <name>`` files each item into that collection's matching
-lane subdir. Classification is **not** reinvented here — it delegates to the
-processors' own magic-byte detectors (:func:`zeek.is_pcap`,
-:func:`plaso.detect_format` / :func:`plaso.ext_format`,
-:func:`volatility.is_memory_image`), so the sorter and the pipeline always agree
-on what a file is. **Content (magic bytes) wins over extension**, so an E01
-mislabelled ``.raw`` files as a disk image by its real header, not its name.
+Two ways in:
 
-``dxdfir process all <name>`` then drives every lane over just that collection,
-each role scoped to the collection's subdir via its input-dir Ansible var.
+* ``dxdfir collection create`` + drop into ``data_store/raw/sort/`` +
+  ``dxdfir collection sort`` — the tool files each item into the right lane
+  subdir. Classification is **not** reinvented: it delegates to the processors'
+  own magic-byte detectors (:func:`zeek.is_pcap`, :func:`plaso.detect_format` /
+  :func:`plaso.ext_format`, :func:`volatility.is_memory_image`), so **content
+  beats extension** — an E01 mislabelled ``.raw`` files as a disk image by its
+  header, not its name.
+* Stage the lane subdirs by hand. Such a folder is an *unregistered* collection
+  (no marker); the CLI detects it and offers to register it so the run is logged
+  (see :func:`unregistered` / :func:`register`).
 
-Forensic-safe: a header-less file two lanes both claim by extension (``.raw`` is a
-memory image AND a raw disk image) or that none recognise is never guessed — it
+Forensic-safe: a header-less file two lanes both claim by extension (``.raw`` is
+a memory image AND a raw disk image) or that none recognise is never guessed — it
 stays in the dropzone and is reported, for the operator to place by hand.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import shutil
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -63,6 +69,8 @@ _NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _COLLECTIONS_REL = ("data_store", "raw", "collections")
 _DROPZONE_REL = ("data_store", "raw", "sort")
 _MARKER = ".collection"
+_LOG = ".collection.log"
+_MANIFEST = ".collection.sha1"
 
 
 # --------------------------------------------------------------- paths / naming
@@ -82,13 +90,129 @@ def valid_name(name: str) -> bool:
     return name not in (".", "..") and bool(_NAME_RE.match(name))
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+# --------------------------------------------------------------- registry / log
+def is_registered(repo: Path, name: str) -> bool:
+    """True when the collection carries the ``.collection`` marker."""
+    return (collection_dir(repo, name) / _MARKER).is_file()
+
+
 def list_collections(repo: Path) -> list[str]:
-    """Names of collections (a dir under collections/ carrying the marker)."""
+    """Registered collections (a dir under collections/ carrying the marker)."""
     root = collections_root(repo)
     if not root.is_dir():
         return []
     return sorted(p.name for p in root.iterdir()
                   if p.is_dir() and (p / _MARKER).exists())
+
+
+def _has_evidence(d: Path) -> bool:
+    return any(p.is_file() and not p.name.startswith(".") for p in d.rglob("*"))
+
+
+def unregistered(repo: Path) -> list[str]:
+    """collections/ subdirs that hold evidence but carry NO marker — a case an
+    operator staged by hand instead of via ``collection create`` + ``sort``."""
+    root = collections_root(repo)
+    if not root.is_dir():
+        return []
+    return sorted(p.name for p in root.iterdir()
+                  if p.is_dir() and not (p / _MARKER).exists()
+                  and valid_name(p.name) and _has_evidence(p))
+
+
+def _write_marker(root: Path, name: str) -> None:
+    (root / _MARKER).write_text(f"name: {name}\nregistered_at: {_now()}\n", encoding="utf-8")
+
+
+def log_event(repo: Path, name: str, event: str, **detail) -> None:
+    """Append one JSONL record ({ts, event, ...detail}) to the collection log."""
+    root = collection_dir(repo, name)
+    root.mkdir(parents=True, exist_ok=True)
+    rec = {"ts": _now(), "event": event, **detail}
+    with open(root / _LOG, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec, sort_keys=False) + "\n")
+
+
+def read_log(repo: Path, name: str) -> list[dict]:
+    """The collection's log events, oldest first (``[]`` if none)."""
+    p = collection_dir(repo, name) / _LOG
+    if not p.is_file():
+        return []
+    out: list[dict] = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+# --------------------------------------------------------------- integrity (SHA-1)
+def _sha1_file(path: Path) -> str:
+    h = hashlib.sha1()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def evidence_files(root: Path) -> list[Path]:
+    """Every evidence file under a collection (its lane subdirs), excluding the
+    collection's own dotfiles (.collection, .collection.log, .collection.sha1)."""
+    return sorted(p for p in root.rglob("*")
+                  if p.is_file() and not p.name.startswith("."))
+
+
+def hash_collection(repo: Path, name: str) -> tuple[list[tuple[str, str]], str]:
+    """``([(relpath, sha1)], collection_sha1)``. Every evidence file is SHA-1'd;
+    the collection's SHA-1 is the SHA-1 of every file's SHA-1 hex string sorted
+    alphabetically and concatenated — order-independent, and it changes whenever
+    any file's content changes."""
+    root = collection_dir(repo, name)
+    per_file = [(str(p.relative_to(root)), _sha1_file(p)) for p in evidence_files(root)]
+    per_file.sort(key=lambda t: t[0])                    # manifest ordered by path
+    rollup = hashlib.sha1(
+        "".join(sorted(sha1 for _rel, sha1 in per_file)).encode("ascii")).hexdigest()
+    return per_file, rollup
+
+
+def write_manifest(repo: Path, name: str) -> tuple[str, int]:
+    """(Re)compute the collection's SHA-1 manifest, persist it to
+    ``.collection.sha1`` and log a 'hashed' event (when registered). Returns
+    ``(collection_sha1, file_count)``. Note: hashes every evidence file, so it is
+    as slow as the evidence is large."""
+    root = collection_dir(repo, name)
+    root.mkdir(parents=True, exist_ok=True)
+    per_file, rollup = hash_collection(repo, name)
+    header = (f"# DX_DFIR collection manifest (SHA-1)\n"
+              f"# collection: {name}\n"
+              f"# collection_sha1: {rollup}\n"
+              f"# files: {len(per_file)}\n"
+              f"# generated: {_now()}\n")
+    body = "".join(f"{sha1}  {rel}\n" for rel, sha1 in per_file)
+    (root / _MANIFEST).write_text(header + body, encoding="utf-8")
+    if is_registered(repo, name):
+        log_event(repo, name, "hashed", collection_sha1=rollup, files=len(per_file))
+    return rollup, len(per_file)
+
+
+def manifest_rollup(repo: Path, name: str) -> str | None:
+    """The stored collection SHA-1 from the manifest header, or None if never
+    hashed. Cheap — reads the header, does not re-hash."""
+    p = collection_dir(repo, name) / _MANIFEST
+    if not p.is_file():
+        return None
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.startswith("# collection_sha1:"):
+            return line.split(":", 1)[1].strip() or None
+    return None
 
 
 def create(repo: Path, name: str) -> Path:
@@ -98,9 +222,29 @@ def create(repo: Path, name: str) -> Path:
         raise ValueError(
             f"invalid collection name {name!r} — use letters/digits then . _ -")
     root = collection_dir(repo, name)
+    new = not (root / _MARKER).exists()
     for sub in LANE_SUBDIRS:
         (root / sub).mkdir(parents=True, exist_ok=True)
-    (root / _MARKER).write_text(f"name: {name}\n", encoding="utf-8")
+    _write_marker(root, name)
+    dropzone(repo).mkdir(parents=True, exist_ok=True)
+    if new:
+        log_event(repo, name, "created")
+    return root
+
+
+def register(repo: Path, name: str, *, source: str = "detected") -> Path:
+    """Register an EXISTING (hand-staged) collection dir: write the marker and log
+    it. Does not create lane subdirs. Raises ValueError if the dir is absent or
+    the name is invalid. Idempotent (a registered collection is left as-is)."""
+    if not valid_name(name):
+        raise ValueError(
+            f"invalid collection name {name!r} — use letters/digits then . _ -")
+    root = collection_dir(repo, name)
+    if not root.is_dir():
+        raise ValueError(f"no collection folder to register at {root}")
+    if not (root / _MARKER).exists():
+        _write_marker(root, name)
+        log_event(repo, name, "registered", source=source)
     dropzone(repo).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -178,15 +322,16 @@ class SortResult:
 
 def sort_into(repo: Path, name: str, *, dry_run: bool = False) -> SortResult:
     """Classify each file directly in the dropzone and move it into the named
-    collection's matching lane subdir. Ambiguous/unknown files stay and are
-    reported. Sub-directories and dotfiles in the dropzone are ignored."""
-    if name not in list_collections(repo):
+    collection's matching lane subdir. Works on any existing collection dir
+    (registered or not); logs the move only when the collection is registered.
+    Ambiguous/unknown files stay and are reported; dirs/dotfiles are ignored."""
+    root = collection_dir(repo, name)
+    if not root.is_dir():
         raise ValueError(
             f"no such collection {name!r} — create it first: "
             f"dxdfir collection create --name {name}")
     dz = dropzone(repo)
     dz.mkdir(parents=True, exist_ok=True)
-    root = collection_dir(repo, name)
     res = SortResult()
     for p in sorted(dz.iterdir()):
         if p.is_dir() or p.name.startswith("."):
@@ -203,6 +348,8 @@ def sort_into(repo: Path, name: str, *, dry_run: bool = False) -> SortResult:
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(p), str(dest))
         res.moved.setdefault(subdir, []).append(p.name)
+    if not dry_run and res.moved_count and is_registered(repo, name):
+        log_event(repo, name, "sorted", moved=res.moved_count, skipped=len(res.skipped))
     return res
 
 
