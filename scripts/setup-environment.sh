@@ -278,15 +278,38 @@ fi
 # point, which is exactly where the CLI resolves it (the CLI drives the Ansible
 # collection). ansible-core is a declared dependency, so this one install gives a
 # working `dxdfir process/ingest/deploy/detect`.
+#
+# --editable is REQUIRED, not a preference. get_sybers_dfir/mitrecar.py locates the
+# vendored PIIAT-MitreCar engine RELATIVE TO ITS OWN FILE (_REPO_ROOT = three dirs
+# up from __file__ -> third_party/piiat-mitrecar). A plain copying install puts the
+# package under the venv's site-packages, three dirs up from which is .../lib/pythonX.Y
+# with no third_party/ — so `dxdfir build-car` can't reach the engine and dies
+# "third_party/piiat-mitrecar is not initialised", even though the submodules WERE
+# initialised (above) in the repo tree. Editable keeps the installed module IN the
+# repo tree, so the engine and its nested car / attack-datasources submodules resolve.
 ################################################################################
 DXDFIR_VENV="${DXDFIR_VENV:-/opt/dxdfir/venv}"
 echo "🐍 Installing the dxdfir CLI into $DXDFIR_VENV ..."
 $SUDO python3 -m venv "$DXDFIR_VENV" || die "Failed to create the CLI venv (need python3-venv)."
 $SUDO "$DXDFIR_VENV/bin/pip" install --quiet --upgrade pip || die "pip upgrade in the CLI venv failed."
-$SUDO "$DXDFIR_VENV/bin/pip" install --quiet "$REPO_ROOT_DIR/python" \
+$SUDO "$DXDFIR_VENV/bin/pip" install --quiet --editable "$REPO_ROOT_DIR/python" \
     || die "Failed to install the dxdfir CLI (and its ansible-core dependency)."
 $SUDO ln -sf "$DXDFIR_VENV/bin/dxdfir" /usr/local/bin/dxdfir
 echo "✅ dxdfir installed: $(/usr/local/bin/dxdfir --version 2>/dev/null || echo '/usr/local/bin/dxdfir')"
+
+# ansible-core (a declared dependency, installed with the CLI above) puts
+# ansible-playbook / ansible / ansible-galaxy in the SAME venv bin. dxdfir resolves
+# ansible-playbook from there itself, but a HUMAN — including the dfir-build-images
+# step this script prints at the end — needs them on PATH too, or `ansible-playbook
+# ...` is "command not found" on a fresh shell despite ansible being installed.
+# Expose them beside dxdfir, exactly as the CLI is exposed above.
+for _ans in ansible ansible-playbook ansible-galaxy; do
+    [[ -x "$DXDFIR_VENV/bin/$_ans" ]] \
+        || die "Expected $_ans in $DXDFIR_VENV/bin after installing ansible-core."
+    $SUDO ln -sf "$DXDFIR_VENV/bin/$_ans" "/usr/local/bin/$_ans" \
+        || die "Failed to expose $_ans on PATH (/usr/local/bin)."
+done
+echo "✅ ansible on PATH: $(/usr/local/bin/ansible-playbook --version 2>/dev/null | head -1 || echo 'ansible-playbook')"
 
 ################################################################################
 # Install the collection's pinned Ansible dependencies (requirements.yml — never
