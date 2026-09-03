@@ -43,6 +43,18 @@ data_store/
 
 **1. Place raw evidence** in the matching `raw/` subdirectory above.
 
+*Or auto-sort a mixed drop.* Create a collection and let `dxdfir` file a pile of
+mixed evidence into its lane subdirs by **magic bytes** (content, not extension —
+a mislabelled `.raw` E01 still lands in `disk_images/`; a header-less `.raw` with
+no signature is left in the dropzone for you to place by hand):
+
+```bash
+dxdfir collection create --name case-a   # -> data_store/raw/collections/case-a/
+#   ...drop mixed files into data_store/raw/sort/...
+dxdfir collection sort case-a            # magic-first sort into the lane subdirs
+dxdfir process all case-a                # run every lane over just this collection
+```
+
 **2. Process it.** The `dxdfir` CLI is the front-end (see
 [How It Runs](/README.md#how-it-runs)):
 
