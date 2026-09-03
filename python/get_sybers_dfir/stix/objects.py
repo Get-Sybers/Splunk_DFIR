@@ -78,9 +78,11 @@ EXTENSION_VERSION = "1.0.0"
 EXTENSION_CREATED = "2026-09-03T00:00:00.000Z"
 EXTENSION_MODIFIED = "2026-09-03T00:00:00.000Z"
 EXTENSION_NAME = "DX_DFIR detection exchange"
-EXTENSION_SCHEMA_URL = ("https://raw.githubusercontent.com/Get-Sybers/DX_DFIR/dev/python/"
+# Released STIX references the stable released branch (main), not dev (WIP), so
+# consumers of the extension schema/docs don't chase a moving target.
+EXTENSION_SCHEMA_URL = ("https://raw.githubusercontent.com/Get-Sybers/DX_DFIR/main/python/"
                         "get_sybers_dfir/stix/extension/dxdfir-extension.schema.json")
-EXTENSION_DOC_URL = "https://github.com/Get-Sybers/DX_DFIR/blob/dev/python/get_sybers_dfir/stix/README.md"
+EXTENSION_DOC_URL = "https://github.com/Get-Sybers/DX_DFIR/blob/main/python/get_sybers_dfir/stix/README.md"
 
 RELATIONSHIP_CLASS_DECLARED = "declared"
 RELATIONSHIP_CLASS_DERIVED = "derived"

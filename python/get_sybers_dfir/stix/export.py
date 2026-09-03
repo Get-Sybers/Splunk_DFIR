@@ -117,7 +117,9 @@ UNCASED = "uncased"
 # The package's own rules-as-code (detect/rules): the default rules directory.
 PACKAGE_RULES_DIR = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)), os.pardir, "detect", "rules"))
-RULE_URL = "https://github.com/Get-Sybers/DX_DFIR/blob/dev/python/get_sybers_dfir/detect/rules/{id}.yml"
+# Released STIX references the stable released branch (main), not dev (WIP), so
+# exported artifacts don't point consumers at a moving target.
+RULE_URL = "https://github.com/Get-Sybers/DX_DFIR/blob/main/python/get_sybers_dfir/detect/rules/{id}.yml"
 # STIX 2.1 pattern-type-ov (§10.19). The rules' own languages are trust-group
 # values beyond it (BP §8.1) — documented in stix/README.md, versioned by
 # ``pattern_version`` (the Elastic stack the rule is known to run on).
