@@ -5,7 +5,7 @@ A *collection* is a named case folder under
 processing roles read from (``pcaps/``, ``logs/winevt/``, ``memory/``,
 ``disk_images/``, ``VM_files/``). A registered collection carries a
 ``.collection`` marker and a ``.collection.log`` — an append-only record of what
-was created, registered, sorted and processed, so a case keeps its own history.
+was created, registered, sorted, hashed and processed, so a case keeps its history.
 
 Two ways in:
 

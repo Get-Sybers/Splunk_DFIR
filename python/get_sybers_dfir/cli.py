@@ -445,7 +445,7 @@ def collection_create(
 def collection_list(
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """List collections (registered and hand-staged) with counts and rollup SHA-1."""
+    """List collections (registered and hand-staged) with counts and rollup SHA-256."""
     repo = _repo_root(repo_root)
     registered = _collection.list_collections(repo)
     unreg = _collection.unregistered(repo)
@@ -476,7 +476,7 @@ def collection_list(
 @collection_app.command("register")
 def collection_register(
     name: str = typer.Argument(..., help="A hand-staged folder under data_store/raw/collections/."),
-    do_hash: bool = typer.Option(True, "--hash/--no-hash", help="Also SHA-1 the evidence (manifest + rollup)."),
+    do_hash: bool = typer.Option(True, "--hash/--no-hash", help="Also hash the evidence (SHA-256 + SHA-1 manifest + rollup)."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
     """Register a hand-staged collection so it is tracked and logged."""
@@ -533,7 +533,7 @@ def collection_sort(
     name: str = typer.Argument(None, help="Target collection (defaults to the only one, if unambiguous)."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would move; move nothing."),
     no_register: bool = typer.Option(False, "--no-register", help="Sort an unregistered collection without registering it."),
-    no_hash: bool = typer.Option(False, "--no-hash", help="Skip the SHA-1 manifest refresh after sorting."),
+    no_hash: bool = typer.Option(False, "--no-hash", help="Skip the hash manifest refresh after sorting."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
     """Sort the data_store/raw/sort dropzone into a collection's lane subdirs by file type.
@@ -541,7 +541,7 @@ def collection_sort(
     Classification delegates to the processors' magic-byte detectors, so CONTENT
     beats extension (a mislabelled `.raw` E01 lands in disk_images/); an ambiguous
     (`.raw` = memory OR disk) or unknown file is left in the dropzone, never guessed.
-    A registered collection gets its SHA-1 manifest refreshed afterwards.
+    A registered collection gets its hash manifest refreshed afterwards.
     """
     repo = _repo_root(repo_root)
     known = _collection.list_collections(repo) + _collection.unregistered(repo)
