@@ -35,8 +35,8 @@
       - dfir_images_inspect.images[0].Config.User == (dfir_images_uid | string) ~ ':' ~ (dfir_images_gid | string)
       - (dfir_images_inspect.images[0].Config.Labels or {})['com.get-sybers.hardened'] | default('') == 'true'
     fail_msg: >-
-      dfir/{{ dfir_images_name }} fails the static contract (USER 2000:2000 +
-      com.get-sybers.hardened label).
+      dfir/{{ dfir_images_name }} fails the static contract (USER
+      {{ dfir_images_uid }}:{{ dfir_images_gid }} + com.get-sybers.hardened label).
     quiet: true
 
 # Filesystem scan without needing a shell in the image: export the image as a
