@@ -53,14 +53,13 @@ argument_specs:
         type: str
         required: false
         description: "Glob proving output (empty => skip the on-disk verify step)."
-      dfir_lane_gate:
-        type: list
-        elements: str
+      dfir_lane_gate_extra:
+        type: str
         required: false
-        default: []
         description: >-
-          Extra assert expressions ANDed with the invariant failed==0, evaluated
-          against the run summary and on-disk verification.
+          Optional lane-specific output-gate task file (absolute path) with the
+          lane's own assert on the run summary + on-disk verification, included at
+          the end of the process block.
       dfir_lane_preflight_extra:
         type: str
         required: false

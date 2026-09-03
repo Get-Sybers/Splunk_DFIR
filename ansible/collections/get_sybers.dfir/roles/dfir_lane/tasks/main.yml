@@ -8,12 +8,12 @@
 # The role GROUPS; the playbook DECIDES. Idempotence lives in each Python
 # processor, not in a task's `when:`.
 
-- name: "{{ dfir_lane_name }} | preflight"
+- name: "run preflight | {{ dfir_lane_name }}"
   ansible.builtin.include_tasks:
     file: preflight.yml
     apply:
       tags: [always]
   tags: [always]
 
-- name: "{{ dfir_lane_name }} | process"
+- name: "run process | {{ dfir_lane_name }}"
   ansible.builtin.include_tasks: process.yml

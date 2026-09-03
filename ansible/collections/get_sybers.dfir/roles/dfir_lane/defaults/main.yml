@@ -20,10 +20,12 @@ dfir_lane_argv: []
 # (empty glob => skip the on-disk verify step).
 dfir_lane_verify_dir: ""
 dfir_lane_verify_glob: ""
-# Extra assert 'that' expressions ANDed with the invariant failed==0 — evaluated
-# against the run summary (dfir_lane_run.stdout) and verification (dfir_lane_verify),
-# e.g. "dfir_lane_verify.matched | int > 0 or (dfir_lane_run.stdout | from_json).files | int == 0".
-dfir_lane_gate: []
+# Optional lane-specific output gate: a task file (absolute path) with the lane's
+# own trusted assert on the run summary (dfir_lane_run) + verification
+# (dfir_lane_verify), included at the end of the process block. Kept as a task —
+# not an expression string — because ansible-core rejects evaluating
+# variable-sourced templates in `that:`.
+dfir_lane_gate_extra: ""
 # Optional lane-specific preflight task file (absolute path), included after the
 # input-dir asserts and before the module/image guards.
 dfir_lane_preflight_extra: ""

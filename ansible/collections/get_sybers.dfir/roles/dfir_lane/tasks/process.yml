@@ -11,9 +11,9 @@
 # verify (dfir_lane_verify_dir / dfir_lane_verify_glob), and any extra gate
 # assertions (dfir_lane_gate) evaluated against the run's JSON summary
 # (dfir_lane_run.stdout) and the on-disk verification (dfir_lane_verify).
-- name: "{{ dfir_lane_name }}-process | process, verify and gate"
+- name: "process | run, verify and gate | {{ dfir_lane_name }}"
   block:
-    - name: "{{ dfir_lane_name }}-process | run the {{ dfir_lane_name }} processor"
+    - name: "process | run the processor | {{ dfir_lane_name }}"
       ansible.builtin.command:
         argv: "{{ dfir_lane_argv }}"
       environment:
@@ -21,7 +21,7 @@
       register: dfir_lane_run
       changed_when: (dfir_lane_run.stdout | from_json).processed | int > 0
 
-    - name: "{{ dfir_lane_name }}-process | verify output on disk"
+    - name: "process | verify output on disk | {{ dfir_lane_name }}"
       ansible.builtin.find:
         paths: "{{ dfir_lane_verify_dir }}"
         patterns: "{{ dfir_lane_verify_glob }}"
@@ -29,18 +29,27 @@
       register: dfir_lane_verify
       when: dfir_lane_verify_glob | length > 0
 
-    - name: "{{ dfir_lane_name }}-process | assert the processor succeeded"
+    - name: "process | assert no processor failures | {{ dfir_lane_name }}"
       when: dfir_lane_run is not skipped
       ansible.builtin.assert:
-        # failed==0 is invariant; the lane adds its own output check via
-        # dfir_lane_gate (e.g. "matched > 0 unless there was nothing to produce").
-        that: "{{ ['(dfir_lane_run.stdout | from_json).failed | int == 0'] + dfir_lane_gate }}"
+        that:
+          - (dfir_lane_run.stdout | from_json).failed | int == 0
         fail_msg: >-
-          {{ dfir_lane_name }} reported failures, or produced no output though
-          input was present.
+          {{ dfir_lane_name }} reported processor failures — see the summary above.
         quiet: true
+
+    # Lane-specific output gate: a trusted, literal assert in the lane's own file
+    # (e.g. evtx's "produced JSON unless there were no logs"), with dfir_lane_run +
+    # dfir_lane_verify in scope. Kept in the lane — NOT passed as an expression
+    # string — because ansible-core rejects evaluating variable-sourced templates
+    # in `that:` (template-injection guard).
+    - name: "process | lane output gate | {{ dfir_lane_name }}"
+      ansible.builtin.include_tasks: "{{ dfir_lane_gate_extra }}"
+      when:
+        - dfir_lane_run is not skipped
+        - dfir_lane_gate_extra | length > 0
   rescue:
-    - name: "{{ dfir_lane_name }}-process | surface processor diagnostics"
+    - name: "process | surface processor diagnostics | {{ dfir_lane_name }}"
       ansible.builtin.fail:
         msg: >-
           dfir_{{ dfir_lane_name }} processing failed.

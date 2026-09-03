@@ -10,12 +10,12 @@
 # dfir_lane_preflight_extra task file, included at the point the per-lane checks
 # historically ran (after the input-dir asserts, before the module/image guards).
 
-- name: "{{ dfir_lane_name }}-preflight | docker daemon reachable"
+- name: "preflight | docker daemon reachable | {{ dfir_lane_name }}"
   ansible.builtin.command: docker version
   register: dfir_lane_docker
   changed_when: false
 
-- name: "{{ dfir_lane_name }}-preflight | stat each declared input dir"
+- name: "preflight | stat each declared input dir | {{ dfir_lane_name }}"
   ansible.builtin.stat:
     path: "{{ item.path }}"
   loop: "{{ dfir_lane_input_checks }}"
@@ -23,7 +23,7 @@
     label: "{{ item.name }}"
   register: dfir_lane_input_stats
 
-- name: "{{ dfir_lane_name }}-preflight | each input dir exists and is a directory"
+- name: "preflight | input dirs exist and are directories | {{ dfir_lane_name }}"
   ansible.builtin.assert:
     that:
       - item.stat.exists
@@ -37,11 +37,11 @@
 
 # Lane-specific preconditions (e.g. evtx's bundled-image vs operator-release
 # checks). Runs at the same point the per-lane checks used to.
-- name: "{{ dfir_lane_name }}-preflight | lane-specific checks"
+- name: "preflight | lane-specific checks | {{ dfir_lane_name }}"
   ansible.builtin.include_tasks: "{{ dfir_lane_preflight_extra }}"
   when: dfir_lane_preflight_extra | length > 0
 
-- name: "{{ dfir_lane_name }}-preflight | the {{ dfir_lane_module }} module imports"
+- name: "preflight | processor module imports | {{ dfir_lane_name }}"
   ansible.builtin.command:
     argv: ["python3", "-c", "import {{ dfir_lane_module }}"]
   environment:
@@ -53,7 +53,7 @@
 # KNOWN hardened dfir/* image (label + uid + expected name). A substituted or
 # un-hardened image stops the lane before any evidence is touched. A non-dfir
 # image (e.g. an operator-supplied .NET runtime) is out of scope and passes.
-- name: "{{ dfir_lane_name }}-preflight | the tool image(s) are known hardened dfir/* images"
+- name: "preflight | tool images are known hardened dfir/* images | {{ dfir_lane_name }}"
   ansible.builtin.command:
     argv: ["python3", "-m", "get_sybers_dfir.images", "--require", "{{ item }}"]
   environment:
