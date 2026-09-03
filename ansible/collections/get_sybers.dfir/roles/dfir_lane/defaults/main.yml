@@ -1,0 +1,29 @@
+---
+# Interface consumed by tasks/{preflight,process}.yml. A per-tool lane role sets
+# these (in its own defaults/main.yml) and delegates via
+# `include_role: name=dfir_lane`. Empty/neutral defaults here document the
+# contract and keep the shared role importable on its own.
+
+# Short lane token used in task names and diagnostics (e.g. "evtx").
+dfir_lane_name: lane
+# Python module the preflight import-checks (e.g. get_sybers_dfir.evtx).
+dfir_lane_module: ""
+# PYTHONPATH for the in-repo processor run + module import (a deployed install drops it).
+dfir_lane_python_path: ""
+# Tool images the supply-chain guard requires (only dfir/* are checked).
+dfir_lane_images: []
+# Input dirs that must exist before processing: [{name, path}].
+dfir_lane_input_checks: []
+# The processor command argv — the one genuinely per-lane piece.
+dfir_lane_argv: []
+# Output verification: scan dfir_lane_verify_dir for dfir_lane_verify_glob
+# (empty glob => skip the on-disk verify step).
+dfir_lane_verify_dir: ""
+dfir_lane_verify_glob: ""
+# Extra assert 'that' expressions ANDed with the invariant failed==0 — evaluated
+# against the run summary (dfir_lane_run.stdout) and verification (dfir_lane_verify),
+# e.g. "dfir_lane_verify.matched | int > 0 or (dfir_lane_run.stdout | from_json).files | int == 0".
+dfir_lane_gate: []
+# Optional lane-specific preflight task file (absolute path), included after the
+# input-dir asserts and before the module/image guards.
+dfir_lane_preflight_extra: ""

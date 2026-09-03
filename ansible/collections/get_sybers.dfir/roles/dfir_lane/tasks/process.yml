@@ -1,0 +1,48 @@
+---
+# Shared processing skeleton for every hardened tool lane (was copy-pasted into
+# each lane's tasks/process.yml). The three steps run as ONE guarded unit: on any
+# failure the rescue surfaces the processor's own JSON summary + stderr as one
+# clear diagnostic instead of a raw traceback, then fails the play (no
+# half-configured silence). In check mode the command is skipped, so the gate on
+# its output is too.
+#
+# The calling lane supplies: dfir_lane_argv (the processor command — the one
+# genuinely per-lane piece), dfir_lane_python_path, the output dir + glob to
+# verify (dfir_lane_verify_dir / dfir_lane_verify_glob), and any extra gate
+# assertions (dfir_lane_gate) evaluated against the run's JSON summary
+# (dfir_lane_run.stdout) and the on-disk verification (dfir_lane_verify).
+- name: "{{ dfir_lane_name }}-process | process, verify and gate"
+  block:
+    - name: "{{ dfir_lane_name }}-process | run the {{ dfir_lane_name }} processor"
+      ansible.builtin.command:
+        argv: "{{ dfir_lane_argv }}"
+      environment:
+        PYTHONPATH: "{{ dfir_lane_python_path }}"
+      register: dfir_lane_run
+      changed_when: (dfir_lane_run.stdout | from_json).processed | int > 0
+
+    - name: "{{ dfir_lane_name }}-process | verify output on disk"
+      ansible.builtin.find:
+        paths: "{{ dfir_lane_verify_dir }}"
+        patterns: "{{ dfir_lane_verify_glob }}"
+        recurse: true
+      register: dfir_lane_verify
+      when: dfir_lane_verify_glob | length > 0
+
+    - name: "{{ dfir_lane_name }}-process | assert the processor succeeded"
+      when: dfir_lane_run is not skipped
+      ansible.builtin.assert:
+        # failed==0 is invariant; the lane adds its own output check via
+        # dfir_lane_gate (e.g. "matched > 0 unless there was nothing to produce").
+        that: "{{ ['(dfir_lane_run.stdout | from_json).failed | int == 0'] + dfir_lane_gate }}"
+        fail_msg: >-
+          {{ dfir_lane_name }} reported failures, or produced no output though
+          input was present.
+        quiet: true
+  rescue:
+    - name: "{{ dfir_lane_name }}-process | surface processor diagnostics"
+      ansible.builtin.fail:
+        msg: >-
+          dfir_{{ dfir_lane_name }} processing failed.
+          Summary: {{ dfir_lane_run.stdout | default('(no summary emitted)') | trim }}
+          Stderr: {{ dfir_lane_run.stderr | default('') | trim | truncate(1000) }}
