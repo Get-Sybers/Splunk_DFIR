@@ -9,12 +9,14 @@
 ARG BASE=debian:trixie-slim
 
 FROM ${BASE} AS hardened
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends suricata ansible-core
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
-    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml \
+    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml -e harden_uid=${DFIR_UID} -e harden_gid=${DFIR_GID} \
       -e '{"harden_extra_remove": ["/usr/bin/suricata-update", "/usr/bin/suricatasc", "/usr/bin/suricatactl", "/var/lib/suricata/update"]}'; \
     rm -rf /usr/bin/ansible* /usr/lib/python3/dist-packages/ansible* \
            /etc/ansible /root/.ansible /tmp/hardening \
@@ -24,7 +26,9 @@ RUN set -eux; \
 FROM scratch
 COPY --from=hardened / /
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/tmp
-USER 2000:2000
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
+USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["suricata"]
 LABEL org.opencontainers.image.title="dfir/suricata" \
       org.opencontainers.image.description="Minimal hardened Suricata (offline pcap replay) for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as uid 2000." \

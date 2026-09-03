@@ -63,3 +63,18 @@ dfir_evtx_image: "{{ dfir_evtx_bundled_image if dfir_evtx_use_bundled_image | bo
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_evtx_python_path: "{{ dfir_evtx_repo_root }}/python"
 dfir_evtx_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_evtx_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.evtx', '--out-dir', dfir_evtx_out_dir, '--image', dfir_evtx_image]
+  + (['--evtx-dir', dfir_evtx_evtx_dir] if dfir_evtx_evtx_dir | length > 0 else [])
+  + (['--image-src', dfir_evtx_image_src, '--plaso-image', dfir_evtx_plaso_image]
+  + (['--stage-dir', dfir_evtx_stage_dir] if dfir_evtx_stage_dir | length > 0 else [])
+  + (['--vss'] if dfir_evtx_vss | bool else [])
+  if dfir_evtx_image_src | length > 0 else [])
+  + ([] if dfir_evtx_use_bundled_image | bool else ['--evtxecmd-dir', dfir_evtx_evtxecmd_dir])
+  + (['--hayabusa', '--hayabusa-dir', dfir_evtx_hayabusa_dir]
+  + (['--hayabusa-rules', dfir_evtx_hayabusa_rules] if dfir_evtx_hayabusa_rules | length > 0 else [])
+  if dfir_evtx_hayabusa | bool else [])
+  + (['--force'] if dfir_evtx_force | bool else []) }}

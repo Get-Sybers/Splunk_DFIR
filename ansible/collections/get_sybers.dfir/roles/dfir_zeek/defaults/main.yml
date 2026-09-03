@@ -17,3 +17,9 @@ dfir_zeek_image: "dfir/zeek:latest"
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_zeek_python_path: "{{ dfir_zeek_repo_root }}/python"
 dfir_zeek_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_zeek_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.zeek', '--pcap-dir', dfir_zeek_pcap_dir, '--out-dir', dfir_zeek_out_dir, '--image', dfir_zeek_image]
+  + (['--force'] if dfir_zeek_force | bool else []) }}

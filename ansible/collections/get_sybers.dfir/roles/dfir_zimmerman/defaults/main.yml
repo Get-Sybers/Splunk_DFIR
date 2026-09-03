@@ -25,3 +25,14 @@ dfir_zimmerman_vss: false
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_zimmerman_python_path: "{{ dfir_zimmerman_repo_root }}/python"
 dfir_zimmerman_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_zimmerman_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.zimmerman',
+  '--input-dir', dfir_zimmerman_input_dir,
+  '--vm-dir', dfir_zimmerman_vm_dir,
+  '--out-dir', dfir_zimmerman_out_dir,
+  '--plaso-image', dfir_zimmerman_plaso_image]
+  + (['--vss'] if dfir_zimmerman_vss | bool else [])
+  + (['--force'] if dfir_zimmerman_force | bool else []) }}

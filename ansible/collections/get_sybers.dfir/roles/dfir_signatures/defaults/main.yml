@@ -31,3 +31,15 @@ dfir_signatures_fetch: false
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_signatures_python_path: "{{ dfir_signatures_repo_root }}/python"
 dfir_signatures_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_signatures_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.signatures', '--output-dir', dfir_signatures_out_dir, '--repo-root', dfir_signatures_repo_root]
+  + (dfir_signatures_lanes | map('regex_replace', '^', '--only=') | list)
+  + (['--stage-dir', dfir_signatures_stage_dir] if dfir_signatures_stage_dir | length > 0 else [])
+  + (['--vss'] if dfir_signatures_vss | bool else [])
+  + (['--yara-sources', dfir_signatures_yara_sources] if dfir_signatures_yara_sources | length > 0 else [])
+  + (['--tuning-file', dfir_signatures_suricata_tuning_file] if dfir_signatures_suricata_tuning_file | length > 0 else [])
+  + (['--fetch'] if dfir_signatures_fetch | bool else [])
+  + (['--force'] if dfir_signatures_force | bool else []) }}
