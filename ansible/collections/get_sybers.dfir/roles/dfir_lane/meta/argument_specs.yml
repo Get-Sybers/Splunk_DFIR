@@ -21,7 +21,7 @@ argument_specs:
         description: "Short lane token used in task names and diagnostics (e.g. evtx)."
       dfir_lane_module:
         type: str
-        required: false
+        required: true
         description: "Python module the preflight import-checks (e.g. get_sybers_dfir.evtx)."
       dfir_lane_python_path:
         type: str
@@ -42,8 +42,7 @@ argument_specs:
       dfir_lane_argv:
         type: list
         elements: str
-        required: false
-        default: []
+        required: true
         description: "The processor command argv — the one genuinely per-lane piece."
       dfir_lane_verify_dir:
         type: str

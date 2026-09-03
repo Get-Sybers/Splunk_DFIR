@@ -47,5 +47,5 @@ ARG DFIR_UID=2000
 ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 LABEL org.opencontainers.image.title="dfir/plaso" \
-      org.opencontainers.image.description="Minimal hardened Plaso (pinned PyPI, libyal from source) for the DX_DFIR plaso/evtx-extraction lanes: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, runs as uid 2000 (python+sh irreducible; three entry tools, no single ENTRYPOINT)." \
+      org.opencontainers.image.description="Minimal hardened Plaso (pinned PyPI, libyal from source) for the DX_DFIR plaso/evtx-extraction lanes: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, runs as a fixed non-root uid (default 2000) (python+sh irreducible; three entry tools, no single ENTRYPOINT)." \
       com.get-sybers.hardened="true"

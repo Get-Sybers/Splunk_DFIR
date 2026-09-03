@@ -16,10 +16,12 @@
       # its context+dockerfile (e.g. volatility builds from the PIIAT-Mem submodule).
       path: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).context | default(dfir_images_context, true) }}"
       dockerfile: "{{ (dfir_images_build_overrides[dfir_images_name] | default({})).dockerfile | default(dfir_images_name ~ '/Dockerfile', true) }}"
-      # Every build gets the single-source run-as uid/gid; parameterized builds
-      # (the shared eztool/Dockerfile) merge their tool selector on top.
-      args: "{{ {'DFIR_UID': dfir_images_uid | string, 'DFIR_GID': dfir_images_gid | string}
-                | combine((dfir_images_build_overrides[dfir_images_name] | default({})).args | default({})) }}"
+      # Every build gets the single-source run-as uid/gid, and it WINS over any
+      # per-image override args (e.g. the shared eztool/Dockerfile's tool selector):
+      # the override is the base, the uid/gid are combined on top so they can't be
+      # replaced.
+      args: "{{ ((dfir_images_build_overrides[dfir_images_name] | default({})).args | default({}))
+                | combine({'DFIR_UID': dfir_images_uid | string, 'DFIR_GID': dfir_images_gid | string}) }}"
 
 - name: "images-build | inspect dfir/{{ dfir_images_name }}"
   community.docker.docker_image_info:
