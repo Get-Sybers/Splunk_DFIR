@@ -6,7 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from get_sybers_dfir import cli
-from get_sybers_dfir.stix import config, export, hits, objects, opencti
+from get_sybers_dfir.stix import attack_index, config, export, hits, objects, opencti
 
 NOW = "2026-09-02T10:00:00.000Z"
 SCO_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -452,3 +452,77 @@ def test_cli_stix_export(tmp_path, monkeypatch):
     monkeypatch.delenv("DXDFIR_OPENCTI_TOKEN")
     assert runner.invoke(cli.app, ["stix", "export", "--hits", str(jsonl), "--push"]).exit_code == 2
     assert runner.invoke(cli.app, ["stix", "export"]).exit_code == 2
+
+
+# ---- the ATT&CK index: MITRE's authoritative attack-pattern ids (BP §5.2, §2.2)
+def test_committed_attack_index_resolves_techniques_to_mitre_ids():
+    ix = attack_index.load_attack_index()
+    assert ix.attack_version and len(ix.techniques) > 600 and len(ix.tactics) >= 14
+    for t in ix.techniques.values():
+        assert t.id.startswith("attack-pattern--")
+        uuid.UUID(t.id.split("--", 1)[1])
+    live = ix.resolve("T1204")
+    assert live is not None and not live.substituted and live.technique.name == "User Execution"
+    assert live.technique.id in ix.ids and live.technique.phases == ("execution",)
+    assert ix.resolve("T9999") is None and ix.resolve("") is None
+    # a revoked technique follows MITRE's revoked-by pointer to a live replacement, and says so
+    revoked = next(t for t in ix.techniques.values() if t.revoked and t.revoked_by)
+    r = ix.resolve(revoked.external_id)
+    assert r is not None and r.substituted and r.requested == revoked.external_id
+    assert not r.technique.revoked and r.technique.external_id != revoked.external_id
+    # kill-chain phases: the techniques' tactics plus explicit tactic ids — spec shape, de-duplicated, sorted
+    assert ix.phases(["T1204", "T1204"], ["TA0002", "TA0001"]) == [
+        {"kill_chain_name": "mitre-attack", "phase_name": "execution"},
+        {"kill_chain_name": "mitre-attack", "phase_name": "initial-access"}]
+    assert ix.phases(["T9999"]) == []
+
+
+def _attack_bundle():
+    def ap(uid, tid, name, phases, **extra):
+        return {"type": "attack-pattern", "id": f"attack-pattern--{uid}", "name": name,
+                "external_references": [{"source_name": "mitre-attack", "external_id": tid,
+                                         "url": "https://attack.mitre.org/techniques/" + tid}],
+                "kill_chain_phases": [{"kill_chain_name": "mitre-attack", "phase_name": p} for p in phases], **extra}
+    old = ap("11111111-1111-4111-8111-111111111111", "T1000", "Old", ["execution"], revoked=True)
+    new = ap("22222222-2222-4222-8222-222222222222", "T2000", "New", ["persistence", "execution"])
+    return {"type": "bundle", "id": "bundle--" + str(uuid.uuid4()), "objects": [
+        {"type": "x-mitre-collection", "id": "x-mitre-collection--x", "name": "Enterprise ATT&CK",
+         "x_mitre_version": "19.2", "modified": "2026-08-05T21:33:58.496Z"},
+        old, new,
+        ap("33333333-3333-4333-8333-333333333333", "T3000", "Gone", [], x_mitre_deprecated=True),
+        {"type": "relationship", "id": "relationship--x", "relationship_type": "revoked-by",
+         "source_ref": old["id"], "target_ref": new["id"]},
+        {"type": "x-mitre-tactic", "id": "x-mitre-tactic--x", "name": "Execution", "x_mitre_shortname": "execution",
+         "external_references": [{"source_name": "mitre-attack", "external_id": "TA0002"}]},
+        {"type": "malware", "id": "malware--x", "name": "not indexed"},
+    ]}
+
+
+def test_build_index_is_deterministic_and_round_trips(tmp_path):
+    bundle = _attack_bundle()
+    doc = attack_index.build_index(bundle, source="test")
+    assert (doc["format"], doc["source"], doc["attack_version"]) == (1, "test", "19.2")
+    assert doc["techniques"]["T1000"] == {"id": "attack-pattern--11111111-1111-4111-8111-111111111111", "name": "Old",
+                                          "phases": ["execution"], "revoked": True, "revoked_by": "T2000"}
+    assert doc["techniques"]["T2000"]["phases"] == ["execution", "persistence"]      # sorted
+    assert doc["techniques"]["T3000"]["deprecated"] is True and "malware" not in json.dumps(doc)
+    assert doc["tactics"] == {"TA0002": {"id": "x-mitre-tactic--x", "name": "Execution", "phase": "execution"}}
+    text = attack_index.dumps_index(doc)
+    assert json.loads(text) == doc
+    assert text == attack_index.dumps_index(attack_index.build_index(bundle, source="test"))
+    # the module's CLI writes that same document; a raw bundle path indexes on the fly
+    out, src = tmp_path / "index.json", tmp_path / "enterprise-attack.json"
+    src.write_text(json.dumps(bundle))
+    assert attack_index.main([str(src), "-o", str(out), "--source", "test"]) == 0
+    assert out.read_text() == text
+    ix = attack_index.load_attack_index(str(src))
+    assert ix.resolve("T1000").technique.external_id == "T2000" and ix.resolve("T1000").substituted
+    assert attack_index.load_attack_index(str(out)).ids == ix.ids == {doc["techniques"][t]["id"] for t in doc["techniques"]}
+    # not a bundle: exit 2; a malformed index is refused up front
+    src.write_text(json.dumps({"type": "report"}))
+    assert attack_index.main([str(src), "-o", str(out)]) == 2
+    for bad in ({}, {"format": 1, "techniques": {}}, {"format": 2, "techniques": doc["techniques"]},
+                {"format": 1, "techniques": {"T1": {"id": "malware--x", "name": "n", "phases": []}}},
+                {"format": 1, "techniques": doc["techniques"], "tactics": {"TA1": {"name": "no phase"}}}):
+        with pytest.raises(ValueError):
+            attack_index.validate_index(bad)
