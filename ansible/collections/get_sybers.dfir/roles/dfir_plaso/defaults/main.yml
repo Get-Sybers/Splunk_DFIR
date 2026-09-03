@@ -24,3 +24,11 @@ dfir_plaso_image: "dfir/plaso:latest"
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_plaso_python_path: "{{ dfir_plaso_repo_root }}/python"
 dfir_plaso_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_plaso_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.plaso', '--input-dir', dfir_plaso_input_dir, '--vm-dir', dfir_plaso_vm_dir,
+  '--loose-dir', dfir_plaso_loose_dir,
+  '--out-dir', dfir_plaso_out_dir, '--module', dfir_plaso_module, '--image', dfir_plaso_image]
+  + (['--force'] if dfir_plaso_force | bool else []) }}

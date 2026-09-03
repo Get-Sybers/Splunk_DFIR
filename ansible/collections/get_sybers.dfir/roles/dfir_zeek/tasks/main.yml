@@ -2,7 +2,9 @@
 # dfir_zeek: PCAPs -> Zeek JSON. The role GROUPS; the playbook DECIDES.
 # NOTE: a first run that processes new captures is legitimately changed=true; a
 # second immediate run is changed=false (captures with output are skipped). That
-# skip lives in the Python processor, not in a task's `when:`.
+# skip lives in the Python processor, not in a task's `when:`. This role asserts
+# its own input rules, then delegates the shared preflight + process skeleton to
+# dfir_lane.
 
 - name: "zeek | assert inputs"
   ansible.builtin.assert:
@@ -15,16 +17,28 @@
     quiet: true
   tags: [always]
 
-# Fact-find + preconditions BEFORE any container runs or files are written.
-- name: "zeek | preflight"
-  ansible.builtin.include_tasks:
-    file: preflight.yml
-    apply:
-      tags: [always]
+# role_path resolves to THIS role here — capture the lane-specific gate file so
+# dfir_lane includes zeek's output gate, not its own.
+- name: "zeek | resolve lane-specific task paths"
+  ansible.builtin.set_fact:
+    dfir_zeek_gate_extra: "{{ role_path }}/tasks/gate_extra.yml"
   tags: [always]
 
 # The pipeline decision (elastic|sofelk) is carried by the resolved
-# dfir_zeek_out_dir default — the tasks themselves are pipeline-agnostic,
-# so there is ONE task file to maintain instead of a drifting pair.
-- name: "zeek | process"
-  ansible.builtin.include_tasks: process.yml
+# dfir_zeek_out_dir default — the shared tasks are pipeline-agnostic.
+- name: "zeek | run the shared tool-lane skeleton"
+  ansible.builtin.include_role:
+    name: dfir_lane
+  vars:
+    dfir_lane_name: zeek
+    dfir_lane_module: get_sybers_dfir.zeek
+    dfir_lane_python_path: "{{ dfir_zeek_python_path }}"
+    dfir_lane_images: ["{{ dfir_zeek_image }}"]
+    dfir_lane_input_checks:
+      - name: pcap dir
+        path: "{{ dfir_zeek_pcap_dir }}"
+    dfir_lane_argv: "{{ dfir_zeek_argv }}"
+    dfir_lane_verify_dir: "{{ dfir_zeek_out_dir }}"
+    dfir_lane_verify_glob: "*.json"
+    dfir_lane_gate_extra: "{{ dfir_zeek_gate_extra }}"
+  tags: [always]

@@ -10,6 +10,8 @@
 ARG BASE=debian:trixie-slim
 
 FROM ${BASE} AS hardened
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends yara ansible-core
@@ -17,7 +19,7 @@ COPY yara/scan-list.sh /opt/dfir/scan-list.sh
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
     chmod 0755 /opt/dfir/scan-list.sh; \
-    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
+    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml -e harden_uid=${DFIR_UID} -e harden_gid=${DFIR_GID}; \
     # remove the build-time hardener and everything the tool doesn't need,
     # keeping only sh/dash for the scan loop
     rm -rf /usr/bin/ansible* /usr/lib/python3/dist-packages/ansible* \
@@ -27,7 +29,9 @@ RUN set -eux; \
 FROM scratch
 COPY --from=hardened / /
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/tmp
-USER 2000:2000
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
+USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["/opt/dfir/scan-list.sh"]
 LABEL org.opencontainers.image.title="dfir/yara" \
       org.opencontainers.image.description="Minimal hardened YARA for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no python, runs as uid 2000; sh kept only for the tool's own scan loop." \

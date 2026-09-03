@@ -19,7 +19,8 @@
 #
 # Vars (passed with -e from each Dockerfile):
 #   harden_user            runtime user name         (default dfir)
-#   harden_uid             fixed uid/gid             (default 2000)
+#   harden_uid             fixed uid                 (default 2000)
+#   harden_gid             fixed gid                 (default = harden_uid)
 #   harden_remove_pkg_mgr  remove apt/dpkg + pip     (default true)
 #   harden_extra_remove    image-specific paths to delete (default [])
 - name: Harden the image filesystem
@@ -29,13 +30,14 @@
   vars:
     harden_user: dfir
     harden_uid: 2000
+    harden_gid: "{{ harden_uid }}"
     harden_remove_pkg_mgr: true
     harden_extra_remove: []
   tasks:
     - name: "harden | runtime group exists with a fixed gid"
       ansible.builtin.group:
         name: "{{ harden_user }}"
-        gid: "{{ harden_uid }}"
+        gid: "{{ harden_gid }}"
 
     - name: "harden | runtime user exists with a fixed uid and no login shell"
       ansible.builtin.user:
@@ -159,6 +161,6 @@
         dest: /etc/dfir-hardened
         mode: "0444"
         content: |
-          user={{ harden_user }} uid={{ harden_uid }}
+          user={{ harden_user }} uid={{ harden_uid }} gid={{ harden_gid }}
           root_renamed=ansible
           pkg_mgr_removed={{ harden_remove_pkg_mgr | bool }}

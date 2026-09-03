@@ -10,6 +10,8 @@ ARG BASE=debian:trixie-slim
 ARG ZEEK_PACKAGE=zeek-lts
 
 FROM ${BASE} AS hardened
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
 ARG ZEEK_PACKAGE
 RUN set -eux; \
     apt-get update; \
@@ -23,7 +25,7 @@ RUN set -eux; \
     apt-get purge -y curl gnupg; apt-get autoremove -y --purge
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
-    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml \
+    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml -e harden_uid=${DFIR_UID} -e harden_gid=${DFIR_GID} \
       -e '{"harden_extra_remove": ["/opt/zeek/bin/zkg", "/opt/zeek/bin/zeekctl", "/opt/zeek/bin/zeek-client", "/opt/zeek/var"]}'; \
     rm -rf /usr/bin/ansible* /usr/lib/python3/dist-packages/ansible* \
            /etc/ansible /root/.ansible /tmp/hardening \
@@ -33,7 +35,9 @@ RUN set -eux; \
 FROM scratch
 COPY --from=hardened / /
 ENV PATH=/opt/zeek/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/tmp
-USER 2000:2000
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
+USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["zeek"]
 LABEL org.opencontainers.image.title="dfir/zeek" \
       org.opencontainers.image.description="Minimal hardened Zeek LTS (offline pcap parsing) for the DX_DFIR zeek lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, no zkg/zeekctl, runs as uid 2000." \
