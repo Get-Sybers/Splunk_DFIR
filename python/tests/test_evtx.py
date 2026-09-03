@@ -194,6 +194,25 @@ def test_process_counts_unreadable_log_as_failed(tmp_path, monkeypatch):
     assert "did not read" in s["results"][0]["error"]
 
 
+def test_process_nonzero_tally_but_no_output_is_failed(tmp_path, monkeypatch):
+    evtx_dir = tmp_path / "in"
+    evtx_dir.mkdir()
+    (evtx_dir / "Security.evtx").write_bytes(b"x")
+
+    def fake_run(evtx_file, dest_dir, json_out, xml_out, image, **kw):
+        # EvtxECmd that OPENED the log and counted records but wrote none to disk
+        # (an output/write error): exits 0, reports a non-zero tally, no JSON on disk.
+        return subprocess.CompletedProcess(
+            [], 0, stdout=b"Total event log records found: 1,234", stderr=b"")
+
+    monkeypatch.setattr(evtx, "_run_evtxecmd", fake_run)
+    s = evtx.process(str(evtx_dir), str(tmp_path / "out"), image="dfir/evtxecmd:latest")
+    assert s["failed"] == 1        # records found but none written is a failure...
+    assert s["empty"] == 0         # ...not a benign empty
+    assert s["processed"] == 0
+    assert "1,234 records but wrote none" in s["results"][0]["error"]
+
+
 def test_process_bundled_mode_needs_no_dll(tmp_path, monkeypatch):
     evtx_dir = tmp_path / "in"
     evtx_dir.mkdir()
