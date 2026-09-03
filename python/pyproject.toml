@@ -33,3 +33,9 @@ dxdfir = "get_sybers_dfir.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["get_sybers_dfir*"]
+
+[tool.setuptools.package-data]
+# Data the package reads at run time: the rules-as-code and their templates,
+# the cti-* template + pattern mapping, the ATT&CK index and the STIX
+# extension schema.
+get_sybers_dfir = ["**/*.yml", "**/*.yaml", "**/*.json", "**/*.md"]
