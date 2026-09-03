@@ -30,6 +30,7 @@ from pathlib import Path
 import typer
 
 from . import __version__
+from . import collection as _collection
 from .stix.cli import app as stix_app
 
 app = typer.Typer(
@@ -53,6 +54,7 @@ class Source(str, enum.Enum):
     plaso = "plaso"
     zimmerman = "zimmerman"
     signatures = "signatures"
+    all = "all"  # every evidence lane (see `dxdfir process all [<collection>]`)
 
 
 class Pipeline(str, enum.Enum):
@@ -121,9 +123,35 @@ def _ansible_playbook() -> str:
 
 
 # --------------------------------------------------------------------------- commands
+def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: bool,
+                  extra_vars: list[str], scope_vars: list[str]) -> None:
+    """Drive one lane's process role (preflight → process → verify). ``scope_vars``
+    are extra ``KEY=VALUE`` input-dir overrides — how a collection narrows a lane."""
+    playbook = repo / _COLLECTION / "playbooks" / f"dfir-process-{name}.yml"
+    if not playbook.is_file():
+        typer.secho(f"no playbook for source '{name}': {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = [
+        ap, "-i", "localhost,", "-c", "local", str(playbook),
+        "-e", f"dfir_{name}_pipeline={pipeline.value}",
+        "-e", f"dfir_{name}_force={'true' if force else 'false'}",
+    ]
+    for kv in scope_vars:      # collection scope first, so an explicit --extra-var can still override
+        cmd += ["-e", kv]
+    for kv in extra_vars:
+        cmd += ["-e", kv]
+    # resolve the role without installing the collection
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    scoped = "  (collection-scoped)" if scope_vars else ""
+    typer.secho(f"processing {name} → {pipeline.value}{scoped}", fg=typer.colors.GREEN)
+    _run(cmd, cwd=repo, env=env)
+
+
 @app.command()
 def process(
-    source: Source = typer.Argument(..., help="Which evidence source to process."),
+    source: Source = typer.Argument(..., help="Evidence source to process, or 'all' for every lane."),
+    collection: str = typer.Argument(
+        None, help="Scope to a collection (data_store/raw/collections/<name>)."),
     pipeline: Pipeline = typer.Option(Pipeline.elastic, "--pipeline", "-p", help="Backend to target."),
     force: bool = typer.Option(False, "--force", help="Reprocess inputs that already have output."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
@@ -131,25 +159,46 @@ def process(
         None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
     ),
 ) -> None:
-    """Process one evidence source by driving its role (preflight → process → verify)."""
+    """Process one evidence source — or 'all' lanes — driving each role (preflight → process → verify).
+
+    With a COLLECTION, each lane is scoped to that collection's subdir under
+    data_store/raw/collections/<name>/. `dxdfir process all <collection>` runs
+    every lane that has evidence staged in the collection.
+    """
     _ap = _ansible_playbook()
     repo = _repo_root(repo_root)
-    name = source.value
-    playbook = repo / _COLLECTION / "playbooks" / f"dfir-process-{name}.yml"
-    if not playbook.is_file():
-        typer.secho(f"no playbook for source '{name}': {playbook}", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
-    cmd = [
-        _ap, "-i", "localhost,", "-c", "local", str(playbook),
-        "-e", f"dfir_{name}_pipeline={pipeline.value}",
-        "-e", f"dfir_{name}_force={'true' if force else 'false'}",
-    ]
-    for kv in extra_var or []:
-        cmd += ["-e", kv]
-    # resolve the role without installing the collection
-    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
-    typer.secho(f"processing {name} → {pipeline.value}", fg=typer.colors.GREEN)
-    _run(cmd, cwd=repo, env=env)
+
+    # A collection scopes each lane's input dir(s), and tells us which lanes have evidence.
+    scope: dict[str, list[str]] = {}
+    counts: dict[str, int] = {}
+    if collection:
+        if collection not in _collection.list_collections(repo):
+            typer.secho(
+                f"no such collection '{collection}'. Create it: "
+                f"dxdfir collection create --name {collection}",
+                fg=typer.colors.RED, err=True)
+            raise typer.Exit(2)
+        for lane_name, var, d, n in _collection.lane_inputs(repo, collection):
+            scope.setdefault(lane_name, []).append(f"{var}={d}")
+            counts[lane_name] = counts.get(lane_name, 0) + n
+
+    if source is Source.all:
+        lanes = [lane.name for lane in _collection.LANES]     # the five evidence lanes
+        if collection:
+            lanes = [ln for ln in lanes if counts.get(ln, 0) > 0]
+            if not lanes:
+                typer.secho(
+                    f"collection '{collection}' has no evidence — drop files in "
+                    f"data_store/raw/sort/ then: dxdfir collection sort {collection}",
+                    fg=typer.colors.YELLOW)
+                return
+        typer.secho(f"process all → {', '.join(lanes)}"
+                    + (f"  (collection '{collection}')" if collection else ""), bold=True)
+    else:
+        lanes = [source.value]
+
+    for ln in lanes:
+        _process_lane(_ap, repo, ln, pipeline, force, extra_var or [], scope.get(ln, []))
 
 
 @app.command()
@@ -299,8 +348,8 @@ def list_sources(
     typer.secho(f"Evidence under {raw.relative_to(repo)}/", bold=True)
     for src in Source:
         name = src.value
-        if name == "signatures":
-            continue  # spans the other lanes' inputs; reported separately below
+        if name in ("signatures", "all"):
+            continue  # signatures spans the other lanes (reported below); 'all' is not a real lane
         subs, exts = _EVIDENCE[name]
         count = 0
         missing = []
@@ -317,6 +366,94 @@ def list_sources(
     typer.echo(f"  {'signatures':<13} {'—':>5}          scans pcaps / files / disk images / evtx (the lanes above)")
     typer.echo("")
     typer.echo("Process one with:  dxdfir process <source>   (see  dxdfir process -h)")
+
+
+# --------------------------------------------------------------------- collections
+collection_app = typer.Typer(
+    help="Group raw evidence into collections and auto-sort the raw/sort dropzone.",
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+app.add_typer(collection_app, name="collection")
+
+
+@collection_app.command("create")
+def collection_create(
+    name: str = typer.Option(..., "--name", "-n", help="Collection name (letters/digits then . _ -)."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Create a collection folder (its lane subdirs) under data_store/raw/collections/."""
+    repo = _repo_root(repo_root)
+    try:
+        root = _collection.create(repo, name)
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    typer.secho(f"✅ collection '{name}' ready at {root.relative_to(repo)}/", fg=typer.colors.GREEN)
+    typer.echo(f"   drop evidence in data_store/raw/sort/, then: dxdfir collection sort {name}")
+
+
+@collection_app.command("list")
+def collection_list(
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """List collections and how much evidence each holds, per lane."""
+    repo = _repo_root(repo_root)
+    cols = _collection.list_collections(repo)
+    if not cols:
+        typer.echo("No collections yet. Create one:  dxdfir collection create --name <name>")
+        return
+    for c in cols:
+        counts: dict[str, int] = {}
+        for lane_name, var, d, n in _collection.lane_inputs(repo, c):
+            counts[lane_name] = counts.get(lane_name, 0) + n
+        total = sum(counts.values())
+        detail = ", ".join(f"{ln}:{counts[ln]}" for ln in counts if counts[ln]) or "empty"
+        colour = typer.colors.GREEN if total else typer.colors.BRIGHT_BLACK
+        typer.echo(f"  {c:<22} {typer.style(f'{total:>4}', fg=colour)} file(s)  [{detail}]")
+
+
+@collection_app.command("sort")
+def collection_sort(
+    name: str = typer.Argument(None, help="Target collection (defaults to the only one, if unambiguous)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would move; move nothing."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Sort the data_store/raw/sort dropzone into a collection's lane subdirs by file type.
+
+    Each file is classified by extension (the same lane/extension table `dxdfir list`
+    uses). A file whose type is ambiguous (`.raw` is a memory OR a disk image) or
+    unknown is left in the dropzone and reported — never guessed.
+    """
+    repo = _repo_root(repo_root)
+    cols = _collection.list_collections(repo)
+    if name is None:
+        if len(cols) == 1:
+            name = cols[0]
+        elif not cols:
+            typer.secho("No collections. Create one first:  dxdfir collection create --name <name>",
+                        fg=typer.colors.RED, err=True)
+            raise typer.Exit(2)
+        else:
+            typer.secho(f"Several collections ({', '.join(cols)}) — name one:  dxdfir collection sort <name>",
+                        fg=typer.colors.RED, err=True)
+            raise typer.Exit(2)
+    try:
+        res = _collection.sort_into(repo, name, dry_run=dry_run)
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    verb = "would move" if dry_run else "moved"
+    if res.moved:
+        typer.secho(f"✅ {verb} {res.moved_count} file(s) into collection '{name}':", fg=typer.colors.GREEN)
+        for sub in sorted(res.moved):
+            typer.echo(f"   {sub}/  ← {', '.join(res.moved[sub])}")
+    else:
+        typer.echo(f"Nothing to sort into '{name}' (dropzone: data_store/raw/sort/).")
+    if res.skipped:
+        typer.secho(f"⚠️  left in the dropzone ({len(res.skipped)} — place by hand):", fg=typer.colors.YELLOW)
+        for fn, why in res.skipped:
+            typer.echo(f"   {fn}  ({why})")
 
 
 def _version_cb(value: bool) -> None:
