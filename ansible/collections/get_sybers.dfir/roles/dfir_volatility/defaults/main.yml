@@ -27,3 +27,11 @@ dfir_volatility_symbols_online: false
 # In-repo runs use PYTHONPATH; a deployed run installs the package instead.
 dfir_volatility_python_path: "{{ dfir_volatility_repo_root }}/python"
 dfir_volatility_force: false
+
+# The processor command argv, handed to the shared dfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dfir_volatility_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dfir.volatility', '--memory-dir', dfir_volatility_memory_dir, '--out-dir', dfir_volatility_out_dir,
+  '--symbols-dir', dfir_volatility_symbols_dir, '--image', dfir_volatility_image]
+  + (['--symbols-online'] if dfir_volatility_symbols_online | bool else [])
+  + (['--force'] if dfir_volatility_force | bool else []) }}

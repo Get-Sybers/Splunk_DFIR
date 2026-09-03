@@ -1,7 +1,11 @@
 ---
 # dfir_zimmerman: disk images -> EZ-Tools artefact parse, one output dir per host.
 # The role GROUPS; the playbook DECIDES. Idempotence (skip a host dir that already
-# has output) lives in the Python processor, not in a task's `when:`.
+# has output) lives in the Python processor, not in a task's `when:`. This role
+# asserts its own input rules, then delegates the shared preflight + process
+# skeleton to dfir_lane. Per-image "empty" (a non-Windows image with no artefact
+# set) is tolerated (dfir_lane_require_no_failures=false), so the gate is purely
+# "some host produced output, or there were no images / nothing but empties".
 
 - name: "zimmerman | assert inputs"
   ansible.builtin.assert:
@@ -14,16 +18,41 @@
     quiet: true
   tags: [always]
 
-# Fact-find + preconditions BEFORE any container runs or files are written.
-- name: "zimmerman | preflight"
-  ansible.builtin.include_tasks:
-    file: preflight.yml
-    apply:
-      tags: [always]
+# role_path resolves to THIS role here — capture the lane-specific gate file so
+# dfir_lane includes zimmerman's output gate, not its own.
+- name: "zimmerman | resolve lane-specific task paths"
+  ansible.builtin.set_fact:
+    dfir_zimmerman_gate_extra: "{{ role_path }}/tasks/gate_extra.yml"
   tags: [always]
 
 # The pipeline decision (elastic|sofelk) is carried by the resolved
-# dfir_zimmerman_out_dir default — the tasks themselves are pipeline-agnostic,
-# so there is ONE task file to maintain instead of a drifting pair.
-- name: "zimmerman | process"
-  ansible.builtin.include_tasks: process.yml
+# dfir_zimmerman_out_dir default — the shared tasks are pipeline-agnostic. This
+# lane drives NINE dfir/* images (plaso for extraction/SRUM, plus the eight
+# EZ-Tools containers) — every one is supply-chain-guarded. dfir_zimmerman_vm_dir
+# is optional (the processor tolerates its absence) so it is not an input check.
+- name: "zimmerman | run the shared tool-lane skeleton"
+  ansible.builtin.include_role:
+    name: dfir_lane
+  vars:
+    dfir_lane_name: zimmerman
+    dfir_lane_module: get_sybers_dfir.zimmerman
+    dfir_lane_python_path: "{{ dfir_zimmerman_python_path }}"
+    dfir_lane_images:
+      - "{{ dfir_zimmerman_plaso_image }}"
+      - "dfir/recmd:latest"
+      - "dfir/jlecmd:latest"
+      - "dfir/lecmd:latest"
+      - "dfir/amcacheparser:latest"
+      - "dfir/appcompatcacheparser:latest"
+      - "dfir/sbecmd:latest"
+      - "dfir/rbcmd:latest"
+      - "dfir/mftecmd:latest"
+    dfir_lane_input_checks:
+      - name: disk-image input dir
+        path: "{{ dfir_zimmerman_input_dir }}"
+    dfir_lane_argv: "{{ dfir_zimmerman_argv }}"
+    dfir_lane_verify_dir: "{{ dfir_zimmerman_out_dir }}"
+    dfir_lane_verify_glob: "*"
+    dfir_lane_require_no_failures: false
+    dfir_lane_gate_extra: "{{ dfir_zimmerman_gate_extra }}"
+  tags: [always]

@@ -60,6 +60,13 @@ argument_specs:
           Optional lane-specific output-gate task file (absolute path) with the
           lane's own assert on the run summary + on-disk verification, included at
           the end of the process block.
+      dfir_lane_require_no_failures:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Assert the processor reported failed==0. Set false for lanes whose
+          processor tolerates per-item failures (exits 0 with failed>0).
       dfir_lane_preflight_extra:
         type: str
         required: false

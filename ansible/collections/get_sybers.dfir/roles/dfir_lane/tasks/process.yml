@@ -30,7 +30,9 @@
       when: dfir_lane_verify_glob | length > 0
 
     - name: "process | assert no processor failures | {{ dfir_lane_name }}"
-      when: dfir_lane_run is not skipped
+      when:
+        - dfir_lane_run is not skipped
+        - dfir_lane_require_no_failures | bool
       ansible.builtin.assert:
         that:
           - (dfir_lane_run.stdout | from_json).failed | int == 0
