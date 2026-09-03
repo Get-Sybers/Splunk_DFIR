@@ -21,6 +21,7 @@ harness (``tests/run-checks.sh``).
 from __future__ import annotations
 
 import enum
+import json
 import os
 import shutil
 import subprocess
@@ -123,6 +124,61 @@ def _ansible_playbook() -> str:
 
 
 # --------------------------------------------------------------------------- commands
+def _valid_or_exit(name: str) -> None:
+    """Reject an invalid collection name (traversal / absolute / . ..) with a clean
+    CLI error before it is ever joined into a filesystem path."""
+    if not _collection.valid_name(name):
+        typer.secho(f"invalid collection name {name!r} — use letters/digits then . _ -",
+                    fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+
+
+def _resolve_collection(repo: Path, name: str, *, no_register: bool = False) -> None:
+    """Make a collection usable before it is sorted or processed. Registered -> ok.
+    A hand-staged (unregistered) folder -> offer to register it (prompt when
+    interactive, auto otherwise) so the run is recorded, unless --no-register.
+    Absent -> error out."""
+    _valid_or_exit(name)
+    if _collection.is_registered(repo, name):
+        return
+    if name in _collection.unregistered(repo):
+        if no_register:
+            typer.secho(f"⚠️  '{name}' is unregistered — proceeding untracked (no log).",
+                        fg=typer.colors.YELLOW)
+            return
+        do_register = True
+        if sys.stdin.isatty():
+            do_register = typer.confirm(
+                f"Detected unregistered collection '{name}'. Register it to keep a "
+                "processing record?", default=True)
+        else:
+            typer.secho(f"ℹ️  auto-registering detected collection '{name}' (non-interactive).",
+                        fg=typer.colors.BRIGHT_BLACK)
+        if do_register:
+            _collection.register(repo, name, source="detected")
+            typer.secho(f"✅ registered '{name}'.", fg=typer.colors.GREEN)
+        else:
+            typer.secho(f"⚠️  '{name}' left unregistered — this run won't be logged.",
+                        fg=typer.colors.YELLOW)
+        return
+    typer.secho(f"no such collection '{name}'. Create it: "
+                f"dxdfir collection create --name {name}", fg=typer.colors.RED, err=True)
+    raise typer.Exit(2)
+
+
+def _hash_and_report(repo: Path, name: str) -> None:
+    """SHA-256 + SHA-1 the collection's evidence, persist the manifest, print the rollups."""
+    n = len(_collection.evidence_files(_collection.collection_dir(repo, name)))
+    if n == 0:
+        typer.echo("  (no evidence files to hash yet)")
+        return
+    typer.secho(f"🔒 hashing {n} evidence file(s) …", fg=typer.colors.BRIGHT_BLACK)
+    rollups, count = _collection.write_manifest(repo, name)
+    typer.secho(f"   SHA-256: {rollups['sha256']}", fg=typer.colors.GREEN)
+    typer.secho(f"   SHA-1:   {rollups['sha1']}  ({count} files → .collection.hashes)",
+                fg=typer.colors.BRIGHT_BLACK)
+
+
 def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: bool,
                   extra_vars: list[str], scope_vars: list[str]) -> None:
     """Drive one lane's process role (preflight → process → verify). ``scope_vars``
@@ -158,6 +214,8 @@ def process(
     extra_var: list[str] = typer.Option(
         None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
     ),
+    no_register: bool = typer.Option(
+        False, "--no-register", help="With a collection: process an unregistered one without registering/logging."),
 ) -> None:
     """Process one evidence source — or 'all' lanes — driving each role (preflight → process → verify).
 
@@ -172,12 +230,7 @@ def process(
     scope: dict[str, list[str]] = {}
     counts: dict[str, int] = {}
     if collection:
-        if collection not in _collection.list_collections(repo):
-            typer.secho(
-                f"no such collection '{collection}'. Create it: "
-                f"dxdfir collection create --name {collection}",
-                fg=typer.colors.RED, err=True)
-            raise typer.Exit(2)
+        _resolve_collection(repo, collection, no_register=no_register)
         for lane_name, var, d, n in _collection.lane_inputs(repo, collection):
             scope.setdefault(lane_name, []).append(f"{var}={d}")
             counts[lane_name] = counts.get(lane_name, 0) + n
@@ -199,6 +252,11 @@ def process(
 
     for ln in lanes:
         _process_lane(_ap, repo, ln, pipeline, force, extra_var or [], scope.get(ln, []))
+    if collection and _collection.is_registered(repo, collection):
+        _collection.log_event(
+            repo, collection, "processed", lanes=lanes, pipeline=pipeline.value,
+            files={ln: counts.get(ln, 0) for ln in lanes},
+            collection_sha256=_collection.manifest_rollup(repo, collection))
 
 
 @app.command()
@@ -397,47 +455,121 @@ def collection_create(
 def collection_list(
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """List collections and how much evidence each holds, per lane."""
+    """List collections (registered and hand-staged) with counts and rollup SHA-256."""
     repo = _repo_root(repo_root)
-    cols = _collection.list_collections(repo)
-    if not cols:
+    registered = _collection.list_collections(repo)
+    unreg = _collection.unregistered(repo)
+    if not registered and not unreg:
         typer.echo("No collections yet. Create one:  dxdfir collection create --name <name>")
         return
-    for c in cols:
+
+    def _row(c: str, tag: str, tag_colour: str) -> None:
         counts: dict[str, int] = {}
         for lane_name, var, d, n in _collection.lane_inputs(repo, c):
             counts[lane_name] = counts.get(lane_name, 0) + n
         total = sum(counts.values())
         detail = ", ".join(f"{ln}:{counts[ln]}" for ln in counts if counts[ln]) or "empty"
+        roll = _collection.manifest_rollup(repo, c)
+        sha = f"  sha256:{roll[:12]}…" if roll else ""
         colour = typer.colors.GREEN if total else typer.colors.BRIGHT_BLACK
-        typer.echo(f"  {c:<22} {typer.style(f'{total:>4}', fg=colour)} file(s)  [{detail}]")
+        tagged = f"  {typer.style(tag, fg=tag_colour)}" if tag else ""
+        typer.echo(f"  {c:<22} {typer.style(f'{total:>4}', fg=colour)} file(s)  [{detail}]{sha}{tagged}")
+
+    for c in registered:
+        _row(c, "", typer.colors.GREEN)
+    for c in unreg:
+        _row(c, "unregistered", typer.colors.YELLOW)
+    if unreg:
+        typer.echo("\n  register a detected one:  dxdfir collection register <name>")
+
+
+@collection_app.command("register")
+def collection_register(
+    name: str = typer.Argument(..., help="A hand-staged folder under data_store/raw/collections/."),
+    do_hash: bool = typer.Option(True, "--hash/--no-hash", help="Also hash the evidence (SHA-256 + SHA-1 manifest + rollup)."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Register a hand-staged collection so it is tracked and logged."""
+    repo = _repo_root(repo_root)
+    try:
+        _collection.register(repo, name, source="manual")
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    typer.secho(f"✅ registered '{name}' — now tracked and logged.", fg=typer.colors.GREEN)
+    if do_hash:
+        _hash_and_report(repo, name)
+
+
+@collection_app.command("hash")
+def collection_hash(
+    name: str = typer.Argument(..., help="Collection to hash."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """SHA-256 + SHA-1 every evidence file and record the collection's rollup hashes.
+
+    Writes data_store/raw/collections/<name>/.collection.hashes — a per-file
+    manifest plus the collection rollups (each = the hash of the sorted per-file
+    digests). SHA-256 is primary. As slow as the evidence is large.
+    """
+    repo = _repo_root(repo_root)
+    _valid_or_exit(name)
+    if not _collection.collection_dir(repo, name).is_dir():
+        typer.secho(f"no such collection '{name}'.", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    _hash_and_report(repo, name)
+
+
+@collection_app.command("log")
+def collection_log(
+    name: str = typer.Argument(..., help="Collection whose log to show."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Show a collection's history (created / registered / sorted / hashed / processed)."""
+    repo = _repo_root(repo_root)
+    _valid_or_exit(name)
+    events = _collection.read_log(repo, name)
+    if not events:
+        typer.echo(f"No log for '{name}' (unregistered, or nothing recorded yet).")
+        return
+    typer.secho(f"Log for collection '{name}':", bold=True)
+    for e in events:
+        ts, ev = e.get("ts", "?"), e.get("event", "?")
+        rest = {k: v for k, v in e.items() if k not in ("ts", "event")}
+        extra = "  " + json.dumps(rest) if rest else ""
+        typer.echo(f"  {ts}  {typer.style(ev, fg=typer.colors.CYAN)}{extra}")
 
 
 @collection_app.command("sort")
 def collection_sort(
     name: str = typer.Argument(None, help="Target collection (defaults to the only one, if unambiguous)."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would move; move nothing."),
+    no_register: bool = typer.Option(False, "--no-register", help="Sort an unregistered collection without registering it."),
+    no_hash: bool = typer.Option(False, "--no-hash", help="Skip the hash manifest refresh after sorting."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
     """Sort the data_store/raw/sort dropzone into a collection's lane subdirs by file type.
 
-    Each file is classified by extension (the same lane/extension table `dxdfir list`
-    uses). A file whose type is ambiguous (`.raw` is a memory OR a disk image) or
-    unknown is left in the dropzone and reported — never guessed.
+    Classification delegates to the processors' magic-byte detectors, so CONTENT
+    beats extension (a mislabelled `.raw` E01 lands in disk_images/); an ambiguous
+    (`.raw` = memory OR disk) or unknown file is left in the dropzone, never guessed.
+    A registered collection gets its hash manifest refreshed afterwards.
     """
     repo = _repo_root(repo_root)
-    cols = _collection.list_collections(repo)
+    known = _collection.list_collections(repo) + _collection.unregistered(repo)
     if name is None:
-        if len(cols) == 1:
-            name = cols[0]
-        elif not cols:
+        if len(known) == 1:
+            name = known[0]
+        elif not known:
             typer.secho("No collections. Create one first:  dxdfir collection create --name <name>",
                         fg=typer.colors.RED, err=True)
             raise typer.Exit(2)
         else:
-            typer.secho(f"Several collections ({', '.join(cols)}) — name one:  dxdfir collection sort <name>",
+            typer.secho(f"Several collections ({', '.join(known)}) — name one:  dxdfir collection sort <name>",
                         fg=typer.colors.RED, err=True)
             raise typer.Exit(2)
+    if not dry_run:
+        _resolve_collection(repo, name, no_register=no_register)
     try:
         res = _collection.sort_into(repo, name, dry_run=dry_run)
     except ValueError as e:
@@ -454,6 +586,8 @@ def collection_sort(
         typer.secho(f"⚠️  left in the dropzone ({len(res.skipped)} — place by hand):", fg=typer.colors.YELLOW)
         for fn, why in res.skipped:
             typer.echo(f"   {fn}  ({why})")
+    if not dry_run and res.moved and not no_hash and _collection.is_registered(repo, name):
+        _hash_and_report(repo, name)
 
 
 def _version_cb(value: bool) -> None:
