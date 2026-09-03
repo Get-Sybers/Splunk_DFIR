@@ -5,6 +5,8 @@ status: ported
 severity: medium
 attack: [T1071.004, T1048.003]
 tactics: [TA0011, TA0010]
+created: "2026-09-02"
+updated: "2026-09-02"
 language: esql
 index: [logs-dfir.zeek-*]
 # One hit per querying host, not per query — 8k raw rows is a lead list, a

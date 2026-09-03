@@ -5,6 +5,8 @@ status: ported
 severity: medium
 attack: [T1059, T1053.005]
 tactics: [TA0002]
+created: "2026-09-02"
+updated: "2026-09-02"
 language: esql
 index: [logs-dfir.plaso-*]
 # DetectRaptor's MFT/Evtx lists of offensive + recon + RMM tooling, cut to names

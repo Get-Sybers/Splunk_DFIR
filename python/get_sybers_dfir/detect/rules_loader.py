@@ -24,6 +24,8 @@ Rule file shape (``rules/README.md`` documents the model in full)::
     risk_score: 47                    # optional, defaults from severity
     attack: [T1562.001]               # ATT&CK technique ids (may be empty)
     tactics: [TA0005]                 # optional ATT&CK tactic ids
+    created: "2026-09-02"             # ISO date the rule was authored (the STIX export needs it)
+    updated: "2026-09-02"             # optional; the last material change, defaults to created
     language: esql | eql
     index: [logs-dfir.evtx-*]         # the data streams the query reads
     query: |                          # ported only; null/absent for a stub
@@ -47,6 +49,7 @@ brackets outside string literals and carry no KQL left-overs.
 from __future__ import annotations
 
 import argparse
+import datetime
 import glob
 import json
 import os
@@ -332,6 +335,7 @@ def validate(rules: list[dict] | None = None) -> None:
         if not isinstance(tactics, list) or not all(
                 isinstance(t, str) and _TACTIC_RE.match(t) for t in tactics):
             raise ValueError(prefix + "tactics must be a list of ATT&CK tactic ids (TA0001)")
+        _validate_dates(prefix, r)
         if r.get("language") not in LANGUAGES:
             raise ValueError(prefix + f"language must be one of {LANGUAGES}")
         index = r.get("index")
@@ -356,6 +360,46 @@ def validate(rules: list[dict] | None = None) -> None:
                 raise ValueError(prefix + "a stub needs todo.query (the intended ES|QL/EQL)")
             if not _str_list(todo.get("blockers")) or not todo["blockers"]:
                 raise ValueError(prefix + "a stub needs a non-empty todo.blockers list (why it is a stub)")
+
+
+def rule_date(value) -> datetime.datetime | None:
+    """A rule's ``created`` / ``updated`` value as an aware UTC datetime — an
+    ISO 8601 date or datetime string (``"2026-09-02"``, ``"2026-09-02T07:01:04Z"``)
+    or what YAML already parsed one into — or ``None`` when it is neither."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, datetime.datetime):
+        dt = value
+    elif isinstance(value, datetime.date):
+        dt = datetime.datetime(value.year, value.month, value.day)
+    elif isinstance(value, str) and value.strip():
+        s = value.strip()
+        try:
+            dt = datetime.datetime.fromisoformat(s[:-1] + "+00:00" if s.endswith("Z") else s)
+        except ValueError:
+            return None
+    else:
+        return None
+    utc = datetime.timezone.utc
+    return dt.replace(tzinfo=utc) if dt.tzinfo is None else dt.astimezone(utc)
+
+
+def _validate_dates(prefix: str, r: dict) -> None:
+    """``created`` / ``updated`` are optional here (the STIX export requires
+    ``created``: it is the indicator's ``created`` / ``valid_from``, and
+    ``updated`` its ``modified`` — STIX 2.1 §3.2 says ``created`` never
+    changes and §3.6 that ``modified`` versions the object, so neither may be
+    an export-time clock). When present they must be ISO 8601 and ordered."""
+    created, updated = r.get("created"), r.get("updated")
+    if created is not None and rule_date(created) is None:
+        raise ValueError(prefix + 'created must be an ISO 8601 date or datetime ("2026-09-02")')
+    if updated is not None:
+        if rule_date(updated) is None:
+            raise ValueError(prefix + 'updated must be an ISO 8601 date or datetime ("2026-09-02")')
+        if created is None:
+            raise ValueError(prefix + "updated needs created")
+        if rule_date(updated) < rule_date(created):
+            raise ValueError(prefix + "updated must not be earlier than created")
 
 
 def _validate_evidence(prefix: str, r: dict, engine_prefixes: tuple[str, ...] = ("kibana.alert.",)) -> None:

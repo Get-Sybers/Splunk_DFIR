@@ -5,6 +5,8 @@ status: stub
 severity: medium
 attack: []
 tactics: []
+created: "2026-09-02"
+updated: "2026-09-02"
 language: esql
 index: [logs-dfir.yara-*]
 query: null
