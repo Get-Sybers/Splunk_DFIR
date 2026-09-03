@@ -23,9 +23,14 @@ compromised tool) does not need an on-image shell:
                                  The single exception is Volatility ISF symbol
                                  fetch (``network=True``), an explicit opt-in.
 
-Pure list builders so every argv stays unit-testable.
+The confinement flags stay pure list builders; run() additionally reads the
+group owning each read-only (evidence) mount and --group-add's it, so a
+locked-down evidence tree is readable by the image's non-root uid off defaults —
+no per-run --user/--group knobs threaded through processing.
 """
 from __future__ import annotations
+
+import os
 
 # Base confinement applied to every tool container.
 HARDENING_FLAGS = [
@@ -51,6 +56,33 @@ def run_flags(network: bool = False, tmpfs: tuple = ()) -> list[str]:
     return flags
 
 
+def _mount_group_ids(mounts) -> list[str]:
+    """Supplementary gids the container needs to READ its read-only mounts.
+
+    Evidence is bind-mounted read-only and owned by whatever group staged it
+    (data_store is root:docker 750 on a locked-down host). The tool runs as the
+    image's baked non-root uid, which is not in that group, so it cannot traverse
+    the evidence unless granted it. Return the distinct gid of each read-only
+    mount's host source for --group-add, so reading evidence works off the mount
+    with nothing to configure per run. Read-write (output) mounts are skipped —
+    the caller makes those world-writable — as are the root group and any source
+    that can't be stat'd (keeps placeholder-path unit tests and absent mounts
+    harmless).
+    """
+    gids: list[str] = []
+    for spec in mounts:
+        parts = spec.split(":")
+        if len(parts) < 3 or parts[-1] != "ro":
+            continue
+        try:
+            gid = str(os.stat(parts[0]).st_gid)
+        except OSError:
+            continue
+        if gid not in gids and gid != "0":
+            gids.append(gid)
+    return gids
+
+
 def run(image, after_image=(), *, mounts=(), network=False, tmpfs=(),
         workdir=None) -> list[str]:
     """``docker run`` argv for a minimal hardened dfir/* image.
@@ -64,6 +96,12 @@ def run(image, after_image=(), *, mounts=(), network=False, tmpfs=(),
     (read-write) and reads mounted evidence (read-only).
     """
     argv = ["docker", "run", "--rm", *run_flags(network, tmpfs)]
+    # Grant the container the group that owns each read-only (evidence) mount, so
+    # the image's baked non-root uid can read locked-down evidence (data_store is
+    # root:docker 750 on a hardened host) without running as root. Automatic, off
+    # the mounts — no per-run --user/--group knobs threaded through processing.
+    for gid in _mount_group_ids(mounts):
+        argv += ["--group-add", gid]
     if workdir:
         argv += ["-w", workdir]
     for mount in mounts:

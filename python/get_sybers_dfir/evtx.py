@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -135,8 +136,14 @@ def evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image, *,
 
 def _run_evtxecmd(evtx_file, dest_dir, json_out, xml_out, image, *,
                   evtxecmd_dir=None, dll_rel=None):
-    """One EvtxECmd container run over one log, JSON + XML into dest_dir."""
-    subprocess.run(
+    """One EvtxECmd container run over one log, JSON + XML into dest_dir.
+
+    Returns the CompletedProcess so the caller can tell a genuinely empty log
+    (EvtxECmd opened it and printed a record tally) from an input it could not
+    read at all (missing, or permission-denied under the hardened uid) — EvtxECmd
+    exits 0 on both, but only prints a tally when it actually opened the log.
+    """
+    return subprocess.run(
         evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image,
                       evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel),
         # EvtxECmd is chatty (version banner + per-record "time went backwards"
@@ -251,8 +258,8 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
         except OSError:
             pass
         try:
-            _run_evtxecmd(evtx, dest_dir, json_out, xml_out, image,
-                          evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel)
+            proc = _run_evtxecmd(evtx, dest_dir, json_out, xml_out, image,
+                                 evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel)
         except subprocess.CalledProcessError:
             for p in (json_path, os.path.join(dest_dir, xml_out)):
                 if os.path.exists(p):
@@ -263,15 +270,38 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
         if _has_records(json_path):
             summary["processed"] += 1
             summary["results"].append({"log": rel, "output": os.path.join(host, json_out)})
-        else:
-            # EvtxECmd exits 0 on an empty log and writes a BOM-only file — drop it
-            # so it is neither picked up downstream as an ill-formed input nor
-            # miscounted as processed. This is expected, not a failure.
-            for p in (json_path, os.path.join(dest_dir, xml_out)):
-                if os.path.exists(p):
-                    os.remove(p)
+            continue
+        # No records written. EvtxECmd exits 0 in three shapes here, and only one is
+        # benign, so we read its own "Total event log records found: <n>" tally:
+        #   n == 0 -> genuinely EMPTY: it opened the log and there was nothing. Benign.
+        #   n  > 0 -> it found records but wrote NONE to disk (an output/write error,
+        #             e.g. an unwritable dest) — a failure masquerading as empty.
+        #   no tally at all -> it never opened the log (missing file, or the
+        #             permission-denied it prints as "... does not exist! Exiting").
+        #             A failure; surface EvtxECmd's own reason.
+        # Matching on the tally (not merely the "records found" substring) keeps a
+        # non-zero-but-unwritten count from being hidden as a silent "empty".
+        for p in (json_path, os.path.join(dest_dir, xml_out)):
+            if os.path.exists(p):
+                os.remove(p)
+        out = (proc.stdout or b"") + (proc.stderr or b"")
+        text = out.decode("utf-8", "replace")
+        m = re.search(r"records found:\s*([\d,]+)", text, re.IGNORECASE)
+        tally = int(m.group(1).replace(",", "")) if m else None
+        if tally == 0:
             summary["empty"] += 1
             summary["results"].append({"log": rel, "empty": True})
+        elif tally is not None:
+            summary["failed"] += 1
+            summary["results"].append(
+                {"log": rel,
+                 "error": f"EvtxECmd reported {m.group(1)} records but wrote none"})
+        else:
+            tail = text.strip().splitlines()
+            why = tail[-1].strip() if tail else "no output and no record tally"
+            summary["failed"] += 1
+            summary["results"].append(
+                {"log": rel, "error": f"EvtxECmd did not read the log: {why}"})
     return summary
 
 

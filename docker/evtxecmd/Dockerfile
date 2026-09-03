@@ -69,7 +69,7 @@ ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["dotnet", "/opt/evtxecmd/EvtxECmd.dll"]
 LABEL org.opencontainers.image.title="dfir/evtxecmd" \
-      org.opencontainers.image.description="Minimal hardened EvtxECmd (.NET) for the DX_DFIR dfir_evtx role: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as uid 2000." \
+      org.opencontainers.image.description="Minimal hardened EvtxECmd (.NET) for the DX_DFIR dfir_evtx role: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as a fixed non-root uid (default 2000)." \
       org.opencontainers.image.source="https://github.com/EricZimmerman/evtx" \
       org.opencontainers.image.licenses="MIT" \
       com.get-sybers.evtxecmd.url="${EVTXECMD_URL}" \
