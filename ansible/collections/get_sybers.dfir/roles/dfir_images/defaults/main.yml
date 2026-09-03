@@ -10,7 +10,9 @@ dfir_images_repo_root: "{{ role_path }}/../../../../.."
 # the build contract, so the build and the runtime share one uid. (dfir/volatility
 # is built from the third_party/piiat-mem submodule — Get-Sybers/PIIAT-Mem#2.)
 dfir_images_uid: "{{ dfir_runtime_uid | default(2000) }}"
-dfir_images_gid: "{{ dfir_runtime_gid | default(2000) }}"
+# gid follows the uid unless explicitly set, so setting only dfir_runtime_uid
+# still yields a matched USER <uid>:<uid>, never <uid>:2000.
+dfir_images_gid: "{{ dfir_runtime_gid | default(dfir_runtime_uid | default(2000)) }}"
 
 # The docker/ build context — every Dockerfile COPYs the shared ansible
 # hardening playbook (docker/hardening/harden.yml) from here.

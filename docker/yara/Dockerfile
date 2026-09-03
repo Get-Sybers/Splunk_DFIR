@@ -34,5 +34,5 @@ ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["/opt/dfir/scan-list.sh"]
 LABEL org.opencontainers.image.title="dfir/yara" \
-      org.opencontainers.image.description="Minimal hardened YARA for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no python, runs as uid 2000; sh kept only for the tool's own scan loop." \
+      org.opencontainers.image.description="Minimal hardened YARA for the DX_DFIR signatures lane: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no python, runs as a fixed non-root uid (default 2000); sh kept only for the tool's own scan loop." \
       com.get-sybers.hardened="true"

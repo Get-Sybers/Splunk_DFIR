@@ -91,7 +91,7 @@ ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["dotnet", "/opt/eztool/tool.dll"]
 LABEL org.opencontainers.image.title="dfir/eztool" \
-      org.opencontainers.image.description="Minimal hardened Eric Zimmerman tool (.NET) for the DX_DFIR pipeline: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as uid 2000. Parameterized over EZTOOL." \
+      org.opencontainers.image.description="Minimal hardened Eric Zimmerman tool (.NET) for the DX_DFIR pipeline: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as a fixed non-root uid (default 2000). Parameterized over EZTOOL." \
       org.opencontainers.image.licenses="MIT" \
       com.get-sybers.eztool="${EZTOOL}" \
       com.get-sybers.eztool.url="${EZTOOL_URL}" \
