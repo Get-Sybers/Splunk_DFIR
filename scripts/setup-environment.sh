@@ -292,8 +292,14 @@ DXDFIR_VENV="${DXDFIR_VENV:-/opt/dxdfir/venv}"
 echo "🐍 Installing the dxdfir CLI into $DXDFIR_VENV ..."
 $SUDO python3 -m venv "$DXDFIR_VENV" || die "Failed to create the CLI venv (need python3-venv)."
 $SUDO "$DXDFIR_VENV/bin/pip" install --quiet --upgrade pip || die "pip upgrade in the CLI venv failed."
+# --constraint pins the exact, tested dependency versions from python/constraints.txt
+# (pyproject carries the ">=" floors; the lock is the single source of truth this
+# installer AND scripts/package-offline.sh consume). Without it a fresh install pulls
+# whatever ansible-core / docker-SDK / PyYAML is newest and can shift the pipeline
+# under itself; with it there are no version literals to drift in this script.
 $SUDO "$DXDFIR_VENV/bin/pip" install --quiet --editable "$REPO_ROOT_DIR/python" \
-    || die "Failed to install the dxdfir CLI (and its ansible-core dependency)."
+    --constraint "$REPO_ROOT_DIR/python/constraints.txt" \
+    || die "Failed to install the dxdfir CLI (and its pinned dependencies)."
 $SUDO ln -sf "$DXDFIR_VENV/bin/dxdfir" /usr/local/bin/dxdfir
 echo "✅ dxdfir installed: $(/usr/local/bin/dxdfir --version 2>/dev/null || echo '/usr/local/bin/dxdfir')"
 

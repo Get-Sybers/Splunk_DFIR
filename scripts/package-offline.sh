@@ -87,7 +87,9 @@ git -C "$REPO" archive --format=tar HEAD -o "$STAGE/repo.tar" \
 echo "🐍 Building the dxdfir CLI and downloading Python dependencies as wheels ..."
 # `pip wheel` BUILDS the local project into a wheel AND resolves every
 # dependency into wheels — the project itself is what `pip download` omits.
-$PIP wheel --wheel-dir "$STAGE/wheels" "$REPO/python" >/dev/null \
+# --constraint pins them to python/constraints.txt, the SAME lock
+# setup-environment.sh uses, so the offline bundle carries the exact tested versions.
+$PIP wheel --wheel-dir "$STAGE/wheels" --constraint "$REPO/python/constraints.txt" "$REPO/python" >/dev/null \
     || die "pip wheel of the CLI failed."
 # bootstrap wheels so the offline venv can upgrade its own pip
 $PIP download --dest "$STAGE/wheels" pip setuptools wheel >/dev/null 2>&1 || true

@@ -1,0 +1,44 @@
+# Python dependency lock for the get_sybers_dfir CLI and the vendored
+# PIIAT-MitreCar engine it runs in-process.
+#
+# pyproject.toml carries the ">=" floors (what the code needs); THIS file pins the
+# exact, tested resolution so a fresh `pip install` is reproducible and an
+# unattended upstream release cannot shift a dependency under the pipeline
+# (build-car, ansible-core, the docker SDK, PyYAML, ...). It is the single source
+# of truth for Python versions — no version literals live in the shell installers,
+# they only reference this file.
+#
+# Consumed as a pip constraints file (`pip install ... -c python/constraints.txt`)
+# by BOTH scripts/setup-environment.sh (online) and scripts/package-offline.sh
+# (the offline wheel bundle), so both resolve identical versions. The Ansible
+# COLLECTIONS are pinned separately in
+# ansible/collections/get_sybers.dfir/requirements.yml.
+#
+# Regenerate after a deliberate dependency bump, then restore this header:
+#   python3 -m venv /tmp/lock && /tmp/lock/bin/pip install ./python \
+#     && /tmp/lock/bin/pip freeze --exclude-editable > python/constraints.txt
+#
+# Generated 2026-09-03, Python 3.13, get-sybers-dfir 0.6.0.
+
+annotated-doc==0.0.5
+ansible-core==2.21.3
+certifi==2026.7.22
+cffi==2.1.1
+charset-normalizer==3.5.1
+cryptography==50.0.1
+docker==7.2.0
+idna==3.19
+Jinja2==3.1.6
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+mdurl==0.1.2
+packaging==26.3
+pycparser==3.0
+Pygments==2.21.0
+PyYAML==6.0.3
+requests==2.34.2
+resolvelib==1.2.1
+rich==15.0.0
+shellingham==1.5.4
+typer==0.27.2
+urllib3==2.7.0
