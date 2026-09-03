@@ -184,3 +184,43 @@ def test_unregistered_detects_dot_only_evidence(tmp_path):
     (root / "disk_images").mkdir(parents=True)
     _write(root / "disk_images" / ".bash_history", b"cmd")   # only dot-prefixed evidence
     assert collection.unregistered(tmp_path) == ["hand"]     # detected (was missed before)
+
+
+# --- security: name validation + symlink safety -----------------------------
+@pytest.mark.parametrize("bad", ["../escape", "..", ".", "/abs", "a/b", "with space", ""])
+def test_collection_dir_rejects_bad_names(tmp_path, bad):
+    with pytest.raises(ValueError):
+        collection.collection_dir(tmp_path, bad)
+
+
+def test_sort_and_hash_reject_traversal(tmp_path):
+    with pytest.raises(ValueError):
+        collection.sort_into(tmp_path, "../escape")
+    with pytest.raises(ValueError):
+        collection.hash_collection(tmp_path, "../escape")
+
+
+def test_hash_absent_collection_raises(tmp_path):
+    with pytest.raises(ValueError):
+        collection.hash_collection(tmp_path, "nope")
+
+
+def test_symlinks_not_followed_in_evidence(tmp_path):
+    collection.create(tmp_path, "case")
+    root = collection.collection_dir(tmp_path, "case")
+    _write(root / "pcaps" / "real.pcap", _PCAP_MAGIC)
+    outside = _write(tmp_path / "outside.bin", b"secret")           # a file OUTSIDE the collection
+    (root / "pcaps" / "link.pcap").symlink_to(outside)             # symlink to it
+    outdir = tmp_path / "outdir"; outdir.mkdir(); _write(outdir / "loot.bin", b"x")
+    (root / "memory" / "linkdir").symlink_to(outdir, target_is_directory=True)
+    files = [rel for rel, _s1, _s256 in collection.hash_collection(tmp_path, "case")[0]]
+    assert files == ["pcaps/real.pcap"]                            # symlink + symlinked dir skipped
+
+
+def test_create_on_existing_folder_logs_registered(tmp_path):
+    root = collection.collection_dir(tmp_path, "hand")
+    (root / "pcaps").mkdir(parents=True)
+    _write(root / "pcaps" / "c.pcap", _PCAP_MAGIC)                 # hand-staged, no marker
+    collection.create(tmp_path, "hand")
+    events = [e["event"] for e in collection.read_log(tmp_path, "hand")]
+    assert "registered" in events and "created" not in events     # registration, not creation

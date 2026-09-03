@@ -124,11 +124,21 @@ def _ansible_playbook() -> str:
 
 
 # --------------------------------------------------------------------------- commands
+def _valid_or_exit(name: str) -> None:
+    """Reject an invalid collection name (traversal / absolute / . ..) with a clean
+    CLI error before it is ever joined into a filesystem path."""
+    if not _collection.valid_name(name):
+        typer.secho(f"invalid collection name {name!r} — use letters/digits then . _ -",
+                    fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+
+
 def _resolve_collection(repo: Path, name: str, *, no_register: bool = False) -> None:
     """Make a collection usable before it is sorted or processed. Registered -> ok.
     A hand-staged (unregistered) folder -> offer to register it (prompt when
     interactive, auto otherwise) so the run is recorded, unless --no-register.
     Absent -> error out."""
+    _valid_or_exit(name)
     if _collection.is_registered(repo, name):
         return
     if name in _collection.unregistered(repo):
@@ -503,6 +513,7 @@ def collection_hash(
     digests). SHA-256 is primary. As slow as the evidence is large.
     """
     repo = _repo_root(repo_root)
+    _valid_or_exit(name)
     if not _collection.collection_dir(repo, name).is_dir():
         typer.secho(f"no such collection '{name}'.", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
@@ -516,6 +527,7 @@ def collection_log(
 ) -> None:
     """Show a collection's history (created / registered / sorted / hashed / processed)."""
     repo = _repo_root(repo_root)
+    _valid_or_exit(name)
     events = _collection.read_log(repo, name)
     if not events:
         typer.echo(f"No log for '{name}' (unregistered, or nothing recorded yet).")

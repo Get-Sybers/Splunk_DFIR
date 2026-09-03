@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -83,6 +84,11 @@ def dropzone(repo: Path) -> Path:
 
 
 def collection_dir(repo: Path, name: str) -> Path:
+    """The collection's directory. Validates ``name`` at this single choke point,
+    so no caller can build a path outside collections/ (no traversal, no absolute
+    or ``.``/``..`` segments). Raises ValueError on a bad name."""
+    if not valid_name(name):
+        raise ValueError(f"invalid collection name {name!r} — use letters/digits then . _ -")
     return collections_root(repo) / name
 
 
@@ -165,12 +171,26 @@ def _hash_file(path: Path) -> tuple[str, str]:
     return h1.hexdigest(), h256.hexdigest()
 
 
+def _walk_files(root: Path):
+    """Regular, non-symlink files under ``root`` WITHOUT following symlinked dirs —
+    a symlink loop can't hang it and a symlink can't pull in files outside the
+    collection (integrity + no traversal)."""
+    for dirpath, _dirs, filenames in os.walk(root, followlinks=False):
+        base = Path(dirpath)
+        for fn in filenames:
+            p = base / fn
+            if p.is_symlink() or not p.is_file():
+                continue
+            yield p
+
+
 def evidence_files(root: Path) -> list[Path]:
     """Every evidence file under a collection, excluding ONLY the collection's own
     control files (.collection, .collection.log, .collection.hashes). Dot-prefixed
-    EVIDENCE (.bash_history, .ssh/…) is included — it is real forensic data."""
+    EVIDENCE (.bash_history, .ssh/…) is included — it is real forensic data.
+    Symlinks are skipped and symlinked directories are not followed."""
     control = {root / _MARKER, root / _LOG, root / _MANIFEST}
-    return sorted(p for p in root.rglob("*") if p.is_file() and p not in control)
+    return sorted(p for p in _walk_files(root) if p not in control)
 
 
 def hash_collection(repo: Path, name: str) -> tuple[list[tuple[str, str, str]], dict[str, str]]:
@@ -182,6 +202,8 @@ def hash_collection(repo: Path, name: str) -> tuple[list[tuple[str, str, str]], 
     whenever any file's content changes. SHA-256 is the primary integrity hash
     (forensic strength); SHA-1 is kept alongside it."""
     root = collection_dir(repo, name)
+    if not root.is_dir():
+        raise ValueError(f"no such collection {name!r} to hash")
     per_file: list[tuple[str, str, str]] = []
     for p in evidence_files(root):
         s1, s256 = _hash_file(p)
@@ -238,12 +260,15 @@ def create(repo: Path, name: str) -> Path:
         raise ValueError(
             f"invalid collection name {name!r} — use letters/digits then . _ -")
     root = collection_dir(repo, name)
-    new = not (root / _MARKER).exists()
+    dir_existed = root.is_dir()
+    had_marker = (root / _MARKER).exists()
     for sub in LANE_SUBDIRS:
         (root / sub).mkdir(parents=True, exist_ok=True)
-    if new:                       # write the marker (and its registered_at) ONCE — idempotent
+    if not had_marker:            # write the marker (and its registered_at) ONCE — idempotent
         _write_marker(root, name)
-        log_event(repo, name, "created")
+        # a folder that already existed (hand-staged) is a REGISTRATION, not a creation
+        log_event(repo, name, "registered" if dir_existed else "created",
+                  **({"source": "create"} if dir_existed else {}))
     dropzone(repo).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -377,6 +402,6 @@ def lane_inputs(repo: Path, name: str) -> list[tuple[str, str, Path, int]]:
     for lane in LANES:
         for var, sub in zip(lane.input_vars, lane.subdirs):
             d = root / sub
-            n = sum(1 for f in d.rglob("*") if f.is_file()) if d.is_dir() else 0
+            n = sum(1 for _ in _walk_files(d)) if d.is_dir() else 0
             out.append((lane.name, var, d, n))
     return out
