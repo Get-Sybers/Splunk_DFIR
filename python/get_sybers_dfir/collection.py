@@ -70,7 +70,7 @@ _COLLECTIONS_REL = ("data_store", "raw", "collections")
 _DROPZONE_REL = ("data_store", "raw", "sort")
 _MARKER = ".collection"
 _LOG = ".collection.log"
-_MANIFEST = ".collection.sha1"
+_MANIFEST = ".collection.hashes"
 
 
 # --------------------------------------------------------------- paths / naming
@@ -110,7 +110,7 @@ def list_collections(repo: Path) -> list[str]:
 
 
 def _has_evidence(d: Path) -> bool:
-    return any(p.is_file() and not p.name.startswith(".") for p in d.rglob("*"))
+    return bool(evidence_files(d))
 
 
 def unregistered(repo: Path) -> list[str]:
@@ -154,63 +154,79 @@ def read_log(repo: Path, name: str) -> list[dict]:
     return out
 
 
-# --------------------------------------------------------------- integrity (SHA-1)
-def _sha1_file(path: Path) -> str:
-    h = hashlib.sha1()
+# ------------------------------------------------- integrity (SHA-256 + SHA-1)
+def _hash_file(path: Path) -> tuple[str, str]:
+    """(sha1, sha256) of a file, computed in a single read pass."""
+    h1, h256 = hashlib.sha1(), hashlib.sha256()
     with open(path, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
+            h1.update(chunk)
+            h256.update(chunk)
+    return h1.hexdigest(), h256.hexdigest()
 
 
 def evidence_files(root: Path) -> list[Path]:
-    """Every evidence file under a collection (its lane subdirs), excluding the
-    collection's own dotfiles (.collection, .collection.log, .collection.sha1)."""
-    return sorted(p for p in root.rglob("*")
-                  if p.is_file() and not p.name.startswith("."))
+    """Every evidence file under a collection, excluding ONLY the collection's own
+    control files (.collection, .collection.log, .collection.hashes). Dot-prefixed
+    EVIDENCE (.bash_history, .ssh/…) is included — it is real forensic data."""
+    control = {root / _MARKER, root / _LOG, root / _MANIFEST}
+    return sorted(p for p in root.rglob("*") if p.is_file() and p not in control)
 
 
-def hash_collection(repo: Path, name: str) -> tuple[list[tuple[str, str]], str]:
-    """``([(relpath, sha1)], collection_sha1)``. Every evidence file is SHA-1'd;
-    the collection's SHA-1 is the SHA-1 of every file's SHA-1 hex string sorted
-    alphabetically and concatenated — order-independent, and it changes whenever
-    any file's content changes."""
+def hash_collection(repo: Path, name: str) -> tuple[list[tuple[str, str, str]], dict[str, str]]:
+    """``([(relpath, sha1, sha256)], {"sha1": rollup, "sha256": rollup})``.
+
+    Every evidence file is SHA-256'd AND SHA-1'd (one read pass); each collection
+    rollup is the hash — in that algorithm — of every file's hex digest sorted
+    alphabetically and concatenated, so it is order-independent and changes
+    whenever any file's content changes. SHA-256 is the primary integrity hash
+    (forensic strength); SHA-1 is kept alongside it."""
     root = collection_dir(repo, name)
-    per_file = [(str(p.relative_to(root)), _sha1_file(p)) for p in evidence_files(root)]
+    per_file: list[tuple[str, str, str]] = []
+    for p in evidence_files(root):
+        s1, s256 = _hash_file(p)
+        per_file.append((str(p.relative_to(root)), s1, s256))
     per_file.sort(key=lambda t: t[0])                    # manifest ordered by path
-    rollup = hashlib.sha1(
-        "".join(sorted(sha1 for _rel, sha1 in per_file)).encode("ascii")).hexdigest()
-    return per_file, rollup
+    rollups = {
+        "sha1": hashlib.sha1(
+            "".join(sorted(t[1] for t in per_file)).encode("ascii")).hexdigest(),
+        "sha256": hashlib.sha256(
+            "".join(sorted(t[2] for t in per_file)).encode("ascii")).hexdigest(),
+    }
+    return per_file, rollups
 
 
-def write_manifest(repo: Path, name: str) -> tuple[str, int]:
-    """(Re)compute the collection's SHA-1 manifest, persist it to
-    ``.collection.sha1`` and log a 'hashed' event (when registered). Returns
-    ``(collection_sha1, file_count)``. Note: hashes every evidence file, so it is
-    as slow as the evidence is large."""
+def write_manifest(repo: Path, name: str) -> tuple[dict[str, str], int]:
+    """(Re)compute the collection's hash manifest, persist it to
+    ``.collection.hashes`` and log a 'hashed' event (when registered). Returns
+    ``({"sha1", "sha256"}, file_count)``. Hashes every evidence file, so it is as
+    slow as the evidence is large."""
     root = collection_dir(repo, name)
     root.mkdir(parents=True, exist_ok=True)
-    per_file, rollup = hash_collection(repo, name)
-    header = (f"# DX_DFIR collection manifest (SHA-1)\n"
+    per_file, rollups = hash_collection(repo, name)
+    header = (f"# DX_DFIR collection manifest\n"
               f"# collection: {name}\n"
-              f"# collection_sha1: {rollup}\n"
+              f"# collection_sha256: {rollups['sha256']}\n"
+              f"# collection_sha1: {rollups['sha1']}\n"
               f"# files: {len(per_file)}\n"
-              f"# generated: {_now()}\n")
-    body = "".join(f"{sha1}  {rel}\n" for rel, sha1 in per_file)
+              f"# generated: {_now()}\n"
+              f"# columns: sha256  sha1  path\n")
+    body = "".join(f"{s256}  {s1}  {rel}\n" for rel, s1, s256 in per_file)
     (root / _MANIFEST).write_text(header + body, encoding="utf-8")
     if is_registered(repo, name):
-        log_event(repo, name, "hashed", collection_sha1=rollup, files=len(per_file))
-    return rollup, len(per_file)
+        log_event(repo, name, "hashed", collection_sha256=rollups["sha256"],
+                  collection_sha1=rollups["sha1"], files=len(per_file))
+    return rollups, len(per_file)
 
 
 def manifest_rollup(repo: Path, name: str) -> str | None:
-    """The stored collection SHA-1 from the manifest header, or None if never
-    hashed. Cheap — reads the header, does not re-hash."""
+    """The stored collection SHA-256 (primary rollup) from the manifest header, or
+    None if never hashed. Cheap — reads the header, does not re-hash."""
     p = collection_dir(repo, name) / _MANIFEST
     if not p.is_file():
         return None
     for line in p.read_text(encoding="utf-8").splitlines():
-        if line.startswith("# collection_sha1:"):
+        if line.startswith("# collection_sha256:"):
             return line.split(":", 1)[1].strip() or None
     return None
 
@@ -225,10 +241,10 @@ def create(repo: Path, name: str) -> Path:
     new = not (root / _MARKER).exists()
     for sub in LANE_SUBDIRS:
         (root / sub).mkdir(parents=True, exist_ok=True)
-    _write_marker(root, name)
-    dropzone(repo).mkdir(parents=True, exist_ok=True)
-    if new:
+    if new:                       # write the marker (and its registered_at) ONCE — idempotent
+        _write_marker(root, name)
         log_event(repo, name, "created")
+    dropzone(repo).mkdir(parents=True, exist_ok=True)
     return root
 
 

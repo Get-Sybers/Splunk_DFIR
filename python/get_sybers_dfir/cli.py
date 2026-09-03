@@ -157,15 +157,16 @@ def _resolve_collection(repo: Path, name: str, *, no_register: bool = False) -> 
 
 
 def _hash_and_report(repo: Path, name: str) -> None:
-    """SHA-1 the collection's evidence, persist the manifest, print the rollup."""
+    """SHA-256 + SHA-1 the collection's evidence, persist the manifest, print the rollups."""
     n = len(_collection.evidence_files(_collection.collection_dir(repo, name)))
     if n == 0:
         typer.echo("  (no evidence files to hash yet)")
         return
     typer.secho(f"🔒 hashing {n} evidence file(s) …", fg=typer.colors.BRIGHT_BLACK)
-    rollup, count = _collection.write_manifest(repo, name)
-    typer.secho(f"   collection SHA-1: {rollup}  ({count} files → .collection.sha1)",
-                fg=typer.colors.GREEN)
+    rollups, count = _collection.write_manifest(repo, name)
+    typer.secho(f"   SHA-256: {rollups['sha256']}", fg=typer.colors.GREEN)
+    typer.secho(f"   SHA-1:   {rollups['sha1']}  ({count} files → .collection.hashes)",
+                fg=typer.colors.BRIGHT_BLACK)
 
 
 def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: bool,
@@ -245,7 +246,7 @@ def process(
         _collection.log_event(
             repo, collection, "processed", lanes=lanes, pipeline=pipeline.value,
             files={ln: counts.get(ln, 0) for ln in lanes},
-            collection_sha1=_collection.manifest_rollup(repo, collection))
+            collection_sha256=_collection.manifest_rollup(repo, collection))
 
 
 @app.command()
@@ -459,7 +460,7 @@ def collection_list(
         total = sum(counts.values())
         detail = ", ".join(f"{ln}:{counts[ln]}" for ln in counts if counts[ln]) or "empty"
         roll = _collection.manifest_rollup(repo, c)
-        sha = f"  sha1:{roll[:12]}…" if roll else ""
+        sha = f"  sha256:{roll[:12]}…" if roll else ""
         colour = typer.colors.GREEN if total else typer.colors.BRIGHT_BLACK
         tagged = f"  {typer.style(tag, fg=tag_colour)}" if tag else ""
         typer.echo(f"  {c:<22} {typer.style(f'{total:>4}', fg=colour)} file(s)  [{detail}]{sha}{tagged}")
@@ -495,11 +496,11 @@ def collection_hash(
     name: str = typer.Argument(..., help="Collection to hash."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """SHA-1 every evidence file and record the collection's rollup SHA-1.
+    """SHA-256 + SHA-1 every evidence file and record the collection's rollup hashes.
 
-    Writes data_store/raw/collections/<name>/.collection.sha1 — a per-file manifest
-    plus the collection SHA-1 (= SHA-1 of the sorted per-file hashes). As slow as
-    the evidence is large.
+    Writes data_store/raw/collections/<name>/.collection.hashes — a per-file
+    manifest plus the collection rollups (each = the hash of the sorted per-file
+    digests). SHA-256 is primary. As slow as the evidence is large.
     """
     repo = _repo_root(repo_root)
     if not _collection.collection_dir(repo, name).is_dir():

@@ -134,10 +134,13 @@ def test_hash_collection_is_deterministic_and_content_addressed(tmp_path):
     _write(root / "pcaps" / "a.pcap", b"AAA")
     _write(root / "memory" / "b.mem", b"BBB")
     per_file, roll1 = collection.hash_collection(tmp_path, "case")
-    assert dict(per_file)["pcaps/a.pcap"] == hashlib.sha1(b"AAA").hexdigest()
-    # rollup == sha1 of the per-file sha1 strings, alphabetical, concatenated
-    expected = hashlib.sha1("".join(sorted(h for _r, h in per_file)).encode()).hexdigest()
-    assert roll1 == expected
+    rec = {rel: (s1, s256) for rel, s1, s256 in per_file}
+    assert rec["pcaps/a.pcap"] == (hashlib.sha1(b"AAA").hexdigest(), hashlib.sha256(b"AAA").hexdigest())
+    # each rollup == hash (in that algo) of the sorted per-file digests, concatenated
+    assert roll1["sha1"] == hashlib.sha1(
+        "".join(sorted(s1 for _r, s1, _s in per_file)).encode()).hexdigest()
+    assert roll1["sha256"] == hashlib.sha256(
+        "".join(sorted(s256 for _r, _s, s256 in per_file)).encode()).hexdigest()
     assert collection.hash_collection(tmp_path, "case")[1] == roll1        # deterministic
     _write(root / "memory" / "b.mem", b"CHANGED")
     assert collection.hash_collection(tmp_path, "case")[1] != roll1        # content-addressed
@@ -147,16 +150,37 @@ def test_write_manifest_persists_and_logs(tmp_path):
     collection.create(tmp_path, "case")
     root = collection.collection_dir(tmp_path, "case")
     _write(root / "pcaps" / "a.pcap", b"AAA")
-    rollup, count = collection.write_manifest(tmp_path, "case")
-    assert count == 1 and collection.manifest_rollup(tmp_path, "case") == rollup
-    manifest = (root / ".collection.sha1").read_text()
-    assert "pcaps/a.pcap" in manifest and hashlib.sha1(b"AAA").hexdigest() in manifest
+    rollups, count = collection.write_manifest(tmp_path, "case")
+    assert count == 1 and collection.manifest_rollup(tmp_path, "case") == rollups["sha256"]
+    manifest = (root / ".collection.hashes").read_text()
+    assert "pcaps/a.pcap" in manifest
+    assert hashlib.sha256(b"AAA").hexdigest() in manifest      # SHA-256 recorded
+    assert hashlib.sha1(b"AAA").hexdigest() in manifest        # SHA-1 kept too
     assert "hashed" in [e["event"] for e in collection.read_log(tmp_path, "case")]
 
 
-def test_manifest_excludes_own_dotfiles(tmp_path):
+def test_manifest_includes_dot_evidence_excludes_control(tmp_path):
     collection.create(tmp_path, "case")
-    _write(collection.collection_dir(tmp_path, "case") / "pcaps" / "a.pcap", b"AAA")
-    collection.write_manifest(tmp_path, "case")           # writes .collection.sha1
-    files = [r for r, _h in collection.hash_collection(tmp_path, "case")[0]]
-    assert files == ["pcaps/a.pcap"]                       # markers/log/manifest not hashed
+    root = collection.collection_dir(tmp_path, "case")
+    _write(root / "disk_images" / ".bash_history", b"whoami\n")   # dot-prefixed EVIDENCE
+    _write(root / "pcaps" / "a.pcap", b"AAA")
+    collection.write_manifest(tmp_path, "case")                   # writes .collection.hashes
+    files = [rel for rel, _s1, _s256 in collection.hash_collection(tmp_path, "case")[0]]
+    assert "disk_images/.bash_history" in files                   # real dot-evidence IS hashed
+    assert "pcaps/a.pcap" in files
+    assert not any(f.startswith(".collection") for f in files)    # control files are NOT
+
+
+def test_create_is_idempotent_marker_stable(tmp_path):
+    root = collection.create(tmp_path, "case")
+    marker = (root / ".collection").read_text()
+    collection.create(tmp_path, "case")                    # a second create must not rewrite it
+    assert (root / ".collection").read_text() == marker    # registered_at preserved
+    assert [e["event"] for e in collection.read_log(tmp_path, "case")].count("created") == 1
+
+
+def test_unregistered_detects_dot_only_evidence(tmp_path):
+    root = collection.collection_dir(tmp_path, "hand")
+    (root / "disk_images").mkdir(parents=True)
+    _write(root / "disk_images" / ".bash_history", b"cmd")   # only dot-prefixed evidence
+    assert collection.unregistered(tmp_path) == ["hand"]     # detected (was missed before)
