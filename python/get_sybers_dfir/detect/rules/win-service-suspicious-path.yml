@@ -5,6 +5,8 @@ status: ported
 severity: high
 attack: [T1543.003]
 tactics: [TA0003, TA0004]
+created: "2026-09-02"
+updated: "2026-09-02"
 language: esql
 index: [logs-dfir.evtx-*]
 # DetectRaptor win_sus_service: 7045 (System) / 4697 (Security) whose image is a

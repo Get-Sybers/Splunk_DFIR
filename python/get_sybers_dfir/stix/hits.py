@@ -16,10 +16,13 @@ Elastic documents
     whole ``_search`` response (``hits.hits[]._source``).
 
 Only what a STIX consumer can use is lifted: the rule identity, the ATT&CK
-technique ids, the time, the observed host / addresses / file (which become
-SCOs with spec-deterministic ids), and the CAR guid (``event.id``) that ties
-the sighting back to its CAR row. Everything else rides along in ``details``.
-Nothing is invented: a hit with no recognisable address gets no address SCO.
+technique ids, the time, the observed host, the connection (addresses, ports,
+transport / application protocol — a ``network-traffic`` SCO and its
+addresses, spec-deterministic ids) and the file, and the CAR guid
+(``event.id``) that ties the sighting back to its CAR row. Everything else
+stays in ``details``, which only decides whether two rows are the same
+observation — it is not exported. Nothing is invented: a hit with no
+recognisable address gets no address SCO.
 """
 from __future__ import annotations
 
@@ -35,6 +38,8 @@ _ARROW_RE = re.compile(r"^\s*(\S+?)\s*->\s*(\S+?)\s*$")     # "src -> dst[:port]
 _HASH_KEYS = (("file.hash.md5", "MD5"), ("file.hash.sha1", "SHA-1"),
               ("file.hash.sha256", "SHA-256"), ("file.hash.sha512", "SHA-512"))
 _DETAIL_HOST_KEYS = ("Computer", "host.name", "Hostname", "HostName", "image_hostname")
+_DETAIL_TRANSPORT_KEYS = ("network.transport", "proto", "Proto", "transport")
+_DETAIL_PROTOCOL_KEYS = ("network.protocol", "app_proto", "service", "Protocol")
 _ENVELOPE_KEY = "DetectionId"
 _DROP_PREFIXES = ("kibana.", "signal.", "_")     # engine bookkeeping, not evidence
 
@@ -56,6 +61,9 @@ class Hit:
     source_ip: str | None = None
     destination_ip: str | None = None
     destination_port: int | None = None
+    source_port: int | None = None
+    transport: str | None = None          # network.transport (tcp / udp)
+    protocol: str | None = None           # network.protocol (dns / http ...)
     file_name: str | None = None
     file_hashes: dict[str, str] = field(default_factory=dict)
     car_guid: str | None = None
@@ -130,6 +138,21 @@ def _first(f: dict, *keys):
     return None
 
 
+def _port(v) -> int | None:
+    v = _scalar(v)
+    if isinstance(v, bool):
+        return None
+    if isinstance(v, int) or (isinstance(v, str) and v.strip().isdigit()):
+        n = int(v)
+        return n if 0 <= n <= 65535 else None
+    return None
+
+
+def _proto(v) -> str | None:
+    s = _str(_scalar(v)).strip().lower()
+    return s or None
+
+
 def _kibana_threat(threat) -> list[tuple[str, str | None]]:
     """``(technique id, name)`` pairs from a rule's ``threat`` block (framework /
     tactic / technique[] / subtechnique[])."""
@@ -177,6 +200,8 @@ def _from_envelope(doc: dict) -> Hit | None:
         if details.get(k):
             hit.host = str(details[k])
             break
+    hit.transport = _proto(_first(details, *_DETAIL_TRANSPORT_KEYS))
+    hit.protocol = _proto(_first(details, *_DETAIL_PROTOCOL_KEYS))
     return hit
 
 
@@ -200,8 +225,7 @@ def _from_elastic(doc: dict) -> Hit | None:
         if name:
             names.setdefault(tid, str(name))
     src, dst = _ip(_scalar(f.get("source.ip"))), _ip(_scalar(f.get("destination.ip")))
-    port_raw = _scalar(f.get("destination.port"))
-    port = int(port_raw) if isinstance(port_raw, int) or _str(port_raw).isdigit() else None
+    port, sport = _port(f.get("destination.port")), _port(f.get("source.port"))
     host = _str(_scalar(_first(f, "host.name", "host.hostname")))
     file_name = _str(_scalar(_first(f, "file.name", "file.path")))
     hashes = {label: str(v) for key, label in _HASH_KEYS if (v := _scalar(f.get(key)))}
@@ -224,7 +248,8 @@ def _from_elastic(doc: dict) -> Hit | None:
         run_id=_str(_scalar(_first(f, "detection.run_id", "kibana.alert.rule.execution.uuid"))),
         detected_at=stix_timestamp(_scalar(_first(
             f, "detection.detected_at", "kibana.alert.last_detected", "kibana.alert.start"))),
-        host=host or None, source_ip=src, destination_ip=dst, destination_port=port,
+        host=host or None, source_ip=src, destination_ip=dst, destination_port=port, source_port=sport,
+        transport=_proto(f.get("network.transport")), protocol=_proto(f.get("network.protocol")),
         file_name=file_name or None, file_hashes=hashes, car_guid=car_guid,
     )
 
