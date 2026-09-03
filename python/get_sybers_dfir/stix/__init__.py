@@ -4,20 +4,27 @@ The engine stays Elastic; this package is the EXCHANGE interface of Byakugan
 (decision D4). It does two things and deliberately nothing else:
 
 1. **Detection hits -> STIX.** Every detection firing becomes a ``sighting`` of
-   an ``indicator`` (the rule), linked ``indicates`` -> ``attack-pattern`` for
-   each ATT&CK technique the hit carries. Hits are read from ``dxdfir detect
-   --jsonl-out`` (the ``misc.Detections`` envelope) or from Elastic documents —
-   a Detection Engine alert, a query-stamped evidence line, a ``car-detections``
-   lookup row, or a whole ``_search`` response (:mod:`.hits`).
+   an ``indicator`` — the rule itself, its query as the pattern — linked
+   ``indicates`` -> MITRE's own ATT&CK ``attack-pattern`` ids for the
+   techniques the rule and the hit carry (:mod:`.attack_index`), with the
+   evidence as connected observations (a ``network-traffic`` root and its
+   addresses, a file). Hits are read from ``dxdfir detect --jsonl-out`` (the
+   ``misc.Detections`` envelope) or from Elastic documents — a Detection
+   Engine alert, a query-stamped evidence line, a ``car-detections`` lookup
+   row, or a whole ``_search`` response (:mod:`.hits`).
 2. **PIIAT bundles pass through.** PIIAT projects its CAR stores to STIX itself
    (SCOs / observed-data / SROs derived from car.db + superset.db + native, both
    relationship classes labelled ``declared`` / ``derived``). DX never re-derives
    them and never imports PIIAT: a PIIAT bundle is merged object-for-object,
    ids untouched, into the same output bundle (:mod:`.export`).
 
-Ids follow D4: content-keyed objects (indicator, attack-pattern, identity,
-relationship, every SCO) get spec-deterministic GLOBAL ids; observations
-(sighting, observed-data) get CASE-scoped ids (:mod:`.objects`).
+Ids follow D4: content-keyed objects (indicator, identity, relationship,
+every SCO) get deterministic GLOBAL ids; observations (sighting,
+observed-data) get CASE-scoped ids (:mod:`.objects`). The output follows the
+OASIS STIX Best Practices Guide: every time on an object comes from stable
+data (never the export clock, so a re-export is the same version), DX_DFIR's
+own properties travel in one extension definition, TLP is referenced never
+shipped, SCOs are never marked — see ``README.md``.
 
 Output is config-driven (:mod:`.config`): a bundle file and an optional push to
 OpenCTI through a thin client whose transport is an interface, so the exchange

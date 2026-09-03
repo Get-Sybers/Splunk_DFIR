@@ -27,7 +27,10 @@ from dataclasses import asdict, dataclass
 from typing import Protocol
 from urllib.parse import urlparse
 
-from .objects import DEFAULT_PRODUCER, SPEC_VERSION, global_id, stix_timestamp
+from .objects import DEFAULT_PRODUCER, SPEC_VERSION, TLP_MARKING_IDS, global_id, stix_timestamp
+
+# The spec's own TLP instances (§7.2.1.4): referenced, never shipped (BP §3.5).
+_SPEC_TLP_IDS = frozenset(TLP_MARKING_IDS.values())
 
 DEFAULT_TIMEOUT = 60.0
 DEFAULT_PAGE_SIZE = 200
@@ -174,15 +177,18 @@ def _nodes(value) -> list[dict]:
 
 def node_to_indicator(node) -> tuple[dict | None, list[dict]]:
     """One ``indicators`` node -> ``(STIX 2.1 indicator, context objects)`` —
-    the marking-definitions and creator identity it references, as minimal
-    STIX objects — or ``(None, [])`` when the node has no STIX id or pattern.
-    Platform-only properties ride along as ``x_opencti_*``."""
+    the marking-definitions (other than the spec's own TLP instances, which
+    are referenced but never shipped, BP §3.5) and the creator identity it
+    references, as minimal dated STIX objects — or ``(None, [])`` when the
+    node has no STIX id or pattern. The platform's own ``x_opencti_*``
+    properties ride along on ITS indicator (they are OpenCTI's, not ours)."""
     if not isinstance(node, dict):
         return None, []
     sid, pattern = node.get("standard_id"), node.get("pattern")
     if not isinstance(sid, str) or not sid.startswith("indicator--") \
             or not isinstance(pattern, str) or not pattern.strip():
         return None, []
+    node_created = stix_timestamp(node.get("created"))
     context: list[dict] = []
     marking_refs: list[str] = []
     for m in _nodes(node.get("objectMarking")):
@@ -190,13 +196,15 @@ def node_to_indicator(node) -> tuple[dict | None, list[dict]]:
         if not isinstance(mid, str) or not mid.startswith("marking-definition--"):
             continue
         marking_refs.append(mid)
+        if mid in _SPEC_TLP_IDS:
+            continue
+        created = stix_timestamp(m.get("created")) or node_created
+        if not created:
+            continue                        # a marking-definition without created is not one (§7.2.1)
         dtype = str(m.get("definition_type") or "statement").lower()
         definition = str(m.get("definition") or "")
-        marking = {"type": "marking-definition", "spec_version": SPEC_VERSION, "id": mid,
+        marking = {"type": "marking-definition", "spec_version": SPEC_VERSION, "id": mid, "created": created,
                    "definition_type": dtype, "name": definition}
-        created = stix_timestamp(m.get("created"))
-        if created:
-            marking["created"] = created
         marking["definition"] = {"tlp": definition.split(":", 1)[-1].lower()} if dtype == "tlp" \
             else {"statement": definition}
         context.append(marking)
@@ -205,14 +213,12 @@ def node_to_indicator(node) -> tuple[dict | None, list[dict]]:
     if isinstance(creator, dict) and isinstance(creator.get("standard_id"), str) \
             and creator["standard_id"].startswith("identity--"):
         created_by = creator["standard_id"]
-        identity = {"type": "identity", "spec_version": SPEC_VERSION, "id": created_by,
-                    "name": str(creator.get("name") or created_by),
-                    "identity_class": str(creator.get("identity_class") or "unknown")}
-        for k in ("created", "modified"):
-            ts = stix_timestamp(creator.get(k))
-            if ts:
-                identity[k] = ts
-        context.append(identity)
+        created = stix_timestamp(creator.get("created")) or node_created
+        if created:
+            context.append({"type": "identity", "spec_version": SPEC_VERSION, "id": created_by,
+                            "created": created, "modified": stix_timestamp(creator.get("modified")) or created,
+                            "name": str(creator.get("name") or created_by),
+                            "identity_class": str(creator.get("identity_class") or "unknown")})
 
     ind: dict = {"type": "indicator", "spec_version": SPEC_VERSION, "id": sid}
     for k in ("created", "modified", "valid_from", "valid_until"):

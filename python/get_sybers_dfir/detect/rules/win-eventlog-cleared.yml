@@ -5,6 +5,8 @@ status: ported
 severity: high
 attack: [T1070.001]
 tactics: [TA0005]
+created: "2026-09-02"
+updated: "2026-09-02"
 language: eql
 index: [logs-dfir.evtx-*]
 # DetectRaptor Evtx.yaml win_eventlog_clear: 1102 (Security) / 104 (System); 517

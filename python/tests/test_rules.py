@@ -7,6 +7,7 @@ contract promises, stubs are explicit about what is still missing, and the
 car-detections lookup index agrees with the loader's join keys.
 """
 import copy
+import datetime
 import os
 import re
 
@@ -184,6 +185,10 @@ def test_base_rule_validates():
     {"source": {"registry": "x-1", "kind": "jsonl", "match": "not_a_matcher"}},
     {"todo": {"query": "FROM x", "blockers": ["b"]}},                              # ported rules carry no todo
     {"query": "   "},
+    {"created": "yesterday"},                                                      # not ISO 8601
+    {"created": "2026-09-02", "updated": "last week"},
+    {"updated": "2026-09-02"},                                                     # updated without created
+    {"created": "2026-09-02", "updated": "2026-09-01"},                            # updated before created
 ])
 def test_validate_rejects_bad_rules(patch):
     with pytest.raises(ValueError):
@@ -215,6 +220,21 @@ def test_attackless_rule_must_not_stamp_technique():
     rl.validate([ok])
     with pytest.raises(ValueError, match="cannot be stamped"):
         rl.validate([_patched(attack=[])])
+
+
+def test_rule_dates_are_iso_and_every_shipped_rule_is_dated(rules):
+    # created / updated: the STIX indicator's created / valid_from and modified (STIX 2.1 §3.2, §3.6),
+    # so every shipped rule carries created and the pair is ordered
+    for r in rules:
+        assert rl.rule_date(r.get("created")) is not None, r["id"]
+        assert rl.rule_date(r.get("updated", r["created"])) >= rl.rule_date(r["created"]), r["id"]
+    rl.validate([_patched(created="2026-09-02")])
+    rl.validate([_patched(created="2026-09-02", updated="2026-09-02T07:01:04Z")])
+    rl.validate([_patched(created=datetime.date(2026, 9, 2), updated=datetime.datetime(2026, 9, 3, 1, 2, 3))])
+    assert rl.rule_date("2026-09-02").isoformat() == "2026-09-02T00:00:00+00:00"
+    assert rl.rule_date("2026-09-02T09:01:04+02:00").isoformat() == "2026-09-02T07:01:04+00:00"
+    assert rl.rule_date(datetime.date(2026, 9, 2)) == rl.rule_date("2026-09-02")
+    assert rl.rule_date(None) is None and rl.rule_date(True) is None and rl.rule_date("") is None
 
 
 # ---- structural query checks -----------------------------------------------

@@ -42,15 +42,16 @@ def export(
     tlp: str = typer.Option(None, "--tlp", help="TLP marking on exported objects: " + "|".join(TLP_LEVELS) + "|none."),
     rules_dir: Path = typer.Option(
         None, "--rules-dir",
-        help="Rules-as-code directory: indicators carry <id>.yml query/language as their pattern."),
+        help="Rules-as-code directory (default: the package's own detect/rules): an indicator's pattern is "
+             "the rule's query, its pattern_type the language; a hit whose rule has no body is skipped and counted."),
     push: bool = typer.Option(
         False, "--push",
         help="Also push to OpenCTI (endpoint/token from $DXDFIR_OPENCTI_URL / $DXDFIR_OPENCTI_TOKEN "
              "or the config file — never flags)."),
     compact: bool = typer.Option(False, "--compact", help="Single-line JSON output instead of indented."),
 ) -> None:
-    """Export detections as STIX 2.1 sightings + indicators (ATT&CK refs from their
-    technique ids), merge PIIAT bundles through, write the bundle, optionally push it.
+    """Export detections as STIX 2.1 sightings + indicators (`indicates` -> MITRE's own
+    ATT&CK attack-pattern ids), merge PIIAT bundles through, write the bundle, optionally push it.
     """
     if not hits and not bundle:
         typer.secho("nothing to export: give --hits and/or --bundle", fg=typer.colors.RED, err=True)

@@ -8,18 +8,23 @@ STIX id the copy was made from) plus ``matched.{field, atomic, id, index}``.
 This module reads those alerts and emits, per (indicator, host, matched
 value), one ``sighting`` whose ``sighting_of_ref`` IS the platform's indicator
 id — so OpenCTI attaches the sighting to the indicator it already holds
-instead of receiving a second copy of it. The matched value becomes the spec's
-SCO wrapped in an ``observed-data``; the host that saw it (or, when the alert
-names none, the producer) is ``where_sighted_refs``. Alerts with the same
-(indicator, host, value) collapse into one sighting with ``count``,
-``first_seen`` / ``last_seen`` spanning them; re-running over the same alerts
-in the same case yields the same ids (case-scoped, decision D4).
+instead of receiving a second copy of it (BP §5.13: an SDO you observe is a
+Sighting). Each alert's matched value becomes the spec's SCO in its own
+``observed-data`` (one observation per alert time — a connected graph of one,
+§4.14); the host that saw it (or, when the alert names none, the producer) is
+``where_sighted_refs``. Alerts with the same (indicator, host, value)
+collapse into one sighting: ``count``, ``first_seen`` / ``last_seen`` and the
+observed-data references span them, the alert ids accumulate in the DX_DFIR
+extension. Every time on an object is an observation time — ``created`` the
+earliest, ``modified`` the latest alert — never the export clock, so
+re-running over the same alerts in the same case yields the same objects
+(case-scoped ids, decision D4; STIX 2.1 §3.2 / §3.6).
 
 The platform's indicator is NOT re-emitted — an incoming object under its id
 would be an update of the platform's own record — so ``validate_bundle``
 warns (the reference resolves on the platform) and never errors on it.
-Alerts without an enrichment, and enrichments without an indicator id, are
-skipped and counted, never guessed.
+Alerts without an enrichment, without a time, and enrichments without an
+indicator id, are skipped and counted, never guessed.
 """
 from __future__ import annotations
 
@@ -56,6 +61,10 @@ def _first(f: dict, *keys):
     return None
 
 
+def _clean(d: dict) -> dict:
+    return {k: v for k, v in d.items() if v not in (None, "")}
+
+
 def enrichments(doc: dict) -> list[dict]:
     """The alert's ``threat.enrichments`` items, each flattened to dotted keys
     (``indicator.id``, ``matched.atomic`` ...), from a nested or an already
@@ -86,16 +95,16 @@ def matched_observable(field: str, atomic) -> dict | None:
 
 def alert_sightings(alerts: Iterable[dict], *, case_id: str | None = None,
                     producer: str = o.DEFAULT_PRODUCER, tlp: str | None = "amber",
-                    now: str | None = None) -> tuple[dict[str, dict], dict]:
+                    contact: str | None = o.DEFAULT_CONTACT,
+                    confidence: int | None = None) -> tuple[dict[str, dict], dict]:
     """The object graph for indicator-match ``alerts`` (keyed by id, insertion
     ordered) and a report: alerts read, enrichments seen, sightings made, and
     what was skipped by reason."""
     alerts = [a for a in alerts if isinstance(a, dict)]
-    now = now or o.utc_now()
     flat = [flatten(a) for a in alerts]
     case = case_id or next((_str(f.get("kibana.alert.rule.execution.uuid"))
                             for f in flat if f.get("kibana.alert.rule.execution.uuid")), UNCASED)
-    marking_ref = None
+    marking_ref = o.tlp_marking_ref(tlp) if tlp and str(tlp).lower() not in ("none", "no", "off", "") else None
     objs: dict[str, dict] = {}
     report: dict = {"alerts": len(alerts), "enrichments": 0, "sightings": 0, "skipped": {}}
 
@@ -107,10 +116,8 @@ def alert_sightings(alerts: Iterable[dict], *, case_id: str | None = None,
     def skip(reason: str) -> None:
         report["skipped"][reason] = report["skipped"].get(reason, 0) + 1
 
-    created_by = put(o.producer_identity(producer, now))
-    if tlp and str(tlp).lower() not in ("none", "no", "off", ""):
-        marking_ref = put(o.tlp_marking(tlp))
-        o.mark(objs[created_by], marking_ref)
+    created_by = put(o.producer_identity(producer, contact))
+    put(o.extension_definition(created_by))
 
     for a, f in zip(alerts, flat, strict=True):
         items = enrichments(a)
@@ -118,8 +125,12 @@ def alert_sightings(alerts: Iterable[dict], *, case_id: str | None = None,
             skip("no_enrichment")
             continue
         host = _str(_first(f, "host.name", "host.hostname"))
-        seen_at = o.stix_timestamp(_scalar(_first(f, "kibana.alert.original_time", "@timestamp")))
-        detected_at = o.stix_timestamp(_scalar(f.get("@timestamp"))) or now
+        detected_at = o.stix_timestamp(_scalar(f.get("@timestamp")))
+        seen_at = o.stix_timestamp(_scalar(_first(f, "kibana.alert.original_time", "@timestamp"))) or detected_at
+        if not seen_at:
+            skip("undated_alert")
+            continue
+        detected_at = max(detected_at or seen_at, seen_at)
         rule_id = _str(_first(f, "kibana.alert.rule.rule_id", "rule.id"))
         rule_name = _str(_first(f, "kibana.alert.rule.name", "rule.name"))
         alert_id = _str(_first(f, "kibana.alert.uuid", "_id"))
@@ -133,34 +144,39 @@ def alert_sightings(alerts: Iterable[dict], *, case_id: str | None = None,
             field, atomic = _str(e.get("matched.field")), _scalar(e.get("matched.atomic"))
             key = o.canonical([ref, host, field, "" if atomic is None else str(atomic)])
             sid = o.case_scoped_id("sighting", case, key)
+            observed = None
+            sco = matched_observable(field, atomic)
+            if sco:
+                observed = put(o.observed_data(case, o.canonical([key, seen_at]), "match", [put(sco)],
+                                               seen_at, seen_at, created_by=created_by))
             if sid in objs:
                 s = objs[sid]
                 s["count"] = int(s.get("count", 1)) + 1
-                if seen_at:
-                    s["first_seen"] = min(s.get("first_seen") or seen_at, seen_at)
-                    s["last_seen"] = max(s.get("last_seen") or seen_at, seen_at)
-                ids = s["x_dxdfir"].setdefault("alert_ids", [])
+                s["first_seen"] = min(s.get("first_seen") or seen_at, seen_at)
+                s["last_seen"] = max(s.get("last_seen") or seen_at, seen_at)
+                s["created"] = min(s["created"], seen_at)
+                s["modified"] = max(s["modified"], detected_at)
+                if observed and observed not in s.setdefault("observed_data_refs", []):
+                    s["observed_data_refs"].append(observed)
+                ids = s["extensions"][o.EXTENSION_ID].setdefault("alert_ids", [])
                 if alert_id and alert_id not in ids:
                     ids.append(alert_id)
                 continue
-            where = [put(o.host_identity(host, now, created_by))] if host else [created_by]
-            sco = matched_observable(field, atomic)
-            observed = None
-            if sco:
-                when = seen_at or now
-                observed = [put(o.observed_data(case, key, [put(sco)], when, when, now, created_by))]
-            custom = {"case_id": case, "detection_id": rule_id, "source": source,
-                      "feed": _str(e.get("feed.name")),
-                      "matched": {"field": field, "atomic": atomic,
-                                  "index": _str(e.get("matched.index")), "id": _str(e.get("matched.id"))},
-                      "indicator": {"type": _str(e.get("indicator.type")), "name": _str(e.get("indicator.name")),
-                                    "provider": _str(e.get("indicator.provider"))},
-                      "alert_ids": [alert_id] if alert_id else []}
+            where = [put(o.host_identity(host, created_by))] if host else [created_by]
             description = f"{rule_name or rule_id or 'indicator match'}: {field} = {atomic}" + \
                 (f" on {host}" if host else "")
-            put(o.sighting(case, key, ref, detected_at, created_by, first_seen=seen_at, last_seen=seen_at,
-                           count=1, observed_data_refs=observed, where_sighted_refs=where,
-                           description=description, custom=custom))
+            put(o.sighting(
+                case, key, ref, created=seen_at, modified=detected_at, created_by=created_by,
+                first_seen=seen_at, last_seen=seen_at, count=1,
+                observed_data_refs=[observed] if observed else None, where_sighted_refs=where,
+                description=description, confidence=confidence,
+                dx={"case_id": case, "detection_id": rule_id, "source": source, "feed": _str(e.get("feed.name")),
+                    "matched": _clean({"field": field, "atomic": atomic, "index": _str(e.get("matched.index")),
+                                       "id": _str(e.get("matched.id"))}),
+                    "indicator": _clean({"type": _str(e.get("indicator.type")),
+                                         "name": _str(e.get("indicator.name")),
+                                         "provider": _str(e.get("indicator.provider"))}),
+                    "alert_ids": [alert_id] if alert_id else []}))
             report["sightings"] += 1
     return objs, report
 
@@ -185,8 +201,8 @@ def read_alerts(path: str) -> tuple[list[dict], dict]:
     return docs, report
 
 
-def run_sightings(cfg: StixConfig, alert_paths: Iterable[str], *, transport: Transport | None = None,
-                  now: str | None = None) -> tuple[dict, dict]:
+def run_sightings(cfg: StixConfig, alert_paths: Iterable[str], *,
+                  transport: Transport | None = None) -> tuple[dict, dict]:
     """Read alerts, build the sightings bundle, validate, write ``cfg.out``
     (if set), push to OpenCTI (if ``cfg.push``). Returns ``(summary, bundle)``;
     ``summary["ok"]`` is False when validation failed (nothing is written or
@@ -202,7 +218,8 @@ def run_sightings(cfg: StixConfig, alert_paths: Iterable[str], *, transport: Tra
         summary["inputs"].append(report)
     if not alerts:
         raise ValueError("nothing to sight: no alerts were read")
-    objs, report = alert_sightings(alerts, case_id=cfg.case_id, producer=cfg.producer, tlp=cfg.tlp, now=now)
+    objs, report = alert_sightings(alerts, case_id=cfg.case_id, producer=cfg.producer, tlp=cfg.tlp,
+                                   contact=cfg.contact, confidence=cfg.confidence)
     summary["sightings"] = report
     if not report["sightings"]:
         raise ValueError("no indicator-match enrichment in the alerts "
