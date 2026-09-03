@@ -26,6 +26,7 @@ invented for it, the summary counts it.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
 import sys
@@ -184,9 +185,10 @@ class AttackIndex:
         return [{"kill_chain_name": KILL_CHAIN_NAME, "phase_name": n} for n in sorted(names)]
 
 
+@functools.lru_cache(maxsize=8)
 def load_attack_index(path: str | None = None) -> AttackIndex:
     """The committed index, or ``path``: an index document or an ATT&CK STIX
-    bundle (indexed on the fly)."""
+    bundle (indexed on the fly). Cached per path — the index is read-only."""
     path = path or DEFAULT_INDEX_PATH
     with open(path, encoding="utf-8") as fh:
         doc = json.load(fh)

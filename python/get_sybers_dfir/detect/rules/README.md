@@ -33,7 +33,7 @@ cd python && PYTHONPATH=. python -m pytest tests/test_rules.py
 | `tactics` | no | ATT&CK tactic ids (`TA0005`) |
 | `created` | no (STIX export: yes) | ISO 8601 date the rule was authored (`"2026-09-02"`). `dxdfir stix export` makes it the indicator's `created` / `valid_from` — STIX 2.1 §3.2: `created` never changes, so it cannot be the export clock; a rule without it is skipped and counted |
 | `updated` | no | ISO 8601 date of the last **material** change (query, name, ATT&CK mapping); defaults to `created`. It becomes the indicator's `modified`, which is what versions the object (STIX 2.1 §3.6) — bump it when the rule changes, never otherwise |
-| `language` | yes | `esql` or `eql` |
+| `language` | yes | `esql` or `eql` — also the STIX indicator's `pattern_type` (a trust-group value beyond `pattern-type-ov`, see [`stix/README.md`](../../stix/README.md)) |
 | `index` | yes | the data streams read (`logs-<dataset>-*`); an ES|QL `FROM` must read exactly these |
 | `query` | ported | the ES|QL / EQL |
 | `evidence` | yes | the tagged-evidence-line contract: `shape` (`line` / `aggregate`), `stamped_by` (`query` / `engine`), `fields` (what the line carries beyond the source document) |

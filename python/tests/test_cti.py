@@ -237,10 +237,13 @@ def _page(nodes, cursor, more):
 
 
 def test_pull_indicators_pages_through_the_stubbed_transport():
+    strict = [{"standard_id": MARKING_STRICT, "definition_type": "TLP", "definition": "TLP:AMBER+STRICT",
+               "created": None}]
     rec = RecordingTransport(responses=[
         _page([_node(IND_IP, "[ipv4-addr:value = '203.0.113.9']"),
                _node(IND_HASH, f"[file:hashes.'SHA-256' = '{SHA256}']")], "c1", True),
-        _page([_node(IND_DOMAIN, "[domain-name:value = 'evil.example']"),
+        _page([_node(IND_DOMAIN, "[domain-name:value = 'evil.example']", objectMarking=strict,
+                     createdBy={"standard_id": IDENTITY, "name": "ACME CTI", "identity_class": "organization"}),
                {"standard_id": "indicator--x", "pattern": None}], "c2", False),
     ])
     client = opencti.OpenCTIClient("https://opencti.example.test", "tok-123", transport=rec, timeout=5)
@@ -255,23 +258,29 @@ def test_pull_indicators_pages_through_the_stubbed_transport():
     assert first["variables"]["filters"]["filters"] == [
         {"key": "modified", "values": ["2026-08-01T00:00:00.000Z"], "operator": "gt", "mode": "or"}]
     assert second["variables"]["after"] == "c1"
-    # the bundle: the three indicators plus the marking / identity they reference, valid STIX 2.1
+    # the bundle: the three indicators plus the identity and the NON-spec marking they reference —
+    # the spec's own TLP instance is referenced, never shipped (BP §3.5) — valid STIX 2.1
     bundle = result.bundle
     assert bundle["type"] == "bundle" and bundle["id"].startswith("bundle--")
     assert export.summarise(bundle)["by_type"] == {"identity": 1, "indicator": 3, "marking-definition": 1}
-    assert export.validate_bundle(bundle) == ([], [])
+    errors, warnings = export.validate_bundle(bundle)
+    assert errors == [] and warnings and all("x_opencti" in w for w in warnings)   # the platform's own x_ props
     ip = next(x for x in bundle["objects"] if x["id"] == IND_IP)
     assert ip["pattern_type"] == "stix" and ip["created_by_ref"] == IDENTITY and ip["object_marking_refs"] == [TLP_AMBER]
     assert ip["labels"] == ["c2"] and ip["external_references"] == [{"source_name": "x", "url": "https://ref.example.test/1"}]
     assert ip["kill_chain_phases"] == [{"kill_chain_name": "mitre-attack", "phase_name": "command-and-control"}]
     assert ip["x_opencti_id"] == "oc-" + IND_IP[-4:] and ip["x_opencti_score"] == 80 and ip["revoked"] is False
     marking = next(x for x in bundle["objects"] if x["type"] == "marking-definition")
-    assert marking["definition"] == {"tlp": "amber"} and marking["definition_type"] == "tlp"
+    assert marking["id"] == MARKING_STRICT and marking["definition"] == {"tlp": "amber+strict"}
+    assert marking["created"] == "2026-08-01T00:00:00.000Z"          # undated on the platform: the indicator's created
+    identity = next(x for x in bundle["objects"] if x["type"] == "identity")
+    assert identity["created"] == identity["modified"] == NOW        # the first page's creator carried its dates
     # ... and normalises straight into cti-* documents, provider and TLP resolved from the bundle
     docs, report = ind.to_cti_docs(bundle["objects"], now=NOW)
     assert report["docs"] == 3 and {ind.document_id(d) for d in docs} == {IND_IP, IND_HASH, IND_DOMAIN}
     assert docs[0]["threat"]["indicator"]["provider"] == "ACME CTI"
     assert docs[0]["threat"]["indicator"]["marking"] == {"tlp": "AMBER"}
+    assert docs[2]["threat"]["indicator"]["marking"] == {"tlp": "AMBER+STRICT", "tlp_version": "2.0"}
     # the token never reaches a summary; the summary counts the bundle instead of repeating it
     assert "tok-123" not in json.dumps(result.as_dict()) and result.as_dict()["objects"] == 5
     assert "tok-123" not in repr(client)
@@ -330,7 +339,7 @@ def test_indicator_match_alert_becomes_a_sighting_of_the_platform_indicator():
     hash_hit = {"indicator": {"id": IND_HASH, "type": "file"},
                 "matched": {"atomic": SHA256, "field": "file.hash.sha256", "id": IND_HASH, "index": "cti-opencti",
                             "type": "indicator_match_rule"}, "feed": {"name": "opencti"}}
-    bundle = sg.build_sightings_bundle([_alert(extra_enrichment=hash_hit)], case_id="CASE-17", now=NOW)
+    bundle = sg.build_sightings_bundle([_alert(extra_enrichment=hash_hit)], case_id="CASE-17")
     sightings = [x for x in bundle["objects"] if x["type"] == "sighting"]
     by_ref = {s["sighting_of_ref"]: s for s in sightings}
     assert set(by_ref) == {IND_IP, IND_HASH}                 # OpenCTI's own indicator ids ...
@@ -338,20 +347,27 @@ def test_indicator_match_alert_becomes_a_sighting_of_the_platform_indicator():
     s = by_ref[IND_IP]
     assert s["id"].startswith("sighting--") and s["spec_version"] == "2.1" and s["count"] == 1
     assert s["first_seen"] == s["last_seen"] == "2026-08-31T12:00:00.000Z"
-    assert s["created"] == "2026-09-02T09:00:00.000Z"       # the alert's own time
+    assert s["created"] == "2026-08-31T12:00:00.000Z"       # the observation, never the export clock (§3.2)
+    assert s["modified"] == "2026-09-02T09:00:00.000Z"      # the alert's own time
     host = next(x for x in bundle["objects"] if x["type"] == "identity" and x["name"] == "PC1")
     assert s["where_sighted_refs"] == [host["id"]] and host["identity_class"] == "system"
     od = next(x for x in bundle["objects"] if x["id"] == s["observed_data_refs"][0])
+    assert od["created"] == od["first_observed"] == "2026-08-31T12:00:00.000Z" and od["object_marking_refs"] == [TLP_AMBER]
     ip = next(x for x in bundle["objects"] if x["id"] == od["object_refs"][0])
     assert ip == {"type": "ipv4-addr", "spec_version": "2.1", "value": "203.0.113.9",
-                  "id": "ipv4-addr--" + str(uuid.uuid5(SCO_NS, '{"value":"203.0.113.9"}')),
-                  "object_marking_refs": [TLP_AMBER]}
+                  "id": "ipv4-addr--" + str(uuid.uuid5(SCO_NS, '{"value":"203.0.113.9"}'))}   # unmarked (BP §3.5)
     assert next(x for x in bundle["objects"] if x["type"] == "file")["hashes"] == {"SHA-256": SHA256}
-    assert s["x_dxdfir"]["matched"] == {"field": "source.ip", "atomic": "203.0.113.9", "index": "cti-opencti", "id": IND_IP}
-    assert s["x_dxdfir"]["detection_id"] == "cti-indicator-match" and s["x_dxdfir"]["alert_ids"] == ["al-1"]
-    assert s["x_dxdfir"]["case_id"] == "CASE-17" and s["x_dxdfir"]["feed"] == "opencti"
-    assert s["x_dxdfir"]["indicator"]["name"] == "C2 beacon"
+    dx = objects.extension_of(s)
+    assert dx["matched"] == {"field": "source.ip", "atomic": "203.0.113.9", "index": "cti-opencti", "id": IND_IP}
+    assert dx["detection_id"] == "cti-indicator-match" and dx["alert_ids"] == ["al-1"]
+    assert dx["case_id"] == "CASE-17" and dx["feed"] == "opencti" and dx["indicator"]["name"] == "C2 beacon"
+    assert not any(k.startswith("x_") for x in bundle["objects"] for k in x)
+    assert next(x for x in bundle["objects"] if x["type"] == "extension-definition")["id"] == objects.EXTENSION_ID
+    assert not [x for x in bundle["objects"] if x["type"] == "marking-definition"]   # TLP referenced, not shipped
     assert "203.0.113.9" in s["description"] and "PC1" in s["description"]
+    schema = json.loads(open(objects.__file__.replace("objects.py", "extension/dxdfir-extension.schema.json")).read())
+    for k, v in dx.items():
+        assert k in schema["properties"] and (not isinstance(v, dict) or set(v) <= set(schema["properties"][k]["properties"]))
     errors, warnings = export.validate_bundle(bundle)
     assert errors == [] and warnings and all("sighting_of_ref" in w for w in warnings)   # lives on the platform: warned
     assert export.summarise(bundle)["sightings"] == 2
@@ -363,24 +379,30 @@ def test_sightings_collapse_and_scope():
     other_host, no_host = _alert(uuid_="al-3", host="PC2"), _alert(uuid_="al-4", host=None)
     objs, report = sg.alert_sightings(
         [a1, a2, other_host, no_host, {"event": {"id": "no enrichment"}}, _alert(ref="not-an-id", uuid_="al-5")],
-        case_id="CASE-1", now=NOW)
+        case_id="CASE-1")
     assert report == {"alerts": 6, "enrichments": 5, "sightings": 3,
                       "skipped": {"no_enrichment": 1, "no_indicator_ref": 1}}
     sightings = [x for x in objs.values() if x["type"] == "sighting"]
     collapsed = next(s for s in sightings if s["count"] == 2)
     assert collapsed["first_seen"] == "2026-08-30T08:00:00.000Z" and collapsed["last_seen"] == "2026-08-31T12:00:00.000Z"
-    assert collapsed["x_dxdfir"]["alert_ids"] == ["al-1", "al-2"]
+    assert collapsed["created"] == "2026-08-30T08:00:00.000Z" and collapsed["modified"] == "2026-09-02T09:00:00.000Z"
+    assert objects.extension_of(collapsed)["alert_ids"] == ["al-1", "al-2"]
+    assert len(collapsed["observed_data_refs"]) == 2                 # one observation per alert time
     producer = next(x for x in objs.values() if x["type"] == "identity" and x["name"] == "DX_DFIR")
-    unhosted = next(s for s in sightings if s["x_dxdfir"]["alert_ids"] == ["al-4"])
+    unhosted = next(s for s in sightings if objects.extension_of(s)["alert_ids"] == ["al-4"])
     assert unhosted["where_sighted_refs"] == [producer["id"]]       # nobody named: the pipeline saw it
-    # case-scoped ids: idempotent within a case, distinct across cases; no case given: the rule execution id
+    # case-scoped ids: idempotent within a case (the same objects, byte for byte), distinct across cases;
+    # no case given: the rule execution id
     ids = {s["id"] for s in sightings}
-    again, _ = sg.alert_sightings([a1, a2, other_host, no_host], case_id="CASE-1", now=NOW)
+    again, _ = sg.alert_sightings([a1, a2, other_host, no_host], case_id="CASE-1")
     assert {k for k, v in again.items() if v["type"] == "sighting"} == ids
-    elsewhere, _ = sg.alert_sightings([a1], case_id="CASE-2", now=NOW)
+    assert all(again[k] == objs[k] for k in again)
+    reordered, _ = sg.alert_sightings([no_host, other_host, a2, a1], case_id="CASE-1")
+    assert reordered[collapsed["id"]]["created"] == collapsed["created"]
+    elsewhere, _ = sg.alert_sightings([a1], case_id="CASE-2")
     assert not {k for k, v in elsewhere.items() if v["type"] == "sighting"} & ids
-    uncased, _ = sg.alert_sightings([a1], now=NOW)
-    assert next(v for v in uncased.values() if v["type"] == "sighting")["x_dxdfir"]["case_id"] == "exec-1"
+    uncased, _ = sg.alert_sightings([a1])
+    assert objects.extension_of(next(v for v in uncased.values() if v["type"] == "sighting"))["case_id"] == "exec-1"
 
 
 def test_matched_observables():
@@ -402,7 +424,7 @@ def test_run_sightings_pushes_through_the_stubbed_transport(tmp_path):
     rec = RecordingTransport()
     cfg = config.StixConfig(case_id="CASE-9", out=str(out), push=True, opencti_url="https://opencti.example.test",
                             opencti_token="tok-123", opencti_connector_id="conn-1")
-    summary, bundle = sg.run_sightings(cfg, [str(alerts)], transport=rec, now=NOW)
+    summary, bundle = sg.run_sightings(cfg, [str(alerts)], transport=rec)
     assert summary["ok"] and summary["push"]["ok"] and summary["sightings"]["sightings"] == 1
     assert json.loads(out.read_text()) == bundle and summary["validation"]["errors"] == []
     url, headers, body, _timeout = rec.calls[0]
@@ -414,16 +436,16 @@ def test_run_sightings_pushes_through_the_stubbed_transport(tmp_path):
     assert next(x for x in pushed["objects"] if x["type"] == "sighting")["sighting_of_ref"] == IND_IP
     assert "tok-123" not in json.dumps(summary)
     # a refused push is not ok; alerts without an enrichment, or no alerts at all, are refused up front
-    summary, _ = sg.run_sightings(cfg, [str(alerts)], transport=RecordingTransport(status=403, text=""), now=NOW)
+    summary, _ = sg.run_sightings(cfg, [str(alerts)], transport=RecordingTransport(status=403, text=""))
     assert not summary["ok"] and "token" in summary["push"]["message"]
     plain = tmp_path / "plain.json"
     plain.write_text(json.dumps([{"event": {"id": "x"}}]))
     with pytest.raises(ValueError, match="enrichment"):
-        sg.run_sightings(config.StixConfig(), [str(plain)], now=NOW)
+        sg.run_sightings(config.StixConfig(), [str(plain)])
     empty = tmp_path / "empty.json"
     empty.write_text("")
     with pytest.raises(ValueError, match="no alerts"):
-        sg.run_sightings(config.StixConfig(), [str(empty)], now=NOW)
+        sg.run_sightings(config.StixConfig(), [str(empty)])
 
 
 # ---- the pull verb + config + CLI -------------------------------------------
@@ -442,7 +464,7 @@ def test_run_pull_from_bundle_and_via_client(tmp_path):
     keep = tmp_path / "pulled.json"
     summary, lines = ind.run_pull(cfg, bundle_out=str(keep), transport=rec, now=NOW)
     assert summary["ok"] and summary["pull"]["indicators"] == 1 and summary["copy"]["docs"] == 1 and len(lines) == 2
-    assert export.validate_bundle(json.loads(keep.read_text())) == ([], [])
+    assert export.validate_bundle(json.loads(keep.read_text()))[0] == []
     assert summary["validation"]["errors"] == [] and summary["config"]["opencti_token"] == "***"
     # a refused pull: not ok, nothing written
     never = tmp_path / "never.ndjson"
