@@ -135,8 +135,14 @@ def evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image, *,
 
 def _run_evtxecmd(evtx_file, dest_dir, json_out, xml_out, image, *,
                   evtxecmd_dir=None, dll_rel=None):
-    """One EvtxECmd container run over one log, JSON + XML into dest_dir."""
-    subprocess.run(
+    """One EvtxECmd container run over one log, JSON + XML into dest_dir.
+
+    Returns the CompletedProcess so the caller can tell a genuinely empty log
+    (EvtxECmd opened it and printed a record tally) from an input it could not
+    read at all (missing, or permission-denied under the hardened uid) — EvtxECmd
+    exits 0 on both, but only prints a tally when it actually opened the log.
+    """
+    return subprocess.run(
         evtxecmd_argv(evtx_file, dest_dir, json_out, xml_out, image,
                       evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel),
         # EvtxECmd is chatty (version banner + per-record "time went backwards"
@@ -251,8 +257,8 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
         except OSError:
             pass
         try:
-            _run_evtxecmd(evtx, dest_dir, json_out, xml_out, image,
-                          evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel)
+            proc = _run_evtxecmd(evtx, dest_dir, json_out, xml_out, image,
+                                 evtxecmd_dir=evtxecmd_dir, dll_rel=dll_rel)
         except subprocess.CalledProcessError:
             for p in (json_path, os.path.join(dest_dir, xml_out)):
                 if os.path.exists(p):
@@ -263,15 +269,28 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
         if _has_records(json_path):
             summary["processed"] += 1
             summary["results"].append({"log": rel, "output": os.path.join(host, json_out)})
-        else:
-            # EvtxECmd exits 0 on an empty log and writes a BOM-only file — drop it
-            # so it is neither picked up downstream as an ill-formed input nor
-            # miscounted as processed. This is expected, not a failure.
-            for p in (json_path, os.path.join(dest_dir, xml_out)):
-                if os.path.exists(p):
-                    os.remove(p)
+            continue
+        # No records written. EvtxECmd exits 0 both when a log is genuinely EMPTY
+        # (it opened the log and printed a record tally) AND when it could not READ
+        # the input at all — a missing file, or a permission-denied it prints as
+        # "... does not exist! Exiting". Only the first is benign. EvtxECmd prints a
+        # "records found" tally once it has actually opened a log, so its ABSENCE
+        # means the log was never read: count that as a failure and surface
+        # EvtxECmd's own reason, not a silent "empty" that would hide an unreadable
+        # evidence tree.
+        for p in (json_path, os.path.join(dest_dir, xml_out)):
+            if os.path.exists(p):
+                os.remove(p)
+        out = (proc.stdout or b"") + (proc.stderr or b"")
+        if b"records found" in out.lower():
             summary["empty"] += 1
             summary["results"].append({"log": rel, "empty": True})
+        else:
+            tail = out.decode("utf-8", "replace").strip().splitlines()
+            why = tail[-1].strip() if tail else "no output and no record tally"
+            summary["failed"] += 1
+            summary["results"].append(
+                {"log": rel, "error": f"EvtxECmd did not read the log: {why}"})
     return summary
 
 
