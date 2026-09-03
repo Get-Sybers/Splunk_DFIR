@@ -3,6 +3,15 @@
 # (roles/dfir_images -> get_sybers.dfir -> collections -> ansible -> repo).
 dfir_images_repo_root: "{{ role_path }}/../../../../.."
 
+# Run-as uid/gid baked into every built image's USER. dfir_runtime_uid/gid is the
+# single override knob — set it via extra-var or inventory (e.g.
+# -e dfir_runtime_uid=3000) to move all images + their runs off 2000; unset, it
+# defaults to 2000 here. Passed as build args to each Dockerfile and asserted in
+# the build contract, so the build and the runtime share one uid. (dfir/volatility
+# is built from the third_party/piiat-mem submodule — Get-Sybers/PIIAT-Mem#2.)
+dfir_images_uid: "{{ dfir_runtime_uid | default(2000) }}"
+dfir_images_gid: "{{ dfir_runtime_gid | default(2000) }}"
+
 # The docker/ build context — every Dockerfile COPYs the shared ansible
 # hardening playbook (docker/hardening/harden.yml) from here.
 dfir_images_context: "{{ dfir_images_repo_root }}/docker"

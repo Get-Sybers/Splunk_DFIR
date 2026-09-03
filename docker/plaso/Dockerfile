@@ -20,6 +20,8 @@ RUN set -eux; \
     pip wheel --no-cache-dir --wheel-dir /wheels "plaso==${PLASO_VERSION}"
 
 FROM ${BASE} AS hardened
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
 ARG PLASO_VERSION
 COPY --from=wheels /wheels /wheels
 RUN set -eux; \
@@ -33,7 +35,7 @@ RUN set -eux; \
 COPY plaso/psort_wrapper.py /opt/dfir/psort_wrapper.py
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
-    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml; \
+    ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml -e harden_uid=${DFIR_UID} -e harden_gid=${DFIR_GID}; \
     rm -rf /usr/local/bin/ansible* /usr/local/lib/python3*/site-packages/ansible* \
            /etc/ansible /root/.ansible /tmp/hardening
 
@@ -41,7 +43,9 @@ FROM scratch
 COPY --from=hardened / /
 ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
     HOME=/tmp LANG=C.UTF-8 PYTHONDONTWRITEBYTECODE=1
-USER 2000:2000
+ARG DFIR_UID=2000
+ARG DFIR_GID=2000
+USER ${DFIR_UID}:${DFIR_GID}
 LABEL org.opencontainers.image.title="dfir/plaso" \
       org.opencontainers.image.description="Minimal hardened Plaso (pinned PyPI, libyal from source) for the DX_DFIR plaso/evtx-extraction lanes: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, runs as uid 2000 (python+sh irreducible; three entry tools, no single ENTRYPOINT)." \
       com.get-sybers.hardened="true"
