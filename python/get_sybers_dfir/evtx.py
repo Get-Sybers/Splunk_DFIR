@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -270,23 +271,33 @@ def process(evtx_dir, out_dir, evtxecmd_dir=None, image=None, force=False) -> di
             summary["processed"] += 1
             summary["results"].append({"log": rel, "output": os.path.join(host, json_out)})
             continue
-        # No records written. EvtxECmd exits 0 both when a log is genuinely EMPTY
-        # (it opened the log and printed a record tally) AND when it could not READ
-        # the input at all — a missing file, or a permission-denied it prints as
-        # "... does not exist! Exiting". Only the first is benign. EvtxECmd prints a
-        # "records found" tally once it has actually opened a log, so its ABSENCE
-        # means the log was never read: count that as a failure and surface
-        # EvtxECmd's own reason, not a silent "empty" that would hide an unreadable
-        # evidence tree.
+        # No records written. EvtxECmd exits 0 in three shapes here, and only one is
+        # benign, so we read its own "Total event log records found: <n>" tally:
+        #   n == 0 -> genuinely EMPTY: it opened the log and there was nothing. Benign.
+        #   n  > 0 -> it found records but wrote NONE to disk (an output/write error,
+        #             e.g. an unwritable dest) — a failure masquerading as empty.
+        #   no tally at all -> it never opened the log (missing file, or the
+        #             permission-denied it prints as "... does not exist! Exiting").
+        #             A failure; surface EvtxECmd's own reason.
+        # Matching on the tally (not merely the "records found" substring) keeps a
+        # non-zero-but-unwritten count from being hidden as a silent "empty".
         for p in (json_path, os.path.join(dest_dir, xml_out)):
             if os.path.exists(p):
                 os.remove(p)
         out = (proc.stdout or b"") + (proc.stderr or b"")
-        if b"records found" in out.lower():
+        text = out.decode("utf-8", "replace")
+        m = re.search(r"records found:\s*([\d,]+)", text, re.IGNORECASE)
+        tally = int(m.group(1).replace(",", "")) if m else None
+        if tally == 0:
             summary["empty"] += 1
             summary["results"].append({"log": rel, "empty": True})
+        elif tally is not None:
+            summary["failed"] += 1
+            summary["results"].append(
+                {"log": rel,
+                 "error": f"EvtxECmd reported {m.group(1)} records but wrote none"})
         else:
-            tail = out.decode("utf-8", "replace").strip().splitlines()
+            tail = text.strip().splitlines()
             why = tail[-1].strip() if tail else "no output and no record tally"
             summary["failed"] += 1
             summary["results"].append(
