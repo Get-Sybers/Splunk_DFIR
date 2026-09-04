@@ -1,18 +1,23 @@
 ---
 # zimmerman output gate, included at the end of dfir_lane's process block: some
-# host produced output, UNLESS there were no images or nothing but empties
-# (images == empty — a non-Windows image with no artefact set is NORMAL, not a
-# failure). Per-image failures are tolerated (dfir_lane_require_no_failures is
-# false for this lane), so this gates on output. A trusted literal assert —
-# dfir_lane_run + dfir_lane_verify are in scope from the shared process step.
+# host produced output, UNLESS every image present is accounted for as an empty or
+# a skip (images == empty + skipped). "empty" is a processed image with no artefact
+# set (a non-Windows image extracted nothing — NORMAL, not a failure); "skipped"
+# covers both an idempotent re-run (output already on disk, so the find above still
+# matches) and an identity skip (a disk identified as non-Windows — the wrong input
+# for the Windows-only EZ-Tools). Per-image failures are tolerated
+# (dfir_lane_require_no_failures is false for this lane), so this gates on output. A
+# trusted literal assert — dfir_lane_run + dfir_lane_verify are in scope from the
+# shared process step.
 - name: "zimmerman-process | assert output was produced for the images present"
   ansible.builtin.assert:
     that:
       - >-
         dfir_lane_verify.matched | int > 0 or
         ((dfir_lane_run.stdout | from_json).images | int ==
-         (dfir_lane_run.stdout | from_json).empty | int)
+         ((dfir_lane_run.stdout | from_json).empty | int
+          + (dfir_lane_run.stdout | from_json).skipped | int))
     fail_msg: >-
-      zimmerman produced no output at all though disk images were present
-      (every EZ-Tools container failed?).
+      zimmerman produced no output at all though processable (Windows) disk images
+      were present (every EZ-Tools container failed?).
     quiet: true

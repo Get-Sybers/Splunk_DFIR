@@ -264,6 +264,13 @@ def process(
         for lane_name, var, d, n in _collection.lane_inputs(repo, collection):
             scope.setdefault(lane_name, []).append(f"{var}={d}")
             counts[lane_name] = counts.get(lane_name, 0) + n
+        # If the collection was identified (.collection.identity.json present), cue
+        # the Windows-only zimmerman lane to skip non-Windows disk/VM images: pass
+        # the identity record's path as a scope var. The role adds --identity only
+        # when it is set, so an un-identified collection is unaffected.
+        identity = _collection.collection_dir(repo, collection) / _collection._IDENTITY
+        if identity.is_file() and "zimmerman" in scope:
+            scope["zimmerman"].append(f"dfir_zimmerman_identity={identity}")
 
     if source is Source.all:
         lanes = [lane.name for lane in _collection.LANES]     # the five evidence lanes
