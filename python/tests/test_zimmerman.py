@@ -3,6 +3,7 @@
 Every test here is offline: docker invocations are represented purely as argv
 lists (never executed) or, in the process_image tests, monkeypatched out.
 """
+import json
 import os
 import subprocess
 
@@ -391,6 +392,134 @@ def test_process_ignores_missing_vm_dir(tmp_path, monkeypatch):
     assert len(summary["sources"]) == 1
 
 
+# ---- identity cue: skip non-Windows disk/VM items (EZ-Tools are Windows-only) --
+def _write_identity(root, items) -> str:
+    """Write a .collection.identity.json under `root` from [(rel, os_family), ...].
+    Returns the file path. Mirrors identify.py's on-disk shape."""
+    records = [{"path": rel, "lane_subdir": rel.split("/", 1)[0], "os_family": fam,
+                "format": None, "filesystems": []} for rel, fam in items]
+    p = root / ".collection.identity.json"
+    p.write_text(json.dumps({"collection": "c", "generated": "x", "items": records}))
+    return str(p)
+
+
+def test_load_identity_os_maps_abs_path_to_os_family(tmp_path):
+    (tmp_path / "VM_files").mkdir()
+    (tmp_path / "disk_images").mkdir()
+    (tmp_path / "VM_files" / "lin.vmdk").write_bytes(b"x")
+    (tmp_path / "disk_images" / "win.e01").write_bytes(b"x")
+    (tmp_path / "VM_files" / "unknown.vmdk").write_bytes(b"x")
+    idf = _write_identity(tmp_path, [("VM_files/lin.vmdk", "linux"),
+                                     ("disk_images/win.e01", "windows"),
+                                     ("VM_files/unknown.vmdk", None)])
+    m = z.load_identity_os(idf)
+    assert m[os.path.realpath(str(tmp_path / "VM_files" / "lin.vmdk"))] == "linux"
+    assert m[os.path.realpath(str(tmp_path / "disk_images" / "win.e01"))] == "windows"
+    # a null os_family is omitted from the map — it never causes a skip
+    assert os.path.realpath(str(tmp_path / "VM_files" / "unknown.vmdk")) not in m
+
+
+def test_load_identity_os_missing_or_malformed_is_empty(tmp_path):
+    assert z.load_identity_os(str(tmp_path / "nope.json")) == {}
+    bad = tmp_path / "bad.json"
+    bad.write_text("{ this is not json")
+    assert z.load_identity_os(str(bad)) == {}
+
+
+def test_identity_skip_reason_windows_only():
+    lin, win, mac = "/img/lin.vmdk", "/img/win.e01", "/img/mac.vmdk"
+    m = {os.path.realpath(lin): "linux", os.path.realpath(win): "windows",
+         os.path.realpath(mac): "macos"}
+    assert "linux" in (z.identity_skip_reason(lin, m) or "")     # non-Windows -> skip
+    assert "macos" in (z.identity_skip_reason(mac, m) or "")     # non-Windows -> skip
+    assert z.identity_skip_reason(win, m) is None                # Windows -> process
+    assert z.identity_skip_reason("/img/other.raw", m) is None   # unknown item -> process
+    assert z.identity_skip_reason(lin, {}) is None               # no identity -> process
+
+
+def _fake_process_image(seen):
+    """A process_image stand-in that records the images it was handed and never
+    touches a container (the real one runs the EZ-Tools via container.run)."""
+    def fake(image, host_out_dir, **kw):
+        seen.append(os.path.basename(image))
+        return {"skipped": False, "extracted_files": 1,
+                "steps": {"recmd": {"ran": True, "ok": True}}}
+    return fake
+
+
+def test_process_skips_linux_vmdk_by_identity(tmp_path, monkeypatch):
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "lin.vmdk").write_bytes(b"x")
+    identity_os = z.load_identity_os(_write_identity(tmp_path, [("disk_images/lin.vmdk", "linux")]))
+
+    def boom(*a, **k):
+        raise AssertionError("process_image (container run) must not run for an identity skip")
+
+    monkeypatch.setattr(z, "process_image", boom)
+    summary = z.process(str(disk), str(tmp_path / "out"), identity_os=identity_os)
+    assert summary["images"] == 1
+    assert summary["skipped"] == 1        # counted skipped …
+    assert summary["processed"] == 0
+    assert summary["failed"] == 0         # … NOT failed
+    res = summary["sources"][0]["results"][0]
+    assert res["skipped"] is True and "linux" in res["skip_reason"]
+
+
+def test_process_processes_windows_image_by_identity(tmp_path, monkeypatch):
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "win.e01").write_bytes(b"x")
+    identity_os = z.load_identity_os(_write_identity(tmp_path, [("disk_images/win.e01", "windows")]))
+    seen: list[str] = []
+    monkeypatch.setattr(z, "process_image", _fake_process_image(seen))
+    summary = z.process(str(disk), str(tmp_path / "out"), identity_os=identity_os)
+    assert summary["processed"] == 1 and summary["skipped"] == 0
+    assert seen == ["win.e01"]            # the Windows image reached the container path
+
+
+def test_process_no_identity_processes_everything(tmp_path, monkeypatch):
+    """No .collection.identity.json (identity_os is None) — behave exactly as before
+    identify existed: every image is processed, even a would-be-Linux .vmdk."""
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "lin.vmdk").write_bytes(b"x")
+    seen: list[str] = []
+    monkeypatch.setattr(z, "process_image", _fake_process_image(seen))
+    summary = z.process(str(disk), str(tmp_path / "out"))   # no identity_os
+    assert summary["processed"] == 1 and summary["skipped"] == 0
+    assert seen == ["lin.vmdk"]
+
+
+def test_process_null_os_family_is_processed(tmp_path, monkeypatch):
+    """An identity record with a NULL os_family degrades gracefully — processed."""
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "x.vmdk").write_bytes(b"x")
+    identity_os = z.load_identity_os(_write_identity(tmp_path, [("disk_images/x.vmdk", None)]))
+    assert identity_os == {}              # null omitted, so nothing to skip on
+    seen: list[str] = []
+    monkeypatch.setattr(z, "process_image", _fake_process_image(seen))
+    summary = z.process(str(disk), str(tmp_path / "out"), identity_os=identity_os)
+    assert seen == ["x.vmdk"]
+
+
+def test_process_mixed_windows_processed_linux_skipped(tmp_path, monkeypatch):
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "win.e01").write_bytes(b"x")
+    (disk / "lin.vmdk").write_bytes(b"x")
+    identity_os = z.load_identity_os(_write_identity(
+        tmp_path, [("disk_images/win.e01", "windows"), ("disk_images/lin.vmdk", "linux")]))
+    seen: list[str] = []
+    monkeypatch.setattr(z, "process_image", _fake_process_image(seen))
+    summary = z.process(str(disk), str(tmp_path / "out"), identity_os=identity_os)
+    assert summary["images"] == 2
+    assert summary["processed"] == 1
+    assert summary["skipped"] == 1
+    assert seen == ["win.e01"]            # only the Windows image reached the container path
+
+
 # ---- CLI entry point ---------------------------------------------------------
 def test_main_requires_input_dir():
     import pytest
@@ -409,3 +538,22 @@ def test_main_no_images_is_clean_exit(tmp_path, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert '"images": 0' in out
+
+
+def test_main_identity_skips_linux_and_exits_clean(tmp_path, capsys, monkeypatch):
+    """End-to-end through main(): --identity is loaded and threaded, a Linux .vmdk
+    is skipped (never reaches the container path), and an all-skipped run is a clean
+    exit (rc 0), not a failure."""
+    disk = tmp_path / "disk_images"
+    disk.mkdir()
+    (disk / "lin.vmdk").write_bytes(b"x")
+    idf = _write_identity(tmp_path, [("disk_images/lin.vmdk", "linux")])
+
+    def boom(*a, **k):
+        raise AssertionError("a skipped image must never reach process_image / container.run")
+
+    monkeypatch.setattr(z, "process_image", boom)
+    rc = z.main(["--input-dir", str(disk), "--out-dir", str(tmp_path / "out"), "--identity", idf])
+    assert rc == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["skipped"] == 1 and summary["processed"] == 0 and summary["failed"] == 0

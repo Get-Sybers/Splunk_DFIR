@@ -26,6 +26,13 @@ dfir_zimmerman_vss: false
 dfir_zimmerman_python_path: "{{ dfir_zimmerman_repo_root }}/python"
 dfir_zimmerman_force: false
 
+# Path to the collection's .collection.identity.json, set by the collection-scoped
+# `dxdfir process zimmerman <collection>` when the collection was identified. When
+# present, the processor skips disk/VM items whose identified os_family is
+# non-Windows (the EZ-Tools are Windows-only). Empty by default — no identity cue,
+# so every image is processed as before.
+dfir_zimmerman_identity: ""
+
 # The processor command argv, handed to the shared dfir_lane process step. This
 # is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
 dfir_zimmerman_argv: >-
@@ -34,5 +41,6 @@ dfir_zimmerman_argv: >-
   '--vm-dir', dfir_zimmerman_vm_dir,
   '--out-dir', dfir_zimmerman_out_dir,
   '--plaso-image', dfir_zimmerman_plaso_image]
+  + (['--identity', dfir_zimmerman_identity] if dfir_zimmerman_identity | length > 0 else [])
   + (['--vss'] if dfir_zimmerman_vss | bool else [])
   + (['--force'] if dfir_zimmerman_force | bool else []) }}

@@ -60,6 +60,15 @@ argument_specs:
         type: str
         required: false
         description: "PYTHONPATH to the get_sybers_dfir package (in-repo/dev runs)."
+      dfir_zimmerman_identity:
+        type: str
+        required: false
+        description: >-
+          Path to the collection's .collection.identity.json (set by the
+          collection-scoped `dxdfir process zimmerman <collection>` when the
+          collection was identified). When present, disk/VM items whose identified
+          os_family is present and not 'windows' are skipped — the EZ-Tools are
+          Windows-only. Empty by default (no identity cue; every image is processed).
       dfir_zimmerman_force:
         type: bool
         required: false

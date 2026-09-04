@@ -40,6 +40,15 @@ its SQLite interop needs a writable unpack path the tool's own working directory
 provides, which the hardened read-only-rootfs base image does not; verifying that
 against a real ActivitiesCache.db is deferred to issue #88. See its docstring.
 
+Identity-aware (``--identity``): the EZ-Tools are Windows-only, so pointing this
+lane at a non-Windows disk is the wrong tool — it extracts nothing and today that
+surfaces as a loud failure. When a collection's ``.collection.identity.json`` is
+supplied, a disk/VM item whose identified ``os_family`` is present and NOT
+``windows`` (a Linux/macOS disk) is SKIPPED, not processed — a clean skip counted
+apart from failures. Absent identity, or an item with a null ``os_family``, is
+processed exactly as before (degrade gracefully). The collection-scoped
+``dxdfir process zimmerman <collection>`` passes the path automatically.
+
     python -m get_sybers_dfir.zimmerman --image-src RAW/disk_images --out-dir PROCESSED/zimmerman
 """
 from __future__ import annotations
@@ -243,6 +252,44 @@ def find_file(root: str, name: str) -> str | None:
     matches = [os.path.join(cur, f) for cur, _dirs, files in os.walk(root)
                for f in files if f.lower() == target]
     return sorted(matches)[0] if matches else None
+
+
+# ---- identity cue (skip non-Windows disk/VM items) --------------------------
+def load_identity_os(identity_path: str) -> dict[str, str]:
+    """Map each identified item's ABSOLUTE path -> its ``os_family`` from a
+    ``.collection.identity.json`` file (written by ``dxdfir collection identify``).
+
+    A record's ``path`` is collection-relative and the identity file sits at the
+    collection root, so the item's absolute path is ``<root>/<record path>``;
+    matching on the resolved absolute path is unambiguous (two same-named images in
+    different subdirs never collide). Best-effort: a missing / unreadable / malformed
+    file yields ``{}`` — no cue, so the lane processes every image exactly as it did
+    before identify existed. Records with a null ``os_family`` are omitted, so an
+    unidentified OS never causes a skip."""
+    try:
+        with open(identity_path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    root = os.path.dirname(os.path.realpath(identity_path))
+    out: dict[str, str] = {}
+    for rec in data.get("items", []):
+        rel, fam = rec.get("path"), rec.get("os_family")
+        if rel and fam:
+            out[os.path.realpath(os.path.join(root, rel))] = fam
+    return out
+
+
+def identity_skip_reason(image: str, identity_os: dict[str, str]) -> str | None:
+    """Why the zimmerman lane should skip ``image`` per the identity cue, or None to
+    process it. The EZ-Tools are Windows-only, so a disk/VM item whose identified
+    ``os_family`` is present and not ``windows`` is the wrong tool's input and is
+    skipped (a clean skip, not a failure). An item absent from the map (no identity,
+    or a null ``os_family``) is processed — degrade gracefully."""
+    fam = identity_os.get(os.path.realpath(image))
+    if fam and fam != "windows":
+        return f"identity: os_family={fam} (EZ-Tools are Windows-only)"
+    return None
 
 
 # ---- per-tool container argv builders (pure — no I/O, no docker) ------------
@@ -513,12 +560,16 @@ def process_image(image, host_out_dir, *, plaso_image=PLASO_IMAGE, force=False,
     return result
 
 
-def process_source(image_src, out_dir, *, plaso_image=PLASO_IMAGE, force=False, vss=False) -> dict:
+def process_source(image_src, out_dir, *, plaso_image=PLASO_IMAGE, force=False, vss=False,
+                   identity_os=None) -> dict:
     """Process every disk image under ONE source (``image_src``: a file or a
-    directory of them) into ``out_dir/<host>/``."""
+    directory of them) into ``out_dir/<host>/``. ``identity_os`` maps an item's
+    absolute path to its identified ``os_family`` (from ``load_identity_os``); a
+    non-Windows disk/VM item is skipped whole (EZ-Tools are Windows-only)."""
     out_dir = os.path.realpath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     images = discover_images(image_src)
+    identity_os = identity_os or {}
 
     summary = {
         "source": os.path.realpath(image_src),
@@ -535,6 +586,16 @@ def process_source(image_src, out_dir, *, plaso_image=PLASO_IMAGE, force=False, 
     for img in images:
         host = host_name(img)
         host_dir = os.path.join(out_dir, host)
+        # Identity cue: a disk/VM item identified as non-Windows is the wrong input
+        # for the Windows-only EZ-Tools — skip it whole (a clean skip, not a
+        # failure) before paying for extraction. Unidentified items fall through.
+        skip_reason = identity_skip_reason(img, identity_os)
+        if skip_reason:
+            summary["skipped"] += 1
+            summary["results"].append(
+                {"image": img, "host": host, "host_dir": host_dir,
+                 "skipped": True, "skip_reason": skip_reason, "steps": {}})
+            continue
         res = process_image(img, host_dir, plaso_image=plaso_image, force=force, vss=vss)
         res["host"] = host
         if res.get("skipped"):
@@ -554,13 +615,15 @@ def process_source(image_src, out_dir, *, plaso_image=PLASO_IMAGE, force=False, 
 
 
 def process(input_dir, out_dir, *, vm_dir="", plaso_image=PLASO_IMAGE, force=False,
-           vss=False) -> dict:
+           vss=False, identity_os=None) -> dict:
     """Process disk images under ``input_dir`` and (if given) ``vm_dir`` into
     ``out_dir/<host>/`` — the same two-source shape as ``plaso.process``.
     ``vm_dir`` is optional and tolerated when absent/empty (a VM-export folder
     holds a plain ``.vmdk``, which ``discover_images`` finds like any other
     image; it does not get plaso.py's descriptor-vs-extent disambiguation, so
     keep VM exports to a single base/snapshot descriptor per folder for now).
+    ``identity_os`` (from ``load_identity_os``) cues the lane to skip non-Windows
+    disk/VM items; ``None`` means no cue — every image is processed as before.
     """
     sources = [os.path.realpath(input_dir)]
     if vm_dir and os.path.isdir(vm_dir):
@@ -569,7 +632,8 @@ def process(input_dir, out_dir, *, vm_dir="", plaso_image=PLASO_IMAGE, force=Fal
     summary = {"tool": "zimmerman", "out_dir": os.path.realpath(out_dir), "sources": [],
               "images": 0, "processed": 0, "skipped": 0, "empty": 0, "failed": 0}
     for src in sources:
-        s = process_source(src, out_dir, plaso_image=plaso_image, force=force, vss=vss)
+        s = process_source(src, out_dir, plaso_image=plaso_image, force=force, vss=vss,
+                           identity_os=identity_os)
         summary["sources"].append(s)
         for k in ("images", "processed", "skipped", "empty", "failed"):
             summary[k] += s.get(k, 0)
@@ -592,14 +656,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--plaso-image", default=PLASO_IMAGE,
                     help="container image providing image_export.py/log2timeline.py/psort.py "
                          "(default: %(default)s)")
+    ap.add_argument("--identity", default="",
+                    help="path to the collection's .collection.identity.json; when given, "
+                         "disk/VM items identified as non-Windows are skipped (the EZ-Tools "
+                         "are Windows-only). Absent/unidentified items are processed as usual.")
     ap.add_argument("--vss", action="store_true",
                     help="also extract from Volume Shadow Copies")
     ap.add_argument("--force", action="store_true",
                     help="reprocess hosts that already have output")
     args = ap.parse_args(argv)
 
+    identity_os = load_identity_os(args.identity) if args.identity else {}
     summary = process(args.input_dir, args.out_dir, vm_dir=args.vm_dir,
-                      plaso_image=args.plaso_image, force=args.force, vss=args.vss)
+                      plaso_image=args.plaso_image, force=args.force, vss=args.vss,
+                      identity_os=identity_os)
     json.dump(summary, sys.stdout)
     sys.stdout.write("\n")
     # Fail only when the run produced nothing AND nothing was already done — see
