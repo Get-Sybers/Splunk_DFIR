@@ -1,6 +1,7 @@
 """Unit tests for the dfir CLI (Typer CliRunner; subprocess mocked)."""
 import os
 import subprocess
+import sys
 from pathlib import Path
 from unittest import mock
 
@@ -61,6 +62,10 @@ def test_process_builds_playbook_command(tmp_path):
     # role path is exported so the collection resolves without install
     env = m.call_args.kwargs["env"]
     assert env["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
+    # this interpreter's bin dir is FIRST on PATH, so the playbook's `python3`
+    # (preflight import-check, image guard, processor argv) is the env that carries
+    # the deps — not the bare system python ansible would otherwise resolve
+    assert env["PATH"].split(os.pathsep)[0] == os.path.dirname(sys.executable)
 
 
 def test_process_defaults_to_the_elastic_pipeline(tmp_path):

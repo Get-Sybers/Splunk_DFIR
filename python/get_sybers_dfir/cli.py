@@ -198,6 +198,15 @@ def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: boo
         cmd += ["-e", kv]
     # resolve the role without installing the collection
     env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    # The lane playbooks shell out to `python3` on the localhost connection — the
+    # preflight import-check, the image supply-chain guard, and each processor argv.
+    # Those need get_sybers_dfir AND its declared dependencies (PyYAML, the docker
+    # SDK, …), which live wherever THIS CLI is installed — not in whatever `python3`
+    # ansible would otherwise resolve from PATH (typically the bare system
+    # interpreter, which has the package on PYTHONPATH but none of its deps). Put
+    # this interpreter's own bin dir first on PATH so the playbook's `python3` is the
+    # one that carries the dependencies.
+    env["PATH"] = os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "")
     scoped = "  (collection-scoped)" if scope_vars else ""
     typer.secho(f"processing {name} → {pipeline.value}{scoped}", fg=typer.colors.GREEN)
     _run(cmd, cwd=repo, env=env)
