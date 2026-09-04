@@ -5,7 +5,7 @@ import argparse
 import json
 import sys
 
-from . import LANES, process
+from . import LANES, process, provision
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -13,15 +13,21 @@ def main(argv: list[str] | None = None) -> int:
         prog="get_sybers_dfir.signatures",
         description="YARA / Suricata / Hayabusa detection lanes -> JSONL",
     )
-    ap.add_argument("--output-dir", required=True, help="base output dir (one <lane>/ per lane)")
+    ap.add_argument("--output-dir",
+                    help="base output dir (one <lane>/ per lane); required unless --fetch-only")
     ap.add_argument("--repo-root", required=True, help="repo root (lane input/dep defaults hang off it)")
     ap.add_argument("--only", action="append", choices=list(LANES),
                     help="run only this lane (repeatable); default all")
     ap.add_argument("--fetch", action="store_true",
-                    help="provision rules when online: the yara lane fetches the pinned "
-                         "DetectRaptor ruleset when it has no rules yet (see "
-                         "signatures/detectraptor.py); the other lanes still record a "
-                         "note when their deps are missing")
+                    help="provision each lane's rule set when online before detecting: the "
+                         "pinned DetectRaptor YARA ruleset, ET Open for suricata, and the "
+                         "pinned Hayabusa release (binary + Sigma rules) — each only when "
+                         "that lane has no rules yet (see signatures/detectraptor.py, "
+                         "suricata.fetch, hayabusa.fetch). Offline is a per-lane note.")
+    ap.add_argument("--fetch-only", action="store_true",
+                    help="provision each lane's rule set into data_store/dependencies/ and "
+                         "EXIT without running detection (the staging step; honors --only "
+                         "and --force). Backs scripts/stage-detection-rules.sh.")
     ap.add_argument("--force", action="store_true", help="regenerate outputs that already exist")
     # Hayabusa disk-image staging (shared with the evtx processor's stage).
     ap.add_argument("--stage-dir", help="where disk-image EVTX extractions land for the "
@@ -56,6 +62,19 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     lanes = tuple(args.only) if args.only else LANES
+
+    if args.fetch_only:
+        # Staging only: drive each lane's own pinned fetch and exit (no detection).
+        summary = provision(args.repo_root, lanes, force=args.force)
+        json.dump(summary, sys.stdout)
+        sys.stdout.write("\n")
+        # Non-zero only when EVERY requested lane failed (fully offline) and none
+        # was provisioned — staging is otherwise best-effort and idempotent.
+        return 1 if summary["failed"] and not summary["provisioned"] else 0
+
+    if not args.output_dir:
+        ap.error("--output-dir is required (unless --fetch-only)")
+
     config = {"suricata": {
         "home_net": args.home_net,
         "external_net": args.external_net,

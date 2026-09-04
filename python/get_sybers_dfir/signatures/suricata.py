@@ -23,15 +23,26 @@ capture, or ``[global]``). The flow:
 
 Tuning is rebuilt from scratch for EVERY capture — a value derived from (or
 configured for) one pcap is never carried into the next.
+
+Rules are operator-supplied under data_store/dependencies/suricata-rules (a single
+``suricata.rules``, loaded with ``-S``). ``--fetch`` (also :func:`fetch`)
+provisions the ET Open ruleset there when it is absent — a host-side pinned
+download merged into one ``suricata.rules``, the same discipline as
+``detectraptor.py``. The hardened dfir/suricata image deliberately strips
+``suricata-update`` and runs with no network, so ET Open cannot be fetched inside
+the tool container.
 """
 from __future__ import annotations
 
 import configparser
+import io
 import ipaddress
 import json
 import os
 import subprocess
+import tarfile
 import tempfile
+import urllib.request
 
 from .. import container
 from . import clean_name
@@ -490,6 +501,89 @@ def _suricata_pass(pcap, rules_dir, rules_file, image, sets):
     return ""
 
 
+# ---- ET Open rule provisioning (--fetch) -----------------------------------
+# The hardened dfir/suricata image strips suricata-update and runs with no
+# network, so ET Open is fetched HOST-SIDE (stdlib urllib) and merged into the one
+# suricata.rules the lane loads — the same discipline as detectraptor.py. ET Open
+# is rebuilt continuously upstream, so (unlike detectraptor's commit pin) the URL
+# is pinned rather than a content digest.
+_ET_OPEN_URL = "https://rules.emergingthreats.net/open/suricata/emerging.rules.tar.gz"
+
+
+def merge_et_rules(named_texts: list[tuple[str, str]]) -> tuple[str, dict]:
+    """Concatenate ET Open per-category ``.rules`` files into one suricata.rules
+    body. Pure — testable without network.
+
+    Files are emitted in name order (stable output), each under a marker comment;
+    rule text is kept verbatim (its comments included). ``rules`` counts active
+    (non-comment, non-blank) lines. The lane loads the result with ``suricata
+    -S``; ET's classification/reference ``.config`` files are not rules and are
+    not passed here (the image supplies its own)."""
+    chunks: list[str] = []
+    files = rules = 0
+    for name, text in sorted(named_texts):
+        files += 1
+        for line in text.splitlines():
+            s = line.strip()
+            if s and not s.startswith("#"):
+                rules += 1
+        chunks.append(f"# --- {name} ---\n{text.rstrip()}\n")
+    return ("\n".join(chunks), {"files": files, "rules": rules})
+
+
+def _download(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=300) as resp:  # noqa: S310 — pinned https URL
+        return resp.read()
+
+
+def fetch(rules_dir: str, *, url: str | None = None, force: bool = False) -> dict:
+    """Provision the ET Open ruleset as ``<rules_dir>/suricata.rules``.
+
+    Downloads the ET Open tarball (in-memory), merges its ``.rules`` members into
+    the single ``suricata.rules`` the lane loads with ``-S``, and writes it
+    atomically. Skips when ``suricata.rules`` already exists (pass ``force=True``
+    to refresh). Returns a summary; raises on a download/parse error.
+
+    Host-side stdlib download (like detectraptor.py): the hardened dfir/suricata
+    image strips suricata-update and runs with no network, so ET Open cannot be
+    fetched inside the tool container.
+    """
+    url = url or _ET_OPEN_URL
+    out = os.path.join(rules_dir, "suricata.rules")
+    if os.path.exists(out) and not force:
+        return {"tool": "suricata", "output": out, "skipped": True}
+    blob = _download(url)
+    named: list[tuple[str, str]] = []
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tf:
+        for m in tf.getmembers():
+            if m.isfile() and m.name.endswith(".rules"):
+                fh = tf.extractfile(m)   # read member bytes only — never extracted to disk
+                if fh is not None:
+                    named.append((os.path.basename(m.name),
+                                  fh.read().decode("utf-8", errors="replace")))
+    if not named:
+        raise RuntimeError(f"no .rules members in the ET Open archive at {url}")
+    body, stats = merge_et_rules(named)
+    header = (
+        "# Emerging Threats Open ruleset — fetched and merged by get_sybers_dfir.\n"
+        f"# Source: {url}\n"
+        f"# Merged {stats['files']} rule file(s); loaded with `suricata -S`.\n"
+        "# Provenance/licensing: THIRD_PARTY_NOTICES.md.\n\n"
+    )
+    os.makedirs(rules_dir, exist_ok=True)
+    tmp = out + ".part"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(header + body)
+    os.replace(tmp, out)
+    return {"tool": "suricata", "output": out, "skipped": False,
+            "files": stats["files"], "rules": stats["rules"]}
+
+
+# Module-level alias so run() — which has a ``fetch`` bool parameter that would
+# shadow the name in its local scope — can still reach the provisioner.
+_fetch_rules = fetch
+
+
 def run(*, output_dir, repo_root, fetch=False, force=False,
         pcap_dir=None, rules_dir=None, image=_SURICATA_IMAGE, keep_all=False,
         home_net=None, external_net=None, extra_sets=None, auto_home_net=False,
@@ -504,13 +598,24 @@ def run(*, output_dir, repo_root, fetch=False, force=False,
     res = {"lane": "suricata", "produced": 0, "skipped": 0, "failed": 0, "note": None,
            "tuning": {}}
 
+    if fetch and not any("suricata.rules" in files
+                         for _c, _d, files in os.walk(rules_dir)):
+        # --fetch contract (mirrors the yara lane): provision ET Open into the one
+        # suricata.rules the lane loads, when absent. Offline/failed fetch is a
+        # note, not a failure.
+        try:
+            _fetch_rules(rules_dir)
+        except Exception as exc:  # noqa: BLE001 — network errors surface as a note
+            res["note"] = f"suricata rules fetch failed: {exc}"
+
     rules_file = None
     for cur, _dirs, files in os.walk(rules_dir):
         if "suricata.rules" in files:
             rules_file = os.path.join(cur, "suricata.rules")
             break
     if not rules_file:
-        res["note"] = "no suricata.rules — using the image's bundled rules"
+        msg = "no suricata.rules — using the image's bundled rules"
+        res["note"] = f"{res['note']}; {msg}" if res["note"] else msg
 
     pcaps = discover(pcap_dir)
     if not pcaps:

@@ -658,3 +658,154 @@ def test_audit_flags_unexpected_and_missing(monkeypatch):
     assert not result["ok"]
     assert any("dfir/rogue" in v and "unexpected" in v for v in result["violations"])
     assert not any("sof-elk" in v for v in result["violations"])   # allow-listed
+
+
+# ---- rule provisioning: suricata ET Open merge (pure) ----------------------
+def test_merge_et_rules_concatenates_and_counts():
+    a = "# comment\nalert tcp any any -> any any (msg:\"a\"; sid:1;)\n\n"
+    b = "alert ip any any -> any any (msg:\"b\"; sid:2;)\n"
+    body, stats = suricata.merge_et_rules([("emerging-b.rules", b),
+                                           ("emerging-a.rules", a)])
+    assert stats == {"files": 2, "rules": 2}          # two active (non-comment) lines
+    # emitted in NAME order (a before b) with a marker per file, text verbatim
+    assert body.index("emerging-a.rules") < body.index("emerging-b.rules")
+    assert 'msg:"a"' in body and 'msg:"b"' in body and "# comment" in body
+
+
+def test_suricata_fetch_skips_when_rules_present(tmp_path):
+    (tmp_path / "suricata.rules").write_text("alert ip any any -> any any (sid:1;)\n")
+    res = suricata.fetch(str(tmp_path))               # would need network otherwise
+    assert res["skipped"] is True
+    assert res["output"] == str(tmp_path / "suricata.rules")
+
+
+def test_suricata_run_fetches_when_absent(tmp_path, monkeypatch):
+    """run(fetch=True) drives the ET Open provisioner when no suricata.rules exists."""
+    repo = tmp_path
+    (repo / "data_store").mkdir()
+    rules = tmp_path / "rules"; rules.mkdir()
+    called = {}
+
+    def fake_fetch(rules_dir, **kw):
+        called["dir"] = rules_dir
+        (rules / "suricata.rules").write_text("alert ip any any -> any any (sid:1;)\n")
+        return {"tool": "suricata", "output": str(rules / "suricata.rules"), "skipped": False}
+
+    monkeypatch.setattr(suricata, "_fetch_rules", fake_fetch)
+    # no pcaps -> the lane returns after provisioning without touching docker
+    res = suricata.run(output_dir=str(tmp_path / "out"), repo_root=str(repo),
+                       fetch=True, rules_dir=str(rules), pcap_dir=str(tmp_path / "nopcaps"))
+    assert called["dir"] == str(rules)
+    assert (rules / "suricata.rules").exists()
+    assert res["lane"] == "suricata"
+
+
+def test_suricata_run_no_fetch_by_default(tmp_path, monkeypatch):
+    rules = tmp_path / "rules"; rules.mkdir()
+    monkeypatch.setattr(suricata, "_fetch_rules",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+    suricata.run(output_dir=str(tmp_path / "out"), repo_root=str(tmp_path),
+                 fetch=False, rules_dir=str(rules), pcap_dir=str(tmp_path / "nopcaps"))
+
+
+# ---- rule provisioning: hayabusa pinned release ----------------------------
+def test_hb_asset_arch_mapping(monkeypatch):
+    monkeypatch.setattr(hayabusa.platform, "machine", lambda: "x86_64")
+    assert hayabusa._hb_asset("3.4.0") == ("hayabusa-3.4.0-lin-x64-gnu.zip", "x64")
+    monkeypatch.setattr(hayabusa.platform, "machine", lambda: "aarch64")
+    assert hayabusa._hb_asset("3.4.0") == ("hayabusa-3.4.0-lin-aarch64-gnu.zip", "aarch64")
+
+
+def test_hayabusa_pin_shape():
+    # the pinned digest is a real 64-hex sha256 and the version is set
+    assert hayabusa._VERSION
+    assert set(hayabusa._ZIP_SHA256), "at least one arch must be pinned"
+    for arch, sha in hayabusa._ZIP_SHA256.items():
+        assert len(sha) == 64 and int(sha, 16) >= 0, arch
+
+
+def test_hayabusa_fetch_skips_when_binary_present(tmp_path):
+    b = tmp_path / "hayabusa-3.4.0-lin-x64-gnu"
+    b.write_text("#!/bin/sh\n"); b.chmod(0o755)
+    res = hayabusa.fetch(str(tmp_path))               # would need network otherwise
+    assert res["skipped"] is True and res["binary"] == str(b)
+
+
+def test_hayabusa_safe_extract_rejects_zip_slip(tmp_path):
+    import io as _io
+    import zipfile
+    buf = _io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("../escape.txt", "nope")
+    buf.seek(0)
+    dest = tmp_path / "dest"; dest.mkdir()
+    with zipfile.ZipFile(buf) as zf:
+        import pytest
+        with pytest.raises(ValueError, match="unsafe path"):
+            hayabusa._safe_extract(zf, str(dest))
+    assert not (tmp_path / "escape.txt").exists()
+
+
+def test_hayabusa_run_fetches_when_absent(tmp_path, monkeypatch):
+    repo = tmp_path
+    (repo / "data_store").mkdir()
+    hb = tmp_path / "hb"; hb.mkdir()
+
+    def fake_fetch(hb_dir, **kw):
+        exe = hb / "hayabusa-3.4.0-lin-x64-gnu"
+        exe.write_text("#!/bin/sh\n"); exe.chmod(0o755)
+        return {"tool": "hayabusa", "binary": str(exe), "skipped": False}
+
+    monkeypatch.setattr(hayabusa, "_fetch_release", fake_fetch)
+    monkeypatch.setattr(hayabusa, "scan_directory", lambda *a, **k: "")   # no evtx
+    res = hayabusa.run(output_dir=str(tmp_path / "out"), repo_root=str(repo),
+                       fetch=True, hb_dir=str(hb),
+                       loose_dir=str(tmp_path / "none"), scan_disk=False)
+    assert (hb / "hayabusa-3.4.0-lin-x64-gnu").exists()
+    assert res["lane"] == "hayabusa"                 # provisioned, then no evtx -> note
+    assert "no hayabusa binary" not in (res["note"] or "")
+
+
+# ---- provision() orchestrator + --fetch-only -------------------------------
+def test_provision_dispatches_and_is_non_fatal(tmp_path, monkeypatch):
+    from get_sybers_dfir.signatures import detectraptor
+    monkeypatch.setattr(detectraptor, "fetch",
+                        lambda d, **k: {"tool": "detectraptor", "skipped": False})
+    monkeypatch.setattr(suricata, "fetch",
+                        lambda d, **k: {"tool": "suricata", "skipped": False})
+    monkeypatch.setattr(hayabusa, "fetch",
+                        lambda d, **k: (_ for _ in ()).throw(OSError("offline")))
+    summary = signatures.provision(str(tmp_path))
+    assert summary["tool"] == "signatures-provision"
+    assert summary["provisioned"] == 2 and summary["failed"] == 1
+    assert summary["results"]["hayabusa"]["error"] == "offline"
+    # dep dir hangs off repo_root
+    assert summary["dependencies_dir"].endswith(os.path.join("data_store", "dependencies"))
+
+
+def test_provision_yara_defers_to_operator_rules(tmp_path, monkeypatch):
+    ydir = tmp_path / "data_store" / "dependencies" / "yara-rules"
+    ydir.mkdir(parents=True)
+    (ydir / "mine.yar").write_text("rule R { condition: true }\n")
+    from get_sybers_dfir.signatures import detectraptor
+    monkeypatch.setattr(detectraptor, "fetch",
+                        lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not fetch")))
+    summary = signatures.provision(str(tmp_path), lanes=("yara",))
+    assert summary["results"]["yara"]["skipped"] is True
+
+
+def test_main_fetch_only_requires_no_output_dir(tmp_path, monkeypatch):
+    from get_sybers_dfir.signatures import __main__ as cli
+    monkeypatch.setattr(cli, "provision",
+                        lambda repo, lanes, **k: {"tool": "signatures-provision",
+                                                  "provisioned": 3, "failed": 0,
+                                                  "lanes": list(lanes), "results": {}})
+    rc = cli.main(["--fetch-only", "--repo-root", str(tmp_path)])
+    assert rc == 0
+
+
+def test_main_requires_output_dir_without_fetch_only(tmp_path):
+    from get_sybers_dfir.signatures import __main__ as cli
+    import pytest
+    with pytest.raises(SystemExit):
+        cli.main(["--repo-root", str(tmp_path)])     # no --output-dir, no --fetch-only

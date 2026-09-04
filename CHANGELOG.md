@@ -7,6 +7,22 @@ is `0`, anything may change without notice.
 
 ## [Unreleased]
 
+### Added
+- **Detection-rule staging** so the `signatures` lane actually detects out of the
+  box (the dependency dirs shipped with only a `.gitkeep`, so yara/suricata/hayabusa
+  ran clean but found nothing). Every lane's `--fetch` now provisions its rule set
+  into `data_store/dependencies/` — previously only YARA did: the yara lane's pinned
+  DetectRaptor ruleset, **ET Open** for suricata (downloaded and merged into the one
+  `suricata.rules` the lane loads with `-S`), and the **pinned Hayabusa release**
+  (native binary + its bundled Sigma rules, sha256-verified) for hayabusa
+  (`suricata.fetch` / `hayabusa.fetch`, mirroring `detectraptor`'s host-side
+  pinned-download discipline — the hardened `dfir/suricata` image deliberately
+  strips `suricata-update` and Hayabusa has no tool image, so neither can fetch
+  inside a container). New `python -m get_sybers_dfir.signatures --fetch-only`
+  provisions every lane's rules without running detection, driven by the new
+  `scripts/stage-detection-rules.sh`, which `scripts/setup-environment.sh` now runs
+  once so a freshly set-up host has rules staged. Downloaded rules stay gitignored.
+
 ### Removed
 - **The Kusto/ADX layer.** The Azure Data Explorer emulator was the analysis
   backend from 0.2.0; the Elastic-native path (`docker/elastic`, the ES|QL/EQL
