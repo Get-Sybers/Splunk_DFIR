@@ -333,6 +333,17 @@ $SUDO "$DXDFIR_VENV/bin/ansible-galaxy" collection install \
 echo "✅ Collections installed: $("$DXDFIR_VENV/bin/ansible-galaxy" collection list -p "$DXDFIR_COLLECTIONS" 2>/dev/null | grep -cE '^[a-z]' || echo '?') pinned"
 
 ################################################################################
+# Pre-seed the Volatility 3 ISF kernel symbols so the OFFLINE (network-isolated)
+# volatility lane can resolve kernels — otherwise every plugin returns empty even
+# on a valid memory image. This drives the SAME hardened dfir/volatility container
+# with the ONE sanctioned network opt-in (Volatility's own ISF fetch) to warm
+# data_store/dependencies/volatility3-symbols; it does NOT download on the host.
+# Best-effort and self-skipping: on a fresh host (image not built yet, no memory
+# images staged, or offline) it just warns and returns 0, so it never blocks
+# setup. Re-run any time (or with --force): scripts/stage-volatility-symbols.sh
+"$SCRIPT_DIR/stage-volatility-symbols.sh" || true
+
+################################################################################
 echo ""
 echo "🎉 Setup complete!"
 echo ""

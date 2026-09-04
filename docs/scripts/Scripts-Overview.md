@@ -77,7 +77,8 @@ The analysis container images are catalogued in [Containers](/docs/Containers.md
 
 | Script | Description |
 |---|---|
-| `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
+| `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. Ends by best-effort staging the Volatility symbols (`stage-volatility-symbols.sh`). |
+| `stage-volatility-symbols.sh` | Warm the Volatility 3 ISF **kernel-symbol cache** (`data_store/dependencies/volatility3-symbols`) so the **offline** volatility lane resolves kernels — otherwise every plugin returns empty. Drives the hardened `dfir/volatility` container with the one sanctioned network opt-in (Volatility's own ISF fetch) over the staged memory images; no host download. Idempotent, non-fatal when offline, `--force` to re-warm. |
 | `save-docker-images.sh` | Save the built hardened `dfir/*` images (+ the pulled .NET runtime) as tarballs; `--load` / `--verify` restore them and assert the hardened inventory. |
 | `package-offline.sh` | Build ONE portable air-gap bundle: images, `dxdfir` CLI + deps as wheels, pinned collections, the repo, and `data_store/dependencies/` (YARA/Suricata/Hayabusa rulesets + binary, Volatility symbols, EvtxECmd) under a `MANIFEST.sha256`. |
 | `setup-offline.sh` | Set up from that bundle with zero network: manifest-verify everything, unpack the repo + detection dependencies, load images, install CLI/collections offline, finish with `dxdfir verify-images`. |
