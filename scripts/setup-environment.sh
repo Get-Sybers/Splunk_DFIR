@@ -346,6 +346,19 @@ $SUDO "$DXDFIR_VENV/bin/ansible-galaxy" collection install \
 echo "✅ Collections installed: $("$DXDFIR_VENV/bin/ansible-galaxy" collection list -p "$DXDFIR_COLLECTIONS" 2>/dev/null | grep -cE '^[a-z]' || echo '?') pinned"
 
 ################################################################################
+# Pre-seed the Volatility 3 ISF symbol packs so the OFFLINE (network-isolated)
+# volatility lane can resolve kernels — otherwise every plugin returns empty even
+# on a valid memory image. Host-side, pinned + sha256-verified fetch of the
+# Volatility Foundation's bulk packs (windows by default) into
+# data_store/dependencies/volatility3-symbols — the endorsed provisioning pattern
+# (see get_sybers_dfir.volatility_symbols / signatures/detectraptor.py), NOT a
+# container fetch (the hardened images can't do generic downloads). Best-effort
+# and self-skipping: already-staged or offline just warns and returns 0, so it
+# never blocks setup. Re-run any time (or with --force / --all):
+# scripts/stage-volatility-symbols.sh
+"$SCRIPT_DIR/stage-volatility-symbols.sh" || true
+
+################################################################################
 echo ""
 echo "🎉 Setup complete!"
 echo ""

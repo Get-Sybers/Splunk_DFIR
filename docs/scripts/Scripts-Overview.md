@@ -77,7 +77,8 @@ The analysis container images are catalogued in [Containers](/docs/Containers.md
 
 | Script | Description |
 |---|---|
-| `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. |
+| `setup-environment.sh` | Installs Docker and userland deps (distro-aware); image seeding split into `save-docker-images.sh`. Ends by best-effort staging the Volatility symbols (`stage-volatility-symbols.sh`). |
+| `stage-volatility-symbols.sh` | Stage the Volatility 3 ISF **symbol packs** into `data_store/dependencies/volatility3-symbols` so the **offline** volatility lane resolves kernels for **any** image — otherwise every plugin returns empty. Thin wrapper over the testable `get_sybers_dfir.volatility_symbols` helper: host-side, pinned URLs, sha256-verified against the Foundation's `SHA256SUMS`, zip-slip-guarded extraction (the endorsed fetch pattern — the hardened images can't do generic downloads). Windows by default (`--linux`/`--mac`/`--all` opt-in); idempotent, non-fatal offline, `--force` to re-fetch. |
 | `save-docker-images.sh` | Save the built hardened `dfir/*` images (+ the pulled .NET runtime) as tarballs; `--load` / `--verify` restore them and assert the hardened inventory. |
 | `package-offline.sh` | Build ONE portable air-gap bundle: images, `dxdfir` CLI + deps as wheels, pinned collections, the repo, and `data_store/dependencies/` (YARA/Suricata/Hayabusa rulesets + binary, Volatility symbols, EvtxECmd) under a `MANIFEST.sha256`. |
 | `setup-offline.sh` | Set up from that bundle with zero network: manifest-verify everything, unpack the repo + detection dependencies, load images, install CLI/collections offline, finish with `dxdfir verify-images`. |
