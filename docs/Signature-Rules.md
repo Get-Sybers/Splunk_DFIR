@@ -132,9 +132,13 @@ python3 -m get_sybers_dfir.signatures --only suricata \
     --output-dir data_store/processed/signatures --repo-root .
 ```
 
-To provision ET Open while online, run `suricata-update` (or download the ET Open
-tarball) into the directory yourself, then append your own rules to the one
-`suricata.rules` file.
+To provision ET Open while online, run the staging step — either
+`scripts/stage-detection-rules.sh`, `python3 -m get_sybers_dfir.signatures
+--fetch-only`, or a detection run with `--fetch` — which downloads ET Open and
+merges it into that one `suricata.rules` for you (the hardened `dfir/suricata`
+image strips `suricata-update`, so the fetch runs host-side, pinned, like the
+YARA/DetectRaptor fetch). Or drop your own `suricata.rules` in yourself; append
+any local rules to that single file.
 
 **Verify:** the lane reports the ruleset it chose (if it says it's using the
 image's bundled rules, your file wasn't found). Then check the per-PCAP EVE
@@ -240,3 +244,10 @@ extracted from a disk image via `--image-src`. Sigma rules live under
 `data_store/dependencies/hayabusa/rules/` (or `--hayabusa-rules`); detections are
 written to `<out-dir>/hayabusa/timeline.jsonl`. See
 [Scripts-Overview](/docs/scripts/Scripts-Overview.md#signature-detection-get_sybers_dfirsignatures).
+
+The Hayabusa binary and its bundled Sigma `rules/` are provisioned by the staging
+step — `scripts/stage-detection-rules.sh` (or `python3 -m
+get_sybers_dfir.signatures --fetch-only`, or a signatures run with `--fetch`)
+downloads the pinned, sha256-verified release into
+`data_store/dependencies/hayabusa/`. Drop your own binary/rules there to override
+(a binary already present suppresses the fetch).

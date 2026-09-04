@@ -318,6 +318,19 @@ done
 echo "✅ ansible on PATH: $(/usr/local/bin/ansible-playbook --version 2>/dev/null | head -1 || echo 'ansible-playbook')"
 
 ################################################################################
+# Stage the detection rule sets the `signatures` lane reads.
+#
+# suricata/yara/hayabusa detect against rules provisioned under
+# data_store/dependencies/; a fresh checkout ships only .gitkeep there, so the
+# lanes run clean but find nothing. Stage them now, while we are (presumably)
+# online, by driving the lanes' OWN pinned fetch (scripts/stage-detection-rules.sh
+# -> `python -m get_sybers_dfir.signatures --fetch-only`). Thin by design — no
+# downloading is reimplemented here. Best-effort: the script is idempotent, warns
+# (never fails) offline, and can be re-run later, so it must not abort setup.
+################################################################################
+"$SCRIPT_DIR/stage-detection-rules.sh" || true
+
+################################################################################
 # Install the collection's pinned Ansible dependencies (requirements.yml — never
 # :latest, never a branch). They go to a fixed shared path that the repo-root
 # ansible.cfg puts on collections_path, so every user's runs resolve the same

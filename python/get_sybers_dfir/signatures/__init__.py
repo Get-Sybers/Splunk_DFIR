@@ -83,3 +83,56 @@ def process(output_dir: str, lanes=LANES, *, repo_root: str, fetch: bool = False
         "failed": failed,
         "results": results,
     }
+
+
+def provision(repo_root: str, lanes=LANES, *, force: bool = False,
+              config: dict | None = None) -> dict:
+    """Provision (fetch) each lane's rule set into data_store/dependencies/ and
+    return a summary — the staging step (``--fetch-only`` /
+    ``scripts/stage-detection-rules.sh``), WITHOUT running detection.
+
+    Drives each lane's OWN pinned fetch: the DetectRaptor YARA provisioner, ET
+    Open for suricata, and the pinned Hayabusa release (binary + bundled Sigma
+    rules) for hayabusa — the same fetch the lanes' ``--fetch`` runs. Idempotent
+    (a lane whose rules are already present is left untouched; operator YARA rules
+    suppress the DetectRaptor fetch exactly as the yara lane does) and non-fatal (a
+    lane that cannot be provisioned — offline, hash mismatch — records an error and
+    the rest continue).
+    """
+    from . import detectraptor, hayabusa, suricata, yara
+
+    ds = os.path.join(repo_root, "data_store", "dependencies")
+    cfg = config or {}
+
+    def _yara() -> dict:
+        rules_dir = cfg.get("yara", {}).get("rules_dir") or os.path.join(ds, "yara-rules")
+        if not force and yara._rule_files(rules_dir):
+            return {"tool": "detectraptor", "skipped": True,
+                    "reason": "operator YARA rules present"}
+        return detectraptor.fetch(rules_dir, force=force)
+
+    def _suricata() -> dict:
+        rules_dir = cfg.get("suricata", {}).get("rules_dir") or os.path.join(ds, "suricata-rules")
+        return suricata.fetch(rules_dir, force=force)
+
+    def _hayabusa() -> dict:
+        hb_dir = cfg.get("hayabusa", {}).get("hb_dir") or os.path.join(ds, "hayabusa")
+        return hayabusa.fetch(hb_dir, force=force)
+
+    runners = {"yara": _yara, "suricata": _suricata, "hayabusa": _hayabusa}
+    results, provisioned, failed = {}, 0, 0
+    for lane in lanes:
+        try:
+            results[lane] = runners[lane]()
+            provisioned += 1
+        except Exception as exc:  # noqa: BLE001 — offline/hash errors are non-fatal per lane
+            results[lane] = {"lane": lane, "error": str(exc)}
+            failed += 1
+    return {
+        "tool": "signatures-provision",
+        "dependencies_dir": ds,
+        "lanes": list(lanes),
+        "provisioned": provisioned,
+        "failed": failed,
+        "results": results,
+    }
