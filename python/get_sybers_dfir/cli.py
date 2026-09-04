@@ -179,6 +179,27 @@ def _hash_and_report(repo: Path, name: str) -> None:
                 fg=typer.colors.BRIGHT_BLACK)
 
 
+def _identify_and_report(repo: Path, name: str) -> None:
+    """Identify the collection's raw evidence and print a one-line summary per item.
+
+    Best-effort: identification runs the dfir/yara + dfir/plaso images, so a docker
+    outage or a missing image is a WARNING, never fatal — it is a convenience layer
+    over an already-staged, already-hashed collection."""
+    from . import identify as _identify   # lazy: pulls in the yara lane helpers
+    try:
+        records = _identify.identify_collection(repo, name)
+    except Exception as exc:  # noqa: BLE001 — docker down / image absent must not break sort
+        typer.secho(f"⚠️  identification skipped: {exc}", fg=typer.colors.YELLOW)
+        return
+    if not records:
+        return
+    typer.secho(f"🔎 identified {len(records)} evidence item(s):", fg=typer.colors.BRIGHT_BLACK)
+    for r in records:
+        bits = [b for b in (r.get("format"), r.get("compression"),
+                            "+".join(r.get("filesystems") or []), r.get("os_family")) if b]
+        typer.echo(f"   {r['path']}  →  {', '.join(bits) or 'unrecognised'}")
+
+
 def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: bool,
                   extra_vars: list[str], scope_vars: list[str]) -> None:
     """Drive one lane's process role (preflight → process → verify). ``scope_vars``
@@ -508,6 +529,7 @@ def collection_register(
     typer.secho(f"✅ registered '{name}' — now tracked and logged.", fg=typer.colors.GREEN)
     if do_hash:
         _hash_and_report(repo, name)
+    _identify_and_report(repo, name)
 
 
 @collection_app.command("hash")
@@ -527,6 +549,27 @@ def collection_hash(
         typer.secho(f"no such collection '{name}'.", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
     _hash_and_report(repo, name)
+
+
+@collection_app.command("identify")
+def collection_identify(
+    name: str = typer.Argument(..., help="Collection to identify."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+) -> None:
+    """Identify each raw evidence item and record it in .collection.identity.json.
+
+    YARA (the dfir/yara lane) reads the header for container format, compression
+    and OS markers; dfVFS (dfir/plaso) adds the partition/filesystem detail on
+    disk/VM images. The record cues processors — a streamOptimized VMDK to
+    decompress, a Linux disk to skip the Windows-only zimmerman lane, a Windows
+    memory image to the right Volatility symbols. Raw evidence only.
+    """
+    repo = _repo_root(repo_root)
+    _valid_or_exit(name)
+    if not _collection.collection_dir(repo, name).is_dir():
+        typer.secho(f"no such collection '{name}'.", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    _identify_and_report(repo, name)
 
 
 @collection_app.command("log")
@@ -555,6 +598,7 @@ def collection_sort(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would move; move nothing."),
     no_register: bool = typer.Option(False, "--no-register", help="Sort an unregistered collection without registering it."),
     no_hash: bool = typer.Option(False, "--no-hash", help="Skip the hash manifest refresh after sorting."),
+    no_identify: bool = typer.Option(False, "--no-identify", help="Skip the evidence identification pass after sorting."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
     """Sort the data_store/raw/sort dropzone into a collection's lane subdirs by file type.
@@ -597,6 +641,8 @@ def collection_sort(
             typer.echo(f"   {fn}  ({why})")
     if not dry_run and res.moved and not no_hash and _collection.is_registered(repo, name):
         _hash_and_report(repo, name)
+    if not dry_run and res.moved and not no_identify and _collection.is_registered(repo, name):
+        _identify_and_report(repo, name)
 
 
 def _version_cb(value: bool) -> None:

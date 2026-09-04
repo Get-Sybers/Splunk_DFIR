@@ -72,6 +72,7 @@ _DROPZONE_REL = ("data_store", "raw", "sort")
 _MARKER = ".collection"
 _LOG = ".collection.log"
 _MANIFEST = ".collection.hashes"
+_IDENTITY = ".collection.identity.json"   # written by identify; never evidence
 
 
 # --------------------------------------------------------------- paths / naming
@@ -186,10 +187,11 @@ def _walk_files(root: Path):
 
 def evidence_files(root: Path) -> list[Path]:
     """Every evidence file under a collection, excluding ONLY the collection's own
-    control files (.collection, .collection.log, .collection.hashes). Dot-prefixed
-    EVIDENCE (.bash_history, .ssh/…) is included — it is real forensic data.
-    Symlinks are skipped and symlinked directories are not followed."""
-    control = {root / _MARKER, root / _LOG, root / _MANIFEST}
+    control files (.collection, .collection.log, .collection.hashes,
+    .collection.identity.json). Dot-prefixed EVIDENCE (.bash_history, .ssh/…) is
+    included — it is real forensic data. Symlinks are skipped and symlinked
+    directories are not followed."""
+    control = {root / _MARKER, root / _LOG, root / _MANIFEST, root / _IDENTITY}
     return sorted(p for p in _walk_files(root) if p not in control)
 
 
