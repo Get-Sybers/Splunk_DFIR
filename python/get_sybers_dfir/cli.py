@@ -68,6 +68,8 @@ class Pipeline(str, enum.Enum):
 
 
 class Backend(str, enum.Enum):
+    # Backends with collection-level deploy/ingest playbooks. Separate from
+    # Pipeline: process --pipeline sofelk remains the retiring delivery output mode.
     sofelk = "sofelk"
 
 
@@ -302,7 +304,7 @@ def deploy(
     ),
 ) -> None:
     """Deploy a supported analysis backend through the collection."""
-    _run_playbook(_repo_root(repo_root), "dfir-deploy-sofelk.yml", list(extra_var or []))
+    _run_playbook(_repo_root(repo_root), f"dfir-deploy-{backend.value}.yml", list(extra_var or []))
 
 
 @app.command()
@@ -318,7 +320,7 @@ def ingest(
     vars_ = list(extra_var or [])
     if force:
         vars_.append("dfir_ingest_sofelk_force=true")
-    _run_playbook(_repo_root(repo_root), "dfir-ingest-sofelk.yml", vars_)
+    _run_playbook(_repo_root(repo_root), f"dfir-ingest-{backend.value}.yml", vars_)
 
 
 @app.command()
