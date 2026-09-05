@@ -2,8 +2,8 @@
 # ==============================================================================
 # Save / load the DX_DFIR analysis images as tarballs for offline hosts.
 #
-# The runtime tool images (dfir/*) are BUILT in-repo
-# (`ansible-playbook playbooks/dfir-build-images.yml`), not pulled — so this
+# The runtime tool images (dxdfir/*) are BUILT in-repo
+# (`ansible-playbook playbooks/dxdfir-build-images.yml`), not pulled — so this
 # script `docker save`s the local builds. Only the one image that cannot be
 # built from source is pulled first: the stock .NET runtime for evtxecmd's
 # operator-supplied mode. (The Elastic-native analysis backend, docker/elastic,
@@ -15,7 +15,7 @@
 #
 # Usage:
 #   scripts/save-docker-images.sh              save every image to a tarball
-#   scripts/save-docker-images.sh --build      build the dfir/* images first, then save
+#   scripts/save-docker-images.sh --build      build the dxdfir/* images first, then save
 #   scripts/save-docker-images.sh --load       load every tarball in the image dir
 #   scripts/save-docker-images.sh --verify     load, then assert the hardened inventory
 #   scripts/save-docker-images.sh --list       show the images this manages
@@ -33,12 +33,12 @@ DOCKER_TAR_DIR="${DXDFIR_IMAGE_DIR:-$REPO_ROOT_DIR/data_store/docker_images}"
 
 # Runtime tool images — BUILT in-repo, never pulled.
 BUILT_IMAGES=(
-    "dfir/yara:latest"
-    "dfir/suricata:latest"
-    "dfir/zeek:latest"
-    "dfir/volatility:latest"
-    "dfir/plaso:latest"
-    "dfir/evtxecmd:latest"
+    "dxdfir/yara:latest"
+    "dxdfir/suricata:latest"
+    "dxdfir/zeek:latest"
+    "dxdfir/volatility:latest"
+    "dxdfir/plaso:latest"
+    "dxdfir/evtxecmd:latest"
 )
 # Unbuildable images — pulled from a registry (online side only).
 PULL_IMAGES=(
@@ -96,13 +96,13 @@ image_to_filename() { echo "$1" | tr '/' '_' | tr ':' '_'; }
 # The hardened-inventory guard, used by --verify after a load.
 verify_inventory() {
     local py="$REPO_ROOT_DIR/python"
-    if PYTHONPATH="$py" python3 -c "import get_sybers_dfir.images" 2>/dev/null; then
+    if PYTHONPATH="$py" python3 -c "import get_sybers_dxdfir.images" 2>/dev/null; then
         echo "🔒 Verifying the hardened image inventory..."
-        PYTHONPATH="$py" python3 -m get_sybers_dfir.images --audit >/dev/null \
+        PYTHONPATH="$py" python3 -m get_sybers_dxdfir.images --audit >/dev/null \
             && echo "✅ Inventory clean — all hardened tool images present, nothing unexpected." \
-            || die "Image inventory verification FAILED (see: python3 -m get_sybers_dfir.images --audit)."
+            || die "Image inventory verification FAILED (see: python3 -m get_sybers_dxdfir.images --audit)."
     else
-        echo "ℹ️  get_sybers_dfir not importable here; skipping the inventory guard (run 'dxdfir verify-images' after installing the CLI)."
+        echo "ℹ️  get_sybers_dxdfir not importable here; skipping the inventory guard (run 'dxdfir verify-images' after installing the CLI)."
     fi
 }
 
@@ -133,9 +133,9 @@ fi
 ################################################################################
 # MODE=save.
 if [[ "$BUILD_FIRST" -eq 1 ]]; then
-    echo "🐳 Building the hardened dfir/* images first..."
+    echo "🐳 Building the hardened dxdfir/* images first..."
     ( cd "$REPO_ROOT_DIR" && ansible-playbook \
-        ansible/collections/get_sybers.dfir/playbooks/dfir-build-images.yml \
+        ansible/collections/get_sybers.dxdfir/playbooks/dxdfir-build-images.yml \
         -i localhost, -c local ) || die "Image build failed."
 fi
 
@@ -147,7 +147,7 @@ failed=0
 # Built images: must already exist locally (never pulled).
 for image in "${BUILT_IMAGES[@]}"; do
     if ! $DOCKER_CMD image inspect "$image" >/dev/null 2>&1; then
-        echo "❌ $image is not built. Run: ansible-playbook playbooks/dfir-build-images.yml (or pass --build)"
+        echo "❌ $image is not built. Run: ansible-playbook playbooks/dxdfir-build-images.yml (or pass --build)"
         failed=$((failed + 1)); continue
     fi
     fn="$(image_to_filename "$image")"

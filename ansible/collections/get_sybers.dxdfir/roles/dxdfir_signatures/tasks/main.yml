@@ -1,0 +1,44 @@
+---
+# dxdfir_signatures: YARA / Suricata / Hayabusa detection lanes -> JSONL. The role
+# GROUPS; the playbook DECIDES. Idempotence (skip lanes whose output exists) lives
+# in the Python processor, not in a task's `when:`. This role asserts its own input
+# rules, then delegates the shared preflight + process skeleton to dxdfir_lane.
+
+- name: "signatures | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dxdfir_signatures_pipeline in ['elastic', 'sofelk']
+      - dxdxdfir_signatures_lanes | difference(['yara', 'suricata', 'hayabusa']) | length == 0
+    fail_msg: >-
+      dxdfir_signatures needs dxdfir_signatures_pipeline (elastic|sofelk); dxdxdfir_signatures_lanes
+      may only contain yara/suricata/hayabusa.
+    quiet: true
+  tags: [always]
+
+# role_path resolves to THIS role here — capture the lane-specific gate file so
+# dxdfir_lane includes signatures' output gate, not its own.
+- name: "signatures | resolve lane-specific task paths"
+  ansible.builtin.set_fact:
+    dxdfir_signatures_gate_extra: "{{ role_path }}/tasks/gate_extra.yml"
+  tags: [always]
+
+# Per-lane inputs (rules, pcaps, evtx, images) are optional — each lane notes and
+# skips when its inputs/tools are missing — so only the data_store anchor is
+# declared as a required input; the pipeline decision (elastic|sofelk) is carried
+# by the resolved dxdfir_signatures_out_dir default.
+- name: "signatures | run the shared tool-lane skeleton"
+  ansible.builtin.include_role:
+    name: dxdfir_lane
+  vars:
+    dxdfir_lane_name: signatures
+    dxdfir_lane_module: get_sybers_dxdfir.signatures
+    dxdfir_lane_python_path: "{{ dxdfir_signatures_python_path }}"
+    dxdfir_lane_images: ["dxdfir/yara:latest", "dxdfir/suricata:latest"]
+    dxdfir_lane_input_checks:
+      - name: data_store anchor
+        path: "{{ dxdfir_signatures_repo_root }}/data_store"
+    dxdfir_lane_argv: "{{ dxdfir_signatures_argv }}"
+    dxdfir_lane_verify_dir: "{{ dxdfir_signatures_out_dir }}"
+    dxdfir_lane_verify_glob: "*.jsonl"
+    dxdfir_lane_gate_extra: "{{ dxdfir_signatures_gate_extra }}"
+  tags: [always]

@@ -48,7 +48,7 @@ set -o pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-# Userland tools the pipeline shells out to. python3 runs the get_sybers_dfir
+# Userland tools the pipeline shells out to. python3 runs the get_sybers_dxdfir
 # package, unzip backs the velociraptor lane, tar backs the image tarballs
 # written by save-docker-images.sh, curl fetches sample fixtures.
 # ca-certificates and gnupg are needed to add the Docker repo itself.
@@ -236,7 +236,7 @@ confirm "Do you wish to proceed?" || { echo "Setup cancelled."; exit 1; }
 ################################################################################
 # Pull the git submodules — RECURSIVELY.
 #
-# The CAR lane (get_sybers_dfir.mitrecar) drives the vendored PIIAT-MitreCar
+# The CAR lane (get_sybers_dxdfir.mitrecar) drives the vendored PIIAT-MitreCar
 # engine in third_party/piiat-mitrecar, which reconstructs its object model LIVE
 # from ITS OWN pinned submodules (third_party/car, third_party/attack-datasources).
 # A plain `git submodule update --init` leaves those nested modules empty and the
@@ -279,7 +279,7 @@ fi
 # collection). ansible-core is a declared dependency, so this one install gives a
 # working `dxdfir process/ingest/deploy/detect`.
 #
-# --editable is REQUIRED, not a preference. get_sybers_dfir/mitrecar.py locates the
+# --editable is REQUIRED, not a preference. get_sybers_dxdfir/mitrecar.py locates the
 # vendored PIIAT-MitreCar engine RELATIVE TO ITS OWN FILE (_REPO_ROOT = three dirs
 # up from __file__ -> third_party/piiat-mitrecar). A plain copying install puts the
 # package under the venv's site-packages, three dirs up from which is .../lib/pythonX.Y
@@ -305,7 +305,7 @@ echo "✅ dxdfir installed: $(/usr/local/bin/dxdfir --version 2>/dev/null || ech
 
 # ansible-core (a declared dependency, installed with the CLI above) puts
 # ansible-playbook / ansible / ansible-galaxy in the SAME venv bin. dxdfir resolves
-# ansible-playbook from there itself, but a HUMAN — including the dfir-build-images
+# ansible-playbook from there itself, but a HUMAN — including the dxdfir-build-images
 # step this script prints at the end — needs them on PATH too, or `ansible-playbook
 # ...` is "command not found" on a fresh shell despite ansible being installed.
 # Expose them beside dxdfir, exactly as the CLI is exposed above.
@@ -327,7 +327,7 @@ echo "✅ ansible on PATH: $(/usr/local/bin/ansible-playbook --version 2>/dev/nu
 DXDFIR_COLLECTIONS="${DXDFIR_COLLECTIONS:-/opt/dxdfir/collections}"
 echo "📚 Installing pinned Ansible collections into $DXDFIR_COLLECTIONS ..."
 $SUDO "$DXDFIR_VENV/bin/ansible-galaxy" collection install \
-    -r "$REPO_ROOT_DIR/ansible/collections/get_sybers.dfir/requirements.yml" \
+    -r "$REPO_ROOT_DIR/ansible/collections/get_sybers.dxdfir/requirements.yml" \
     -p "$DXDFIR_COLLECTIONS" --force \
     || die "Failed to install the pinned Ansible collections (requirements.yml)."
 echo "✅ Collections installed: $("$DXDFIR_VENV/bin/ansible-galaxy" collection list -p "$DXDFIR_COLLECTIONS" 2>/dev/null | grep -cE '^[a-z]' || echo '?') pinned"
@@ -343,7 +343,7 @@ else
 fi
 echo ""
 echo "🐳 Build the hardened tool containers (everything the pipeline runs):"
-echo "     ansible-playbook ansible/collections/get_sybers.dfir/playbooks/dfir-build-images.yml"
+echo "     ansible-playbook ansible/collections/get_sybers.dxdfir/playbooks/dxdfir-build-images.yml"
 echo ""
 echo "📦 To pre-seed the analysis images as tarballs for an offline host, run:"
 echo "     scripts/save-docker-images.sh          (online host: pull + save)"

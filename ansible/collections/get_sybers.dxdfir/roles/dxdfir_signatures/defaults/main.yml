@@ -1,0 +1,45 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dxdfir_signatures_pipeline: elastic
+
+# Repo root is five levels up from this role
+# (roles/dxdfir_signatures -> get_sybers.dxdfir -> collections -> ansible -> repo).
+dxdfir_signatures_repo_root: "{{ role_path }}/../../../../.."
+
+dxdfir_signatures_elastic_out_dir: "{{ dxdfir_signatures_repo_root }}/data_store/processed/signatures"
+dxdfir_signatures_sofelk_out_dir: "{{ dxdfir_signatures_repo_root }}/data_store/processed/sofelk/signatures"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dxdfir_signatures_out_dir: "{{ dxdfir_signatures_elastic_out_dir if dxdfir_signatures_pipeline == 'elastic' else dxdfir_signatures_sofelk_out_dir }}"
+# Which detection lanes to run; empty = all (yara, suricata, hayabusa).
+dxdxdfir_signatures_lanes: []
+# Where the hayabusa lane stages disk-image EVTX extractions (empty => the evtx
+# processor's own stage, data_store/processed/windows_logs/_extracted_evtx —
+# images already staged by either lane are reused, never re-extracted).
+dxdfir_signatures_stage_dir: ""
+# Include Volume Shadow Copies when staging disk images for the hayabusa lane.
+dxdfir_signatures_vss: false
+# YARA sources to run (comma list of files,disk,memory); empty = all.
+dxdfir_signatures_yara_sources: ""
+# Per-pcap Suricata tuning file (INI template; empty => the processor's default,
+# data_store/dependencies/suricata-tuning.conf). Written as an editable template
+# on first run; while template-only or invalid, HOME_NET is auto-detected per
+# pcap and recorded into it. Tuning is reset per pcap — nothing carries over.
+dxdfir_signatures_suricata_tuning_file: ""
+# --fetch provisions rules/binaries when online (never in an air-gapped run).
+dxdfir_signatures_fetch: false
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dxdfir_signatures_python_path: "{{ dxdfir_signatures_repo_root }}/python"
+dxdfir_signatures_force: false
+
+# The processor command argv, handed to the shared dxdfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dxdfir_signatures_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dxdfir.signatures', '--output-dir', dxdfir_signatures_out_dir, '--repo-root', dxdfir_signatures_repo_root]
+  + (dxdxdfir_signatures_lanes | map('regex_replace', '^', '--only=') | list)
+  + (['--stage-dir', dxdfir_signatures_stage_dir] if dxdfir_signatures_stage_dir | length > 0 else [])
+  + (['--vss'] if dxdfir_signatures_vss | bool else [])
+  + (['--yara-sources', dxdfir_signatures_yara_sources] if dxdfir_signatures_yara_sources | length > 0 else [])
+  + (['--tuning-file', dxdfir_signatures_suricata_tuning_file] if dxdfir_signatures_suricata_tuning_file | length > 0 else [])
+  + (['--fetch'] if dxdfir_signatures_fetch | bool else [])
+  + (['--force'] if dxdfir_signatures_force | bool else []) }}

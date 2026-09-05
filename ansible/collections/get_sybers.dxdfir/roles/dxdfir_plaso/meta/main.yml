@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: dxdfir_plaso
+  namespace: get_sybers
+  author: Get-Sybers
+  description: >-
+    Process forensic disk images and VMware VM exports with Plaso (log2timeline +
+    psort) into enriched JSON Lines for the Elastic-native or SOF-ELK pipeline. Invokes the
+    get_sybers_dxdfir.plaso Python processor; one <host>.jsonl per image plus the
+    durable .plaso storage db.
+  company: Get-Sybers
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions: [bookworm, trixie]
+  galaxy_tags: [dfir, plaso, log2timeline, disk, timeline]
+
+dependencies: []

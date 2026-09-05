@@ -60,7 +60,7 @@ holds nothing, and `samples/` is now written the same way.
 ### DetectRaptor YARA content — fetched, not redistributed
 
 **This repository ships none of it.** The YARA lane's `--fetch`
-(`get_sybers_dfir/signatures/detectraptor.py`) downloads the YARA rulesets from
+(`get_sybers_dxdfir/signatures/detectraptor.py`) downloads the YARA rulesets from
 [mgreen27/DetectRaptor](https://github.com/mgreen27/DetectRaptor) — commit-pinned,
 sha256-verified — and merges them into
 `data_store/dependencies/yara-rules/detectraptor/detectraptor.yar`, which is
@@ -137,7 +137,7 @@ repository.**
 | [Plaso / log2timeline](https://github.com/log2timeline/plaso) | `log2timeline/plaso:latest` container | Apache-2.0 | None |
 | [Zeek](https://zeek.org/) | `zeek/zeek:latest` container | BSD-3-Clause | None |
 | [Elastic Stack](https://www.elastic.co/) (Elasticsearch, Kibana, Elastic Agent / Fleet Server, Filebeat) | `docker.elastic.co/*` images at a pinned `ELASTIC_VERSION` — **the analysis backend** (`docker/elastic/`) | [Elastic License 2.0](https://www.elastic.co/licensing/elastic-license) (default distribution; only the free Basic-tier features are enabled) | See below |
-| [EvtxECmd](https://github.com/EricZimmerman/evtx) | `get_sybers_dfir.evtx` runs `EvtxECmd.dll` in a .NET container — either the bundled `dfir/evtxecmd` image (`docker/evtxecmd`, fetches the release at build time) or an operator-supplied release | **MIT** | None — no commercial-use restriction |
+| [EvtxECmd](https://github.com/EricZimmerman/evtx) | `get_sybers_dxdfir.evtx` runs `EvtxECmd.dll` in a .NET container — either the bundled `dxdfir/evtxecmd` image (`docker/evtxecmd`, fetches the release at build time) or an operator-supplied release | **MIT** | None — no commercial-use restriction |
 | [Velociraptor](https://github.com/Velocidex/velociraptor) | Formerly: JSON output normalised by `dev-scripts/` (the lane was removed in 0.6.0) | AGPL-3.0 | None — output ingestion does not trigger AGPL |
 
 No tool binaries are vendored in this repository — every tool above is either
@@ -164,7 +164,7 @@ project enables only the free Basic-tier features
 your own casework; it restricts providing the software to third parties as a
 hosted or managed service and circumventing licence keys — read it if either
 is on the table for an engagement. The ES|QL / EQL detection rules, the
-CAR→ECS projection and the index templates under `python/get_sybers_dfir/`
+CAR→ECS projection and the index templates under `python/get_sybers_dxdfir/`
 are this project's own work under MIT.
 
 **Formerly invoked: the Azure Data Explorer Kusto emulator** (proprietary,

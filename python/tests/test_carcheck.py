@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from get_sybers_dfir import carcheck
+from get_sybers_dxdfir import carcheck
 
 
 def _write(car_dir, source, obj, rows):

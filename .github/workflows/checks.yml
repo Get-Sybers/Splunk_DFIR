@@ -57,8 +57,8 @@ jobs:
           # into the collection's project-local cache (gitignored).
           python -m pip install --quiet ansible-lint
           ansible-galaxy collection install --force \
-            -r ansible/collections/get_sybers.dfir/requirements.yml \
-            -p ansible/collections/get_sybers.dfir/.ansible/collections
+            -r ansible/collections/get_sybers.dxdfir/requirements.yml \
+            -p ansible/collections/get_sybers.dxdfir/.ansible/collections
           # The package's unit tests run inside the harness: install the
           # package (its declared deps — typer, PyYAML — are what the tests
           # import) and pytest.

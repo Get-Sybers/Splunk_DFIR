@@ -7,7 +7,7 @@
 #      evidence whose @timestamps lie years in the past — with no silent drop,
 #      re-stamp or age-out of old data;
 #   2. ES|QL LOOKUP JOIN against the car-detections lookup index (the wave-1
-#      contract under python/get_sybers_dfir/detect/rules/) flags logs-car.*
+#      contract under python/get_sybers_dxdfir/detect/rules/) flags logs-car.*
 #      rows in place — the tagged-evidence-line model — on Elasticsearch 9.4.3.
 #
 # Stands up NOTHING: docker/elastic (the Byakugan stack: security on, TLS, Basic

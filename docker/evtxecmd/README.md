@@ -1,7 +1,7 @@
-# `dfir/evtxecmd` image
+# `dxdfir/evtxecmd` image
 
 Eric Zimmerman's **EvtxECmd** (.NET build) and its `Maps/` baked onto an official
-`.NET` runtime image, so the [`dfir_evtx`](/ansible/collections/get_sybers.dfir/roles/dfir_evtx)
+`.NET` runtime image, so the [`dxdfir_evtx`](/ansible/collections/get_sybers.dxdfir/roles/dxdfir_evtx)
 role has **one pinnable image** to run instead of an operator hand-placing
 `EvtxECmd.dll` under `data_store/dependencies/evtxecmd/`.
 
@@ -11,7 +11,7 @@ the base is `mcr.microsoft.com/dotnet/runtime:9.0`.
 ## Build
 ```bash
 # from the repo root
-docker build -t dfir/evtxecmd:latest docker/evtxecmd
+docker build -t dxdfir/evtxecmd:latest docker/evtxecmd
 ```
 The build fetches the release from `EVTXECMD_URL` (default the net9 "latest" zip),
 flattens `EvtxECmd.dll` + `Maps/` into `/opt/evtxecmd` (the image `WORKDIR`, so
@@ -23,7 +23,7 @@ The default URL serves **latest**, so an unpinned build is not reproducible over
 time. Pass the expected checksum to fail loudly on drift:
 ```bash
 sha256=$(curl -fsSL https://download.ericzimmermanstools.com/net9/EvtxECmd.zip | sha256sum | cut -d' ' -f1)
-docker build -t dfir/evtxecmd:latest --build-arg EVTXECMD_SHA256="$sha256" docker/evtxecmd
+docker build -t dxdfir/evtxecmd:latest --build-arg EVTXECMD_SHA256="$sha256" docker/evtxecmd
 ```
 
 ### Build args
@@ -36,14 +36,14 @@ docker build -t dfir/evtxecmd:latest --build-arg EVTXECMD_SHA256="$sha256" docke
 ## Run
 The image sets no `ENTRYPOINT`: callers pass the full `dotnet …` command, identical
 to the operator-supplied path but with no `/evtxecmd` mount — which is what keeps the
-`get_sybers_dfir.evtx` processor's two modes one branch apart.
+`get_sybers_dxdfir.evtx` processor's two modes one branch apart.
 ```bash
-docker run --rm -v "$PWD/in:/input:ro" -v "$PWD/out:/output" dfir/evtxecmd:latest \
+docker run --rm -v "$PWD/in:/input:ro" -v "$PWD/out:/output" dxdfir/evtxecmd:latest \
   dotnet /opt/evtxecmd/EvtxECmd.dll -f /input/Security.evtx \
   --json /output --jsonf Security_EvtxECmd_Output.json \
   --xml  /output --xmlf  Security_EvtxECmd_Output.xml
 ```
-Normally you don't run it by hand — `dfir_evtx` (bundled mode, the default) does.
+Normally you don't run it by hand — `dxdfir_evtx` (bundled mode, the default) does.
 
 ## Updating `Maps/`
 The maps are frozen at build time (whatever the release shipped). Rebuild the image

@@ -1,0 +1,19 @@
+---
+- name: "images-preflight | docker daemon reachable"
+  ansible.builtin.command: docker version
+  register: dxdfir_images_docker
+  changed_when: false
+
+- name: "images-preflight | stat the shared hardening playbook"
+  ansible.builtin.stat:
+    path: "{{ dxdfir_images_context }}/hardening/harden.yml"
+  register: dxdfir_images_harden_stat
+
+- name: "images-preflight | the shared hardening playbook exists"
+  ansible.builtin.assert:
+    that:
+      - dxdfir_images_harden_stat.stat.exists
+    fail_msg: >-
+      {{ dxdfir_images_context }}/hardening/harden.yml is missing — every image
+      build runs it; nothing can be built without it.
+    quiet: true

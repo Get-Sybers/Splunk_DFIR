@@ -1,4 +1,4 @@
-"""Unit tests for get_sybers_dfir.collection — the raw/ auto-sorter.
+"""Unit tests for get_sybers_dxdfir.collection — the raw/ auto-sorter.
 
 Classification delegates to the processors' own magic-byte detectors, so these
 tests assert the delegation: content (magic) beats extension, a header-less
@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from get_sybers_dfir import collection
+from get_sybers_dxdfir import collection
 
 # EWF/E01 header "EVF\x09\x0d\x0a\xff\x00" + fields_start + segment 1 (uint16 LE).
 _EWF_MAGIC = b"\x45\x56\x46\x09\x0d\x0a\xff\x00\x01\x01\x00"

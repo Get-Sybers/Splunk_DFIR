@@ -1,7 +1,7 @@
 """Unit tests for the pure logic of the zeek processor (no docker needed)."""
 import struct
 
-from get_sybers_dfir import zeek
+from get_sybers_dxdfir import zeek
 
 
 def test_clean_name_folds_dirs_and_extension():

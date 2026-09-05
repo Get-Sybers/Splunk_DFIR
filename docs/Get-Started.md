@@ -21,7 +21,7 @@ dxdfir validate          # run the repo check harness
 
 The processors write the tree the CAR lane builds from (`--pipeline elastic`,
 the default); the retiring SOF-ELK path is `dxdfir process <source> --pipeline
-sofelk`, then the collection's `dfir-deploy-sofelk.yml` / `dfir-ingest-sofelk.yml`
+sofelk`, then the collection's `dxdfir-deploy-sofelk.yml` / `dxdfir-ingest-sofelk.yml`
 playbooks. `man dxdfir` for the manual.
 
 ### Step 1: Setup Environment
@@ -114,8 +114,8 @@ docker compose ps               # setup exits 0; the rest go (healthy)
 
 ### Step 8: Deliver evidence to the backend
 - Filebeat tails the tree mounted at `ELASTIC_INGEST_DIR` (`<type>/**/*.json[l]`)
-  and writes each line into the `logs-dfir.<type>-<namespace>` data stream. The
-  `dfir-ingest-sofelk.yml` playbook delivers a `processed/sofelk/<tool>/` tree
+  and writes each line into the `logs-dxdfir.<type>-<namespace>` data stream. The
+  `dxdfir-ingest-sofelk.yml` playbook delivers a `processed/sofelk/<tool>/` tree
   into a watch dir with a delivery ledger — point `ELASTIC_INGEST_DIR` at the same
   path (process with `--pipeline sofelk` for that tree, or mount your own
   `<type>/` tree).
@@ -127,12 +127,12 @@ docker compose ps               # setup exits 0; the rest go (healthy)
 
 ### Step 9: Detect and exchange
 - The detections are Elastic rules-as-code — one ES|QL or EQL rule file per
-  detection under [`python/get_sybers_dfir/detect/rules/`](/python/get_sybers_dfir/detect/rules/README.md),
-  validated by `python -m get_sybers_dfir.detect.rules_loader` — run by Elastic's
+  detection under [`python/get_sybers_dxdfir/detect/rules/`](/python/get_sybers_dxdfir/detect/rules/README.md),
+  validated by `python -m get_sybers_dxdfir.detect.rules_loader` — run by Elastic's
   Detection Engine on the stack above.
 - `dxdfir stix export` turns detection hits into STIX 2.1 sightings, and the
   `stix` sub-app carries the OpenCTI exchange (indicators in, sightings back);
-  see `dxdfir stix -h` and [python/get_sybers_dfir/stix/README.md](/python/get_sybers_dfir/stix/README.md).
+  see `dxdfir stix -h` and [python/get_sybers_dxdfir/stix/README.md](/python/get_sybers_dxdfir/stix/README.md).
 
 ---
 

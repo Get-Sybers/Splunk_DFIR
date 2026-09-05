@@ -22,12 +22,12 @@ on:
     - cron: "0 6 * * *"
   pull_request:
     paths:
-      - "python/get_sybers_dfir/evtx.py"
-      - "python/get_sybers_dfir/imageexport.py"
-      - "python/get_sybers_dfir/container.py"
-      - "python/get_sybers_dfir/images.py"
-      - "python/get_sybers_dfir/mitrecar.py"
-      - "python/get_sybers_dfir/carcheck.py"
+      - "python/get_sybers_dxdfir/evtx.py"
+      - "python/get_sybers_dxdfir/imageexport.py"
+      - "python/get_sybers_dxdfir/container.py"
+      - "python/get_sybers_dxdfir/images.py"
+      - "python/get_sybers_dxdfir/mitrecar.py"
+      - "python/get_sybers_dxdfir/carcheck.py"
       - "python/pyproject.toml"
       - "docker/evtxecmd/**"
       - "docker/hardening/**"
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # the CAR lane (get_sybers_dfir.mitrecar) reconstructs its model live
+          # the CAR lane (get_sybers_dxdfir.mitrecar) reconstructs its model live
           # from the nested car / attack-datasources submodules — check out
           # recursively so build-car (and the gate's action vocabulary) work.
           submodules: recursive
@@ -60,7 +60,7 @@ jobs:
           python-version: "3.11"
 
       # The smoke test drives the processors and the CAR lane directly
-      # (python -m get_sybers_dfir.<module> on PYTHONPATH=python). Installing
+      # (python -m get_sybers_dxdfir.<module> on PYTHONPATH=python). Installing
       # the package brings its declared dependencies (PyYAML for the engine's
       # model sources, typer for the CLI); nothing else is needed.
       - name: Install the dxdfir package
@@ -69,7 +69,7 @@ jobs:
       # The evtx lane runs EvtxECmd from the bundled image; build it once here
       # (the smoke test asserts its presence and fails loudly if absent).
       - name: Build the bundled EvtxECmd image
-        run: docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker
+        run: docker build -t dxdfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker
 
       - name: Run the pipeline smoke test
         run: ./tests/smoke-test.sh

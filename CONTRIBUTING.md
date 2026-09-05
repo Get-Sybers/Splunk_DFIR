@@ -120,6 +120,6 @@ GitHub and on any case-sensitive filesystem.
 ## Licensing of contributions
 
 By contributing you agree your work is licensed under the licence of the subtree
-you touch: **MIT** for the `python/` package and the `get_sybers.dfir` collection
+you touch: **MIT** for the `python/` package and the `get_sybers.dxdfir` collection
 (`ansible/collections/`), and **Apache-2.0** — the repository default — everywhere
 else. See the [Licence](/README.md#licence) section.

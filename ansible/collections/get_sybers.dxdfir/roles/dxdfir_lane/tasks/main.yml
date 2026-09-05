@@ -1,0 +1,19 @@
+---
+# dxdfir_lane: the shared "run a hardened DFIR tool lane" skeleton. A lane role
+# (dxdfir_zeek, dxdfir_plaso, dxdfir_evtx, dxdfir_volatility, dxdfir_signatures,
+# dxdfir_zimmerman) asserts its own input rules, builds its processor argv +
+# gate/verify vars, then delegates preflight + process here — so the ~72-line
+# skeleton that was copy-pasted six times lives once.
+#
+# The role GROUPS; the playbook DECIDES. Idempotence lives in each Python
+# processor, not in a task's `when:`.
+
+- name: "run preflight | {{ dxdfir_lane_name }}"
+  ansible.builtin.include_tasks:
+    file: preflight.yml
+    apply:
+      tags: [always]
+  tags: [always]
+
+- name: "run process | {{ dxdfir_lane_name }}"
+  ansible.builtin.include_tasks: process.yml

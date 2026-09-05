@@ -1,0 +1,120 @@
+---
+argument_specs:
+  main:
+    short_description: "Windows Event Logs (.evtx) -> EvtxECmd normalised JSON."
+    description:
+      - >-
+        Discovers .evtx under dxdfir_evtx_evtx_dir, runs EvtxECmd (in a container) per
+        log, and writes <base>_EvtxECmd_Output.json (+ .xml sidecar) grouped by the
+        source sub-dir (host). Idempotent: a log whose .json output already exists is
+        skipped.
+      - >-
+        EvtxECmd is supplied one of two ways (dxdfir_evtx_use_bundled_image): the
+        bundled dxdfir/evtxecmd image (docker/evtxecmd) that bakes the DLL + Maps/, or
+        an operator-supplied .NET release mounted into a stock runtime image.
+    options:
+      dxdfir_evtx_pipeline:
+        type: str
+        required: false
+        default: elastic
+        choices: [elastic, sofelk]
+        description: "Which backend to target; selects the output destination."
+      dxdfir_evtx_evtx_dir:
+        type: str
+        required: false
+        description: "Directory tree of loose .evtx logs to parse (recursed)."
+      dxdfir_evtx_image_src:
+        type: str
+        required: false
+        description: >-
+          Optional disk image (E01/raw/VMDK) or directory of images. When set,
+          WindowsEventLogs (.evtx) are extracted with log2timeline/plaso
+          image_export.py into dxdfir_evtx_stage_dir and parsed alongside
+          dxdfir_evtx_evtx_dir, so the lane can consume images directly.
+      dxdfir_evtx_stage_dir:
+        type: str
+        required: false
+        description: >-
+          Where dxdfir_evtx_image_src extractions land (default
+          data_store/processed/windows_logs/_extracted_evtx — one canonical stage
+          shared by both pipelines and the dxdfir_signatures hayabusa lane).
+          Per-image subdirs; an image already staged is not re-extracted.
+      dxdfir_evtx_vss:
+        type: bool
+        required: false
+        default: false
+        description: "Include Volume Shadow Copies when extracting from a disk image."
+      dxdfir_evtx_plaso_image:
+        type: str
+        required: false
+        default: "dxdfir/plaso:latest"
+        description: "Container providing image_export.py for disk-image extraction."
+      dxdfir_evtx_hayabusa:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Also run Hayabusa (Sigma detection) over the same .evtx this lane collects,
+          writing <out-dir>/hayabusa/timeline.jsonl. Enrichment: a missing binary or
+          zero detections is a note, not a failure.
+      dxdfir_evtx_hayabusa_dir:
+        type: str
+        required: false
+        description: "Dir holding the hayabusa binary (+ rules/)."
+      dxdfir_evtx_hayabusa_rules:
+        type: str
+        required: false
+        description: "Sigma rules dir for Hayabusa (empty => rules/ beside the binary)."
+      dxdfir_evtx_elastic_out_dir:
+        type: str
+        required: false
+        description: "Elastic-path output dir (default data_store/processed/windows_logs)."
+      dxdfir_evtx_sofelk_out_dir:
+        type: str
+        required: false
+        description: "SOF-ELK-path output dir (delivered into SOF-ELK by dxdfir_ingest_sofelk)."
+      dxdfir_evtx_out_dir:
+        type: str
+        required: false
+        description: >-
+          Resolved output base for the selected pipeline (defaults to the
+          elastic/sofelk out dir per dxdfir_evtx_pipeline); override to send
+          output to a custom location.
+      dxdfir_evtx_use_bundled_image:
+        type: bool
+        required: false
+        default: true
+        description: >-
+          Use the bundled dxdfir/evtxecmd image (DLL + Maps/ baked in). When false,
+          mount an operator-supplied release from dxdfir_evtx_evtxecmd_dir instead.
+      dxdfir_evtx_bundled_image:
+        type: str
+        required: false
+        default: "dxdfir/evtxecmd:latest"
+        description: "The bundled EvtxECmd image tag (built from docker/evtxecmd)."
+      dxdfir_evtx_image:
+        type: str
+        required: false
+        description: >-
+          The image the processor runs; defaults to the bundled or operator image
+          per dxdfir_evtx_use_bundled_image. Override to pin a digest.
+      dxdfir_evtx_evtxecmd_dir:
+        type: str
+        required: false
+        description: "Operator-supplied EvtxECmd .NET release dir (must hold EvtxECmd.dll)."
+      dxdfir_evtx_dotnet_image:
+        type: str
+        required: false
+        default: "mcr.microsoft.com/dotnet/runtime:9.0"
+        description: >-
+          Operator-supplied mode: the stock .NET runtime image the release mounts
+          into. Must be a .NET 9.x runtime (EvtxECmd's current build targets net9.0).
+      dxdfir_evtx_python_path:
+        type: str
+        required: false
+        description: "PYTHONPATH to the get_sybers_dxdfir package (in-repo/dev runs)."
+      dxdfir_evtx_force:
+        type: bool
+        required: false
+        default: false
+        description: "Reparse logs that already have output."

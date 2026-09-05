@@ -52,7 +52,7 @@ These are already known. You do not need to report them.
 - **Pulled images are version-pinned, not digest-pinned.** The Elastic images
   are pinned to `ELASTIC_VERSION`, the .NET runtime to a major version; there is
   no digest pinning and no signature verification. You are trusting the
-  registry at pull time. The `dfir/*` tool images are built in-repo.
+  registry at pull time. The `dxdfir/*` tool images are built in-repo.
 
 ## Handling evidence
 
@@ -63,7 +63,7 @@ legally significant.
 - The processing scripts mount evidence directories into containers. The VMware
   path is mounted read-only; treat everything else as potentially mutable.
 - The backend holds ingested evidence on localhost (named Docker volumes for the
-  Elastic stack), and the delivery role (`dfir_ingest_sofelk`) mirrors processed
+  Elastic stack), and the delivery role (`dxdfir_ingest_sofelk`) mirrors processed
   output into the watch directory the stack mounts — copies that outlive the
   run; purge them with the case.
 - Nothing here is written to preserve chain of custody. If your work needs to

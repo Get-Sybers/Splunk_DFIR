@@ -1,0 +1,49 @@
+---
+# dxdfir_volatility: memory images -> per-plugin JSONL. The role GROUPS; the playbook
+# DECIDES. Idempotence (skip plugins with valid output) lives in the Python
+# processor, not in a task's `when:`. This role asserts its own input rules, then
+# delegates the shared preflight + process skeleton to dxdfir_lane. Per-plugin
+# failures are NORMAL (Windows plugins error without symbols), so
+# dxdfir_lane_require_no_failures=false and the gate is purely "some plugin produced
+# output, or there were no images".
+
+- name: "volatility | assert inputs"
+  ansible.builtin.assert:
+    that:
+      - dxdfir_volatility_pipeline in ['elastic', 'sofelk']
+      - dxdfir_volatility_memory_dir | length > 0
+    fail_msg: >-
+      dxdfir_volatility needs dxdfir_volatility_pipeline (elastic|sofelk) and a non-empty
+      dxdfir_volatility_memory_dir.
+    quiet: true
+  tags: [always]
+
+# role_path resolves to THIS role here — capture the lane-specific preflight +
+# gate files so dxdfir_lane includes volatility's checks (PIIAT-Mem submodule) and
+# output gate, not its own.
+- name: "volatility | resolve lane-specific task paths"
+  ansible.builtin.set_fact:
+    dxdfir_volatility_preflight_extra: "{{ role_path }}/tasks/preflight_extra.yml"
+    dxdfir_volatility_gate_extra: "{{ role_path }}/tasks/gate_extra.yml"
+  tags: [always]
+
+# The pipeline decision (elastic|sofelk) is carried by the resolved
+# dxdfir_volatility_out_dir default — the shared tasks are pipeline-agnostic.
+- name: "volatility | run the shared tool-lane skeleton"
+  ansible.builtin.include_role:
+    name: dxdfir_lane
+  vars:
+    dxdfir_lane_name: volatility
+    dxdfir_lane_module: get_sybers_dxdfir.volatility
+    dxdfir_lane_python_path: "{{ dxdfir_volatility_python_path }}"
+    dxdfir_lane_images: ["{{ dxdfir_volatility_image }}"]
+    dxdfir_lane_input_checks:
+      - name: memory dir
+        path: "{{ dxdfir_volatility_memory_dir }}"
+    dxdfir_lane_argv: "{{ dxdfir_volatility_argv }}"
+    dxdfir_lane_verify_dir: "{{ dxdfir_volatility_out_dir }}"
+    dxdfir_lane_verify_glob: "*.jsonl"
+    dxdfir_lane_require_no_failures: false
+    dxdfir_lane_preflight_extra: "{{ dxdfir_volatility_preflight_extra }}"
+    dxdfir_lane_gate_extra: "{{ dxdfir_volatility_gate_extra }}"
+  tags: [always]

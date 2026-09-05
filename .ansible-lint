@@ -11,12 +11,12 @@ exclude_paths:
   # Vendored submodules (the CAR engine + MITRE's car / attack-datasources):
   # third-party YAML we neither own nor lint (matches the doc-link check).
   - third_party/
-  - ansible/collections/get_sybers.dfir/.ansible/
+  - ansible/collections/get_sybers.dxdfir/.ansible/
   # Elastic detection rules-as-code: these are rule DATA (ES|QL/EQL definitions
   # with long query lines), not ansible. ansible-lint auto-discovers the YAML
   # but has no business linting it — the rules have their own gate
   # (detect/rules_loader.py validation + tests/test_rules.py).
-  - python/get_sybers_dfir/detect/rules/
+  - python/get_sybers_dxdfir/detect/rules/
   # `pip install ./python` makes setuptools copy shipped package-data (the rule
   # YAML, cti templates, the STIX schema) into python/build/lib/. That build
   # output is generated, not source — the rules are already excluded at their

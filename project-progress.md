@@ -13,14 +13,14 @@ branch.
 ## Architecture (epics #45 / #46)
 
 The pipeline has been rebuilt as a three-layer stack: the **`dxdfir` CLI** →
-the **`get_sybers.dfir` Ansible collection** (one role per source) → the
-**`get_sybers_dfir` Python package**, writing the processed tree the CAR lane
+the **`get_sybers.dxdfir` Ansible collection** (one role per source) → the
+**`get_sybers_dxdfir` Python package**, writing the processed tree the CAR lane
 builds from (`--pipeline elastic`, the default) or the retiring SOF-ELK delivery
 tree (`--pipeline sofelk`). The analysis backend is the Elastic-native stack
 (`docker/elastic`); the Kusto/ADX emulator it replaced has been retired. The
 processing roles, the CLI, the CAR lane and both stacks exist on `dev`; the
 per-source `process-*.sh` scripts have been retired (removed) — their behaviour
-lives in the `get_sybers_dfir` processors. The tables below track the processing
+lives in the `get_sybers_dxdfir` processors. The tables below track the processing
 / CAR layer by source — see [How It Runs](/README.md#how-it-runs).
 
 A note on what the ticks mean, because the previous version of this board was
@@ -48,15 +48,15 @@ Elastic-native backend reads.
 |:--------------------------------------------------------------|:-------------:|:---------------|:------------:|:-------------:|
 | [Log2timeline](https://github.com/log2timeline/plaso)         | ✅            | json_line       | ✅ `log2timeline/jsonl/`           |     ✅ (`file`) |
 | [Zeek](https://zeek.org/)                                     | ✅            | json            | ✅ `zeek/<capture>/` (`conn` + all other logs) | ✅ (`flow`) |
-| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ `windows_logs/<host>/` (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
+| [WinEvent Logs](https://www.sans.org/white-papers/32949/) (EvtxECmd) | ✅ (bundled `dxdfir/evtxecmd` image; 103 real LoneWolf logs) | evtx → json     | ✅ `windows_logs/<host>/` (55,638 rows)           |     ✅ (`process`/`user_session`/`service`) |
 | [EZ-Tools](https://ericzimmerman.github.io/) (Zimmerman) artefacts | ✅ the zimmerman lane (`dxdfir process zimmerman`) | json / csv | ✅ `zimmerman/` | ✅ (`registry`/`flow`/`process`) |
 | [Volatility 3](https://github.com/volatilityfoundation/volatility3) | ✅ the volatility lane | json (per plugin) | ✅ `volatility/<image>/` | n/a (memory ≠ CAR dead-box object) |
 | [Log2timeline/Plaso](https://github.com/log2timeline/plaso) (disk images, all formats + VM) | ✅ the plaso lane | json_line (+ `.plaso` db) | ✅ `log2timeline/jsonl/`, one file per host | ✅ (`file`, `process` prefetch/amcache/cron, `user_session` utmp/ssh) |
 | Linux Logs (syslog / utmp / ssh, via Plaso)                   | ✅            | json_line       | ✅ via the plaso lane | ✅ (`user_session` utmp+ssh, `process` cron) |
 | [Sysmon](https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon) | ✅ (via EvtxECmd) | evtx → json | ✅ `windows_logs/<host>/` | ✅ (`driver`/`module`/`thread`, + `process`/`flow`/`registry`/`file`) |
-| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dfir.signatures` (yara lane) | json (matches) | ✅ `signatures/yara/` | ⏳ detection enrichment (follow-up) |
-| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dfir.signatures` (suricata lane) | json (EVE) | ✅ `signatures/suricata/` | ⏳ |
-| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ✅ `signatures/hayabusa/` | ⏳ |
+| [YARA](https://github.com/VirusTotal/yara) (files / mounted disk / memory) | ✅ `get_sybers_dxdfir.signatures` (yara lane) | json (matches) | ✅ `signatures/yara/` | ⏳ detection enrichment (follow-up) |
+| [Suricata](https://suricata.io/) (pcaps → EVE)                | ✅ `get_sybers_dxdfir.signatures` (suricata lane) | json (EVE) | ✅ `signatures/suricata/` | ⏳ |
+| [Hayabusa](https://github.com/Yamato-Security/hayabusa) (EVTX → Sigma) | ✅ `get_sybers_dxdfir.signatures` (hayabusa lane; also in the evtx lane) — validated 792 detections | json (Sigma) | ✅ `signatures/hayabusa/` | ⏳ |
 | [Syslog](https://syslog-ng.github.io)                         | ✅ (via Plaso) |                 |              |               |
 
 **CAR is materialized.** The engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each evidence
@@ -83,9 +83,9 @@ Things that are broken or unsafe right now.
   Elastic-native stack runs with security on, but Kibana is plain HTTP on the
   loopback interface and Filebeat writes as the superuser for now. The
   `127.0.0.1` bindings are the control; see [SECURITY.md](/SECURITY.md).
-- ~~**Raw EVTX processing is built but unverified.**~~ **Resolved.** The `dfir_evtx`
+- ~~**Raw EVTX processing is built but unverified.**~~ **Resolved.** The `dxdfir_evtx`
   role ran on **103 real event logs** carved from the LoneWolf image (bundled
-  `dfir/evtxecmd` image), 55,638 EvtxECmd rows, feeding the
+  `dxdfir/evtxecmd` image), 55,638 EvtxECmd rows, feeding the
   `user_session`/`process`/`service` CAR objects from real 4624/4688/7045.
 
 ---
@@ -140,8 +140,8 @@ Things that are broken or unsafe right now.
 
 ### Kusto/ADX retired — the Elastic-native path is the backend
 ✅ Removed the whole Azure Data Explorer emulator layer: `kusto/schema/`, the
-`dfir_deploy_adx` / `dfir_ingest_adx` / `dfir_detect_adx` roles and playbooks,
-`get_sybers_dfir.deploy`, the `get_sybers_dfir.ingest` package, the Kusto
+`dxdfir_deploy_adx` / `dxdfir_ingest_adx` / `dxdfir_detect_adx` roles and playbooks,
+`get_sybers_dxdfir.deploy`, the `get_sybers_dxdfir.ingest` package, the Kusto
 detection runner and registry, the `dxdfir deploy` / `ingest` / `detect` verbs,
 `docs/Kusto-Port.md` and the emulator's licensing notices. `--pipeline adx` is
 now `--pipeline elastic`. `dxdfir verify-car` and the smoke test assert the
@@ -161,11 +161,11 @@ every parser's event into a lowest-common-denominator schema and dropped the res
 regexes — cleaner and validated on **real** json output (dfrws Raspberry Pi,
 host `octopi`): `CarFile` 265k fs events, `CarProcess` cron (typed
 command/pid/user), `CarUserSession` utmp login/logout/boot **+ real SSH logins**.
-✅ **`dev-scripts/plaso/l2t_json_dfir.py` — a Plaso output module** that adds, from
+✅ **`dev-scripts/plaso/l2t_json_dxdfir.py` — a Plaso output module** that adds, from
 the `.plaso` db, on every event: `image_hostname` (the box's own name from
 system_configuration — consistent, unlike per-event GetHostname), `username`,
 `disk_id`, `volume_id`, `volume_offset`. The processor runs the two-step
-(`log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dfir`), naming output by
+(`log2timeline.py` → `.plaso` → `psort.py -o l2t_json_dxdfir`), naming output by
 hostname. The hostname/username half is upstreamed as
 [log2timeline/plaso#5194](https://github.com/log2timeline/plaso/pull/5194) (#41).
 ✅ Fixed a critical regression first: the processor had been left emitting
@@ -236,7 +236,7 @@ checks).
 Ansible, vendored ESCU lookups. History and the `deprecated` branch keep it.
 ✅ Consolidated the container lifecycle into a shared library and the ingest
 sources into a descriptor table (both since retired with the shell pipeline —
-the roles and `get_sybers_dfir` carry the behaviour).
+the roles and `get_sybers_dxdfir` carry the behaviour).
 
 ### Field Extractions
 

@@ -6,7 +6,7 @@
 # ships the /logstash/<type>/ dirs to Logstash on localhost:5044).
 #
 # SOF-ELK is normally distributed as a VM; this is a from-source container so the
-# dfir_deploy_sofelk role has a real image to run. The compose stack adds
+# dxdfir_deploy_sofelk role has a real image to run. The compose stack adds
 # Elasticsearch + Kibana around it.
 #
 # Build args:

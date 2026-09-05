@@ -5,7 +5,7 @@
 # Run this on an ONLINE host that can reach Docker Hub, PyPI and Ansible Galaxy.
 # It assembles ONE portable bundle containing everything the offline host needs:
 #
-#   images/       the hardened dfir/* tool images (built + docker-saved) plus the
+#   images/       the hardened dxdfir/* tool images (built + docker-saved) plus the
 #                 one unbuildable image (the .NET runtime), as tars
 #   wheels/       the dxdfir CLI and every Python dependency, as wheels
 #                 (pip download — installed offline with --no-index)
@@ -26,7 +26,7 @@
 # Usage:
 #   scripts/package-offline.sh [--out DIR] [--build] [--no-tar] [--no-images]
 #
-#   --build      (re)build the dfir/* images before saving (else they must exist)
+#   --build      (re)build the dxdfir/* images before saving (else they must exist)
 #   --fetch-rules provision the pinned DetectRaptor YARA set first if the rules
 #                dir is empty (online-side convenience for a fresh checkout)
 #   --no-tar     leave the staged bundle as a directory, don't compress it
@@ -98,7 +98,7 @@ $PIP download --dest "$STAGE/wheels" pip setuptools wheel >/dev/null 2>&1 || tru
 DEPS="$REPO/data_store/dependencies"
 if [[ "$DO_FETCH" -eq 1 ]]; then
     echo "🧲 Provisioning the pinned DetectRaptor YARA set (--fetch-rules) ..."
-    PYTHONPATH="$REPO/python" python3 -m get_sybers_dfir.signatures \
+    PYTHONPATH="$REPO/python" python3 -m get_sybers_dxdfir.signatures \
         --output-dir "$(mktemp -d)" --repo-root "$REPO" --only yara \
         --yara-sources files --fetch >/dev/null 2>&1 || true
 fi
@@ -115,7 +115,7 @@ fi
 
 # ---- 3. the pinned ansible collections ---------------------------------------
 echo "📚 Downloading the pinned ansible collections ..."
-REQS="$REPO/ansible/collections/get_sybers.dfir/requirements.yml"
+REQS="$REPO/ansible/collections/get_sybers.dxdfir/requirements.yml"
 if command -v ansible-galaxy >/dev/null 2>&1; then
     ansible-galaxy collection download -r "$REQS" -p "$STAGE/collections" >/dev/null \
         || die "ansible-galaxy collection download failed."

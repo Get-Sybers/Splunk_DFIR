@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from get_sybers_dfir import volatility as vol
+from get_sybers_dxdfir import volatility as vol
 
 # The conformance guard below shells the PIIAT-Mem CLI, so it needs the vendored
 # submodule checked out — skip (don't fail the suite) when it isn't, mirroring

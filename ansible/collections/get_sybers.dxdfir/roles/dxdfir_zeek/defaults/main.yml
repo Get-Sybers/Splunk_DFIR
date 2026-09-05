@@ -1,0 +1,25 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dxdfir_zeek_pipeline: elastic
+
+# Repo root is five levels up from this role
+# (roles/dxdfir_zeek -> get_sybers.dxdfir -> collections -> ansible -> repo).
+dxdfir_zeek_repo_root: "{{ role_path }}/../../../../.."
+
+dxdfir_zeek_pcap_dir: "{{ dxdfir_zeek_repo_root }}/data_store/raw/pcaps"
+dxdfir_zeek_elastic_out_dir: "{{ dxdfir_zeek_repo_root }}/data_store/processed/zeek"
+dxdfir_zeek_sofelk_out_dir: "{{ dxdfir_zeek_repo_root }}/data_store/processed/sofelk/zeek"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dxdfir_zeek_out_dir: "{{ dxdfir_zeek_elastic_out_dir if dxdfir_zeek_pipeline == 'elastic' else dxdfir_zeek_sofelk_out_dir }}"
+# The hardened in-repo image (build with playbooks/dxdfir-build-images.yml).
+dxdfir_zeek_image: "dxdfir/zeek:latest"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dxdfir_zeek_python_path: "{{ dxdfir_zeek_repo_root }}/python"
+dxdfir_zeek_force: false
+
+# The processor command argv, handed to the shared dxdfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dxdfir_zeek_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dxdfir.zeek', '--pcap-dir', dxdfir_zeek_pcap_dir, '--out-dir', dxdfir_zeek_out_dir, '--image', dxdfir_zeek_image]
+  + (['--force'] if dxdfir_zeek_force | bool else []) }}

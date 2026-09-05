@@ -13,7 +13,7 @@ built on top of them:
 2. **`LOOKUP JOIN` works.** An ES|QL query can `LOOKUP JOIN` the
    `car-detections` lookup index against `logs-car.*` and bring every CAR row a
    detection matched back stamped in place — the tagged-evidence-line model of
-   the [rules-as-code contract](/python/get_sybers_dfir/detect/rules/README.md)
+   the [rules-as-code contract](/python/get_sybers_dxdfir/detect/rules/README.md)
    — on Elasticsearch 9.4.3, Basic licence.
 
 The harness lives in [`tests/elastic-riskgate/`](/tests/elastic-riskgate/README.md).
@@ -52,7 +52,7 @@ Everything the run creates is namespaced **`riskgate`**: the data streams
 `logs-car.process-riskgate` and `logs-car.file-riskgate` and the lookup index
 `car-detections-riskgate`. The one shared object it writes is the contract's own
 `car-detections` index template, `PUT` verbatim from
-[`car-detections.index-template.json`](/python/get_sybers_dfir/detect/rules/car-detections/car-detections.index-template.json)
+[`car-detections.index-template.json`](/python/get_sybers_dxdfir/detect/rules/car-detections/car-detections.index-template.json)
 — idempotent, and exactly what the deploy step will do. Running the gate against
 a cluster holding a real case adds and removes only the `riskgate` objects.
 
@@ -76,7 +76,7 @@ Three rows in the lookup index, one per (detection, guid), `_id` =
 
 | `_id` | keys | `join_via` | what it stands for |
 |---|---|---|---|
-| `win-eventlog-cleared:{…3c01}` | `event.id` + `process.entity_id` | provenance | the ported EQL rule's 1102 hit on `logs-dfir.evtx-*`, resolved to the CAR guid |
+| `win-eventlog-cleared:{…3c01}` | `event.id` + `process.entity_id` | provenance | the ported EQL rule's 1102 hit on `logs-dxdfir.evtx-*`, resolved to the CAR guid |
 | `riskgate-wevtutil-clear:{…3c01}` | `event.id` + `process.entity_id` | direct | proof 1's own hit, as the sweep would write it |
 | `riskgate-evtx-modified:WS01-filestat-000ef2a1` | `event.id` only | direct | a file-level detection — no process key |
 
@@ -121,7 +121,7 @@ rules into Kibana is phase 2.
 
 The contract as data: `car-detections.index-template.json` (`index.mode:
 lookup`, strict mappings) and
-[`join-keys.yml`](/python/get_sybers_dfir/detect/rules/car-detections/join-keys.yml)
+[`join-keys.yml`](/python/get_sybers_dxdfir/detect/rules/car-detections/join-keys.yml)
 (`event.id` on every CAR object, `process.entity_id` for the process cascade).
 The gate PUTs the template verbatim, writes the three lookup rows and runs the
 joins.
@@ -273,7 +273,7 @@ documents (the writer must upsert by `<detection.id>:<event.id>`); fewer means
 ## What the gate does not prove
 
 Pushing rules into Kibana and running them through the Detection Engine (phase
-2), the native -> ECS ingest pipelines for `logs-dfir.*`, the sweep that writes
+2), the native -> ECS ingest pipelines for `logs-dxdfir.*`, the sweep that writes
 the lookup index, Fleet, performance at case scale (the fixture is four rows),
 or behaviour on any Elasticsearch other than the one it ran against. It proves
 the two assumptions the rest is built on, on the pinned stack, with a fixture

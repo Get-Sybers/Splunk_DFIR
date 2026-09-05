@@ -16,9 +16,9 @@ import pytest
 import yaml
 from typer.testing import CliRunner
 
-from get_sybers_dfir import cli
-from get_sybers_dfir.detect import rules_loader as rl
-from get_sybers_dfir.stix import attack_index, config, export, hits, objects, opencti
+from get_sybers_dxdfir import cli
+from get_sybers_dxdfir.detect import rules_loader as rl
+from get_sybers_dxdfir.stix import attack_index, config, export, hits, objects, opencti
 
 SCO_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -50,7 +50,7 @@ STAMPED = {
     "rule": {"id": "win-service-suspicious-path", "name": "Service installed from a suspicious path"},
     "threat": {"technique": {"id": ["T1543.003"], "name": ["Windows Service"]}},
     "detection": {"severity": "high", "run_id": "run-es-1", "detected_at": "2026-09-02T09:30:00Z",
-                  "source_index": "logs-dfir.evtx-case17"},
+                  "source_index": "logs-dxdfir.evtx-case17"},
     "file": {"name": "evil.exe", "hash": {"sha256": "a" * 64, "md5": "b" * 32}},
     "kibana": {"alert": {"uuid": "ignored-bookkeeping"}},
 }
@@ -74,13 +74,13 @@ def rules(tmp_path_factory):
     d = tmp_path_factory.mktemp("rules")
     _write_rule(d, "win-eventlog-cleared", query='any where event.code == "1102"', language="eql",
                 attack=["T1070.001"], tactics=["TA0005"], name="Windows event log cleared")
-    _write_rule(d, "sig-suricata-alert", query='FROM logs-dfir.suricata-* | WHERE suricata.eve.event_type == "alert"',
+    _write_rule(d, "sig-suricata-alert", query='FROM logs-dxdfir.suricata-* | WHERE suricata.eve.event_type == "alert"',
                 severity="medium", name="Suricata IDS alert")
-    _write_rule(d, "win-service-suspicious-path", query='FROM logs-dfir.evtx-* | WHERE event.code == "7045"',
+    _write_rule(d, "win-service-suspicious-path", query='FROM logs-dxdfir.evtx-* | WHERE event.code == "7045"',
                 attack=["T1543.003"], created="2026-09-01", updated="2026-09-02",
                 name="Service installed from a suspicious path")
     _write_rule(d, "vol-malfind-injection", query=None, status="stub")
-    _write_rule(d, "undated-rule", query="FROM logs-dfir.x-* | LIMIT 1", created=None)
+    _write_rule(d, "undated-rule", query="FROM logs-dxdfir.x-* | LIMIT 1", created=None)
     return export.rules_source(str(d))
 
 
@@ -249,12 +249,12 @@ def test_rule_dates_version_the_indicator(tmp_path):
     # STIX 2.1 §3.2: created never changes; §3.6: only a material change bumps modified
     d = tmp_path / "rules"
     d.mkdir()
-    _write_rule(d, "win-eventlog-cleared", query="FROM logs-dfir.evtx-* | LIMIT 1", created="2026-08-01",
+    _write_rule(d, "win-eventlog-cleared", query="FROM logs-dxdfir.evtx-* | LIMIT 1", created="2026-08-01",
                 updated="2026-08-15T10:00:00Z")
     first = _one(_bundle(export.rules_source(str(d)), ENVELOPE), "indicator")
     assert (first["created"], first["valid_from"], first["modified"]) == \
         ("2026-08-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z", "2026-08-15T10:00:00.000Z")
-    _write_rule(d, "win-eventlog-cleared", query="FROM logs-dfir.evtx-* | LIMIT 2", created="2026-08-01",
+    _write_rule(d, "win-eventlog-cleared", query="FROM logs-dxdfir.evtx-* | LIMIT 2", created="2026-08-01",
                 updated="2026-09-01")
     second = _one(_bundle(export.rules_source(str(d)), ENVELOPE), "indicator")
     assert second["id"] == first["id"] and second["created"] == first["created"]
@@ -313,7 +313,7 @@ def test_connection_and_file_are_separate_observations(rules):
     assert set(network["object_refs"]) == {nt["id"], nt["src_ref"], nt["dst_ref"]}
     s = _one(bundle, "sighting")
     assert set(s["observed_data_refs"]) == {x["id"] for x in ods.values()}
-    assert _ext(s)["car_guid"] == "car-guid-123" and _ext(s)["source"] == "logs-dfir.evtx-case17"
+    assert _ext(s)["car_guid"] == "car-guid-123" and _ext(s)["source"] == "logs-dxdfir.evtx-case17"
     assert "details" not in _ext(s) and "entity" not in _ext(s)                 # raw evidence is not exported
 
 
@@ -368,7 +368,7 @@ def test_elastic_stamped_line_is_read(rules):
     assert h.detection_id == "win-service-suspicious-path"
     assert h.attack_ids == ["T1543.003"] and h.technique_names == {"T1543.003": "Windows Service"}
     assert (h.host, h.entity, h.severity, h.run_id) == ("PC2", "PC2", "high", "run-es-1")
-    assert h.car_guid == "car-guid-123" and h.source == "logs-dfir.evtx-case17"
+    assert h.car_guid == "car-guid-123" and h.source == "logs-dxdfir.evtx-case17"
     assert h.file_name == "evil.exe" and h.file_hashes == {"MD5": "b" * 32, "SHA-256": "a" * 64}
     assert h.timestamp == "2026-08-31T12:00:00.000Z" and h.detected_at == "2026-09-02T09:30:00.000Z"
     assert "kibana.alert.uuid" not in h.details and h.details["event.code"] == "7045"
@@ -412,9 +412,9 @@ def test_read_hits_accepts_jsonl_array_and_search_response(tmp_path):
     assert len(found) == 1 and report["skipped"] == 1
     search = tmp_path / "search.json"
     search.write_text(json.dumps({"took": 1, "hits": {"total": {"value": 1}, "hits": [
-        {"_index": "logs-dfir.evtx-case17", "_id": "abc", "_source": STAMPED}]}}))
+        {"_index": "logs-dxdfir.evtx-case17", "_id": "abc", "_source": STAMPED}]}}))
     found, _ = hits.read_hits(str(search))
-    assert len(found) == 1 and found[0].source == "logs-dfir.evtx-case17"
+    assert len(found) == 1 and found[0].source == "logs-dxdfir.evtx-case17"
     bundle = tmp_path / "bundle.json"
     bundle.write_text(json.dumps({"type": "bundle", "id": "bundle--x", "objects": []}))
     with pytest.raises(ValueError):
@@ -444,17 +444,17 @@ def test_every_shipped_ported_rule_exports_and_stubs_are_skipped():
 
 def test_stack_version_default_matches_the_deployed_stack():
     # pattern_version = the Elastic stack the rules run on (STIX 2.1 §4.7); one pin, ansible's
-    defaults = yaml.safe_load((REPO / "ansible/collections/get_sybers.dfir/roles/dfir_deploy_sofelk/defaults/main.yml")
+    defaults = yaml.safe_load((REPO / "ansible/collections/get_sybers.dxdfir/roles/dxdfir_deploy_sofelk/defaults/main.yml")
                               .read_text())
-    assert defaults["dfir_deploy_sofelk_elastic_version"] == config.DEFAULT_STACK_VERSION
+    assert defaults["dxdfir_deploy_sofelk_elastic_version"] == config.DEFAULT_STACK_VERSION
     assert set(export.TRUST_GROUP_PATTERN_TYPES) >= {"esql", "eql", "kuery"}
     assert not set(export.TRUST_GROUP_PATTERN_TYPES) & set(export.PATTERN_TYPE_OV)
-    readme = (REPO / "python/get_sybers_dfir/stix/README.md").read_text()
+    readme = (REPO / "python/get_sybers_dxdfir/stix/README.md").read_text()
     assert "pattern_version" in readme and "pattern-type-ov" in readme      # BP §8.1: documented trust-group values
 
 
 def test_extension_schema_covers_everything_emitted(rules):
-    schema = json.loads((REPO / "python/get_sybers_dfir/stix/extension/dxdfir-extension.schema.json").read_text())
+    schema = json.loads((REPO / "python/get_sybers_dxdfir/stix/extension/dxdfir-extension.schema.json").read_text())
     assert schema["$id"] == objects.EXTENSION_SCHEMA_URL and objects.EXTENSION_ID in schema["description"]
     assert schema["additionalProperties"] is False and schema["properties"]["extension_type"] == {"const": "property-extension"}
     bundle = _bundle(rules, ENVELOPE, SURICATA, STAMPED)

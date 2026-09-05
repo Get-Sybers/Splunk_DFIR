@@ -1,24 +1,24 @@
 ## Find Your Way Around
 
 The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives the
-**`get_sybers.dfir` Ansible collection** (orchestration), which invokes the
-**`get_sybers_dfir` Python package** (the per-item processing).
+**`get_sybers.dxdfir` Ansible collection** (orchestration), which invokes the
+**`get_sybers_dxdfir` Python package** (the per-item processing).
 
 ```
   $DX_DFIR
-    └── python/                                       # get_sybers_dfir package + the dxdfir CLI — the front-end
-    │   └── get_sybers_dfir/                          # processors (zeek/plaso/volatility/evtx/zimmerman/signatures), the CAR lane (mitrecar, carcheck), stix/, cli.py
+    └── python/                                       # get_sybers_dxdfir package + the dxdfir CLI — the front-end
+    │   └── get_sybers_dxdfir/                          # processors (zeek/plaso/volatility/evtx/zimmerman/signatures), the CAR lane (mitrecar, carcheck), stix/, cli.py
     │   │   └── detect/rules/                         # the Elastic detection rules-as-code (ES|QL / EQL, one YAML per rule)
     │   └── man/                                      # dxdfir.1 man page
     │   └── tests/                                    # pytest unit tests (pure logic, no Docker)
     │
-    └── ansible/collections/get_sybers.dfir/         # the Ansible collection — orchestration
-    │   └── roles/                                    # one role per source + dfir_images + the SOF-ELK deploy/deliver roles
-    │   └── playbooks/                                # dfir-process-* / dfir-build-images / dfir-deploy-sofelk / dfir-ingest-sofelk
+    └── ansible/collections/get_sybers.dxdfir/         # the Ansible collection — orchestration
+    │   └── roles/                                    # one role per source + dxdfir_images + the SOF-ELK deploy/deliver roles
+    │   └── playbooks/                                # dxdfir-process-* / dxdfir-build-images / dxdfir-deploy-sofelk / dxdfir-ingest-sofelk
     │
     └── scripts/                                      # Host provisioning: setup, image save/load, the offline bundle (bash)
     │
-    └── docker/                                       # Container builds — the hardened dfir/* tool images, Byakugan's Elastic-native stack (elastic/), the retiring SOF-ELK stack (sof-elk/)
+    └── docker/                                       # Container builds — the hardened dxdfir/* tool images, Byakugan's Elastic-native stack (elastic/), the retiring SOF-ELK stack (sof-elk/)
     │
     └── dev-scripts/                                  # Experimental/one-off helpers, unsupported (e.g. the Plaso output module)
     │
@@ -80,12 +80,12 @@ The pipeline is a three-layer design: the **`dxdfir` CLI** (the verbs) drives th
             └── car/
             │   └── <source>/                         # the materialised CAR: car.db + superset.db + car_<object>.jsonl (+ car_relationships.jsonl)
             │
-            └── sofelk/<tool>/                        # --pipeline sofelk output, delivered by dfir-ingest-sofelk.yml
+            └── sofelk/<tool>/                        # --pipeline sofelk output, delivered by dxdfir-ingest-sofelk.yml
 ```
 
 The Splunk-era tree (`splunk/` with its eight apps, and a since-removed
 in-container provisioning `ansible/` — **unrelated to today's
-`get_sybers.dfir` collection** under `ansible/collections/`) was retired when
+`get_sybers.dxdfir` collection** under `ansible/collections/`) was retired when
 the SIEM moved to the Kusto emulator (itself since retired in favour of the
 Elastic-native stack), and the KAPE automation (`processed/kape/`, the two
 PowerShell scripts) was removed in favour of the hardened EZ-tool containers.

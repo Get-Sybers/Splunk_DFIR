@@ -2,8 +2,8 @@
 import json
 import os
 
-from get_sybers_dfir import signatures
-from get_sybers_dfir.signatures import hayabusa, suricata, yara
+from get_sybers_dxdfir import signatures
+from get_sybers_dxdfir.signatures import hayabusa, suricata, yara
 
 
 # ---- shared helpers --------------------------------------------------------
@@ -55,7 +55,7 @@ def test_yara_run_never_writes_into_rules_dir(tmp_path):
     res = yara.run(output_dir=str(tmp_path / "out"), repo_root=str(tmp_path),
                    sources=("files",), rules_dir=str(rules),
                    files_target=str(tmp_path / "does_not_exist"))
-    assert set(os.listdir(rules)) == before   # no _dfir_index.yar left behind
+    assert set(os.listdir(rules)) == before   # no _dxdfir_index.yar left behind
     assert res["lane"] == "yara"
 
 
@@ -194,7 +194,7 @@ def test_process_no_rules_no_pcaps_is_clean(tmp_path):
 
 
 # ---- Suricata tuning (HOME_NET / --set), all pure ---------------------------
-from get_sybers_dfir.signatures import suricata
+from get_sybers_dxdfir.signatures import suricata
 
 
 def test_derive_home_net_picks_observed_private_supernets():
@@ -250,7 +250,7 @@ def test_collect_ips_from_eve_stream():
 
 
 # ---- Hayabusa in the evtx pipeline (no-binary note path) --------------------
-from get_sybers_dfir import evtx
+from get_sybers_dxdfir import evtx
 
 
 def test_evtx_run_hayabusa_notes_missing_binary(tmp_path):
@@ -609,7 +609,7 @@ def test_derive_vars_scope_excludes_wrong_side():
 
 # ---- tool-image inventory guard --------------------------------------------
 def test_check_config_flags_root_and_missing_label():
-    from get_sybers_dfir import images
+    from get_sybers_dxdfir import images
     assert images.check_config(None) == ["image not present"]
     assert images.check_config({"User": "0:0", "Labels": {}})  # root + no label -> problems
     good = {"User": "2000:2000", "Labels": {"com.get-sybers.hardened": "true"}}
@@ -618,43 +618,43 @@ def test_check_config_flags_root_and_missing_label():
         {"User": "", "Labels": {"com.get-sybers.hardened": "true"}}))
 
 
-def test_require_refuses_unknown_dfir_image(monkeypatch):
-    from get_sybers_dfir import images
-    # a non-dfir image is out of scope, never inspected
+def test_require_refuses_unknown_dxdfir_image(monkeypatch):
+    from get_sybers_dxdfir import images
+    # a non-dxdfir image is out of scope, never inspected
     monkeypatch.setattr(images, "_inspect", lambda i: (_ for _ in ()).throw(AssertionError("inspected")))
     images.require("mcr.microsoft.com/dotnet/runtime:9.0")
-    # an unknown dfir/* repo is refused before inspection
+    # an unknown dxdfir/* repo is refused before inspection
     import pytest
     with pytest.raises(RuntimeError, match="not a known DX_DFIR tool image"):
-        images.require("dfir/evil:latest")
+        images.require("dxdfir/evil:latest")
 
 
 def test_require_refuses_unhardened_known_image(monkeypatch):
-    from get_sybers_dfir import images
+    from get_sybers_dxdfir import images
     monkeypatch.setattr(images, "_inspect",
                         lambda i: {"User": "0:0", "Labels": {}})
     import pytest
     with pytest.raises(RuntimeError, match="not hardened"):
-        images.require("dfir/zeek:latest")
+        images.require("dxdfir/zeek:latest")
 
 
 def test_require_passes_hardened_known_image(monkeypatch):
-    from get_sybers_dfir import images
+    from get_sybers_dxdfir import images
     monkeypatch.setattr(images, "_inspect",
                         lambda i: {"User": "2000:2000",
                                    "Labels": {"com.get-sybers.hardened": "true"}})
-    images.require("dfir/zeek:latest")   # no raise
+    images.require("dxdfir/zeek:latest")   # no raise
 
 
 def test_audit_flags_unexpected_and_missing(monkeypatch):
-    from get_sybers_dfir import images
+    from get_sybers_dxdfir import images
     hardened = {"User": "2000:2000", "Labels": {"com.get-sybers.hardened": "true"}}
     monkeypatch.setattr(images, "_inspect", lambda i: hardened)
     # host has all expected + a rogue dfir image + an allowed non-tool one
-    monkeypatch.setattr(images, "_list_dfir_images",
+    monkeypatch.setattr(images, "_list_dxdfir_images",
                         lambda: list(images.HARDENED_IMAGES)
-                        + ["dfir/rogue:latest", "dfir/sof-elk:test"])
+                        + ["dxdfir/rogue:latest", "dxdfir/sof-elk:test"])
     result = images.audit()
     assert not result["ok"]
-    assert any("dfir/rogue" in v and "unexpected" in v for v in result["violations"])
+    assert any("dxdfir/rogue" in v and "unexpected" in v for v in result["violations"])
     assert not any("sof-elk" in v for v in result["violations"])   # allow-listed

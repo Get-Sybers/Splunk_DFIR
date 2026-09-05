@@ -1,0 +1,26 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_out: /tmp/dxdfir_plaso_molecule/out
+  tasks:
+    - name: "molecule-verify | find the dxdfir_plaso_produced enriched JSONL"
+      ansible.builtin.find:
+        paths: "{{ molecule_out }}/jsonl"
+        patterns: "*.jsonl"
+      register: dxdfir_plaso_produced
+
+    - name: "molecule-verify | find the durable .plaso storage db"
+      ansible.builtin.find:
+        paths: "{{ molecule_out }}/plaso"
+        patterns: "*.plaso"
+      register: dxdfir_plaso_dbs
+
+    - name: "molecule-verify | assert a timeline and its .plaso db exist"
+      ansible.builtin.assert:
+        that:
+          - dxdfir_plaso_produced.matched | int > 0
+          - dxdfir_plaso_dbs.matched | int > 0
+        fail_msg: "no <host>.jsonl and/or .plaso db dxdfir_plaso_produced from the sample image"
+        quiet: true

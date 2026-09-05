@@ -6,10 +6,10 @@ from unittest import mock
 
 from typer.testing import CliRunner
 
-from get_sybers_dfir import cli
+from get_sybers_dxdfir import cli
 
 runner = CliRunner()
-_COLLECTION = "ansible/collections/get_sybers.dfir"
+_COLLECTION = "ansible/collections/get_sybers.dxdfir"
 
 
 def _fake_repo(tmp_path: Path) -> Path:
@@ -17,14 +17,14 @@ def _fake_repo(tmp_path: Path) -> Path:
     (tmp_path / _COLLECTION / "playbooks").mkdir(parents=True)
     (tmp_path / _COLLECTION / "roles").mkdir(parents=True)
     for src in ("zeek", "evtx", "volatility", "plaso"):
-        (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
+        (tmp_path / _COLLECTION / "playbooks" / f"dxdfir-process-{src}.yml").write_text("---\n")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "run-checks.sh").write_text("#!/bin/bash\n")
     return tmp_path
 
 
 def test_version():
-    from get_sybers_dfir import __version__
+    from get_sybers_dxdfir import __version__
     r = runner.invoke(cli.app, ["--version"])
     assert r.exit_code == 0
     # assert against the package version so a bump doesn't require touching this test
@@ -49,15 +49,15 @@ def test_process_builds_playbook_command(tmp_path):
             mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, [
             "process", "zeek", "--pipeline", "elastic", "--force",
-            "--repo-root", str(repo), "-e", "dfir_zeek_pcap_dir=/x",
+            "--repo-root", str(repo), "-e", "dxdfir_zeek_pcap_dir=/x",
         ])
     assert r.exit_code == 0, r.stdout
     cmd = m.call_args.args[0]
     assert cmd[0] == "ansible-playbook"
-    assert str(repo / _COLLECTION / "playbooks" / "dfir-process-zeek.yml") in cmd
-    assert "dfir_zeek_pipeline=elastic" in cmd
-    assert "dfir_zeek_force=true" in cmd
-    assert "dfir_zeek_pcap_dir=/x" in cmd
+    assert str(repo / _COLLECTION / "playbooks" / "dxdfir-process-zeek.yml") in cmd
+    assert "dxdfir_zeek_pipeline=elastic" in cmd
+    assert "dxdfir_zeek_force=true" in cmd
+    assert "dxdfir_zeek_pcap_dir=/x" in cmd
     # role path is exported so the collection resolves without install
     env = m.call_args.kwargs["env"]
     assert env["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
@@ -69,7 +69,7 @@ def test_process_defaults_to_the_elastic_pipeline(tmp_path):
             mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
         r = runner.invoke(cli.app, ["process", "zeek", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
-    assert "dfir_zeek_pipeline=elastic" in m.call_args.args[0]
+    assert "dxdfir_zeek_pipeline=elastic" in m.call_args.args[0]
 
 
 def test_process_rejects_the_retired_adx_pipeline(tmp_path):
@@ -93,7 +93,7 @@ def test_failing_command_propagates_exit_code(tmp_path):
 
 
 def test_verify_car_defaults_to_the_processed_car_tree(tmp_path):
-    from get_sybers_dfir import carcheck
+    from get_sybers_dxdfir import carcheck
     repo = _fake_repo(tmp_path)
     with mock.patch.object(carcheck, "main", return_value=0) as m:
         r = runner.invoke(cli.app, ["verify-car", "--repo-root", str(repo)])
@@ -106,7 +106,7 @@ def test_verify_car_defaults_to_the_processed_car_tree(tmp_path):
 
 
 def test_build_car_batch_defaults_to_processed_tree_and_rebuild(tmp_path):
-    from get_sybers_dfir import mitrecar
+    from get_sybers_dxdfir import mitrecar
     repo = _fake_repo(tmp_path)
     fake = subprocess.CompletedProcess([], 0, stdout="[]\n", stderr="")
     with mock.patch.object(mitrecar, "run", return_value=fake) as m:
@@ -119,7 +119,7 @@ def test_build_car_batch_defaults_to_processed_tree_and_rebuild(tmp_path):
 
 
 def test_build_car_single_source_passes_in_out_host(tmp_path):
-    from get_sybers_dfir import mitrecar
+    from get_sybers_dxdfir import mitrecar
     fake = subprocess.CompletedProcess([], 0, stdout="{}\n", stderr="")
     with mock.patch.object(mitrecar, "run", return_value=fake) as m:
         r = runner.invoke(cli.app, ["build-car", "--in", "/x/a.jsonl", "--out", "/y", "--host", "H"])

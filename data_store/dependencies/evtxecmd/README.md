@@ -1,13 +1,13 @@
 # EvtxECmd
 
-> **You usually don't need this directory.** The `dfir_evtx` role defaults to the
-> **bundled** [`dfir/evtxecmd`](/docker/evtxecmd) image, which bakes `EvtxECmd.dll`
-> + `Maps/` for you — `docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker`. This
+> **You usually don't need this directory.** The `dxdfir_evtx` role defaults to the
+> **bundled** [`dxdfir/evtxecmd`](/docker/evtxecmd) image, which bakes `EvtxECmd.dll`
+> + `Maps/` for you — `docker build -t dxdfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker`. This
 > dir is the **operator-supplied** fallback, used only when you run with
-> `dfir_evtx_use_bundled_image=false`.
+> `dxdfir_evtx_use_bundled_image=false`.
 
 Extract the published EvtxECmd release here for the operator-supplied path. The
-`get_sybers_dfir.evtx` processor mounts it read-only into a stock .NET runtime
+`get_sybers_dxdfir.evtx` processor mounts it read-only into a stock .NET runtime
 container to turn raw `.evtx` into normalised JSON.
 
 ## Get it

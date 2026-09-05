@@ -50,25 +50,25 @@ docker compose up -d                            # Elasticsearch + Kibana + Fleet
 ```
 
 Kibana is at `http://127.0.0.1:5601`. Filebeat ships the delivered evidence tree
-(`<type>/**/*.json[l]`, the layout `dfir-ingest-sofelk.yml` delivers) into
-`logs-dfir.<type>-*` data streams — see [docker/elastic/README.md](/docker/elastic/README.md).
+(`<type>/**/*.json[l]`, the layout `dxdfir-ingest-sofelk.yml` delivers) into
+`logs-dxdfir.<type>-*` data streams — see [docker/elastic/README.md](/docker/elastic/README.md).
 The CAR→ECS projection into `logs-car.*` and ES|QL `LOOKUP JOIN` flagging against
 the `car-detections` lookup index are proven by the Phase-0
 [risk gate](/docs/riskgate.md); the detection rules are data under
-[`python/get_sybers_dfir/detect/rules/`](/python/get_sybers_dfir/detect/rules/README.md),
+[`python/get_sybers_dxdfir/detect/rules/`](/python/get_sybers_dxdfir/detect/rules/README.md),
 and `dxdfir stix export` turns their hits into STIX 2.1 sightings. `dxdfir --help`
 lists every command (`man dxdfir` for the manual).
 
 ## How it runs
 <a name="how-it-runs"></a>
 
-A three-layer stack — the **`dxdfir` CLI** → the **`get_sybers.dfir` Ansible
-collection** (one role per source, one action per task) → the **`get_sybers_dfir`
+A three-layer stack — the **`dxdfir` CLI** → the **`get_sybers.dxdfir` Ansible
+collection** (one role per source, one action per task) → the **`get_sybers_dxdfir`
 Python package** — writing the processed tree the CAR lane builds from
 (`--pipeline elastic`, the default) or the retiring SOF-ELK delivery tree
 (`--pipeline sofelk`). Each source runs as `dxdfir process <source>` (driving the
-matching `dfir_<source>` role); processors are also runnable as
-`python -m get_sybers_dfir.<source>`.
+matching `dxdfir_<source>` role); processors are also runnable as
+`python -m get_sybers_dxdfir.<source>`.
 
 ## What it produces
 
@@ -109,7 +109,7 @@ the author's corpus. The Elastic-side assumptions (evidence-time detection runs,
 ## Docs
 
 - [Get started](/docs/Get-Started.md) · [Directory structure](/docs/Dir-Structure.md)
-- [The Elastic-native stack](/docker/elastic/README.md) · [Phase-0 risk gate](/docs/riskgate.md) · [detection rules-as-code](/python/get_sybers_dfir/detect/rules/README.md)
+- [The Elastic-native stack](/docker/elastic/README.md) · [Phase-0 risk gate](/docs/riskgate.md) · [detection rules-as-code](/python/get_sybers_dxdfir/detect/rules/README.md)
 - [CAR pipeline](/docs/CAR-Pipeline.md) · [extraction rules](/docs/CAR-Extraction-Rules.md) · [relations](/docs/CAR-Relations.md)
 - [Task board](/project-progress.md) · [Contributing](/CONTRIBUTING.md) · [Security](/SECURITY.md)
 
@@ -122,8 +122,8 @@ the author's corpus. The Elastic-side assumptions (evidence-time detection runs,
 Apache-2.0 at the repository root (see [LICENSE](/LICENSE)) — matched to the
 vendored `car_data_model.json` from [MITRE CAR](https://github.com/mitre-attack/car).
 The pipeline code is offered under the more permissive **MIT** licence as
-self-contained components: the `get_sybers_dfir` package + `dxdfir` CLI
-(`python/`) and the `get_sybers.dfir` collection (`ansible/collections/`); each
+self-contained components: the `get_sybers_dxdfir` package + `dxdfir` CLI
+(`python/`) and the `get_sybers.dxdfir` collection (`ansible/collections/`); each
 subtree carries its own declared licence. Third-party tool obligations that fall
 on *you* are in [THIRD_PARTY_NOTICES.md](/THIRD_PARTY_NOTICES.md); Apache-2.0 §4
 attribution is in [NOTICE](/NOTICE).

@@ -1,0 +1,75 @@
+# Byakugan Elastic detection rule (rules-as-code). Model: ./README.md
+id: vol-malfind-injection
+name: Injected / unbacked executable memory (Volatility malfind)
+status: stub
+severity: high
+attack: [T1055]
+tactics: [TA0005, TA0004]
+created: "2026-09-02"
+updated: "2026-09-02"
+language: esql
+index: [logs-dxdfir.volatility-*]
+query: null
+# One hit per process per memory image; the raw regions stay in the lane. The
+# aggregate shape of the KQL (summarize by SourceFile, Proc, Pid) carries over
+# as STATS BY; make_set() is VALUES().
+todo:
+  query: |
+    FROM logs-dxdfir.volatility-*
+    | WHERE volatility.plugin == "windows.malfind"
+    | STATS regions = COUNT(*),
+            protections = VALUES(volatility.protection)
+          BY file.path, process.name, process.pid
+    | EVAL rule.id = "vol-malfind-injection",
+           rule.name = "Injected / unbacked executable memory (Volatility malfind)",
+           event.risk_score = 73.0,
+           threat.framework = "MITRE ATT&CK",
+           threat.tactic.id = MV_APPEND("TA0005", "TA0004"),
+           threat.tactic.name = MV_APPEND("Defense Evasion", "Privilege Escalation"),
+           threat.technique.id = "T1055",
+           threat.technique.name = "Process Injection"
+    | LIMIT 1000
+  blockers:
+    - "VALUES() (the make_set() port) is technical preview in ES|QL — pin the stack version before promoting, or drop the protections column"
+    - "Volatility has no Elastic integration: the volatility.plugin / volatility.protection / process.* / file.path (memory image) projection of the lane's {Plugin, SourceFile, Record} rows is an ingest-pipeline contract still to be written"
+evidence:
+  shape: aggregate
+  stamped_by: query
+  fields:
+    - file.path
+    - process.name
+    - process.pid
+    - regions
+    - protections
+    - rule.id
+    - rule.name
+    - event.risk_score
+    - threat.framework
+    - threat.tactic.id
+    - threat.tactic.name
+    - threat.technique.id
+    - threat.technique.name
+car_join:
+  key: process.entity_id
+  via: provenance
+  provenance: [file.path, process.pid]
+fields:
+  - {ecs: volatility.plugin, native: Plugin}
+  - {ecs: file.path, native: SourceFile (the memory image)}
+  - {ecs: process.name, native: Record.Process}
+  - {ecs: process.pid, native: Record.PID}
+  - {ecs: volatility.protection, native: Record.Protection}
+source:
+  registry: vol-malfind-injection
+  kind: kusto
+  kql: |
+    database("memory").VolatilityJson
+    | where Plugin == "windows.malfind"
+    | extend Proc = tostring(Record.Process), Pid = tolong(Record.PID)
+    | summarize Regions = count(),
+                Protections = make_set(tostring(Record.Protection), 10)
+              by SourceFile, Proc, Pid
+    | project Timestamp = datetime(null),
+              Entity = strcat(Proc, " (pid ", tostring(Pid), ")"),
+              Details = pack("MemoryImage", SourceFile, "Regions", Regions,
+                             "Protections", Protections)

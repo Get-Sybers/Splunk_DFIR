@@ -1,8 +1,8 @@
 # Byakugan shipper — Filebeat replaces SOF-ELK's Logstash.
 #
 # Tails the delivered evidence tree mounted at /ingest (<type>/**/*.json[l], the
-# layout dfir_ingest_sofelk already produces) and writes each line straight into
-# an Elastic data stream, logs-dfir.<type>-<namespace>, over the secured
+# layout dxdfir_ingest_sofelk already produces) and writes each line straight into
+# an Elastic data stream, logs-dxdfir.<type>-<namespace>, over the secured
 # Elasticsearch API. No Logstash filters: native -> ECS normalisation is
 # Elastic-native too (ingest pipelines on the data streams — a later phase).
 
@@ -37,6 +37,6 @@ output.elasticsearch:
   username: "${ELASTICSEARCH_USERNAME:elastic}"
   password: "${ELASTICSEARCH_PASSWORD}"
   ssl.certificate_authorities: ["/certs/ca/ca.crt"]
-  index: "logs-dfir.%{[labels.type]:misc}-${DFIR_NAMESPACE:default}"
+  index: "logs-dxdfir.%{[labels.type]:misc}-${DFIR_NAMESPACE:default}"
 
 logging.level: info

@@ -3,17 +3,17 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "get-sybers-dfir"
+name = "get-sybers-dxdfir"
 version = "0.6.0"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 dependencies = [
     "typer>=0.12",
-    # The CLI drives the get_sybers.dfir collection with ansible-playbook, so it
+    # The CLI drives the get_sybers.dxdfir collection with ansible-playbook, so it
     # ships with the package — installing the CLI installs a working ansible-playbook.
     "ansible-core>=2.16",
-    # The collection's docker-driving roles (dfir_images builds the tool images,
-    # dfir_deploy_sofelk runs compose) use community.docker, whose modules import
+    # The collection's docker-driving roles (dxdfir_images builds the tool images,
+    # dxdfir_deploy_sofelk runs compose) use community.docker, whose modules import
     # the Python docker SDK (requests + docker); the ansible-playbook this package
     # installs must be able to run them, on a clean install and from the offline
     # wheel bundle alike.
@@ -22,20 +22,20 @@ dependencies = [
     # The zimmerman lane renders its own plaso yaml_filter_file (image_export.py
     # has no named forensic-artifact-definitions entry for the EZ-Tools set).
     # Already a transitive dependency of ansible-core; declared directly since
-    # get_sybers_dfir now imports it itself.
+    # get_sybers_dxdfir now imports it itself.
     "PyYAML>=6.0",
 ]
 
 [project.scripts]
 # `dxdfir` front-end (Typer). The processors also run standalone via
-# `python -m get_sybers_dfir.<source>`.
-dxdfir = "get_sybers_dfir.cli:app"
+# `python -m get_sybers_dxdfir.<source>`.
+dxdfir = "get_sybers_dxdfir.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["get_sybers_dfir*"]
+include = ["get_sybers_dxdfir*"]
 
 [tool.setuptools.package-data]
 # Data the package reads at run time: the rules-as-code and their templates,
 # the cti-* template + pattern mapping, the ATT&CK index and the STIX
 # extension schema.
-get_sybers_dfir = ["**/*.yml", "**/*.yaml", "**/*.json", "**/*.md"]
+get_sybers_dxdfir = ["**/*.yml", "**/*.yaml", "**/*.json", "**/*.md"]

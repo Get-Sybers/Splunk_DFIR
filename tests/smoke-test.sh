@@ -12,9 +12,9 @@
 #
 #   process pinned Sysmon .evtx through the real evtx lane (EvtxECmd) ->
 #   normalise the output into materialised CAR (the vendored PIIAT-MitreCar
-#   engine, via get_sybers_dfir.mitrecar) -> assert each Sysmon-sourced CAR
+#   engine, via get_sybers_dxdfir.mitrecar) -> assert each Sysmon-sourced CAR
 #   object has rows AND its EvtxPayload-derived fields are populated with the
-#   expected values -> run the verify-car gate (get_sybers_dfir.carcheck) over
+#   expected values -> run the verify-car gate (get_sybers_dxdfir.carcheck) over
 #   the same tree.
 #
 # Fixtures: the `sysmon-attack-samples` group in dev-scripts/samples-manifest.tsv
@@ -47,8 +47,8 @@ fail() { FAIL=$((FAIL+1)); echo "    ✗ $1"; }
 die()  { echo "❌ $*" >&2; exit 1; }
 section() { echo; echo "── $1"; }
 
-# In-repo run: the get_sybers_dfir package is under python/ (a deployed install
-# would already be importable). Mirrors dfir_evtx_python_path in the role.
+# In-repo run: the get_sybers_dxdfir package is under python/ (a deployed install
+# would already be importable). Mirrors dxdfir_evtx_python_path in the role.
 export PYTHONPATH="$REPO_ROOT/python${PYTHONPATH:+:$PYTHONPATH}"
 
 cleanup() {
@@ -66,12 +66,12 @@ trap cleanup EXIT
 # Rows of car_<object>.jsonl (across every source under $CAR_DIR) with that
 # car_action (or any), every listed field populated, and — when given — the
 # needle somewhere in the field's value. Reads the tree through the framework's
-# own loader (get_sybers_dfir.carcheck), so this test and the gate agree on what
+# own loader (get_sybers_dxdfir.carcheck), so this test and the gate agree on what
 # a row is.
 car_count() {
     python3 - "$CAR_DIR" "$1" "$2" "$3" "$4" <<'PY'
 import sys
-from get_sybers_dfir.carcheck import empty, load_rows
+from get_sybers_dxdfir.carcheck import empty, load_rows
 car_dir, obj, action, fields, contains = sys.argv[1:6]
 want = [] if fields == "-" else [f for f in fields.split(",") if f]
 field, _, needle = ("", "", "") if contains == "-" else contains.partition("=")
@@ -104,12 +104,12 @@ section "Preflight (fail loudly — never skip)"
 command -v docker >/dev/null 2>&1 || die "docker not found. This test RUNS the pipeline; it cannot be skipped."
 docker info >/dev/null 2>&1 || die "docker daemon not reachable."
 command -v python3 >/dev/null 2>&1 || die "python3 not found."
-docker image inspect dfir/evtxecmd:latest >/dev/null 2>&1 \
-    || die "image dfir/evtxecmd:latest missing — build it: docker build -t dfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker"
+docker image inspect dxdfir/evtxecmd:latest >/dev/null 2>&1 \
+    || die "image dxdfir/evtxecmd:latest missing — build it: docker build -t dxdfir/evtxecmd:latest -f docker/evtxecmd/Dockerfile docker"
 # The CAR lane reconstructs its model from the engine's nested submodules.
-python3 -c 'import sys; from get_sybers_dfir import mitrecar; sys.exit(0 if mitrecar._model_sources_present() else 1)' 2>/dev/null \
+python3 -c 'import sys; from get_sybers_dxdfir import mitrecar; sys.exit(0 if mitrecar._model_sources_present() else 1)' 2>/dev/null \
     || die "PIIAT-MitreCar's model sources are missing — run: git submodule update --init --recursive third_party/piiat-mitrecar"
-pass "docker, python3, dfir/evtxecmd:latest and the vendored CAR engine present"
+pass "docker, python3, dxdfir/evtxecmd:latest and the vendored CAR engine present"
 
 # =============================================================================
 section "Fixtures (sha256-pinned Sysmon .evtx)"
@@ -126,7 +126,7 @@ pass "$n_fix Sysmon .evtx fixtures present and verified"
 
 # =============================================================================
 section "Process fixtures through the real evtx lane (EvtxECmd)"
-summary="$(python3 -m get_sybers_dfir.evtx --evtx-dir "$FIXTURE_DIR" --out-dir "$OUT_DIR" 2>"$LOG_DIR/evtx.err")"
+summary="$(python3 -m get_sybers_dxdfir.evtx --evtx-dir "$FIXTURE_DIR" --out-dir "$OUT_DIR" 2>"$LOG_DIR/evtx.err")"
 processed="$(printf '%s' "$summary" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("processed",0))' 2>/dev/null)"
 if ! [[ "$processed" =~ ^[0-9]+$ ]] || (( processed == 0 )); then
     tail -20 "$LOG_DIR/evtx.err" >&2
@@ -140,7 +140,7 @@ pass "EvtxECmd processed $processed log(s)"
 # materialised CAR every sink reads. Extraction happens in the engine; this is
 # the real CAR path.
 section "Normalise to materialised CAR (car_<object>.jsonl)"
-if ! python3 -m get_sybers_dfir.mitrecar --in "$OUT_DIR" --out "$CAR_DIR/windows_logs_sysmon" >"$LOG_DIR/car.out" 2>"$LOG_DIR/car.err"; then
+if ! python3 -m get_sybers_dxdfir.mitrecar --in "$OUT_DIR" --out "$CAR_DIR/windows_logs_sysmon" >"$LOG_DIR/car.out" 2>"$LOG_DIR/car.err"; then
     tail -20 "$LOG_DIR/car.err" >&2
     die "CAR normalise (build-car) failed."
 fi
@@ -177,8 +177,8 @@ assert_has relationships -        source_guid,target_guid -                     
 # =============================================================================
 # The same tree through the promotion gate: populated, value-sane, traceable,
 # car_action in the engine model's vocabulary.
-section "The verify-car gate over the same tree (get_sybers_dfir.carcheck)"
-if python3 -m get_sybers_dfir.carcheck --car-dir "$CAR_DIR" >"$LOG_DIR/gate.out" 2>&1; then
+section "The verify-car gate over the same tree (get_sybers_dxdfir.carcheck)"
+if python3 -m get_sybers_dxdfir.carcheck --car-dir "$CAR_DIR" >"$LOG_DIR/gate.out" 2>&1; then
     pass "verify-car: $(grep -oE 'passed: +[0-9]+' "$LOG_DIR/gate.out" | head -1 | tr -s ' '), no failures"
 else
     grep -E '✗|❌|not loadable|no materialised CAR' "$LOG_DIR/gate.out" >&2 || tail -20 "$LOG_DIR/gate.out" >&2

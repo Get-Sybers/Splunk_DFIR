@@ -5,22 +5,22 @@
 # Runs the collection's molecule scenarios inside a purpose-built container
 # (python + molecule + a STATIC docker CLI), so molecule never has to be
 # installed on the host. The scenarios use the delegated driver: the role under
-# test runs its tool containers (the hardened dfir/* images — build them first
-# with playbooks/dfir-build-images.yml,
+# test runs its tool containers (the hardened dxdfir/* images — build them first
+# with playbooks/dxdfir-build-images.yml,
 # ...) against the HOST docker daemon through the mounted socket. For that to
 # work, the repo and /tmp are mounted at IDENTICAL paths inside the molecule
 # container — every bind path the role hands the daemon must be valid on the
 # host.
 #
 #   ./tests/run-molecule.sh                  run the default scenario set
-#   ./tests/run-molecule.sh dfir_zeek ...    run specific roles only
+#   ./tests/run-molecule.sh dxdfir_zeek ...    run specific roles only
 #
 # Operator-supplied fixtures (large/binary; not shipped) come from env vars —
 # a scenario whose fixture is absent is SKIPPED with a note, not failed:
-#   MOLECULE_SAMPLE_EVTX      .evtx log            (dfir_evtx)
-#   MOLECULE_EVTXECMD_DIR     EvtxECmd release dir (dfir_evtx)
-#   MOLECULE_SAMPLE_IMAGE     raw/E01 disk image   (dfir_plaso)
-#   MOLECULE_SAMPLE_MEMORY    memory image         (dfir_volatility)
+#   MOLECULE_SAMPLE_EVTX      .evtx log            (dxdfir_evtx)
+#   MOLECULE_EVTXECMD_DIR     EvtxECmd release dir (dxdfir_evtx)
+#   MOLECULE_SAMPLE_IMAGE     raw/E01 disk image   (dxdfir_plaso)
+#   MOLECULE_SAMPLE_MEMORY    memory image         (dxdfir_volatility)
 #
 # Exit code is non-zero if any executed scenario fails, so this can gate CI
 # (on a runner with the docker socket and the tool images available).
@@ -29,13 +29,13 @@ set -o pipefail
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 REPO_ROOT="$(realpath "$SCRIPT_DIR/..")"
-ROLES_DIR="$REPO_ROOT/ansible/collections/get_sybers.dfir/roles"
-IMAGE="${MOLECULE_IMAGE:-dfir/molecule:latest}"
+ROLES_DIR="$REPO_ROOT/ansible/collections/get_sybers.dxdfir/roles"
+IMAGE="${MOLECULE_IMAGE:-dxdfir/molecule:latest}"
 
-# Roles whose scenarios validate real behaviour. dfir_velociraptor's scenario
+# Roles whose scenarios validate real behaviour. dxdfir_velociraptor's scenario
 # is layout-only (no engine) and is excluded from the default set — pass it
 # explicitly to run it anyway.
-DEFAULT_ROLES=(dfir_signatures dfir_zeek dfir_evtx dfir_plaso dfir_volatility)
+DEFAULT_ROLES=(dxdfir_signatures dxdfir_zeek dxdfir_evtx dxdfir_plaso dxdfir_volatility)
 ROLES=("${@:-${DEFAULT_ROLES[@]}}")
 
 command -v docker >/dev/null 2>&1 || { echo "docker is required" >&2; exit 127; }
@@ -50,7 +50,7 @@ ADD https://download.docker.com/linux/static/stable/x86_64/docker-27.5.1.tgz /tm
 RUN tar -xzf /tmp/docker.tgz -C /tmp && mv /tmp/docker/docker /usr/local/bin/docker \
     && rm -rf /tmp/docker /tmp/docker.tgz
 # requests + docker SDK: community.docker's modules import them (the
-# dfir_images scenario builds images through that collection)
+# dxdfir_images scenario builds images through that collection)
 RUN pip install --no-cache-dir molecule ansible-core requests docker
 DOCKERFILE
 fi
@@ -58,13 +58,13 @@ fi
 # --- per-role fixture requirements ------------------------------------------
 extra_args() { # role -> ansible -e args for its operator-supplied fixtures, or rc 1 to skip
     case "$1" in
-        dfir_evtx)
+        dxdfir_evtx)
             [[ -f "${MOLECULE_SAMPLE_EVTX:-}" && -d "${MOLECULE_EVTXECMD_DIR:-}" ]] || return 1
             echo "-e molecule_sample_evtx=$MOLECULE_SAMPLE_EVTX -e molecule_evtxecmd_dir=$MOLECULE_EVTXECMD_DIR" ;;
-        dfir_plaso)
+        dxdfir_plaso)
             [[ -f "${MOLECULE_SAMPLE_IMAGE:-}" ]] || return 1
             echo "-e molecule_sample_image=$MOLECULE_SAMPLE_IMAGE" ;;
-        dfir_volatility)
+        dxdfir_volatility)
             [[ -f "${MOLECULE_SAMPLE_MEMORY:-}" ]] || return 1
             echo "-e molecule_sample_memory=$MOLECULE_SAMPLE_MEMORY" ;;
         *)  echo "" ;;

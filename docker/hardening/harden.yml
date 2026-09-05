@@ -1,5 +1,5 @@
 ---
-# In-image hardening — executed BY ANSIBLE INSIDE each dfir/* image build
+# In-image hardening — executed BY ANSIBLE INSIDE each dxdfir/* image build
 # (`ansible-playbook -c local`), then squashed into a fresh final stage.
 #
 # BUILD-TIME hardener only: ansible strips the image here, then each Dockerfile
@@ -15,7 +15,7 @@
 #   - the tool runs as the fixed unprivileged user (USER harden_uid:harden_gid,
 #     default 2000:2000)
 #
-# Contract verified after every build by the dfir_images role (static image
+# Contract verified after every build by the dxdfir_images role (static image
 # config + a `docker export` scan proving the removed binaries are absent).
 #
 # Vars (passed with -e from each Dockerfile):
@@ -159,7 +159,7 @@
 
     - name: "harden | record the hardening contract"
       ansible.builtin.copy:
-        dest: /etc/dfir-hardened
+        dest: /etc/dxdfir-hardened
         mode: "0444"
         content: |
           user={{ harden_user }} uid={{ harden_uid }} gid={{ harden_gid }}

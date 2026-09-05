@@ -2,12 +2,12 @@
 
 > **Retiring.** Byakugan's own Elastic-native stack — security ON, Fleet, Filebeat
 > instead of Logstash — lives in [`docker/elastic/`](../elastic/README.md) and
-> replaces this one. This directory stays only until `dfir_deploy_sofelk` (which
+> replaces this one. This directory stays only until `dxdfir_deploy_sofelk` (which
 > builds from it) is retired with it.
 
 SOF-ELK® ([philhagen/sof-elk](https://github.com/philhagen/sof-elk)) ships as a VM,
 so there is no canonical public image. This builds one **from the upstream repo** so
-the `dfir_deploy_sofelk` role has a real stack to run.
+the `dxdfir_deploy_sofelk` role has a real stack to run.
 
 - **`Dockerfile`** — clones SOF-ELK to `/usr/local/sof-elk` (the path its configs
   reference for grok patterns, ruby helpers and lookup dictionaries), bakes its
@@ -26,7 +26,7 @@ cd docker/sof-elk
 ELASTIC_VERSION=9.4.3 SOFELK_INGEST_DIR=/abs/path/to/delivered docker compose up -d --build
 ```
 - Elasticsearch → http://127.0.0.1:9200 · Kibana → http://127.0.0.1:5601
-- Deliver evidence with `dfir_ingest_sofelk` into `SOFELK_INGEST_DIR`; Filebeat picks
+- Deliver evidence with `dxdfir_ingest_sofelk` into `SOFELK_INGEST_DIR`; Filebeat picks
   up `<type>/**/*.json[l]` and Logstash parses it into Elasticsearch.
 
 ## Ingest layout

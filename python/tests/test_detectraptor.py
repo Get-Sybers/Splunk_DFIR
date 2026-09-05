@@ -1,7 +1,7 @@
 """Unit tests for the DetectRaptor provisioning module (pure logic, no network)."""
 import os
 
-from get_sybers_dfir.signatures import detectraptor
+from get_sybers_dxdfir.signatures import detectraptor
 
 
 _A = (

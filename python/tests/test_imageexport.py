@@ -1,7 +1,7 @@
 """Unit tests for the pure logic of the disk-image extractor (no docker needed)."""
 import os
 
-from get_sybers_dfir import imageexport
+from get_sybers_dxdfir import imageexport
 
 
 def test_argv_matches_disk_image_sh_recipe(tmp_path):

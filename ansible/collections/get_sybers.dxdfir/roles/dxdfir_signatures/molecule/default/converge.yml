@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: localhost
+  gather_facts: true
+  vars:
+    dxdfir_signatures_pipeline: elastic
+    dxdfir_signatures_repo_root: /tmp/dxdfir_signatures_molecule/repo
+    dxdfir_signatures_elastic_out_dir: /tmp/dxdfir_signatures_molecule/repo/data_store/processed/signatures
+    dxdxdfir_signatures_lanes: [yara]
+    # the fake repo has no python package — point PYTHONPATH at the real repo.
+    dxdfir_signatures_python_path: "{{ (playbook_dir + '/../../../../../../../python') | realpath }}"
+  tasks:
+    - name: "converge | run dxdfir_signatures (elastic, yara lane)"
+      ansible.builtin.include_role:
+        name: dxdfir_signatures

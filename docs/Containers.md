@@ -9,26 +9,26 @@ they are built, and the posture they enforce.
 ## Build the hardened tool images
 
 ```sh
-ansible-playbook ansible/collections/get_sybers.dfir/playbooks/dfir-build-images.yml
+ansible-playbook ansible/collections/get_sybers.dxdfir/playbooks/dxdfir-build-images.yml
 ```
 
 | Image | Tool | Source |
 |---|---|---|
-| `dfir/zeek` | PCAP → Zeek JSON | Zeek LTS from the project's OBS Debian repo (`docker/zeek/`) |
-| `dfir/suricata` | signatures — Suricata (offline replay) | Debian package (`docker/suricata/`) |
-| `dfir/yara` | signatures — YARA | Debian package (`docker/yara/`) |
-| `dfir/volatility` | memory (Volatility 3) + `vadyarascan` | pinned PyPI (`docker/volatility/`) |
-| `dfir/plaso` | Plaso timelining + `image_export` (dfVFS) | GIFT stable PPA (`docker/plaso/`) |
-| `dfir/evtxecmd` | Windows Event Logs (EvtxECmd) | fetched EZ release, baked (`docker/evtxecmd/`) |
+| `dxdfir/zeek` | PCAP → Zeek JSON | Zeek LTS from the project's OBS Debian repo (`docker/zeek/`) |
+| `dxdfir/suricata` | signatures — Suricata (offline replay) | Debian package (`docker/suricata/`) |
+| `dxdfir/yara` | signatures — YARA | Debian package (`docker/yara/`) |
+| `dxdfir/volatility` | memory (Volatility 3) + `vadyarascan` | pinned PyPI (`docker/volatility/`) |
+| `dxdfir/plaso` | Plaso timelining + `image_export` (dfVFS) | GIFT stable PPA (`docker/plaso/`) |
+| `dxdfir/evtxecmd` | Windows Event Logs (EvtxECmd) | fetched EZ release, baked (`docker/evtxecmd/`) |
 
-The `dfir_images` role builds each one and **verifies the minimal-posture
+The `dxdfir_images` role builds each one and **verifies the minimal-posture
 contract** per build — the static image config plus a shell-free
 `docker export` scan proving the removed binaries (and, for the tool-only
 images, the shell and python) are absent.
 
 A start-time **inventory guard** then refuses to process against anything but a
 known hardened image: each processor preflight asserts the image it will run is
-a hardened `dfir/*` image, and `dxdfir verify-images` audits the whole `dfir/*`
+a hardened `dxdfir/*` image, and `dxdfir verify-images` audits the whole `dxdfir/*`
 namespace for missing, un-hardened, or **unexpected** images (something added
 that shouldn't be).
 
@@ -47,9 +47,9 @@ it never ships at runtime.
   suite are removed; every setuid/setgid bit is stripped
 - **no package manager, no pip** — nothing installable at runtime
 - **no shell and no python** except where the tool irreducibly needs them:
-  `dfir/yara` keeps `sh` (its per-file scan loop *is* a shell script);
-  `dfir/volatility` and `dfir/plaso` keep python (the tools *are* python).
-  `dfir/zeek`, `dfir/suricata`, `dfir/evtxecmd` carry neither.
+  `dxdfir/yara` keeps `sh` (its per-file scan loop *is* a shell script);
+  `dxdfir/volatility` and `dxdfir/plaso` keep python (the tools *are* python).
+  `dxdfir/zeek`, `dxdfir/suricata`, `dxdfir/evtxecmd` carry neither.
 - the tool runs as the fixed unprivileged user (`USER 2000:2000`)
 
 Runtime confinement is what actually contains both threats (an attacker with
@@ -58,7 +58,7 @@ the processors issue: `--cap-drop ALL --security-opt no-new-privileges
 --read-only --tmpfs /tmp --pids-limit 512 --network none`. Evidence is mounted
 read-only, output read-write, the root filesystem is immutable. The single
 network exception is Volatility ISF symbol fetch
-(`dfir_volatility_symbols_online` / `--symbols-online`).
+(`dxdfir_volatility_symbols_online` / `--symbols-online`).
 
 Why not keep a shell out of a "belt and braces" instinct? Removing the shell
 does not stop an attacker who already has code execution (the premise of a
@@ -81,11 +81,11 @@ with docker compose on `127.0.0.1` with security on — see its README.
 
 Two levels:
 
-**Images only** — `save-docker-images.sh` saves the built `dfir/*` images plus
+**Images only** — `save-docker-images.sh` saves the built `dxdfir/*` images plus
 the pulled .NET runtime into `data_store/docker_images/`:
 
 ```bash
-scripts/save-docker-images.sh --build     # online: build the dfir/* images, then save all
+scripts/save-docker-images.sh --build     # online: build the dxdfir/* images, then save all
 scripts/save-docker-images.sh --verify    # offline: load every tarball, then assert the hardened inventory
 ```
 
@@ -110,7 +110,7 @@ loaded inventory is confirmed to be the expected hardened set. Nothing reaches
 the network.
 
 The SOF-ELK stack (`docker/sof-elk/`, from-source build) is handled separately
-by `dfir_deploy_sofelk`. It is retiring in favour of Byakugan's own Elastic-native
+by `dxdfir_deploy_sofelk`. It is retiring in favour of Byakugan's own Elastic-native
 stack (`docker/elastic/` — security on, Fleet, Filebeat instead of Logstash; see
 its README).
 

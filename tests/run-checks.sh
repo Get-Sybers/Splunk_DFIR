@@ -57,8 +57,8 @@ group "Collection requirements"
 # collection is pinned to an exact version (never :latest, never a branch —
 # ANSIBLE-STANDARDS galaxy §2), every galaxy.yml dependency is covered by a
 # pin, and setup-environment.sh actually installs it.
-REQS="ansible/collections/get_sybers.dfir/requirements.yml"
-GALAXY="ansible/collections/get_sybers.dfir/galaxy.yml"
+REQS="ansible/collections/get_sybers.dxdfir/requirements.yml"
+GALAXY="ansible/collections/get_sybers.dxdfir/galaxy.yml"
 if command -v python3 >/dev/null 2>&1 && [[ -f "$REQS" ]]; then
     _req_out=$(python3 - "$REQS" "$GALAXY" <<'PY'
 import re, sys
@@ -130,7 +130,7 @@ while IFS= read -r f; do
 done < <(find scripts -name "*.sh" -type f | sort)
 
 # ------------------------------------------------------------------------------
-group "Python unit tests (get_sybers_dfir)"
+group "Python unit tests (get_sybers_dxdfir)"
 # ------------------------------------------------------------------------------
 # The package's pure-logic tests — the processors, the CAR gate (carcheck), the
 # Elastic rules-as-code loader, the STIX exchange, the CLI. No docker, no
@@ -154,9 +154,9 @@ group "Versioning and documentation"
 # The package must agree with itself: pyproject.toml and __init__.__version__
 # drift silently otherwise (the CLI prints the stale one).
 _pyproject_v=$(grep -m1 -oE '^version = "[0-9.]+"' python/pyproject.toml | grep -oE '[0-9.]+')
-_init_v=$(grep -m1 -oE '__version__ = "[0-9.]+"' python/get_sybers_dfir/__init__.py | grep -oE '[0-9.]+')
+_init_v=$(grep -m1 -oE '__version__ = "[0-9.]+"' python/get_sybers_dxdfir/__init__.py | grep -oE '[0-9.]+')
 if [[ -n "$_pyproject_v" && "$_pyproject_v" == "$_init_v" ]]; then
-    pass "pyproject version ($_pyproject_v) matches get_sybers_dfir.__version__"
+    pass "pyproject version ($_pyproject_v) matches get_sybers_dxdfir.__version__"
 else
     fail "version drift: pyproject=$_pyproject_v __init__=$_init_v"
 fi

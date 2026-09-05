@@ -12,7 +12,7 @@ inside the Elastic ecosystem on a **Basic licence**.
 | `elasticsearch` | `elasticsearch` | single node, security on, TLS on HTTP + transport, Basic licence |
 | `kibana` | `kibana` | UI + Fleet; talks to Elasticsearch over TLS as `kibana_system` |
 | `fleet-server` | `elastic-agent` | Fleet Server, self-enrols into the preconfigured `fleet-server-policy` |
-| `filebeat` | `filebeat` | the Elastic-native shipper — delivered evidence -> `logs-dfir.<type>-<ns>` data streams |
+| `filebeat` | `filebeat` | the Elastic-native shipper — delivered evidence -> `logs-dxdfir.<type>-<ns>` data streams |
 
 Pinned to Elastic **9.4.3** — override with `ELASTIC_VERSION` (compose
 variable-with-default, same convention as the other `docker/*` builds). All
@@ -86,9 +86,9 @@ Kibana; other integrations are fetched from the Elastic Package Registry
 
 `ELASTIC_INGEST_DIR` is mounted read-only at `/ingest`. Filebeat
 (`config/filebeat.yml`) tails `<type>/**/*.json` and `*.jsonl` — the tree
-`dfir_ingest_sofelk` already delivers (`zeek/`, `plaso/`, ...; keep type dirs
+`dxdfir_ingest_sofelk` already delivers (`zeek/`, `plaso/`, ...; keep type dirs
 lowercase) — stamps `labels.type` from the directory, and writes each line into
-the data stream `logs-dfir.<type>-<DFIR_NAMESPACE>` (one namespace per case works
+the data stream `logs-dxdfir.<type>-<DFIR_NAMESPACE>` (one namespace per case works
 well). Data streams are created by Elasticsearch's built-in `logs-*-*` template;
 native -> ECS normalisation is Elastic-native too (ingest pipelines on those
 streams) and lands in a later phase, together with the CAR-driven detection
@@ -100,6 +100,6 @@ rules that tag these evidence lines.
 - Filebeat writes as `elastic` for now; a least-privilege writer role is a follow-up.
 - An **Ansible deploy role is intentionally deferred** to a follow-up; when it is
   added it must conform to the bits-n-bobs Ansible standard (like the existing
-  `get_sybers.dfir` roles). Until then this compose file is the deployment.
-- `docker/sof-elk/` (and its `dfir_deploy_sofelk` role) is retiring in favour of
+  `get_sybers.dxdfir` roles). Until then this compose file is the deployment.
+- `docker/sof-elk/` (and its `dxdfir_deploy_sofelk` role) is retiring in favour of
   this stack; nothing here depends on it.

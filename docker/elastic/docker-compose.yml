@@ -116,8 +116,8 @@ services:
       retries: 40
 
   # The shipper that replaces Logstash: tails the delivered evidence tree
-  # (<type>/**/*.json[l], the same layout dfir_ingest_sofelk produces) and writes
-  # it straight into logs-dfir.<type>-<namespace> data streams over the secured
+  # (<type>/**/*.json[l], the same layout dxdfir_ingest_sofelk produces) and writes
+  # it straight into logs-dxdfir.<type>-<namespace> data streams over the secured
   # Elasticsearch API. Runs as root only to read operator-delivered files; the
   # ingest mount is read-only.
   filebeat:

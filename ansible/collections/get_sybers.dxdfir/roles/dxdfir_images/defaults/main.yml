@@ -1,0 +1,69 @@
+---
+# Repo root is five levels up from this role
+# (roles/dxdfir_images -> get_sybers.dxdfir -> collections -> ansible -> repo).
+dxdfir_images_repo_root: "{{ role_path }}/../../../../.."
+
+# Run-as uid/gid baked into every built image's USER. dxdfir_runtime_uid/gid is the
+# single override knob — set it via extra-var or inventory (e.g.
+# -e dxdfir_runtime_uid=3000) to move all images + their runs off 2000; unset, it
+# defaults to 2000 here. Passed as build args to each Dockerfile and asserted in
+# the build contract, so the build and the runtime share one uid. (dxdfir/volatility
+# is built from the third_party/piiat-mem submodule — Get-Sybers/PIIAT-Mem#2.)
+dxdfir_images_uid: "{{ dxdfir_runtime_uid | default(2000) }}"
+# gid follows the uid unless explicitly set, so setting only dxdfir_runtime_uid
+# still yields a matched USER <uid>:<uid>, never <uid>:2000.
+dxdfir_images_gid: "{{ dxdfir_runtime_gid | default(dxdfir_runtime_uid | default(2000)) }}"
+
+# The docker/ build context — every Dockerfile COPYs the shared ansible
+# hardening playbook (docker/hardening/harden.yml) from here.
+dxdfir_images_context: "{{ dxdfir_images_repo_root }}/docker"
+
+# The build-it-yourself image set. Every runtime tool container is built from
+# an in-repo, ansible-hardened Dockerfile — nothing is pulled from a third
+# party at runtime. Each entry: name (dir under docker/ AND the dxdfir/<name>
+# tag) — the build is verified against the hardening contract afterwards.
+dxdfir_images_set:
+  - yara
+  - suricata
+  - zeek
+  - volatility
+  - plaso
+  - evtxecmd
+  # The Eric Zimmerman tool family — all built from the ONE parameterized
+  # docker/eztool/Dockerfile (same recipe as evtxecmd), tool selected per image
+  # via build args (see dxdfir_images_build_overrides). SrumECmd and PECmd are
+  # deliberately ABSENT (Linux-container-first rule applied and exhausted):
+  # SrumECmd P/Invokes Windows' native ESE engine (esent.dll); PECmd carries a
+  # blanket non-Windows startup guard (verified: aborts even on uncompressed
+  # XP prefetch). Their artefacts are parsed by dxdfir/plaso instead
+  # (esedb/srum via libesedb; prefetch via libscca).
+  - recmd
+  - mftecmd
+  - amcacheparser
+  - appcompatcacheparser
+  - lecmd
+  - jlecmd
+  - sbecmd
+  - sqlecmd
+  - rbcmd
+  - wxtcmd
+
+# Rebuild even when an image already exists (docker build cache still applies).
+dxdfir_images_force: false
+
+# Per-image build context/dockerfile overrides. volatility is sourced from the
+# PIIAT-Mem submodule (its own docker/ context carries the shared harden.yml).
+dxdfir_images_build_overrides:
+  volatility:
+    context: "{{ dxdfir_images_repo_root }}/third_party/piiat-mem/docker"
+    dockerfile: "Dockerfile"
+  recmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RECmd"}}
+  mftecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "MFTECmd"}}
+  amcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AmcacheParser"}}
+  appcompatcacheparser: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "AppCompatCacheParser"}}
+  lecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "LECmd"}}
+  jlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "JLECmd"}}
+  sbecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SBECmd"}}
+  sqlecmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "SQLECmd"}}
+  rbcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "RBCmd"}}
+  wxtcmd: {dockerfile: "eztool/Dockerfile", args: {EZTOOL: "WxTCmd"}}

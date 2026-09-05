@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 #
-# dfir/plaso — minimal hardened Plaso (pinned PyPI, libyal built from source).
+# dxdfir/plaso — minimal hardened Plaso (pinned PyPI, libyal built from source).
 # Plaso IS python and has three entry tools (log2timeline.py, psort.py,
 # image_export.py) plus the psort wrapper, so python and a shell remain and
 # there is no single ENTRYPOINT — the caller passes the full tool argv. ansible
 # (the build-time hardener) is removed.
 #
-#   docker build -t dfir/plaso:latest -f docker/plaso/Dockerfile docker
+#   docker build -t dxdfir/plaso:latest -f docker/plaso/Dockerfile docker
 ARG BASE=python:3.12-slim
 ARG PLASO_VERSION=20260720
 
@@ -31,8 +31,8 @@ RUN set -eux; \
     ln -s /usr/local/bin/log2timeline /usr/local/bin/log2timeline.py; \
     ln -s /usr/local/bin/psort /usr/local/bin/psort.py; \
     ln -s /usr/local/bin/image_export /usr/local/bin/image_export.py; \
-    printf 'plaso %s (pypi, libyal built from source)\n' "${PLASO_VERSION}" > /etc/dfir-plaso-version
-COPY plaso/psort_wrapper.py /opt/dfir/psort_wrapper.py
+    printf 'plaso %s (pypi, libyal built from source)\n' "${PLASO_VERSION}" > /etc/dxdfir-plaso-version
+COPY plaso/psort_wrapper.py /opt/dxdfir/psort_wrapper.py
 COPY hardening/harden.yml /tmp/hardening/harden.yml
 RUN set -eux; \
     ansible-playbook -c local -i localhost, /tmp/hardening/harden.yml -e harden_uid=${DFIR_UID} -e harden_gid=${DFIR_GID}; \
@@ -46,6 +46,6 @@ ENV PATH=/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
 ARG DFIR_UID=2000
 ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
-LABEL org.opencontainers.image.title="dfir/plaso" \
+LABEL org.opencontainers.image.title="dxdfir/plaso" \
       org.opencontainers.image.description="Minimal hardened Plaso (pinned PyPI, libyal from source) for the DX_DFIR plaso/evtx-extraction lanes: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, runs as a fixed non-root uid (default 2000) (python+sh irreducible; three entry tools, no single ENTRYPOINT)." \
       com.get-sybers.hardened="true"

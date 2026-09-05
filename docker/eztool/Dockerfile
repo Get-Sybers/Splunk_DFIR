@@ -5,9 +5,9 @@
 # bake into a minimal-hardened .NET runtime, tool as the pinned ENTRYPOINT),
 # generalized over the tool name so every EZ tool builds identically:
 #
-#   docker build -t dfir/recmd:latest --build-arg EZTOOL=RECmd \
+#   docker build -t dxdfir/recmd:latest --build-arg EZTOOL=RECmd \
 #     -f docker/eztool/Dockerfile docker
-#   docker build -t dfir/srumecmd:latest --build-arg EZTOOL=SrumECmd \
+#   docker build -t dxdfir/srumecmd:latest --build-arg EZTOOL=SrumECmd \
 #     -f docker/eztool/Dockerfile docker
 #
 # Pin the release (recommended):
@@ -21,7 +21,7 @@
 #
 # Run (the caller supplies only the flags — the DLL is the entrypoint):
 #   docker run --rm -v "$PWD/in:/input:ro" -v "$PWD/out:/output" \
-#     dfir/recmd:latest -d /input --bn /opt/eztool/BatchExamples/... --csv /output
+#     dxdfir/recmd:latest -d /input --bn /opt/eztool/BatchExamples/... --csv /output
 
 ARG DOTNET_VERSION=9.0
 ARG EZTOOL=EvtxECmd
@@ -90,7 +90,7 @@ ARG DFIR_UID=2000
 ARG DFIR_GID=2000
 USER ${DFIR_UID}:${DFIR_GID}
 ENTRYPOINT ["dotnet", "/opt/eztool/tool.dll"]
-LABEL org.opencontainers.image.title="dfir/eztool" \
+LABEL org.opencontainers.image.title="dxdfir/eztool" \
       org.opencontainers.image.description="Minimal hardened Eric Zimmerman tool (.NET) for the DX_DFIR pipeline: uid0 renamed+locked, no ansible/apt/pip/sudo/setuid, no shell, no python, runs as a fixed non-root uid (default 2000). Parameterized over EZTOOL." \
       org.opencontainers.image.licenses="MIT" \
       com.get-sybers.eztool="${EZTOOL}" \

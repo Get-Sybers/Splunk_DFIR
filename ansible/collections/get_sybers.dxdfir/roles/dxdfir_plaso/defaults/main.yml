@@ -1,0 +1,34 @@
+---
+# Backend to target; the playbook overrides this to select the pipeline.
+dxdfir_plaso_pipeline: elastic
+
+# Repo root is five levels up from this role
+# (roles/dxdfir_plaso -> get_sybers.dxdfir -> collections -> ansible -> repo).
+dxdfir_plaso_repo_root: "{{ role_path }}/../../../../.."
+
+dxdfir_plaso_input_dir: "{{ dxdfir_plaso_repo_root }}/data_store/raw/disk_images"
+dxdfir_plaso_vm_dir: "{{ dxdfir_plaso_repo_root }}/data_store/raw/VM_files"
+# Loose-artefact trees (one folder per host: /var/log copies, mobile filesystem
+# dumps, triage output) — parsed by log2timeline as directory sources. Empty =
+# no loose sources (opt-in: loose trees can be very large).
+dxdfir_plaso_loose_dir: ""
+dxdfir_plaso_elastic_out_dir: "{{ dxdfir_plaso_repo_root }}/data_store/processed/log2timeline"
+dxdfir_plaso_sofelk_out_dir: "{{ dxdfir_plaso_repo_root }}/data_store/processed/sofelk/log2timeline"
+# Resolved output base for the selected pipeline — consumed by
+# tasks/process.yml. Override directly to send output to a custom location.
+dxdfir_plaso_out_dir: "{{ dxdfir_plaso_elastic_out_dir if dxdfir_plaso_pipeline == 'elastic' else dxdfir_plaso_sofelk_out_dir }}"
+# The custom psort output module lives in the repo (dev-scripts), mounted into psort.
+dxdfir_plaso_module: "{{ dxdfir_plaso_repo_root }}/dev-scripts/plaso/l2t_json_dxdfir.py"
+# The hardened in-repo image (build with playbooks/dxdfir-build-images.yml).
+dxdfir_plaso_image: "dxdfir/plaso:latest"
+# In-repo runs use PYTHONPATH; a deployed run installs the package instead.
+dxdfir_plaso_python_path: "{{ dxdfir_plaso_repo_root }}/python"
+dxdfir_plaso_force: false
+
+# The processor command argv, handed to the shared dxdfir_lane process step. This
+# is the one genuinely per-lane piece; the run/verify/gate skeleton is shared.
+dxdfir_plaso_argv: >-
+  {{ ['python3', '-m', 'get_sybers_dxdfir.plaso', '--input-dir', dxdfir_plaso_input_dir, '--vm-dir', dxdfir_plaso_vm_dir,
+  '--loose-dir', dxdfir_plaso_loose_dir,
+  '--out-dir', dxdfir_plaso_out_dir, '--module', dxdfir_plaso_module, '--image', dxdfir_plaso_image]
+  + (['--force'] if dxdfir_plaso_force | bool else []) }}

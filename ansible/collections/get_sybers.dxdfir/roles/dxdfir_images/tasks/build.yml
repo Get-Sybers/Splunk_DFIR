@@ -1,0 +1,85 @@
+---
+# One image: build from docker/<name>/Dockerfile (context docker/, so the shared
+# build-time hardening playbook is in reach), then verify the MINIMAL posture —
+# statically (fixed non-root USER, hardened label) and with a shell-free
+# `docker export` scan proving the escalation/installer binaries and (for the
+# tool-only images) the shell and python are actually absent.
+
+- name: "images-build | build the hardened image dxdfir/{{ dxdfir_images_name }}"
+  community.docker.docker_image:
+    name: "dxdfir/{{ dxdfir_images_name }}"
+    tag: latest
+    source: build
+    force_source: "{{ dxdfir_images_force | bool }}"
+    build:
+      # Most images build from the shared docker/ context; an image may override
+      # its context+dockerfile (e.g. volatility builds from the PIIAT-Mem submodule).
+      path: "{{ (dxdfir_images_build_overrides[dxdfir_images_name] | default({})).context | default(dxdfir_images_context, true) }}"
+      dockerfile: "{{ (dxdfir_images_build_overrides[dxdfir_images_name] | default({})).dockerfile | default(dxdfir_images_name ~ '/Dockerfile', true) }}"
+      # Every build gets the single-source run-as uid/gid, and it WINS over any
+      # per-image override args (e.g. the shared eztool/Dockerfile's tool selector):
+      # the override is the base, the uid/gid are combined on top so they can't be
+      # replaced.
+      args: "{{ ((dxdfir_images_build_overrides[dxdfir_images_name] | default({})).args | default({}))
+                | combine({'DFIR_UID': dxdfir_images_uid | string, 'DFIR_GID': dxdfir_images_gid | string}) }}"
+
+- name: "images-build | inspect dxdfir/{{ dxdfir_images_name }}"
+  community.docker.docker_image_info:
+    name: "dxdfir/{{ dxdfir_images_name }}:latest"
+  register: dxdfir_images_inspect
+
+- name: "images-build | assert the static contract on dxdfir/{{ dxdfir_images_name }}"
+  ansible.builtin.assert:
+    that:
+      - dxdfir_images_inspect.images | length == 1
+      - dxdfir_images_inspect.images[0].Config.User == (dxdfir_images_uid | string) ~ ':' ~ (dxdfir_images_gid | string)
+      - (dxdfir_images_inspect.images[0].Config.Labels or {})['com.get-sybers.hardened'] | default('') == 'true'
+    fail_msg: >-
+      dxdfir/{{ dxdfir_images_name }} fails the static contract (USER
+      {{ dxdfir_images_uid }}:{{ dxdfir_images_gid }} + com.get-sybers.hardened label).
+    quiet: true
+
+# Filesystem scan without needing a shell in the image: export the image as a
+# tar and list the member paths. The removed binaries must be absent; ansible
+# must be gone from every image; the tool-only images must also have no shell
+# or python.
+- name: "images-build | export the filesystem listing of dxdfir/{{ dxdfir_images_name }}"
+  ansible.builtin.shell:
+    cmd: >-
+      set -o pipefail;
+      # a never-executed command token, so `create` also works for the images
+      that have no ENTRYPOINT (plaso); the container is only exported, never run
+      cid=$(docker create dxdfir/{{ dxdfir_images_name }}:latest __export_only__);
+      docker export "$cid" | tar -t;
+      docker rm -f "$cid" >/dev/null
+  args:
+    executable: /bin/bash
+  register: dxdfir_images_fs
+  changed_when: false
+
+- name: "images-build | assert the removed surface is absent from dxdfir/{{ dxdfir_images_name }}"
+  ansible.builtin.assert:
+    that:
+      - "'usr/bin/apt-get' not in dxdfir_images_fs.stdout"
+      - "'usr/bin/dpkg' not in dxdfir_images_fs.stdout"
+      - "'usr/bin/sudo' not in dxdfir_images_fs.stdout"
+      - dxdfir_images_fs.stdout is not search('bin/pip[0-9.]*$', multiline=True)
+      - dxdfir_images_fs.stdout is not search('/ansible[-/]', multiline=True)
+    fail_msg: >-
+      dxdfir/{{ dxdfir_images_name }} still ships a removed binary
+      (apt-get/dpkg/sudo/pip) or ansible.
+    quiet: true
+
+- name: "images-build | assert no shell/python where the tool needs neither"
+  ansible.builtin.assert:
+    that:
+      - dxdfir_images_fs.stdout is not search('bin/(sh|bash|dash)$', multiline=True)
+      - dxdfir_images_fs.stdout is not search('bin/python3(\.[0-9]+)?$', multiline=True)
+    fail_msg: >-
+      dxdfir/{{ dxdfir_images_name }} still carries a shell or python though its tool
+      needs neither.
+    quiet: true
+  when: dxdfir_images_name in ['suricata', 'zeek', 'evtxecmd',
+                             'recmd', 'mftecmd',
+                             'amcacheparser', 'appcompatcacheparser', 'lecmd',
+                             'jlecmd', 'sbecmd', 'sqlecmd', 'rbcmd', 'wxtcmd']

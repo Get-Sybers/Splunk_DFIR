@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from get_sybers_dfir import mitrecar
+from get_sybers_dxdfir import mitrecar
 
 _SUBMODULE = mitrecar._PIIAT_MITRECAR_DIR
 # the tool AND its nested model submodules (car + attack-datasources) must be

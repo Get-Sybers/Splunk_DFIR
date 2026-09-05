@@ -1,0 +1,44 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "molecule-verify | the tool runs under full confinement"
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - --rm
+          - --cap-drop
+          - ALL
+          - --security-opt
+          - no-new-privileges
+          - --read-only
+          - --network
+          - none
+          - dxdfir/suricata:latest
+          - --build-info
+      register: dxdfir_images_toolrun
+      changed_when: false
+
+    - name: "molecule-verify | suricata is the entrypoint and it ran"
+      ansible.builtin.assert:
+        that:
+          - dxdfir_images_toolrun.rc == 0
+          - "'Suricata' in dxdfir_images_toolrun.stdout"
+        fail_msg: "dxdfir/suricata did not run its tool under the confinement flags"
+        quiet: true
+
+    - name: "molecule-verify | there is no shell to fall back to"
+      ansible.builtin.command:
+        argv: [docker, run, --rm, --entrypoint, /bin/sh, dxdfir/suricata:latest, -c, "id"]
+      register: dxdfir_images_noshell
+      changed_when: false
+      failed_when: false
+
+    - name: "molecule-verify | assert the shell is genuinely absent"
+      ansible.builtin.assert:
+        that:
+          - dxdfir_images_noshell.rc != 0
+        fail_msg: "dxdfir/suricata still has a shell (/bin/sh ran)"
+        quiet: true

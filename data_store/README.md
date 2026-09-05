@@ -34,7 +34,7 @@ data_store/
        ├── signatures/             # yara/ suricata/ hayabusa/ detection JSONL
        ├── linux_logs/             # syslog/auth/utmp/… (not yet wired into the backend)
        ├── car/<source>/           # the materialised CAR: car.db + car_<object>.jsonl (+ car_relationships.jsonl)
-       └── sofelk/<tool>/          # --pipeline sofelk output, delivered by dfir-ingest-sofelk.yml
+       └── sofelk/<tool>/          # --pipeline sofelk output, delivered by dxdfir-ingest-sofelk.yml
 ```
 
 ---
@@ -79,7 +79,7 @@ dxdfir verify-car           # the correctness gate over what was written
 
 **4. Bring up the analysis backend** — the Elastic-native stack under
 [`docker/elastic/`](/docker/elastic/README.md) (docker compose, localhost-only,
-security on). Filebeat ships the delivered evidence tree into `logs-dfir.<type>-*`
+security on). Filebeat ships the delivered evidence tree into `logs-dxdfir.<type>-*`
 data streams; see [Get-Started](/docs/Get-Started.md) steps 7–9.
 
 ---

@@ -1,0 +1,19 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  vars:
+    molecule_yara_out: /tmp/dxdfir_signatures_molecule/repo/data_store/processed/signatures/yara
+  tasks:
+    - name: "molecule-verify | read the yara matches"
+      ansible.builtin.slurp:
+        src: "{{ molecule_yara_out }}/matches.jsonl"
+      register: dxdfir_signatures_matches
+
+    - name: "molecule-verify | assert the fixture rule matched the sample"
+      ansible.builtin.assert:
+        that:
+          - (dxdfir_signatures_matches.content | b64decode) is search('DFIR_Molecule_Marker')
+          - (dxdfir_signatures_matches.content | b64decode) is search('MOLECULE_DETECTION_MARKER')
+        fail_msg: "the yara lane did not record the fixture rule's match"
+        quiet: true

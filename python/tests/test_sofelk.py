@@ -1,7 +1,7 @@
 """Unit tests for the SOF-ELK delivery module (local copy + ledger idempotence)."""
 import os
 
-from get_sybers_dfir import sofelk
+from get_sybers_dxdfir import sofelk
 
 
 def _seed(src):

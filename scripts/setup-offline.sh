@@ -103,7 +103,7 @@ python3 -m venv "$VENV" || die "could not create the venv (need python3-venv)."
 "$VENV/bin/pip" install --quiet --no-index --find-links "$BUNDLE/wheels" \
     --upgrade pip >/dev/null 2>&1 || true
 "$VENV/bin/pip" install --quiet --no-index --find-links "$BUNDLE/wheels" \
-    get_sybers_dfir || die "offline install of the CLI failed (missing wheels?)."
+    get_sybers_dxdfir || die "offline install of the CLI failed (missing wheels?)."
 # a stable entrypoint on PATH if we can write there
 if ln -sf "$VENV/bin/dxdfir" /usr/local/bin/dxdfir 2>/dev/null; then
     DXDFIR="/usr/local/bin/dxdfir"
@@ -116,7 +116,7 @@ echo "✅ CLI installed: $("$DXDFIR" --version 2>/dev/null || echo dxdfir)"
 # ---- 5. the pinned ansible collections, offline -----------------------------
 if [[ -d "$BUNDLE/collections" ]] && ls "$BUNDLE"/collections/*.tar.gz >/dev/null 2>&1; then
     echo "📚 Installing the pinned ansible collections (offline) ..."
-    COLL_DEST="$TARGET/ansible/collections/get_sybers.dfir/.ansible/collections"
+    COLL_DEST="$TARGET/ansible/collections/get_sybers.dxdfir/.ansible/collections"
     mkdir -p "$COLL_DEST"
     # `ansible-galaxy collection download` wrote a requirements.yml that names the
     # tarballs by RELATIVE filename, so the install must run FROM that dir to be

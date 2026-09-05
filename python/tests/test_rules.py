@@ -14,7 +14,7 @@ import re
 import pytest
 import yaml
 
-from get_sybers_dfir.detect import rules_loader as rl
+from get_sybers_dxdfir.detect import rules_loader as rl
 
 # The detection set, pinned. These are the ids the retired Kusto registry carried
 # — each rule file keeps its provenance in `source` — so a rule cannot disappear
@@ -137,8 +137,8 @@ def test_summary_counts(rules):
 # ---- validate() rejects malformed rules ------------------------------------
 _BASE = {
     "id": "x-1", "name": "t", "status": "ported", "severity": "low", "attack": ["T1055"],
-    "language": "esql", "index": ["logs-dfir.x-*"],
-    "query": ('FROM logs-dfir.x-* METADATA _id, _index, _version\n'
+    "language": "esql", "index": ["logs-dxdfir.x-*"],
+    "query": ('FROM logs-dxdfir.x-* METADATA _id, _index, _version\n'
               '| WHERE a == 1\n'
               '| EVAL rule.id = "x-1", threat.technique.id = "T1055"\n'
               '| LIMIT 10'),
@@ -170,7 +170,7 @@ def test_base_rule_validates():
     {"tactics": ["T1055"]},
     {"index": []},
     {"index": ["host.EvtxEcmdJson"]},
-    {"index": ["logs-dfir.x-*", "logs-dfir.y-*"]},     # FROM reads only one of them
+    {"index": ["logs-dxdfir.x-*", "logs-dxdfir.y-*"]},     # FROM reads only one of them
     {"evidence": {"shape": "line", "stamped_by": "query", "fields": []}},
     {"evidence": {"shape": "line", "stamped_by": "query", "fields": ["rule.id"]}},   # attack set, technique unstamped
     {"evidence": {"shape": "aggregate", "stamped_by": "query",
@@ -204,7 +204,7 @@ def test_validate_rejects_duplicate_ids_and_misnamed_files():
 
 def test_validate_stub_contract():
     stub = _patched(status="stub", query=None,
-                    todo={"query": "FROM logs-dfir.x-* | WHERE a == 1", "blockers": ["why"]})
+                    todo={"query": "FROM logs-dxdfir.x-* | WHERE a == 1", "blockers": ["why"]})
     rl.validate([stub])
     with pytest.raises(ValueError, match="query null"):
         rl.validate([_patched(status="stub", todo={"query": "FROM x", "blockers": ["why"]})])
@@ -215,7 +215,7 @@ def test_validate_stub_contract():
 
 
 def test_attackless_rule_must_not_stamp_technique():
-    ok = _patched(attack=[], query='FROM logs-dfir.x-* METADATA _id, _index, _version\n| EVAL rule.id = "x-1"',
+    ok = _patched(attack=[], query='FROM logs-dxdfir.x-* METADATA _id, _index, _version\n| EVAL rule.id = "x-1"',
                   evidence={"shape": "line", "stamped_by": "query", "fields": ["rule.id"]})
     rl.validate([ok])
     with pytest.raises(ValueError, match="cannot be stamped"):
@@ -245,16 +245,16 @@ def _esql(query, **extra):
 def test_check_query_esql_shape():
     assert rl.check_query(_patched()) == []
     # missing METADATA on a non-aggregating query
-    probs = rl.check_query(_esql('FROM logs-dfir.x-*\n| WHERE a == 1\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'))
+    probs = rl.check_query(_esql('FROM logs-dxdfir.x-*\n| WHERE a == 1\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'))
     assert any("METADATA" in p for p in probs)
     # aggregating query needs no METADATA but must declare the aggregate shape
-    agg = 'FROM logs-dfir.x-*\n| STATS n = COUNT(*) BY host.name\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'
+    agg = 'FROM logs-dxdfir.x-*\n| STATS n = COUNT(*) BY host.name\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'
     assert any("aggregate" in p for p in rl.check_query(_esql(agg)))
     assert rl.check_query(_esql(agg, evidence={"shape": "aggregate", "stamped_by": "query",
                                                "fields": ["host.name", "n", "rule.id", "threat.technique.id"]})) == []
     # not starting with FROM / wrong sources / unknown command
     assert any("FROM" in p for p in rl.check_query(_esql("ROW a = 1")))
-    assert any("index declares" in p for p in rl.check_query(_esql(_BASE["query"].replace("logs-dfir.x-*", "logs-dfir.y-*"))))
+    assert any("index declares" in p for p in rl.check_query(_esql(_BASE["query"].replace("logs-dxdfir.x-*", "logs-dxdfir.y-*"))))
     assert any("unknown ES|QL command" in p for p in rl.check_query(_esql(_BASE["query"] + "\n| PROJECT a")))
 
 
@@ -265,7 +265,7 @@ def test_check_query_promised_fields_must_be_stamped():
 
 
 def test_check_query_kql_leftovers_and_brackets():
-    probs = rl.check_query(_esql('FROM logs-dfir.x-* METADATA _id, _index, _version\n| WHERE tostring(a) == "1" =~ b\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'))
+    probs = rl.check_query(_esql('FROM logs-dxdfir.x-* METADATA _id, _index, _version\n| WHERE tostring(a) == "1" =~ b\n| EVAL rule.id = "x-1", threat.technique.id = "T1055"'))
     assert any("tostring(" in p for p in probs) and any("=~" in p for p in probs)
     # DATE_DIFF( is not the KQL iff(
     assert not any("iff(" in p for p in rl.check_query(

@@ -1,4 +1,4 @@
-# Python dependency lock for the get_sybers_dfir CLI and the vendored
+# Python dependency lock for the get_sybers_dxdfir CLI and the vendored
 # PIIAT-MitreCar engine it runs in-process.
 #
 # pyproject.toml carries the ">=" floors (what the code needs); THIS file pins the
@@ -12,13 +12,13 @@
 # by BOTH scripts/setup-environment.sh (online) and scripts/package-offline.sh
 # (the offline wheel bundle), so both resolve identical versions. The Ansible
 # COLLECTIONS are pinned separately in
-# ansible/collections/get_sybers.dfir/requirements.yml.
+# ansible/collections/get_sybers.dxdfir/requirements.yml.
 #
 # Regenerate after a deliberate dependency bump, then restore this header:
 #   python3 -m venv /tmp/lock && /tmp/lock/bin/pip install ./python \
 #     && /tmp/lock/bin/pip freeze --exclude-editable > python/constraints.txt
 #
-# Generated 2026-09-03, Python 3.13, get-sybers-dfir 0.6.0.
+# Generated 2026-09-03, Python 3.13, get-sybers-dxdfir 0.6.0.
 
 annotated-doc==0.0.5
 ansible-core==2.21.3

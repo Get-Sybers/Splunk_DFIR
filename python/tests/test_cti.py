@@ -14,12 +14,12 @@ import uuid
 import pytest
 from typer.testing import CliRunner
 
-from get_sybers_dfir import cli
-from get_sybers_dfir.detect import rules_loader as rl
-from get_sybers_dfir.stix import config, export, objects, opencti
-from get_sybers_dfir.stix.cti import indicators as ind
-from get_sybers_dfir.stix.cti import sightings as sg
-from get_sybers_dfir.stix.hits import flatten
+from get_sybers_dxdfir import cli
+from get_sybers_dxdfir.detect import rules_loader as rl
+from get_sybers_dxdfir.stix import config, export, objects, opencti
+from get_sybers_dxdfir.stix.cti import indicators as ind
+from get_sybers_dxdfir.stix.cti import sightings as sg
+from get_sybers_dxdfir.stix.hits import flatten
 
 NOW = "2026-09-02T10:00:00.000Z"
 SCO_NS = uuid.UUID("00abedb4-aa42-466c-9c01-fed23315a9b7")
@@ -547,7 +547,7 @@ def test_indicator_match_rule_validates_against_the_cti_template(cti_contract):
     assert rule["id"] == "cti-indicator-match" and rule["type"] == "threat_match" and rule["risk_score"] == 73
     assert rule["threat_index"] == ["cti-*"] and rule["threat_indicator_path"] == "threat.indicator"
     assert rule["language"] == rule["threat_language"] == "kuery"
-    assert set(rule["index"]) == {"logs-dfir.*-*", "logs-car.*-*"}      # every Byakugan evidence stream
+    assert set(rule["index"]) == {"logs-dxdfir.*-*", "logs-car.*-*"}      # every Byakugan evidence stream
     assert rule["evidence"]["stamped_by"] == "engine" and rule["evidence"]["shape"] == "line"
     assert set(rl.ROUND_TRIP_FIELDS) <= set(rule["evidence"]["fields"])  # what the sightings push reads
     assert template == ind.load_template()                              # one template, both sides
@@ -576,7 +576,7 @@ def test_indicator_match_rule_is_beside_the_registry_pinned_set(cti_contract):
     {"type": "query"},
     {"language": "esql"},
     {"threat_language": "kql"},
-    {"query": "FROM logs-dfir.*-* | WHERE a == 1"},                    # ES|QL is not a Kibana language
+    {"query": "FROM logs-dxdfir.*-* | WHERE a == 1"},                    # ES|QL is not a Kibana language
     {"query": "source.ip:* and (x"},
     {"query": "tostring(a) == 1"},                                     # a Kusto left-over
     {"status": "stub"},

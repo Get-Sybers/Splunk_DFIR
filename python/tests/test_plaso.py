@@ -1,7 +1,7 @@
 """Unit tests for the pure logic of the plaso processor (no docker needed)."""
 import os
 
-from get_sybers_dfir import plaso
+from get_sybers_dxdfir import plaso
 
 
 # ---- content-first format detection ----------------------------------------

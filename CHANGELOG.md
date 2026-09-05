@@ -13,19 +13,19 @@ is `0`, anything may change without notice.
   detection rules-as-code, the CAR→ECS projection and its Phase-0 risk gate,
   the STIX/CTI exchange) supersedes it, so the whole stack is gone:
   `kusto/schema/` (databases, tables, ingestion mappings, the generated
-  `mitre.car_*` tables and views), the `dfir_deploy_adx` / `dfir_ingest_adx` /
-  `dfir_detect_adx` roles and playbooks, `get_sybers_dfir.deploy`, the
-  `get_sybers_dfir.ingest` package (the Kusto REST client, the `.ingest` loader
+  `mitre.car_*` tables and views), the `dxdfir_deploy_adx` / `dxdfir_ingest_adx` /
+  `dxdfir_detect_adx` roles and playbooks, `get_sybers_dxdfir.deploy`, the
+  `get_sybers_dxdfir.ingest` package (the Kusto REST client, the `.ingest` loader
   and its record shaping), the Kusto detection runner and registry
-  (`get_sybers_dfir.detect` keeps only the Elastic rules-as-code loader), the
+  (`get_sybers_dxdfir.detect` keeps only the Elastic rules-as-code loader), the
   `dxdfir deploy` / `ingest` / `detect` verbs, `docs/Kusto-Port.md`, the ADX
   check groups in `tests/run-checks.sh`, and the emulator's EULA/licensing
   notices. The `smoke` workflow no longer deploys an emulator.
 
 ### Changed
 - `--pipeline adx` is now `--pipeline elastic` (the default): the processed
-  tree the CAR lane builds from. The roles' `dfir_<role>_adx_out_dir` variables
-  are now `dfir_<role>_elastic_out_dir` (same default paths); `sofelk` is
+  tree the CAR lane builds from. The roles' `dxdfir_<role>_adx_out_dir` variables
+  are now `dxdfir_<role>_elastic_out_dir` (same default paths); `sofelk` is
   unchanged.
 - **`dxdfir verify-car`** reads the materialised CAR directly
   (`data_store/processed/car/<source>/car_<object>.jsonl`, or `--car-dir`)
@@ -45,7 +45,7 @@ is `0`, anything may change without notice.
 - Materialized MITRE CAR: the engine ([PIIAT-MitreCar](https://github.com/Get-Sybers/PIIAT-MitreCar)) normalises each source to `car_<object>.jsonl`, ingested as the 13 `mitre.car_*` tables + `car_relationships`, with `Car()`/`CarObjects()` views.
 - `dxdfir build-car` (build the per-source CAR stores) and `dxdfir car-timeline` (one property-rich, time-ordered timeline from car.db + superset.db).
 - `dxdfir ingest --only car` loads the CAR stores into `mitre.car_*`.
-- Zimmerman (EZ-Tools) lane: hardened `dfir/*` containers (RECmd, SRUM via Plaso, MFT, …) → CAR.
+- Zimmerman (EZ-Tools) lane: hardened `dxdfir/*` containers (RECmd, SRUM via Plaso, MFT, …) → CAR.
 
 ### Changed
 - CAR extraction moved into the PIIAT-MitreCar engine (pinned submodule); memory/Volatility driven via the [PIIAT-Mem](https://github.com/Get-Sybers/PIIAT-Mem) CLI. `40-mitre.kql` is now the materialized tables, schema generated from the engine model.
@@ -58,7 +58,7 @@ is `0`, anything may change without notice.
 ## [0.5.0] - 2026-08-28
 
 ### Added
-- **Plaso loose-artefact sources** (`--loose-dir` / `dfir_plaso_loose_dir`): one
+- **Plaso loose-artefact sources** (`--loose-dir` / `dxdfir_plaso_loose_dir`): one
   folder per host (/var/log copies, mobile filesystem dumps, triage output),
   parsed by log2timeline as directory sources — how the non-image OS families
   reach the timeline. Opt-in (loose trees can be very large).
@@ -71,7 +71,7 @@ is `0`, anything may change without notice.
   the 2020 Linux threat-analysis server logs (CentOS + Debian-style + pfSense;
   84k cron runs, real attacker logins), the macOS 2019 tuck image, an Android
   Nexus image, Volatility memory, and Zeek captures.
-- **`dxdfir verify-car`** (`get_sybers_dfir.carcheck`) — the promotion gate for
+- **`dxdfir verify-car`** (`get_sybers_dxdfir.carcheck`) — the promotion gate for
   CAR correctness at the ADX level across EVERY lane, ported to Python from the
   original shell harness: asserts expected field VALUES (not just presence) per
   CAR source, round-trip fidelity (each normalized field == its native source
@@ -123,12 +123,12 @@ is `0`, anything may change without notice.
   `data_store/dependencies/` (signature rulesets, Hayabusa binary, Volatility
   symbols, EvtxECmd) — set up on an air-gapped host with zero network:
   manifest-verified first, `dxdfir verify-images` proves the loaded inventory
-  last. `save-docker-images.sh` now saves the built `dfir/*` images instead of
+  last. `save-docker-images.sh` now saves the built `dxdfir/*` images instead of
   pulling them, and gained `--build` / `--verify`.
-- **Start-time image inventory guard** (`get_sybers_dfir.images` /
+- **Start-time image inventory guard** (`get_sybers_dxdfir.images` /
   `dxdfir verify-images`): each processor preflight refuses to run unless the
-  tool image is a known hardened `dfir/*` image (label + uid 2000 + expected
-  name); the audit flags any unexpected `dfir/*` image on the host — something
+  tool image is a known hardened `dxdfir/*` image (label + uid 2000 + expected
+  name); the audit flags any unexpected `dxdfir/*` image on the host — something
   added to the namespace that should not be there. The role verifies each build
   with a shell-free `docker export` scan.
 
@@ -144,14 +144,14 @@ is `0`, anything may change without notice.
   sudo/su and package managers removed; every setuid bit stripped; tools run as
   uid 2000. Hardening is applied by ansible inside every build
   (`docker/hardening/harden.yml`) and squashed.
-- `dfir_images` role + `dfir-build-images.yml` playbook: builds every image and
+- `dxdfir_images` role + `dxdfir-build-images.yml` playbook: builds every image and
   verifies the hardening contract statically and from inside the running
   container; molecule scenario proves a non-allow-listed argv is refused.
 - Runtime breakout mitigations on every processor `docker run`
-  (`get_sybers_dfir.container`): `--cap-drop ALL`,
+  (`get_sybers_dxdfir.container`): `--cap-drop ALL`,
   `--security-opt no-new-privileges`, `--network none`; Volatility ISF symbol
   fetch is an explicit opt-in (`--symbols-online` /
-  `dfir_volatility_symbols_online`).
+  `dxdfir_volatility_symbols_online`).
 - Suricata per-pcap tuning template with the consolidated `SURICATA_VARS`
   registry; every stock suricata.yaml var auto-derived from each capture's own
   traffic and recorded for the operator.
@@ -160,15 +160,15 @@ is `0`, anything may change without notice.
   role with block/rescue diagnostics and check-mode support; molecule
   scenarios repaired and runnable via the containerised harness.
 
-- The `dfir_deploy_adx` role now carries the retired shell deploy's remaining
+- The `dxdfir_deploy_adx` role now carries the retired shell deploy's remaining
   security properties: an isolated (masquerade-off, never `--internal`) docker
-  network on by default (`dfir_deploy_adx_isolated`) with egress probed from
+  network on by default (`dxdfir_deploy_adx_isolated`) with egress probed from
   inside the container after start, a read-back assertion that no port is bound
   to the wildcard address, and a preflight gate that refuses a non-local bind
-  unless `dfir_deploy_adx_expose=true` is set as well (the Ansible equivalent
+  unless `dxdfir_deploy_adx_expose=true` is set as well (the Ansible equivalent
   of the shell's "type `expose`" prompt).
 - The YARA lane's **disk** and **memory** sources are now in the Python processor
-  (`get_sybers_dfir.signatures.yara`): disk images mounted read-only in place
+  (`get_sybers_dxdfir.signatures.yara`): disk images mounted read-only in place
   (ewfmount → ntfs-3g, FUSE; nothing extracted) → `disk.jsonl`, and process
   memory via Volatility 3 `windows.vadyarascan` (matches carry PID context) →
   `memory.jsonl`. `--yara-sources` selects sources; the mount/scan invocations
@@ -187,9 +187,9 @@ is `0`, anything may change without notice.
 - The last data-pipeline shell scripts: `deploy-kusto.sh`,
   `apply-kusto-schema.sh`, `ingest-kusto.sh` and `scripts/lib/`
   (`docker-lifecycle.sh`, `kusto-api.sh`, `l2t-split.py`). The framework fully
-  implements them — `dxdfir deploy` (the `dfir_deploy_adx` role +
-  `get_sybers_dfir.deploy`) and `dxdfir ingest` (the `dfir_ingest_adx` role +
-  `get_sybers_dfir.ingest`, whose `prepare.split_l2t` superseded `l2t-split.py`).
+  implements them — `dxdfir deploy` (the `dxdfir_deploy_adx` role +
+  `get_sybers_dxdfir.deploy`) and `dxdfir ingest` (the `dxdfir_ingest_adx` role +
+  `get_sybers_dxdfir.ingest`, whose `prepare.split_l2t` superseded `l2t-split.py`).
   The smoke test now deploys its throwaway emulator through `dxdfir deploy`,
   and the check harness asserts the localhost-bind, EULA-disclosure, isolation,
   ephemeral-default, readiness, endpoint-routing, Zeek-routing, l2t fan-out and
@@ -202,12 +202,12 @@ is `0`, anything may change without notice.
   `process-evtx-EvtxECmd.sh`, `process-volatility.sh`,
   `process-log2timeline-Dynamic.sh`, `process-velociraptor.sh`) and the dead
   `process-log2timeline-JSON_Line.sh` — their behaviour lives in the
-  `get_sybers_dfir` processors (`dxdfir process <source>`). The deploy/apply/ingest
+  `get_sybers_dxdfir` processors (`dxdfir process <source>`). The deploy/apply/ingest
   scripts remain.
 - The signature-lane shell scripts (`process-signatures.sh`,
   `scripts/signatures/{yara,suricata,hayabusa}.sh`, `scripts/signatures/lib/disk-image.sh`)
-  — fully ported to `get_sybers_dfir.signatures` (the `dfir_signatures` role /
-  `python -m get_sybers_dfir.signatures`). Not carried over: the shell lanes'
+  — fully ported to `get_sybers_dxdfir.signatures` (the `dxdfir_signatures` role /
+  `python -m get_sybers_dxdfir.signatures`). Not carried over: the shell lanes'
   online provisioning of the YARA-Forge starter, ET Open (`suricata-update`) and
   the Hayabusa binary — rules/binaries are operator-supplied (the Python
   `--fetch` provisions the pinned DetectRaptor YARA set).
@@ -234,20 +234,20 @@ is `0`, anything may change without notice.
 ## [0.3.0] - 2026-08-26
 
 ### Added
-- Hayabusa (Sigma detection) inside the evtx lane (`get_sybers_dfir.evtx --hayabusa`,
-  `dfir_evtx_hayabusa`), scanning the same `.evtx` the lane collects — loose or
+- Hayabusa (Sigma detection) inside the evtx lane (`get_sybers_dxdfir.evtx --hayabusa`,
+  `dxdfir_evtx_hayabusa`), scanning the same `.evtx` the lane collects — loose or
   disk-image-extracted.
 - Disk-image EVTX extraction in the evtx lane (`--image-src`): WindowsEventLogs pulled
-  from E01/raw/VMDK with log2timeline/plaso `image_export.py` (`get_sybers_dfir.imageexport`).
+  from E01/raw/VMDK with log2timeline/plaso `image_export.py` (`get_sybers_dxdfir.imageexport`).
 - Suricata tuning: `--home-net` / `--external-net` / `--suricata-set`, and
   `--auto-home-net` (HOME_NET derived per-pcap from the observed private subnets).
-- DetectRaptor YARA provisioning (`get_sybers_dfir.signatures.detectraptor`): commit-pinned,
+- DetectRaptor YARA provisioning (`get_sybers_dxdfir.signatures.detectraptor`): commit-pinned,
   sha256-verified fetch merged into the yara-rules ruleset.
 - Pipeline smoke test (`tests/smoke-test.sh` + the `smoke` CI workflow): runs the real
   evtx -> EvtxECmd -> ingest pipeline over sha256-pinned Sysmon fixtures and asserts the
   CAR objects populate correctly.
 - `docs/Signature-Rules.md`: adding your own YARA / Suricata rules (and tuning HOME_NET).
-- **Detection orchestration** (`get_sybers_dfir.detect` + `dfir_detect_adx` role +
+- **Detection orchestration** (`get_sybers_dxdfir.detect` + `dxdfir_detect_adx` role +
   `dxdfir detect`), modelled on DetectRaptor's StartHunts runner: a registry where
   each detection declares the processed data it targets (an ADX `db.Table` or a
   signature-lane JSONL output), a runner that surveys what is actually present and
@@ -270,8 +270,8 @@ is `0`, anything may change without notice.
 
 ### Changed
 - Rebuilt the pipeline as three layers: the **`dxdfir` CLI** → the
-  **`get_sybers.dfir` Ansible collection** (one role per source, one action per task)
-  → the **`get_sybers_dfir` Python package**. Ten per-source roles/processors, each
+  **`get_sybers.dxdfir` Ansible collection** (one role per source, one action per task)
+  → the **`get_sybers_dxdfir` Python package**. Ten per-source roles/processors, each
   targeting ADX or SOF-ELK via `--pipeline adx|sofelk`. The legacy `process-*.sh`
   scripts remain as the legacy layer.
 - Ran the Kusto backend end-to-end against the real `kustainer-linux` engine; all
@@ -284,7 +284,7 @@ is `0`, anything may change without notice.
 ### Added
 - `dxdfir` CLI (Typer): `process` / `ingest` / `deploy` / `validate`, a man page, and
   80+ unit tests.
-- From-source SOF-ELK image (`docker/sof-elk/`) and a bundled `dfir/evtxecmd` image
+- From-source SOF-ELK image (`docker/sof-elk/`) and a bundled `dxdfir/evtxecmd` image
   (`docker/evtxecmd/`, DLL + `Maps/` baked in).
 - Memory lane (Volatility 3) → `memory.VolatilityJson`, feeding the memory CAR
   objects (process/module/driver/service/thread/user_session/file/registry).
