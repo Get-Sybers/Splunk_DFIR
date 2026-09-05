@@ -7,6 +7,11 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .I COMMAND
 .RI [ ARGS ...]
 .br
+.B dxdfir build-images
+.RB [ --force ]
+.RB [ --extra-var
+.IR KEY=VALUE ]...
+.br
 .B dxdfir process
 .I SOURCE
 .RB [ --pipeline
@@ -14,6 +19,17 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .RB [ --force ]
 .RB [ --repo-root
 .IR PATH ]
+.RB [ --extra-var
+.IR KEY=VALUE ]...
+.br
+.B dxdfir deploy
+.RI [ sofelk ]
+.RB [ --extra-var
+.IR KEY=VALUE ]...
+.br
+.B dxdfir ingest
+.RI [ sofelk ]
+.RB [ --force ]
 .RB [ --extra-var
 .IR KEY=VALUE ]...
 .br
@@ -57,10 +73,10 @@ task), and the
 .B get_sybers_dfir
 Python package holds the heavy per-item processing the roles invoke.
 .PP
-.B dxdfir process
-drives a source's role with
+.BR "dxdfir build-images" ", " process ", " deploy " and " ingest
+drive collection playbooks with
 .BR ansible-playbook (1)
-\(em preflight, then process, then verify \(em and the role's single action calls
+\(em build, preflight, process, deploy or deliver \(em and each processing role calls
 .RB \(lq python \-m get_sybers_dfir. SOURCE \(rq
 for the tight loop.
 .BR build-car ", " verify-car " and " car-timeline
@@ -75,12 +91,34 @@ The analysis backend itself (the Elastic stack under
 is brought up with docker compose; see its README.
 .SH COMMANDS
 .TP
+.B build-images
+Build and hardening-verify the
+.I dfir/*
+tool-image inventory through
+.IR dfir-build-images.yml .
+Use
+.B --force
+to rebuild images that already exist.
+.TP
 .BI "process " SOURCE
 Process one evidence source. \fISOURCE\fR is one of
 .BR zeek ", " evtx ", " volatility ", " plaso ", " zimmerman ", " signatures .
 Idempotent: inputs that already have output are skipped (use
 .B --force
 to reprocess).
+.TP
+.BI "deploy " [sofelk]
+Deploy the supported analysis backend through the collection. Currently this
+fronts
+.IR dfir-deploy-sofelk.yml .
+.TP
+.BI "ingest " [sofelk]
+Deliver processed output into the supported backend's ingest area. Currently
+this fronts
+.IR dfir-ingest-sofelk.yml ;
+use
+.B --force
+to re-deliver files already recorded in the target ledger.
 .TP
 .BI "build-car " [PROCESSED_DIR]
 Build the per-source CAR stores (car.db + superset.db + one
@@ -160,6 +198,20 @@ a role default, e.g.
 .RB \(lq -e\  dfir_zeek_pcap_dir=/evidence/pcaps \(rq
 or
 .RB \(lq -e\  \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq \(rq.
+.SS build-images, deploy, ingest
+.TP
+.BR --extra-var ", " -e " " \fIKEY=VALUE\fR
+Pass an extra Ansible variable through to the playbook; repeatable.
+.TP
+.B --force
+For
+.B build-images ,
+sets
+.BR dfir_images_force=true ;
+for
+.B ingest ,
+sets
+.BR dfir_ingest_sofelk_force=true .
 .SS build-car
 .TP
 .BI --in " PATH"
@@ -188,7 +240,7 @@ directory, then from the installed package's location.
 .TP
 .B ANSIBLE_ROLES_PATH
 Set by
-.B process
+.BR build-images ", " process ", " deploy " and " ingest
 to the collection's roles directory so the roles resolve without installing the
 collection.
 .SH EXIT STATUS
@@ -209,8 +261,14 @@ if a required tool is not on
 Process packet captures for the Elastic-native path:
 .B dxdfir process zeek --pipeline elastic
 .TP
+Build the hardened processing images:
+.B dxdfir build-images
+.TP
 Reprocess memory images, overriding the input directory:
 .B dxdfir process volatility --force -e dfir_volatility_memory_dir=/evidence/mem
+.TP
+Deploy SOF-ELK and deliver its processed tree:
+.B dxdfir deploy sofelk && dxdfir ingest sofelk
 .TP
 Run only the YARA signature lane:
 .B dxdfir process signatures -e \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq

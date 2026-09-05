@@ -112,6 +112,16 @@ else
     skip "ansible-lint not installed"
 fi
 
+# Role includes in the collection must use FQCNs so every lane resolves through
+# the same get_sybers.dfir namespace whether run by dxdfir, ansible-playbook, or Molecule.
+unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_' \
+    ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null || true)
+if [[ -z "$unqualified_roles" ]]; then
+    pass "collection role includes use get_sybers.dfir FQCNs"
+else
+    while IFS= read -r line; do fail "unqualified role include: $line"; done <<< "$unqualified_roles"
+fi
+
 # ------------------------------------------------------------------------------
 group "Repo-root path resolution"
 # ------------------------------------------------------------------------------

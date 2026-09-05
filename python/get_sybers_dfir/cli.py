@@ -5,15 +5,18 @@ The three layers of epic #46 meet here: this CLI holds the user-facing verbs, th
 one action per task), and the ``get_sybers_dfir`` package holds the heavy per-item
 processing the roles invoke.
 
+    dxdfir build-images                      # build + verify the hardened tool images
     dxdfir process zeek --pipeline elastic   # drive the dfir_zeek role
+    dxdfir deploy sofelk                     # bring up the SOF-ELK backend
+    dxdfir ingest sofelk                     # deliver processed output to SOF-ELK
     dxdfir build-car                         # normalise every processed source into CAR
     dxdfir verify-car                        # the CAR correctness gate over the materialised CAR
     dxdfir validate                          # run the check harness
     dxdfir stix export                       # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
-``process`` drives the collection with ``ansible-playbook`` (preflight → process →
-verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
-the tight loop. The analysis backend is the Elastic-native stack
+``build-images``, ``process``, ``deploy`` and ``ingest`` drive the collection with
+``ansible-playbook``; each processing role calls ``python -m get_sybers_dfir.<source>``
+for the tight loop. The analysis backend is the Elastic-native stack
 (``docker/elastic``, deployed with compose; the Elastic detection rules live as
 data under ``get_sybers_dfir/detect/rules``); ``validate`` runs the repo's check
 harness (``tests/run-checks.sh``).
@@ -35,7 +38,7 @@ from . import collection as _collection
 from .stix.cli import app as stix_app
 
 app = typer.Typer(
-    help="DX_DFIR forensic pipeline front-end (process / build-car / verify-car / validate).",
+    help="DX_DFIR forensic pipeline front-end (build-images / process / deploy / ingest / CAR / validate).",
     no_args_is_help=True,
     add_completion=False,
     # Accept -h as well as --help at every level: the group and, by context
