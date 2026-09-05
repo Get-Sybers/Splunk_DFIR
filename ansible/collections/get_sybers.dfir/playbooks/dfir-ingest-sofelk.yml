@@ -7,4 +7,4 @@
   tasks:
     - name: "dfir-ingest-sofelk | run the sofelk delivery role"
       ansible.builtin.include_role:
-        name: dfir_ingest_sofelk
+        name: get_sybers.dfir.dfir_ingest_sofelk

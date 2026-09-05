@@ -7,4 +7,4 @@
   tasks:
     - name: "dfir-deploy-sofelk | run the deploy role"
       ansible.builtin.include_role:
-        name: dfir_deploy_sofelk
+        name: get_sybers.dfir.dfir_deploy_sofelk

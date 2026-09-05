@@ -32,7 +32,7 @@
 # tolerates its absence) so it is not declared as an input check.
 - name: "plaso | run the shared tool-lane skeleton"
   ansible.builtin.include_role:
-    name: dfir_lane
+    name: get_sybers.dfir.dfir_lane
   vars:
     dfir_lane_name: plaso
     dfir_lane_module: get_sybers_dfir.plaso

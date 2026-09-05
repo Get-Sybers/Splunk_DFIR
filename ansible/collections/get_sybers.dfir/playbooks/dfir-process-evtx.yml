@@ -8,4 +8,4 @@
   tasks:
     - name: "dfir-process-evtx | run the evtx role"
       ansible.builtin.include_role:
-        name: dfir_evtx
+        name: get_sybers.dfir.dfir_evtx

@@ -8,4 +8,4 @@
   tasks:
     - name: "dfir-process-signatures | run the signatures role"
       ansible.builtin.include_role:
-        name: dfir_signatures
+        name: get_sybers.dfir.dfir_signatures

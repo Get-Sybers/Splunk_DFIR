@@ -10,4 +10,4 @@
   tasks:
     - name: "converge | run dfir_plaso (elastic)"
       ansible.builtin.include_role:
-        name: dfir_plaso
+        name: get_sybers.dfir.dfir_plaso

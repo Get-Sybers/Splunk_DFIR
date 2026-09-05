@@ -5,15 +5,16 @@ The three layers of epic #46 meet here: this CLI holds the user-facing verbs, th
 one action per task), and the ``get_sybers_dfir`` package holds the heavy per-item
 processing the roles invoke.
 
+    dxdfir build-images                      # build + verify the hardened tool images
     dxdfir process zeek --pipeline elastic   # drive the dfir_zeek role
     dxdfir build-car                         # normalise every processed source into CAR
     dxdfir verify-car                        # the CAR correctness gate over the materialised CAR
     dxdfir validate                          # run the check harness
     dxdfir stix export                       # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
-``process`` drives the collection with ``ansible-playbook`` (preflight → process →
-verify); the role's single action calls ``python -m get_sybers_dfir.<source>`` for
-the tight loop. The analysis backend is the Elastic-native stack
+``build-images`` and ``process`` drive the collection with ``ansible-playbook``;
+each processing role calls ``python -m get_sybers_dfir.<source>`` for the tight loop.
+The analysis backend is the Elastic-native stack
 (``docker/elastic``, deployed with compose; the Elastic detection rules live as
 data under ``get_sybers_dfir/detect/rules``); ``validate`` runs the repo's check
 harness (``tests/run-checks.sh``).
@@ -35,7 +36,7 @@ from . import collection as _collection
 from .stix.cli import app as stix_app
 
 app = typer.Typer(
-    help="DX_DFIR forensic pipeline front-end (process / build-car / verify-car / validate).",
+    help="DX_DFIR forensic pipeline front-end (build-images / process / CAR / validate).",
     no_args_is_help=True,
     add_completion=False,
     # Accept -h as well as --help at every level: the group and, by context
@@ -46,7 +47,6 @@ app = typer.Typer(
 app.add_typer(stix_app, name="stix")
 
 _COLLECTION = "ansible/collections/get_sybers.dfir"
-
 
 class Source(str, enum.Enum):
     zeek = "zeek"
@@ -203,6 +203,19 @@ def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: boo
     _run(cmd, cwd=repo, env=env)
 
 
+def _run_playbook(repo: Path, playbook_name: str, extra_vars: list[str] | None = None) -> None:
+    """Run one collection playbook through the CLI's bundled ansible-playbook."""
+    playbook = repo / _COLLECTION / "playbooks" / playbook_name
+    if not playbook.is_file():
+        typer.secho(f"playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = [_ansible_playbook(), "-i", "localhost,", "-c", "local", str(playbook)]
+    for kv in extra_vars or []:
+        cmd += ["-e", kv]
+    env = {**os.environ, "ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    _run(cmd, cwd=repo, env=env)
+
+
 @app.command()
 def process(
     source: Source = typer.Argument(..., help="Evidence source to process, or 'all' for every lane."),
@@ -257,6 +270,21 @@ def process(
             repo, collection, "processed", lanes=lanes, pipeline=pipeline.value,
             files={ln: counts.get(ln, 0) for ln in lanes},
             collection_sha256=_collection.manifest_rollup(repo, collection))
+
+
+@app.command(name="build-images")
+def build_images(
+    force: bool = typer.Option(False, "--force", help="Rebuild images even when they already exist."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(
+        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
+    ),
+) -> None:
+    """Build and hardening-verify the dfir/* tool-image inventory."""
+    vars_ = list(extra_var or [])
+    if force:
+        vars_.append("dfir_images_force=true")
+    _run_playbook(_repo_root(repo_root), "dfir-build-images.yml", vars_)
 
 
 @app.command()

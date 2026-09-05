@@ -8,4 +8,4 @@
   tasks:
     - name: "dfir-process-volatility | run the volatility role"
       ansible.builtin.include_role:
-        name: dfir_volatility
+        name: get_sybers.dfir.dfir_volatility

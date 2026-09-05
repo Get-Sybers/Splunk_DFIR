@@ -28,7 +28,7 @@
 # dfir_zeek_out_dir default — the shared tasks are pipeline-agnostic.
 - name: "zeek | run the shared tool-lane skeleton"
   ansible.builtin.include_role:
-    name: dfir_lane
+    name: get_sybers.dfir.dfir_lane
   vars:
     dfir_lane_name: zeek
     dfir_lane_module: get_sybers_dfir.zeek

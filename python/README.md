@@ -26,6 +26,7 @@ The Elastic detection rules live as data under `get_sybers_dfir/detect/rules/`
 
 ## The `dxdfir` CLI
 ```bash
+dxdfir build-images                     # build + hardening-verify the dfir/* tool images
 dxdfir process zeek --pipeline elastic  # drive the dfir_zeek role (preflight → process → verify)
 dxdfir process signatures -e '{"dfir_signatures_lanes":["yara"]}'
 dxdfir build-car                        # normalise every processed source into per-source CAR stores
@@ -34,8 +35,9 @@ dxdfir validate                         # run the check harness
 dxdfir list                             # list processable sources
 man dxdfir                              # the manual (python/man/dxdfir.1)
 ```
-`process` drives the collection with `ansible-playbook` (the role's one action calls
-the matching `python -m get_sybers_dfir.<source>` for the tight loop). `build-car` and
+`build-images` and `process` drive the collection with `ansible-playbook`
+(the role's one action calls the matching
+`python -m get_sybers_dfir.<source>` for the tight loop). `build-car` and
 `verify-car` drive the CAR lane; the analysis backend is the Elastic-native stack
 (`docker/elastic`, brought up with compose), fed from the processed tree.
 `validate` runs the repo's check harness (`tests/run-checks.sh`). The repo is

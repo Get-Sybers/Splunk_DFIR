@@ -12,4 +12,4 @@
   tasks:
     - name: "converge | run dfir_signatures (elastic, yara lane)"
       ansible.builtin.include_role:
-        name: dfir_signatures
+        name: get_sybers.dfir.dfir_signatures
