@@ -301,7 +301,7 @@ def deploy(
     if backend != "sofelk":
         typer.secho("unsupported backend for deploy: use 'sofelk'", fg=typer.colors.RED, err=True)
         raise typer.Exit(2)
-    _run_playbook(_repo_root(repo_root), "dfir-deploy-sofelk.yml", extra_var)
+    _run_playbook(_repo_root(repo_root), "dfir-deploy-sofelk.yml", list(extra_var or []))
 
 
 @app.command()

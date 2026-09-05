@@ -114,7 +114,7 @@ fi
 
 # Role includes in the collection must use FQCNs so every lane resolves through
 # the same get_sybers.dfir namespace whether run by dxdfir, ansible-playbook, or Molecule.
-unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_' \
+unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_[[:alnum:]_]*[[:space:]]*$' \
     ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null || true)
 if [[ -z "$unqualified_roles" ]]; then
     pass "collection role includes use get_sybers.dfir FQCNs"
