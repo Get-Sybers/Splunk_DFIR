@@ -135,11 +135,9 @@ for path in sorted(root.rglob("*.yml")):
                 print(f"{path}:{j}: name: {name.group(1)}")
 PY
 )
-elif unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_[[:alnum:]_]*[[:space:]]*$' \
-    ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null); then
-    :
 else
-    unqualified_roles=""
+    unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_[[:alnum:]_]*[[:space:]]*$' \
+        ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null || true)
 fi
 if [[ -z "$unqualified_roles" ]]; then
     pass "collection include_role entries use get_sybers.dfir FQCNs"

@@ -214,7 +214,7 @@ def _run_playbook(repo: Path, playbook_name: str, extra_vars: list[str] | None =
     cmd = [_ansible_playbook(), "-i", "localhost,", "-c", "local", str(playbook)]
     for kv in extra_vars or []:
         cmd += ["-e", kv]
-    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    env = {**os.environ, "ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
     _run(cmd, cwd=repo, env=env)
 
 
