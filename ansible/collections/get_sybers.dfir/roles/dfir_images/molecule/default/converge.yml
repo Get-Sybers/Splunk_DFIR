@@ -10,4 +10,4 @@
   tasks:
     - name: "converge | run dfir_images (suricata only)"
       ansible.builtin.include_role:
-        name: dfir_images
+        name: get_sybers.dfir.dfir_images

@@ -18,6 +18,8 @@ def _fake_repo(tmp_path: Path) -> Path:
     (tmp_path / _COLLECTION / "roles").mkdir(parents=True)
     for src in ("zeek", "evtx", "volatility", "plaso"):
         (tmp_path / _COLLECTION / "playbooks" / f"dfir-process-{src}.yml").write_text("---\n")
+    for pb in ("dfir-build-images.yml", "dfir-deploy-sofelk.yml", "dfir-ingest-sofelk.yml"):
+        (tmp_path / _COLLECTION / "playbooks" / pb).write_text("---\n")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "run-checks.sh").write_text("#!/bin/bash\n")
     return tmp_path
@@ -70,6 +72,51 @@ def test_process_defaults_to_the_elastic_pipeline(tmp_path):
         r = runner.invoke(cli.app, ["process", "zeek", "--repo-root", str(repo)])
     assert r.exit_code == 0, r.stdout
     assert "dfir_zeek_pipeline=elastic" in m.call_args.args[0]
+
+
+def test_build_images_builds_playbook_command(tmp_path):
+    repo = _fake_repo(tmp_path)
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
+        r = runner.invoke(cli.app, ["build-images", "--force", "--repo-root", str(repo)])
+    assert r.exit_code == 0, r.stdout
+    cmd = m.call_args.args[0]
+    assert str(repo / _COLLECTION / "playbooks" / "dfir-build-images.yml") in cmd
+    assert "dfir_images_force=true" in cmd
+    env = m.call_args.kwargs["env"]
+    assert env["ANSIBLE_ROLES_PATH"] == str(repo / _COLLECTION / "roles")
+
+
+def test_deploy_sofelk_builds_playbook_command(tmp_path):
+    repo = _fake_repo(tmp_path)
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
+        r = runner.invoke(cli.app, [
+            "deploy", "sofelk", "--repo-root", str(repo),
+            "-e", "dfir_deploy_sofelk_build=false",
+        ])
+    assert r.exit_code == 0, r.stdout
+    cmd = m.call_args.args[0]
+    assert str(repo / _COLLECTION / "playbooks" / "dfir-deploy-sofelk.yml") in cmd
+    assert "dfir_deploy_sofelk_build=false" in cmd
+
+
+def test_ingest_sofelk_builds_playbook_command(tmp_path):
+    repo = _fake_repo(tmp_path)
+    with mock.patch.object(cli.subprocess, "call", return_value=0) as m, \
+            mock.patch.object(cli, "_ansible_playbook", return_value="ansible-playbook"):
+        r = runner.invoke(cli.app, ["ingest", "sofelk", "--force", "--repo-root", str(repo)])
+    assert r.exit_code == 0, r.stdout
+    cmd = m.call_args.args[0]
+    assert str(repo / _COLLECTION / "playbooks" / "dfir-ingest-sofelk.yml") in cmd
+    assert "dfir_ingest_sofelk_force=true" in cmd
+
+
+def test_backend_wrappers_reject_unknown_backend(tmp_path):
+    repo = _fake_repo(tmp_path)
+    for command in ("deploy", "ingest"):
+        r = runner.invoke(cli.app, [command, "bogus", "--repo-root", str(repo)])
+        assert r.exit_code == 2
 
 
 def test_process_rejects_the_retired_adx_pipeline(tmp_path):

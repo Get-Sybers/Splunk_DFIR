@@ -47,7 +47,6 @@ app.add_typer(stix_app, name="stix")
 
 _COLLECTION = "ansible/collections/get_sybers.dfir"
 
-
 class Source(str, enum.Enum):
     zeek = "zeek"
     evtx = "evtx"
@@ -203,6 +202,19 @@ def _process_lane(ap: str, repo: Path, name: str, pipeline: Pipeline, force: boo
     _run(cmd, cwd=repo, env=env)
 
 
+def _run_playbook(repo: Path, playbook_name: str, extra_vars: list[str] | None = None) -> None:
+    """Run one collection playbook through the CLI's bundled ansible-playbook."""
+    playbook = repo / _COLLECTION / "playbooks" / playbook_name
+    if not playbook.is_file():
+        typer.secho(f"playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = [_ansible_playbook(), "-i", "localhost,", "-c", "local", str(playbook)]
+    for kv in extra_vars or []:
+        cmd += ["-e", kv]
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    _run(cmd, cwd=repo, env=env)
+
+
 @app.command()
 def process(
     source: Source = typer.Argument(..., help="Evidence source to process, or 'all' for every lane."),
@@ -257,6 +269,55 @@ def process(
             repo, collection, "processed", lanes=lanes, pipeline=pipeline.value,
             files={ln: counts.get(ln, 0) for ln in lanes},
             collection_sha256=_collection.manifest_rollup(repo, collection))
+
+
+@app.command(name="build-images")
+def build_images(
+    force: bool = typer.Option(False, "--force", help="Rebuild images even when they already exist."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(
+        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
+    ),
+) -> None:
+    """Build and hardening-verify the dfir/* tool-image inventory."""
+    vars_ = list(extra_var or [])
+    if force:
+        vars_.append("dfir_images_force=true")
+    _run_playbook(_repo_root(repo_root), "dfir-build-images.yml", vars_)
+
+
+@app.command()
+def deploy(
+    backend: str = typer.Argument("sofelk", help="Backend to deploy (currently: sofelk)."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(
+        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
+    ),
+) -> None:
+    """Deploy a supported analysis backend through the collection."""
+    if backend != "sofelk":
+        typer.secho("unsupported backend for deploy: use 'sofelk'", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    _run_playbook(_repo_root(repo_root), "dfir-deploy-sofelk.yml", extra_var)
+
+
+@app.command()
+def ingest(
+    backend: str = typer.Argument("sofelk", help="Backend to deliver into (currently: sofelk)."),
+    force: bool = typer.Option(False, "--force", help="Re-deliver files already in the target ledger."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(
+        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
+    ),
+) -> None:
+    """Deliver processed output into a supported backend's ingest area."""
+    if backend != "sofelk":
+        typer.secho("unsupported backend for ingest: use 'sofelk'", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    vars_ = list(extra_var or [])
+    if force:
+        vars_.append("dfir_ingest_sofelk_force=true")
+    _run_playbook(_repo_root(repo_root), "dfir-ingest-sofelk.yml", vars_)
 
 
 @app.command()

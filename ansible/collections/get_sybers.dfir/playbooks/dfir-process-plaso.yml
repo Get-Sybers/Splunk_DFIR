@@ -8,4 +8,4 @@
   tasks:
     - name: "dfir-process-plaso | run the plaso role"
       ansible.builtin.include_role:
-        name: dfir_plaso
+        name: get_sybers.dfir.dfir_plaso

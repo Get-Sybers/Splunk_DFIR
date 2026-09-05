@@ -10,4 +10,4 @@
   tasks:
     - name: "converge | run dfir_zimmerman (elastic)"
       ansible.builtin.include_role:
-        name: dfir_zimmerman
+        name: get_sybers.dfir.dfir_zimmerman
