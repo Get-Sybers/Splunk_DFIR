@@ -134,13 +134,11 @@ def test_hash_collection_is_deterministic_and_content_addressed(tmp_path):
     _write(root / "pcaps" / "a.pcap", b"AAA")
     _write(root / "memory" / "b.mem", b"BBB")
     per_file, roll1 = collection.hash_collection(tmp_path, "case")
-    rec = {rel: (s1, s256) for rel, s1, s256 in per_file}
-    assert rec["pcaps/a.pcap"] == (hashlib.sha1(b"AAA").hexdigest(), hashlib.sha256(b"AAA").hexdigest())
-    # each rollup == hash (in that algo) of the sorted per-file digests, concatenated
+    rec = {rel: s1 for rel, s1 in per_file}
+    assert rec["pcaps/a.pcap"] == hashlib.sha1(b"AAA").hexdigest()
+    # rollup == sha1 of the sorted per-file digests, concatenated
     assert roll1["sha1"] == hashlib.sha1(
-        "".join(sorted(s1 for _r, s1, _s in per_file)).encode()).hexdigest()
-    assert roll1["sha256"] == hashlib.sha256(
-        "".join(sorted(s256 for _r, _s, s256 in per_file)).encode()).hexdigest()
+        "".join(sorted(s1 for _r, s1 in per_file)).encode()).hexdigest()
     assert collection.hash_collection(tmp_path, "case")[1] == roll1        # deterministic
     _write(root / "memory" / "b.mem", b"CHANGED")
     assert collection.hash_collection(tmp_path, "case")[1] != roll1        # content-addressed
@@ -151,11 +149,10 @@ def test_write_manifest_persists_and_logs(tmp_path):
     root = collection.collection_dir(tmp_path, "case")
     _write(root / "pcaps" / "a.pcap", b"AAA")
     rollups, count = collection.write_manifest(tmp_path, "case")
-    assert count == 1 and collection.manifest_rollup(tmp_path, "case") == rollups["sha256"]
+    assert count == 1 and collection.manifest_rollup(tmp_path, "case") == rollups["sha1"]
     manifest = (root / ".collection.hashes").read_text()
     assert "pcaps/a.pcap" in manifest
-    assert hashlib.sha256(b"AAA").hexdigest() in manifest      # SHA-256 recorded
-    assert hashlib.sha1(b"AAA").hexdigest() in manifest        # SHA-1 kept too
+    assert hashlib.sha1(b"AAA").hexdigest() in manifest        # per-file SHA-1 recorded
     assert "hashed" in [e["event"] for e in collection.read_log(tmp_path, "case")]
 
 
@@ -165,7 +162,7 @@ def test_manifest_includes_dot_evidence_excludes_control(tmp_path):
     _write(root / "disk_images" / ".bash_history", b"whoami\n")   # dot-prefixed EVIDENCE
     _write(root / "pcaps" / "a.pcap", b"AAA")
     collection.write_manifest(tmp_path, "case")                   # writes .collection.hashes
-    files = [rel for rel, _s1, _s256 in collection.hash_collection(tmp_path, "case")[0]]
+    files = [rel for rel, _s1 in collection.hash_collection(tmp_path, "case")[0]]
     assert "disk_images/.bash_history" in files                   # real dot-evidence IS hashed
     assert "pcaps/a.pcap" in files
     assert not any(f.startswith(".collection") for f in files)    # control files are NOT
@@ -213,7 +210,7 @@ def test_symlinks_not_followed_in_evidence(tmp_path):
     (root / "pcaps" / "link.pcap").symlink_to(outside)             # symlink to it
     outdir = tmp_path / "outdir"; outdir.mkdir(); _write(outdir / "loot.bin", b"x")
     (root / "memory" / "linkdir").symlink_to(outdir, target_is_directory=True)
-    files = [rel for rel, _s1, _s256 in collection.hash_collection(tmp_path, "case")[0]]
+    files = [rel for rel, _s1 in collection.hash_collection(tmp_path, "case")[0]]
     assert files == ["pcaps/real.pcap"]                            # symlink + symlinked dir skipped
 
 
