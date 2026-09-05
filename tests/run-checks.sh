@@ -114,10 +114,35 @@ fi
 
 # Role includes in the collection must use FQCNs so every lane resolves through
 # the same get_sybers.dfir namespace whether run by dxdfir, ansible-playbook, or Molecule.
-unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_[[:alnum:]_]*[[:space:]]*$' \
-    ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null || true)
+if command -v python3 >/dev/null 2>&1; then
+    unqualified_roles=$(python3 - <<'PY'
+import pathlib, re
+root = pathlib.Path("ansible/collections/get_sybers.dfir")
+for path in sorted(root.rglob("*.yml")):
+    lines = path.read_text(errors="ignore").splitlines()
+    for i, line in enumerate(lines):
+        m = re.match(r"^(\s*)ansible\.builtin\.include_role:\s*$", line)
+        if not m:
+            continue
+        base = len(m.group(1))
+        for j, sub in enumerate(lines[i + 1:], i + 2):
+            if not sub.strip() or sub.lstrip().startswith("#"):
+                continue
+            if len(sub) - len(sub.lstrip()) <= base:
+                break
+            name = re.match(r"^\s+name:\s*(dfir_[A-Za-z0-9_]*)\s*$", sub)
+            if name:
+                print(f"{path}:{j}: name: {name.group(1)}")
+PY
+)
+elif unqualified_roles=$(grep -RInE '^[[:space:]]*name:[[:space:]]*dfir_[[:alnum:]_]*[[:space:]]*$' \
+    ansible/collections/get_sybers.dfir --include='*.yml' 2>/dev/null); then
+    :
+else
+    unqualified_roles=""
+fi
 if [[ -z "$unqualified_roles" ]]; then
-    pass "collection role includes use get_sybers.dfir FQCNs"
+    pass "collection include_role entries use get_sybers.dfir FQCNs"
 else
     while IFS= read -r line; do fail "unqualified role include: $line"; done <<< "$unqualified_roles"
 fi
