@@ -128,9 +128,10 @@ for path in sorted(root.rglob("*.yml")):
         for j, sub in enumerate(lines[i + 1:], i + 2):
             if not sub.strip() or sub.lstrip().startswith("#"):
                 continue
-            if len(sub) - len(sub.lstrip()) <= base:
+            indent = len(sub) - len(sub.lstrip())
+            if indent <= base:
                 break
-            name = re.match(r"^\s+name:\s*(dfir_[A-Za-z0-9_]*)\s*$", sub)
+            name = re.match(r"^ {" + str(indent) + r"}name:\s*(dfir_[A-Za-z0-9_]*)\s*$", sub)
             if name:
                 print(f"{path}:{j}: name: {name.group(1)}")
 PY

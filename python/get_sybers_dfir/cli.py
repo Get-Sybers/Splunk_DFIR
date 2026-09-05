@@ -67,6 +67,10 @@ class Pipeline(str, enum.Enum):
     sofelk = "sofelk"
 
 
+class Backend(str, enum.Enum):
+    sofelk = "sofelk"
+
+
 # --------------------------------------------------------------------------- helpers
 def _repo_root(explicit: Path | None) -> Path:
     """Locate the DX_DFIR repo: --repo-root, then $DFIR_REPO_ROOT, then walk up from
@@ -291,22 +295,19 @@ def build_images(
 
 @app.command()
 def deploy(
-    backend: str = typer.Argument("sofelk", help="Backend to deploy (currently: sofelk)."),
+    backend: Backend = typer.Argument(Backend.sofelk, help="Backend to deploy."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
     extra_var: list[str] = typer.Option(
         None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
     ),
 ) -> None:
     """Deploy a supported analysis backend through the collection."""
-    if backend != "sofelk":
-        typer.secho("unsupported backend for deploy: use 'sofelk'", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
     _run_playbook(_repo_root(repo_root), "dfir-deploy-sofelk.yml", list(extra_var or []))
 
 
 @app.command()
 def ingest(
-    backend: str = typer.Argument("sofelk", help="Backend to deliver into (currently: sofelk)."),
+    backend: Backend = typer.Argument(Backend.sofelk, help="Backend to deliver into."),
     force: bool = typer.Option(False, "--force", help="Re-deliver files already in the target ledger."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
     extra_var: list[str] = typer.Option(
@@ -314,9 +315,6 @@ def ingest(
     ),
 ) -> None:
     """Deliver processed output into a supported backend's ingest area."""
-    if backend != "sofelk":
-        typer.secho("unsupported backend for ingest: use 'sofelk'", fg=typer.colors.RED, err=True)
-        raise typer.Exit(2)
     vars_ = list(extra_var or [])
     if force:
         vars_.append("dfir_ingest_sofelk_force=true")
