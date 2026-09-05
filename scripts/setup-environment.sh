@@ -277,7 +277,7 @@ fi
 # and — this is the point — puts ansible-playbook right next to the dxdfir entry
 # point, which is exactly where the CLI resolves it (the CLI drives the Ansible
 # collection). ansible-core is a declared dependency, so this one install gives a
-# working `dxdfir build-images/process/deploy/ingest`.
+# working `dxdfir build-images/process`.
 #
 # --editable is REQUIRED, not a preference. get_sybers_dfir/mitrecar.py locates the
 # vendored PIIAT-MitreCar engine RELATIVE TO ITS OWN FILE (_REPO_ROOT = three dirs

@@ -22,17 +22,6 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .RB [ --extra-var
 .IR KEY=VALUE ]...
 .br
-.B dxdfir deploy
-.RI [ sofelk ]
-.RB [ --extra-var
-.IR KEY=VALUE ]...
-.br
-.B dxdfir ingest
-.RI [ sofelk ]
-.RB [ --force ]
-.RB [ --extra-var
-.IR KEY=VALUE ]...
-.br
 .B dxdfir build-car
 .RI [ PROCESSED_DIR ]
 .RB [ --in
@@ -73,10 +62,10 @@ task), and the
 .B get_sybers_dfir
 Python package holds the heavy per-item processing the roles invoke.
 .PP
-.BR "dxdfir build-images" ", " process ", " deploy " and " ingest
+.BR "dxdfir build-images" " and " process
 drive collection playbooks with
 .BR ansible-playbook (1)
-\(em build, preflight, process, deploy or deliver \(em and each processing role calls
+\(em build, preflight or process \(em and each processing role calls
 .RB \(lq python \-m get_sybers_dfir. SOURCE \(rq
 for the tight loop.
 .BR build-car ", " verify-car " and " car-timeline
@@ -106,19 +95,6 @@ Process one evidence source. \fISOURCE\fR is one of
 Idempotent: inputs that already have output are skipped (use
 .B --force
 to reprocess).
-.TP
-.BI "deploy " [sofelk]
-Deploy the supported analysis backend through the collection. Currently this
-fronts
-.IR dfir-deploy-sofelk.yml .
-.TP
-.BI "ingest " [sofelk]
-Deliver processed output into the supported backend's ingest area. Currently
-this fronts
-.IR dfir-ingest-sofelk.yml ;
-use
-.B --force
-to re-deliver files already recorded in the target ledger.
 .TP
 .BI "build-car " [PROCESSED_DIR]
 Build the per-source CAR stores (car.db + superset.db + one
@@ -198,20 +174,14 @@ a role default, e.g.
 .RB \(lq -e\  dfir_zeek_pcap_dir=/evidence/pcaps \(rq
 or
 .RB \(lq -e\  \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq \(rq.
-.SS build-images, deploy, ingest
+.SS build-images
 .TP
 .BR --extra-var ", " -e " " \fIKEY=VALUE\fR
 Pass an extra Ansible variable through to the playbook; repeatable.
 .TP
 .B --force
-For
-.B build-images ,
 sets
-.BR dfir_images_force=true ;
-for
-.B ingest ,
-sets
-.BR dfir_ingest_sofelk_force=true .
+.BR dfir_images_force=true .
 .SS build-car
 .TP
 .BI --in " PATH"
@@ -240,7 +210,7 @@ directory, then from the installed package's location.
 .TP
 .B ANSIBLE_ROLES_PATH
 Set by
-.BR build-images ", " process ", " deploy " and " ingest
+.BR build-images " and " process
 to the collection's roles directory so the roles resolve without installing the
 collection.
 .SH EXIT STATUS
@@ -266,9 +236,6 @@ Build the hardened processing images:
 .TP
 Reprocess memory images, overriding the input directory:
 .B dxdfir process volatility --force -e dfir_volatility_memory_dir=/evidence/mem
-.TP
-Deploy SOF-ELK and deliver its processed tree:
-.B dxdfir deploy sofelk && dxdfir ingest sofelk
 .TP
 Run only the YARA signature lane:
 .B dxdfir process signatures -e \(aq{\(dqdfir_signatures_lanes\(dq:[\(dqyara\(dq]}\(aq

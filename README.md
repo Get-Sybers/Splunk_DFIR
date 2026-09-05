@@ -48,8 +48,6 @@ Bring up the backend:
 ```bash
 cd docker/elastic && cp .env.example .env      # replace EVERY placeholder, then:
 docker compose up -d                            # Elasticsearch + Kibana + Fleet + Filebeat, localhost-only
-dxdfir deploy sofelk                            # optional retiring SOF-ELK backend
-dxdfir ingest sofelk                            # deliver processed/sofelk to SOF-ELK
 ```
 
 Kibana is at `http://127.0.0.1:5601`. Filebeat ships the delivered evidence tree
@@ -70,8 +68,8 @@ collection** (one role per source, one action per task) → the **`get_sybers_df
 Python package** — writing the processed tree the CAR lane builds from
 (`--pipeline elastic`, the default) or the retiring SOF-ELK delivery tree
 (`--pipeline sofelk`). Each source runs as `dxdfir process <source>` (driving the
-matching `dfir_<source>` role); `dxdfir build-images`, `dxdfir deploy sofelk` and
-`dxdfir ingest sofelk` front the remaining collection playbooks. Processors are also runnable as
+matching `dfir_<source>` role); `dxdfir build-images` fronts the image-build playbook.
+Processors are also runnable as
 `python -m get_sybers_dfir.<source>`.
 
 ## What it produces

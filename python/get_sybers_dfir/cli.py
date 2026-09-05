@@ -7,16 +7,14 @@ processing the roles invoke.
 
     dxdfir build-images                      # build + verify the hardened tool images
     dxdfir process zeek --pipeline elastic   # drive the dfir_zeek role
-    dxdfir deploy sofelk                     # bring up the SOF-ELK backend
-    dxdfir ingest sofelk                     # deliver processed output to SOF-ELK
     dxdfir build-car                         # normalise every processed source into CAR
     dxdfir verify-car                        # the CAR correctness gate over the materialised CAR
     dxdfir validate                          # run the check harness
     dxdfir stix export                       # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
-``build-images``, ``process``, ``deploy`` and ``ingest`` drive the collection with
-``ansible-playbook``; each processing role calls ``python -m get_sybers_dfir.<source>``
-for the tight loop. The analysis backend is the Elastic-native stack
+``build-images`` and ``process`` drive the collection with ``ansible-playbook``;
+each processing role calls ``python -m get_sybers_dfir.<source>`` for the tight loop.
+The analysis backend is the Elastic-native stack
 (``docker/elastic``, deployed with compose; the Elastic detection rules live as
 data under ``get_sybers_dfir/detect/rules``); ``validate`` runs the repo's check
 harness (``tests/run-checks.sh``).
@@ -38,7 +36,7 @@ from . import collection as _collection
 from .stix.cli import app as stix_app
 
 app = typer.Typer(
-    help="DX_DFIR forensic pipeline front-end (build-images / process / deploy / ingest / CAR / validate).",
+    help="DX_DFIR forensic pipeline front-end (build-images / process / CAR / validate).",
     no_args_is_help=True,
     add_completion=False,
     # Accept -h as well as --help at every level: the group and, by context
@@ -64,12 +62,6 @@ class Pipeline(str, enum.Enum):
     # elastic: the processed tree the CAR lane builds from (the Elastic-native
     # path); sofelk: the retiring SOF-ELK delivery tree (processed/sofelk/).
     elastic = "elastic"
-    sofelk = "sofelk"
-
-
-class Backend(str, enum.Enum):
-    # Backends with collection-level deploy/ingest playbooks. Separate from
-    # Pipeline: process --pipeline sofelk remains the retiring delivery output mode.
     sofelk = "sofelk"
 
 
@@ -293,34 +285,6 @@ def build_images(
     if force:
         vars_.append("dfir_images_force=true")
     _run_playbook(_repo_root(repo_root), "dfir-build-images.yml", vars_)
-
-
-@app.command()
-def deploy(
-    backend: Backend = typer.Argument(Backend.sofelk, help="Backend to deploy."),
-    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
-    extra_var: list[str] = typer.Option(
-        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
-    ),
-) -> None:
-    """Deploy a supported analysis backend through the collection."""
-    _run_playbook(_repo_root(repo_root), f"dfir-deploy-{backend.value}.yml", list(extra_var or []))
-
-
-@app.command()
-def ingest(
-    backend: Backend = typer.Argument(Backend.sofelk, help="Backend to deliver into."),
-    force: bool = typer.Option(False, "--force", help="Re-deliver files already in the target ledger."),
-    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
-    extra_var: list[str] = typer.Option(
-        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."
-    ),
-) -> None:
-    """Deliver processed output into a supported backend's ingest area."""
-    vars_ = list(extra_var or [])
-    if force:
-        vars_.append("dfir_ingest_sofelk_force=true")
-    _run_playbook(_repo_root(repo_root), f"dfir-ingest-{backend.value}.yml", vars_)
 
 
 @app.command()
