@@ -27,12 +27,12 @@ def _write(p: Path, data: bytes = b"") -> Path:
 def test_classify_magic_beats_extension(tmp_path):
     # An E01 mislabelled .raw must file as a disk image by its header, not its name.
     f = _write(tmp_path / "image.raw", _EWF_MAGIC + b"padding")
-    assert collection.classify(f) == ("disk_images", "ok")
+    assert collection.classify(f) == ("disk_images", "magic")
 
 
 def test_classify_pcap_magic_over_odd_extension(tmp_path):
     f = _write(tmp_path / "capture.dat", _PCAP_MAGIC + b"rest")
-    assert collection.classify(f) == ("pcaps", "ok")
+    assert collection.classify(f) == ("pcaps", "magic")
 
 
 def test_classify_headerless_raw_is_ambiguous(tmp_path):
@@ -122,9 +122,12 @@ def test_register_marks_and_logs(tmp_path):
     assert "registered" in [e["event"] for e in collection.read_log(tmp_path, "hand")]
 
 
-def test_register_missing_dir_raises(tmp_path):
-    with pytest.raises(ValueError):
-        collection.register(tmp_path, "nope")
+def test_register_missing_collection_creates_and_registers(tmp_path):
+    # register is now the unified entry point (from_path=None): it ensures the
+    # collection dir exists (lane subdirs on demand) and registers it, rather
+    # than raising on a not-yet-existing collection.
+    collection.register(tmp_path, "nope")
+    assert collection.is_registered(tmp_path, "nope")
 
 
 # --- integrity: per-file SHA-1 + collection rollup ---------------------------
