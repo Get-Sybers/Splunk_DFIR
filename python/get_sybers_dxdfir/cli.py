@@ -8,6 +8,7 @@ processing the roles invoke.
     dxdfir process zeek --pipeline elastic   # drive the dxdfir_zeek role
     dxdfir build-car                         # normalise every processed source into CAR
     dxdfir verify-car                        # the CAR correctness gate over the materialised CAR
+    dxdfir build-docker                      # build (and hardening-verify) every dxdfir/* tool image
     dxdfir validate                          # run the check harness
     dxdfir stix export                       # detections -> STIX 2.1 sightings (+ OpenCTI push)
 
@@ -386,6 +387,46 @@ def verify_images() -> None:
     raise typer.Exit(1)
 
 
+@app.command(name="build-docker")
+def build_docker(
+    image: list[str] = typer.Option(
+        None, "--image", "-i",
+        help="Restrict the build set to this image (repeatable). Default: build every dxdfir/* tool image."),
+    force: bool = typer.Option(
+        False, "--force", help="Rebuild even when the image already exists (docker layer cache still applies)."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    extra_var: list[str] = typer.Option(
+        None, "--extra-var", "-e", help="Extra Ansible var KEY=VALUE (repeatable)."),
+) -> None:
+    """Build (and hardening-verify) the dxdfir/* tool images from the in-repo Dockerfiles.
+
+    Fronts playbooks/dxdfir-build-images.yml (the dxdfir_images role): builds each
+    image from its ansible-hardened Dockerfile under docker/, then asserts the
+    hardening contract on the result (fixed non-root USER, com.get-sybers.hardened
+    label, no apt-get/dpkg/sudo/pip/ansible; shell + python absent from the
+    tool-only images). Run this once per host before first processing, and again
+    after changing anything under docker/.
+    """
+    ap = _ansible_playbook()
+    repo = _repo_root(repo_root)
+    playbook = repo / _COLLECTION / "playbooks" / "dxdfir-build-images.yml"
+    if not playbook.is_file():
+        typer.secho(f"build-images playbook not found: {playbook}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    cmd = [ap, "-i", "localhost,", "-c", "local", str(playbook)]
+    if force:
+        cmd += ["-e", "dxdfir_images_force=true"]
+    if image:
+        # JSON so ansible parses it as a list, matching the playbook's own docs.
+        cmd += ["-e", f"dxdfir_images_set={json.dumps(list(image))}"]
+    for kv in extra_var or []:
+        cmd += ["-e", kv]
+    env = {"ANSIBLE_ROLES_PATH": str(repo / _COLLECTION / "roles")}
+    scope = f"  ({', '.join(image)})" if image else ""
+    typer.secho(f"building dxdfir/* tool images{scope}", fg=typer.colors.GREEN)
+    _run(cmd, cwd=repo, env=env)
+
+
 # Where each source reads its evidence from (relative to data_store/raw), and the
 # file types that count as evidence there — mirrors the roles' input-dir defaults.
 _EVIDENCE: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
@@ -518,21 +559,53 @@ def collection_list(
         _row(c, "unregistered", typer.colors.YELLOW)
     for c in candidates:
         typer.echo(f"   {c:<22} {typer.style('  ?', fg=typer.colors.CYAN)}          "
-                   f"{typer.style('dropzone candidate — register --from data_store/raw/sort/' + c, fg=typer.colors.CYAN)}")
+                   f"{typer.style(f'dropzone candidate — dxdfir register {c}', fg=typer.colors.CYAN)}")
     hints = []
     if unreg:
-        hints.append("register a detected one:  dxdfir collection register <name>")
+        hints.append("register a detected one:  dxdfir register <name>")
     if candidates:
-        hints.append("or promote a dropzone folder: dxdfir collection register <name> --from data_store/raw/sort/<name>")
+        hints.append("or promote a dropzone folder: dxdfir register <name>")
     if active is None and registered:
         hints.append("pick an active one:  dxdfir collection select <name>")
     for h in hints:
         typer.echo(f"\n  {h}")
 
 
+@app.command("register")
+def register(
+    name: str = typer.Argument(..., help="Collection name — same string as the dropzone folder if you're promoting one."),
+    repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
+    do_hash: bool = typer.Option(True, "--hash/--no-hash",
+                                 help="SHA-1 the evidence + write .collection.hashes."),
+) -> None:
+    """Register a collection (sugar for `dxdfir collection register`).
+
+    If ``data_store/raw/sort/<NAME>/`` exists it is promoted (evidence auto-sorted
+    into lane subdirs); otherwise an empty ``data_store/raw/collections/<NAME>/``
+    is created. Either way, a SQLite registry row is added. For the external-dir
+    symlink flavour, use ``dxdfir collection register <NAME> --from <PATH>``.
+    """
+    repo = _repo_root(repo_root)
+    _valid_or_exit(name)
+    dropzone = repo / "data_store" / "raw" / "sort" / name
+    from_path = dropzone if dropzone.is_dir() else None
+    try:
+        _collection.register(repo, name, from_path=from_path, source="manual")
+    except ValueError as e:
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(2)
+    origin = f" (promoted from data_store/raw/sort/{name}/)" if from_path else ""
+    typer.secho(f"✅ registered '{name}'{origin}", fg=typer.colors.GREEN)
+    if do_hash:
+        _hash_and_report(repo, name)
+
+
 @collection_app.command("register")
 def collection_register(
-    name: str = typer.Argument(..., help="Collection name (letters/digits then . _ -)."),
+    name: str = typer.Argument(
+        None,
+        help="Collection name (letters/digits then . _ -). "
+             "Optional with --from: defaults to the basename of --from."),
     from_path: Path = typer.Option(
         None, "--from", "-f",
         help="Source: a dropzone subfolder (data_store/raw/sort/<name>) or an external directory to symlink."),
@@ -540,7 +613,7 @@ def collection_register(
                                  help="SHA-1 the evidence + write .collection.hashes."),
     repo_root: Path = typer.Option(None, "--repo-root", help="DX_DFIR repo (auto-detected otherwise)."),
 ) -> None:
-    """Register a collection.
+    """Register a collection (long form — `dxdfir register <name>` is the sugar).
 
     * no ``--from`` — ensure ``data_store/raw/collections/<name>/`` exists
       (creates lane subdirs on demand) and add the SQLite registry row.
@@ -548,8 +621,20 @@ def collection_register(
       ``collections/<name>/`` and register it (auto-classify loose files).
     * ``--from <external dir>`` — create a directory symlink
       ``collections/<name> → <external dir>`` and register the target.
+
+    NAME is optional when ``--from`` is given: it defaults to the basename of the
+    source directory (so ``register --from data_store/raw/sort/foo`` registers
+    ``foo``).
     """
     repo = _repo_root(repo_root)
+    if not name:
+        if from_path is None:
+            typer.secho("register: NAME is required (or pass --from PATH to infer it from the basename).",
+                        fg=typer.colors.RED, err=True)
+            raise typer.Exit(2)
+        name = from_path.name
+        typer.secho(f"ℹ️  no NAME given — using '{name}' (basename of --from).",
+                    fg=typer.colors.BRIGHT_BLACK)
     _valid_or_exit(name)
     try:
         _collection.register(repo, name, from_path=from_path, source="manual")

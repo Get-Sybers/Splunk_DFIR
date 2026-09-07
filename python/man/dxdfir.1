@@ -38,6 +38,15 @@ dxdfir \- DX_DFIR forensic processing pipeline front-end
 .br
 .B dxdfir verify-images
 .br
+.B dxdfir build-docker
+.RB [ --image
+.IR NAME ]...
+.RB [ --force ]
+.RB [ --repo-root
+.IR PATH ]
+.RB [ --extra-var
+.IR KEY=VALUE ]...
+.br
 .B dxdfir list
 .br
 .B dxdfir stix
@@ -117,6 +126,28 @@ Audit the hardened
 tool-image inventory: every expected image present and hardened, nothing
 unexpected in the namespace.
 .TP
+.B build-docker
+Build (and hardening-verify) the
+.I dxdfir/*
+tool images from the in-repo Dockerfiles. Fronts
+.I playbooks/dxdfir-build-images.yml
+(the
+.B dxdfir_images
+role): each image is built from its ansible-hardened Dockerfile under
+.IR docker/ ,
+then the hardening contract is asserted on the result (fixed non-root
+.BR USER ,
+.B com.get-sybers.hardened
+label, no
+.BR apt-get / dpkg / sudo / pip /ansible;
+shell + python absent from the tool-only images). Restrict the set with
+.B --image
+(repeatable); rebuild existing images with
+.BR --force .
+Run once per host before first processing, and again after changing anything
+under
+.IR docker/ .
+.TP
 .B list
 Inventory the evidence staged under
 .IR data_store/raw :
@@ -178,6 +209,27 @@ Rebuild CAR stores that already exist (after a map/coverage change).
 .BI --car-dir " DIR"
 The materialised CAR tree to check. Default:
 .IR <repo>/data_store/processed/car .
+.SS build-docker
+.TP
+.BR --image ", " -i " " \fINAME\fR
+Build only this image (e.g.\&
+.BR yara ,
+.BR zeek ,
+.BR volatility );
+repeatable. Default: every dxdfir/* tool image.
+.TP
+.B --force
+Rebuild even when the image already exists (docker layer cache still applies).
+.TP
+.BI --repo-root " PATH"
+DX_DFIR repository root. Auto-detected otherwise (see
+.BR ENVIRONMENT ).
+.TP
+.BR --extra-var ", " -e " " \fIKEY=VALUE\fR
+Pass an extra Ansible variable through to the
+.B dxdfir_images
+role; repeatable (e.g.\&
+.RB \(lq -e\  dxdfir_runtime_uid=3000 \(rq).
 .SH ENVIRONMENT
 .TP
 .B DFIR_REPO_ROOT
@@ -189,6 +241,8 @@ directory, then from the installed package's location.
 .B ANSIBLE_ROLES_PATH
 Set by
 .B process
+and
+.B build-docker
 to the collection's roles directory so the roles resolve without installing the
 collection.
 .SH EXIT STATUS
@@ -205,6 +259,12 @@ materialised CAR to verify) and
 if a required tool is not on
 .BR PATH .
 .SH EXAMPLES
+.TP
+Build every hardened tool image (first-run setup, or after touching docker/):
+.B dxdfir build-docker
+.TP
+Rebuild just the YARA image:
+.B dxdfir build-docker --image yara --force
 .TP
 Process packet captures for the Elastic-native path:
 .B dxdfir process zeek --pipeline elastic
