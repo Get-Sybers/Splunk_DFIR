@@ -150,7 +150,7 @@ Legend: **Mapped?** = yes (+map location) / NO. **Conf** = confidence the field 
 |---|---|---|---|
 | SYS12 / SYS13 / SYS14 → `User` | add, remove, value_edit, key_edit | yes — `sysmon.py` | Med-High — **absent pre-v11 Sysmon** on registry events → honest null then. |
 | SEC4657 → `SubjectUserName` | add, value_edit, remove | **NO** (quarantined) | High — the writer's account. |
-| RECMD → `regex1(HivePath, [/\\]Users[/\\]([^/\\]+)[/\\])` | value_edit | yes — `recmd.py` | **Med** — the **hive owner** from a per-user hive path (`Users/<name>`); **system hives → null**. Owner ≠ necessarily the writer. |
+| RECMD → the `<name>` captured from the hive's `...\Users\<name>\...` path | value_edit | yes — `recmd.py` | **Med** — the **hive owner** from a per-user hive path (`Users/<name>`); **system hives → null**. Owner ≠ necessarily the writer. |
 | MEM → `user_from_hive(Hive)` | value_edit | yes — `mappings.py` | **Med** — hive owner from `NTUSER.DAT`/`UsrClass.dat`; system hives → null. Same owner≠writer caveat. |
 | PLREG → `username` / `hive_user_sid` (regex `S-1-5-21-…`) surfaced **native** | key_edit | **NO** (native only) | **GAP-ish** — SID/username are recovered into `_native` for the end-stage user-attribution join, but the canonical `user` column stays null. Promotable via the hive-owner convention. |
 
@@ -169,7 +169,7 @@ Legend: **Mapped?** = yes (+map location) / NO. **Conf** = confidence the field 
 | Source → native field | Action(s) | Mapped? | Conf & caveats |
 |---|---|---|---|
 | SYS12 / SYS13 / SYS14 → `Computer` (only if it contains a dot) | all | yes — `sysmon.py` (`_FQDN`) | Med — claimed **only** when `Computer` is genuinely an FQDN; a bare NetBIOS name → honest null (never faked). |
-| SEC4657 → `regex1(Computer, ^([^.]+\.+)$)` | — | **NO** (quarantined) | Med — same discipline. |
+| SEC4657 → the label of `Computer` up to the first dot | — | **NO** (quarantined) | Med — same discipline. |
 | MEM → `Tcpip\Parameters` Hostname/Domain/DhcpDomain (PIIAT-Mem CAR layer) | value_edit | yes (passthrough, tool-defined) | Med/unknown — the plugin captures `Tcpip\Parameters` for fqdn; whether the CAR layer emits `fqdn` is defined by PIIAT-Mem (passthrough source). |
 | PLREG | — | **NO** | **Honest no-source** — `image_hostname` is a bare name; no domain recorded. |
 | RECMD | — | **NO** | **Honest no-source.** |
