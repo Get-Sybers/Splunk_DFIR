@@ -23,10 +23,14 @@ is `0`, anything may change without notice.
   space. Nothing in this repo's tree changes for `logs-car.*`; `dx byakugan
   load --kibana` help, `dxdfir_car_load`'s README/argument spec,
   `elastic/README.md`, `elastic/spaces.md` and `docs/architecture/the-stack.md`
-  say where the family comes from. `requirements.yml` moves the
-  `get_sybers.godfir_run` collection to GoDFIR-toolz v0.2.3, whose manifest
-  pins the byakugan image at release v0.2.3 (engine `3f4cc68`, by digest) —
-  the first image that carries the layout.
+  say where the family comes from. `requirements.yml` pins the
+  `get_sybers.godfir_run` collection at the GoDFIR-toolz #110 merge on main
+  (commit `b2e08ad`): the collection now pulls every tool image by its
+  `:<release>` tag and verifies it against the content digest `images.yml`
+  records for it (recorded for all images, not just byakugan), so byakugan
+  lands with a readable `v0.2.3` tag like the rest while staying pinned to the
+  exact bytes it shipped — the byakugan image is still release v0.2.3 (engine
+  `3f4cc68`), the first to carry the layout.
 
 ### Added
 - **The Elastic config tree: `elastic/` at the repo root.** What the analysis
