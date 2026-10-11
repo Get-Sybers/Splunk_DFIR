@@ -11,7 +11,7 @@ is `0`, anything may change without notice.
 - **The default Kibana space is DX DFIR, and spaces can carry an avatar.** `dx
   deploy stack` renames Kibana's reserved "Default" space to **DX DFIR** from
   [`elastic/dashboards/default.space.json`](elastic/dashboards/default.space.json)
-  (its saved objects stay the top-level `dashboards/*.ndjson`). A space's
+  (its saved objects stay at the top-level `dashboards/*.ndjson`). A space's
   optional avatar is an image at `elastic/spaces/<dir>/<name>.png` the deploy
   reads into the space's `imageUrl`; the Malcolm space gets its logo from
   [`elastic/spaces/malcolm/malcolm.png`](elastic/spaces/malcolm/malcolm.png).

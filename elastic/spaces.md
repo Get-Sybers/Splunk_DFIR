@@ -19,7 +19,7 @@ end to end and the image imports it.
 The `default` space is the exception: Kibana always provides it (reserved,
 un-deletable), so this tree ships only its **identity** as the top-level
 [`dashboards/default.space.json`](dashboards/default.space.json) — its saved
-objects stay the top-level `dashboards/*.ndjson`. `dx deploy stack` converges
+objects stay at the top-level `dashboards/*.ndjson`. `dx deploy stack` converges
 the reserved space to that file (renaming the stock "Default" to **DX DFIR**).
 
 A space's **avatar** is an optional image at `spaces/<dir>/<name>.png` (the
