@@ -1,0 +1,8 @@
+{
+  "id": "default",
+  "name": "DX DFIR",
+  "description": "DX_DFIR evidence overview — the logs-dxdfir.* and logs-car.* data views, the per-lane saved searches and the ingest-pipeline-errors view; home of the Security app.",
+  "color": "#00bfb3",
+  "initials": "DX",
+  "disabledFeatures": []
+}
