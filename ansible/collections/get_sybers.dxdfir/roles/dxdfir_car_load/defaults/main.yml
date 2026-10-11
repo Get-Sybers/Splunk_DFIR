@@ -2,7 +2,16 @@
 # semantics and the setup-vs-loader identity story: README.md; variables: meta/argument_specs.yml
 dxdfir_car_load_action: load
 
-dxdfir_car_load_repo_root: "{{ role_path }}/../../../../.."
+# The repo root. Anchor on the inventory layer's canonical dxdfir_repo_root
+# (playbook_dir-based, so stable no matter which role renders it). It must NOT
+# be built from role_path here: dxdfir_car_load_dir/_out_dir are handed to
+# godfir_run as mount hosts and rendered lazily *inside that role*, where
+# role_path resolves to the installed godfir_run collection
+# (.ansible/collections/...) and the read-only /input mount check then fails on
+# a path that does not exist. playbook_dir is identical for every role in the
+# play, so the fallback stays correct there too.
+dxdfir_car_load_repo_root: >-
+  {{ dxdfir_repo_root | default((playbook_dir ~ '/../../../..') | realpath, true) }}
 
 # output is a SIBLING of byakugan/, never inside it (gitignore + filebeat exclusion chains)
 dxdfir_car_load_dir: "{{ dxdfir_car_load_repo_root }}/data_store/processed/byakugan"
