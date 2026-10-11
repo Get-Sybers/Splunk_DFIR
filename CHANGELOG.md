@@ -8,6 +8,17 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **The Kibana spaces are one directory per space, and carry avatars.** The
+  default space is now **DX DFIR** (`dx deploy stack` renames Kibana's stock
+  "Default" and lands the evidence overview + data views in it) and ships as
+  [`elastic/dashboards/DX_DFIR/`](elastic/dashboards/DX_DFIR/) (`space.json`,
+  `id: default`, plus `dxdfir-evidence.ndjson`), the same self-contained shape
+  as `dashboards/malcolm/` — the deploy's one space-reconcile loop now handles
+  the default space too, with no top-level special case. A space's avatar is an
+  optional `elastic/spaces/<dir>/<name>.png` the deploy reads into the space's
+  `imageUrl`; the Malcolm space gets its logo from
+  [`elastic/spaces/malcolm/malcolm.png`](elastic/spaces/malcolm/malcolm.png).
+  See [`elastic/spaces.md`](elastic/spaces.md).
 - **The Byakugan Kibana space arrives with `dx byakugan load --kibana`.** The
   engine's Elastic assets are now one config tree in the Byakugan repository
   (`elastic/`: `templates/component` `logs-car@<model>`, `templates/index`
