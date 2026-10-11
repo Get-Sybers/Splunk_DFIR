@@ -26,8 +26,11 @@ elastic/
 ├── templates/
 │   ├── component/             # component templates: one logs-dxdfir@<lane> model each
 │   └── index/                 # one index template per lane (logs-dxdfir-<lane>) + a logs-dxdfir.* fallback
-└── dashboards/                # Kibana saved objects (*.ndjson), imported on deploy
-    └── malcolm/               # a Kibana SPACE: space.json + its own *.ndjson (see dashboards/malcolm/README.md)
+├── dashboards/                # Kibana saved objects (*.ndjson), imported on deploy
+│   ├── default.space.json     # the default space's DX DFIR identity
+│   └── malcolm/               # a Kibana SPACE: space.json + its own *.ndjson (see dashboards/malcolm/README.md)
+└── spaces/                    # per-space avatar images: spaces/<dir>/<name>.png → imageUrl
+    └── malcolm/malcolm.png
 ```
 
 ## How a record flows in
@@ -140,9 +143,14 @@ elastic/
   spaces API takes them) and that space's saved objects as `*.ndjson`. Deploy
   creates the space when missing, updates it when a field differs, and
   imports the directory's objects into it the same way as the default
-  space's, gated on their own content hash. The [`malcolm`](dashboards/malcolm/README.md)
-  space, 36 dashboards derived from cisagov/Malcolm over the Zeek and
-  Suricata streams, is one.
+  space's, gated on their own content hash. An optional avatar image at
+  `spaces/<dir>/<name>.png` is read and set as the space's `imageUrl`. The
+  [`malcolm`](dashboards/malcolm/README.md) space (36 dashboards derived from
+  cisagov/Malcolm over the Zeek and Suricata streams, with its
+  [`spaces/malcolm/malcolm.png`](spaces/malcolm/malcolm.png) logo) is one; the
+  reserved `default` space keeps its objects at the top-level
+  `dashboards/*.ndjson` and its DX DFIR identity in
+  [`dashboards/default.space.json`](dashboards/default.space.json).
 
 Pipeline and template **names are the filenames** (minus `.json`); keep the
 `logs-dxdfir-` / `logs-dxdfir@` prefixes so the stack's objects stay

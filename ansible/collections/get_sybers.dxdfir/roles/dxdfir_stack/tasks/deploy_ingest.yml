@@ -295,11 +295,64 @@
         mode: "0640"
       changed_when: false
 
+# ---- the default space's identity (elastic/dashboards/default.space.json):
+# Kibana ships a reserved `default` space named "Default"; converge it to the
+# DX DFIR identity (name/description/colour/initials). The default space's
+# saved objects are the top-level dashboards/*.ndjson imported above — only its
+# identity lives in this file. The named spaces under dashboards/<id>/ (each a
+# directory with its own space.json plus *.ndjson) are handled below.
+- name: "stack-deploy | find the default space identity file"
+  ansible.builtin.stat:
+    path: "{{ dxdfir_stack_config_dir }}/dashboards/default.space.json"
+  register: __dxdfir_stack_default_space_file
+
+- name: "stack-deploy | converge the default space identity"
+  when: __dxdfir_stack_default_space_file['stat']['exists']
+  vars:
+    _wanted: "{{ lookup('ansible.builtin.file', __dxdfir_stack_default_space_file['stat']['path']) | from_json }}"
+  block:
+    - name: "stack-deploy | read the live default space"
+      ansible.builtin.uri:
+        url: "http://{{ dxdfir_stack_bind }}:{{ dxdfir_stack_kibana_port }}/api/spaces/space/default"
+        url_username: elastic
+        url_password: "{{ dxdfir_stack_elastic_password }}"
+        force_basic_auth: true
+        headers:
+          kbn-xsrf: "true"
+        status_code: [200]
+      register: __dxdfir_stack_default_space_live
+      changed_when: false
+      no_log: true
+
+    - name: "stack-deploy | rename the default space when its fields differ"
+      ansible.builtin.uri:
+        url: "http://{{ dxdfir_stack_bind }}:{{ dxdfir_stack_kibana_port }}/api/spaces/space/default"
+        method: PUT
+        url_username: elastic
+        url_password: "{{ dxdfir_stack_elastic_password }}"
+        force_basic_auth: true
+        headers:
+          kbn-xsrf: "true"
+        body_format: json
+        body: "{{ _wanted }}"
+        status_code: [200]
+      vars:
+        _keys: "{{ _wanted.keys() | list }}"
+        # compare only the fields the file defines; Kibana echoes bookkeeping
+        # of its own (_reserved, etc.)
+        _live: >-
+          {{ dict(_keys | zip(_keys | map('extract', __dxdfir_stack_default_space_live['json'] | default({}))
+                                     | map('default', '') | list)) }}
+      when: _live != _wanted
+      changed_when: true
+      no_log: true
+
 # ---- Kibana spaces (elastic/dashboards/<dir>/space.json plus that
 # directory's *.ndjson): each space is created when missing and updated when
 # one of its fields differs; its saved objects are imported into it the same
 # way as the default space's above, gated on their own content hash and on
-# the probe of their first object
+# the probe of their first object. An optional avatar image at spaces/<dir>/*.png
+# is read and spliced in as the space's imageUrl.
 
 - name: "stack-deploy | the Kibana spaces in the config tree"
   ansible.builtin.find:
@@ -312,6 +365,40 @@
 - name: "stack-deploy | reconcile the Kibana spaces"
   when: __dxdfir_stack_space_files['files'] | length > 0
   block:
+    # a space's avatar is an optional image at spaces/<dir>/*.png (the dir name
+    # matches the dashboards/<dir>/ its space.json lives in); read it binary via
+    # slurp — the file lookup decodes as text and would mangle the bytes — into
+    # a data: URL keyed by dir
+    - name: "stack-deploy | find the space avatar images"
+      ansible.builtin.find:
+        paths: "{{ dxdfir_stack_config_dir }}/spaces"
+        patterns: "*.png"
+        recurse: true
+        depth: 2
+        file_type: file
+      register: __dxdfir_stack_avatar_files
+      failed_when: false
+
+    - name: "stack-deploy | read each space avatar as base64"
+      ansible.builtin.slurp:
+        src: "{{ item['path'] }}"
+      loop: "{{ __dxdfir_stack_avatar_files['files'] | default([]) | sort(attribute='path') }}"
+      loop_control:
+        label: "{{ item['path'] | dirname | basename }}/{{ item['path'] | basename }}"
+      register: __dxdfir_stack_avatars_slurped
+      changed_when: false
+
+    - name: "stack-deploy | map each space dir to its avatar data URL"
+      ansible.builtin.set_fact:
+        __dxdfir_stack_avatars: >-
+          {{ __dxdfir_stack_avatars | default({})
+             | combine({(item['item']['path'] | dirname | basename):
+                         'data:image/png;base64,' ~ (item['content'] | trim)}) }}
+      loop: "{{ __dxdfir_stack_avatars_slurped['results'] | default([]) }}"
+      loop_control:
+        label: "{{ item['item']['path'] | dirname | basename }}"
+      changed_when: false
+
     - name: "stack-deploy | the spaces and their saved-object files"
       ansible.builtin.set_fact:
         __dxdfir_stack_spaces: >-
@@ -319,7 +406,12 @@
                'id': _space['id'], 'space': _space,
                'files': lookup('ansible.builtin.fileglob', (item['path'] | dirname) ~ '/*.ndjson', wantlist=true) | sort}] }}
       vars:
-        _space: "{{ lookup('ansible.builtin.file', item['path']) | from_json }}"
+        _dir: "{{ item['path'] | dirname | basename }}"
+        _space_raw: "{{ lookup('ansible.builtin.file', item['path']) | from_json }}"
+        # splice the avatar in as imageUrl when spaces/<dir>/*.png exists
+        _space: >-
+          {{ _space_raw | combine({'imageUrl': (__dxdfir_stack_avatars | default({}))[_dir]})
+             if _dir in (__dxdfir_stack_avatars | default({})) else _space_raw }}
       loop: "{{ __dxdfir_stack_space_files['files'] | sort(attribute='path') }}"
       loop_control:
         label: "{{ item['path'] | dirname | basename }}"
