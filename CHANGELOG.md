@@ -24,13 +24,16 @@ is `0`, anything may change without notice.
   load --kibana` help, `dxdfir_car_load`'s README/argument spec,
   `elastic/README.md`, `elastic/spaces.md` and `docs/architecture/the-stack.md`
   say where the family comes from. `requirements.yml` pins the
-  `get_sybers.godfir_run` collection at the GoDFIR-toolz #110 merge on main
-  (commit `b2e08ad`): the collection now pulls every tool image by its
+  `get_sybers.godfir_run` collection at the GoDFIR-toolz #113 merge on main
+  (commit `11fa8fd`): the collection now pulls every tool image by its
   `:<release>` tag and verifies it against the content digest `images.yml`
   records for it (recorded for all images, not just byakugan), so byakugan
-  lands with a readable `v0.2.3` tag like the rest while staying pinned to the
-  exact bytes it shipped — the byakugan image is still release v0.2.3 (engine
-  `3f4cc68`), the first to carry the layout.
+  lands with a readable `v0.2.4` tag like the rest while staying pinned to the
+  exact bytes it shipped — the byakugan image is release v0.2.4 (engine
+  `3f4cc68`), which adds the `jsonschema` runtime dependency its `load`
+  sub-tool needs. The `v0.2.3` image shipped without it, so every CAR push
+  crashed with `ModuleNotFoundError` before indexing a row; GoDFIR-toolz #112
+  added `python3-jsonschema` to the image and #113 recorded the rebuilt digest.
 
 ### Added
 - **The Elastic config tree: `elastic/` at the repo root.** What the analysis
@@ -64,6 +67,14 @@ is `0`, anything may change without notice.
   `event.dataset` is its EVE `event_type`.
 
 ### Fixed
+- **`dx byakugan load` reaches the engine container again.** `dxdfir_car_load`
+  derived its repo root from `role_path`, but its `/input` and `/output` mount
+  hosts are rendered lazily inside the `godfir_run` role — where `role_path`
+  resolves to the installed collection (`.ansible/collections/…`), not the repo
+  root — so the read-only `/input` mount check failed on a path that does not
+  exist and the load aborted before the container ran. It now anchors on
+  `dxdfir_repo_root` (playbook-dir based, stable across roles), the same anchor
+  the `/certs` mount already used.
 - **A fresh operator's first `dx deploy stack` / `dx build images` no longer
   dies on the docker socket.** The engine gate probed the daemon as the
   operator, so a shell that did not yet carry the docker-group membership

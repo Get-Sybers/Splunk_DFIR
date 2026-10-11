@@ -9,11 +9,13 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # the GoDFIR-toolz #110 merge on main: pull every tool image by its
-    # :<release> tag, then verify it against the content digest images.yml
-    # records (now recorded for all images). A commit SHA, not a release tag —
-    # collection 0.2.4 is not tagged yet; move to v0.2.4 once it is cut.
-    version: b2e08adf1cbb14f4df3e5a2a67879fd3fe821845
+    # GoDFIR-toolz main @ the #113 merge: byakugan pinned at v0.2.4 — its load
+    # sub-tool's missing jsonschema runtime dep (which crashed every CAR push)
+    # was fixed in GoDFIR-toolz #112 and recorded in images.yml by #113. Pull
+    # every tool image by its :<release> tag, then verify it against the content
+    # digest images.yml records. A commit SHA, not a release tag — the
+    # collection v0.2.4 is not tagged yet; move to the tag once it is cut.
+    version: 11fa8fd5891799f12764b8643df0ee23e3f4e17b
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
