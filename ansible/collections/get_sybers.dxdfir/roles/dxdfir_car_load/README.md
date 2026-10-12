@@ -44,9 +44,11 @@ them up):
   deliberately does not have.
 - **steady-state run** (`--no-setup`, templates already exist) →
   `byakugan_loader`, whose `logs_car_writer` role is
-  create_doc/create_index/read/view_index_metadata on `logs-car.*` **only**
-  — evidence immutability at the credential layer, and the counter-example
-  to "filebeat writes as elastic" (docs/architecture/the-stack.md).
+  create_doc/create_index/read/view_index_metadata on `logs-car.*` and
+  `car-relationships-*` (the CAR data streams plus the relationship LOOKUP
+  index the same load writes) **only** — evidence immutability at the
+  credential layer, and the counter-example to "filebeat writes as elastic"
+  (docs/architecture/the-stack.md).
 
 `dxdfir_car_load_force` re-renders bundles and re-pushes even when the
 manifest/report already show the run complete (`BYAKUGAN_LOAD_FORCE`). The
