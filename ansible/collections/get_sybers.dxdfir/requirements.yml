@@ -9,13 +9,17 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #113 merge: byakugan pinned at v0.2.4 — its load
-    # sub-tool's missing jsonschema runtime dep (which crashed every CAR push)
-    # was fixed in GoDFIR-toolz #112 and recorded in images.yml by #113. Pull
-    # every tool image by its :<release> tag, then verify it against the content
-    # digest images.yml records. A commit SHA, not a release tag — the
-    # collection v0.2.4 is not tagged yet; move to the tag once it is cut.
-    version: 11fa8fd5891799f12764b8643df0ee23e3f4e17b
+    # GoDFIR-toolz main @ the #115 merge: byakugan pinned at v0.2.5 — the
+    # car-relationships lookup index, a native-Elastic ES|QL LOOKUP JOIN layer
+    # over the CAR relationship graph that `byakugan load` populates
+    # (car-relationships-<namespace>) alongside the logs-car.rel-* edge stream
+    # (engine Byakugan #132). Released by GoDFIR-toolz #114 and its content
+    # digest recorded in images.yml by #115
+    # (sha256:0988d9b68f6ecec98b0d925949acf642f9c5f13ce973e608a2a70a19aede5b0e).
+    # Pull every tool image by its :<release> tag, then verify it against the
+    # content digest images.yml records. A commit SHA, not a release tag — the
+    # collection v0.2.5 is not tagged yet; move to the tag once it is cut.
+    version: d5be13e2c7018e8a01f5198de4a67744dc12cadc
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
