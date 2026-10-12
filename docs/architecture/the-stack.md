@@ -64,7 +64,7 @@ ansible:
 |---|---|---|---|
 | `elastic` | superuser | everything | bootstrap, Fleet, and any `dx byakugan load --setup` run (template + saved-object creation needs cluster privileges the loader below deliberately lacks) |
 | `kibana_system` | built-in | Kibana -> Elasticsearch | Kibana |
-| `byakugan_loader` | `logs_car_writer` (created by deploy) | `create_doc`, `create_index`, `read`, `view_index_metadata` on `logs-car.*` only, no cluster privileges | routine (non-`--setup`) `dx byakugan load` runs |
+| `byakugan_loader` | `logs_car_writer` (created by deploy) | `create_doc`, `create_index`, `read`, `view_index_metadata` on `logs-car.*` and `car-relationships-*` (the CAR data streams + the relationship LOOKUP index the same load writes) only, no cluster privileges | routine (non-`--setup`) `dx byakugan load` runs |
 
 `byakugan_loader` is scoped so it can land evidence and read it back but never
 alter, delete or re-template what is already indexed: least privilege

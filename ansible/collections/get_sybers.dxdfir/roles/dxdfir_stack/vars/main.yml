@@ -30,11 +30,15 @@ dxdfir_stack_tls_extra_ips: >-
 
 # ---- Elasticsearch security objects created on deploy (were hardcoded bodies
 # inside tasks/deploy.yml). Definitions are DATA; deploy_security.yml acts.
-# the least-privilege CAR loader role
+# the least-privilege CAR loader role. logs-car.* are the CAR data streams;
+# car-relationships-* is the relationship LOOKUP index the same `byakugan load`
+# writes (a native-Elastic join layer in ADDITION to logs-car.rel-*; the engine's
+# model/projection/rel_lookup.yml). Both carry the same create-only grant so the
+# loader can never alter or delete what it has written.
 dxdfir_stack_security_roles:
   - name: logs_car_writer
     indices:
-      - names: ["logs-car.*"]
+      - names: ["logs-car.*", "car-relationships-*"]
         privileges: [create_doc, create_index, read, view_index_metadata]
 # the loader user bound to that role; its password comes from the secret store
 dxdfir_stack_security_users:
