@@ -8,6 +8,20 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **The UAC lane is live end to end: `godfir_run` advances to godaemonhunter
+  v0.3.1 and gomount v0.3.1.** `requirements.yml` moves the
+  `get_sybers.godfir_run` pin from the byakugan v0.2.5 commit to the
+  GoDFIR-toolz #119 merge (`dae27b2`), where both tool images ship at release
+  `v0.3.1` with their content digests recorded in `images.yml`. gomount's
+  `uac` package reads a UAC collection
+  (`uac-<host>-<os>-<ts>.tar.gz`/`.tar`/`.zip`, the host's files under
+  `[root]/`) as an image whose root volume is that tree, and godaemonhunter
+  hunts it ON like a disk image, so `dx process <case> godaemonhunter` now
+  hunts the collections under `data_store/raw/<case>/UAC/` beside the disk
+  images and loose logs (the lane that #353 added was inert against the old
+  v0.2.1 image, which rejected an archive by name). gomount 0.3.1 also reads a
+  hard link to a symlink as that symlink, the merged-usr systemd units a real
+  collection carries. byakugan stays v0.2.5.
 - **The default Kibana space is DX DFIR, and spaces can carry an avatar.** `dx
   deploy stack` renames Kibana's reserved "Default" space to **DX DFIR** from
   [`elastic/dashboards/default.space.json`](elastic/dashboards/default.space.json)
