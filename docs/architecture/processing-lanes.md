@@ -24,7 +24,7 @@ staged as `logs/<os>/<host>/`), and the tool's own items under that.
 |---|---|---|---|---|
 | **zeek** | Packet captures (`data_store/raw/pcaps`) | Zeek → JSON logs | `get-sybers/zeek` | `zeek/[<collection>/]<capture>/*.json` + `zeek.jsonl` |
 | **gowindowlicker** (`windowlicker`, `lick`, `evtx`) | Windows hosts: loose event logs (`raw/logs/winevt/<host>/`) and disk images + VM exports (`raw/disk_images`, `raw/VM_files`), exported once by the shared [`dxdfir_export`](../../ansible/collections/get_sybers.dxdfir/roles/dxdfir_export/README.md) step | The [GoDFIR-toolz](https://github.com/Get-Sybers/GoDFIR-toolz) Windows parsers, each a sub-tool of one static-Go image (goevtx, gore, gosbe, gomft, goprefetch, goese, goamcache, goappcompat, gorb, gole, gojle, gowxt): one run per (parser, host) | `get-sybers/gowindowlicker` (+ `get-sybers/plaso` for the export) | `windowlicker/[<collection>/]<subtool>/<host>/<item>/<subtool>.jsonl` |
-| **godaemonhunter** (`daemonhunter`, `hunt`) | Linux and macOS hosts: loose logs / root trees (`raw/logs/linux/<host>/`) and every disk image, run ON the image | The GoDFIR-toolz daemon matrix: Layer 1 (gohost, gousers, gonetwork; gomachost, gomacusers for a Mac) into a per-host knowledge store, then the daemon parsers (gojournal, goauditd, gowtmp, gosyslog, gounit, gocron, goshell, gotrash, goctl, golaunchd) enriched by it, one run per (parser, host); a Mac's System volume pulled in a second pass | `get-sybers/godaemonhunter` | `daemonhunter/[<collection>/]<subtool>/<host>/<item>/<subtool>.jsonl` + `knowledge/<host>/` |
+| **godaemonhunter** (`daemonhunter`, `hunt`) | Linux and macOS hosts: loose logs / root trees (`raw/logs/linux/<host>/`), every disk image, run ON the image, and every **UAC collection** (`raw/UAC/`: the `uac-<host>-<os>-<ts>.tar.gz\|.tar\|.zip` the Unix-like Artifacts Collector writes), hunted ON like an image | The GoDFIR-toolz daemon matrix: Layer 1 (gohost, gousers, gonetwork; gomachost, gomacusers for a Mac) into a per-host knowledge store, then the daemon parsers (gojournal, goauditd, gowtmp, gosyslog, gounit, gocron, goshell, gotrash, goctl, golaunchd) enriched by it, one run per (parser, host); a Mac's System volume pulled in a second pass | `get-sybers/godaemonhunter` | `daemonhunter/[<collection>/]<subtool>/<host>/<item>/<subtool>.jsonl` + `knowledge/<host>/` |
 | **anamnesis** (`memory`) | Memory images (`raw/memory`) | [anamnesis](https://github.com/Get-Sybers/Anamnesis) (MemProcFS) | `get-sybers/anamnesis` | `anamnesis/[<collection>/]<image>/plugins/*.jsonl` + `car.db` |
 | **plaso** (`log2timeline`, `psort`) | Disk images + VM exports | Plaso (`log2timeline` → `psort` sub-tools) | `get-sybers/plaso` | `log2timeline/[<collection>/]<host>/<host>.plaso` + `timeline.jsonl`, side by side |
 | **signatures** | loose files · memory · PCAPs · event-log hosts · disk images (+ their export) | YARA · Suricata replay · Hayabusa Sigma · gomount→goyara disk scan (four sub-tools of one image) | `get-sybers/signatures` | `detections/{yara,suricata,hayabusa}/[<collection>/]<host>/` |
@@ -39,6 +39,28 @@ is a utility no lane includes: gowindowlicker, godaemonhunter and signatures
 into each and export nothing. An operator's playbook can write the stage
 first; the others find every image done and skip. The stage is `_`-prefixed:
 never a CAR source, never shipped.
+
+A **UAC collection** is a host too. The [Unix-like Artifacts Collector](https://github.com/tclahr/uac)
+writes one archive per host — `uac-<hostname>-<os>-<timestamp>.tar.gz` (a
+plain `.tar` where the host has no gzip) or `.zip` — holding the host's files
+under `[root]/` with their paths intact, plus the collector's own output
+(`uac.log`, `bodyfile/`, `hash_executables/`, `live_response/`, …) and, beside
+the archive, a `uac-<…>.log` acquisition log. Both land in the `UAC` lane
+(`raw/UAC/`, or `collections/<name>/UAC/`): `dx sort` claims them by
+**content** — the archive by UAC's own layout inside the zip/gzip/tar, the log
+by its banner — never by name. The lane feeds godaemonhunter alone: gomount
+reads the archive as an image whose root volume is the `[root]/` tree, so the
+layered run goes over a collection exactly as over a disk image (the same
+`linux-core` surface, the records under `daemonhunter/[<collection>/]<subtool>/<archive>/`,
+every record's `Origin` naming the archive and `[root]`). A collection made
+on a live host carries more than a disk does (`live_response/`: ps,
+netstat/ss, systemctl, lsmod, who); that snapshot is not read yet
+([godaemonhunter#8](https://github.com/Get-Sybers/godaemonhunter/issues/8)).
+Prefer UAC's `tar` output: its `zip` dereferences symlinks at collection time,
+so the systemd `*.wants/` enablement links do not survive it. To build a
+collection from a Linux disk image already in a case (gomount stages the
+root tree, UAC runs over it in a throwaway container), see
+[`scripts/dev/make-uac-collection.sh`](../scripts/Scripts-Overview.md#make-uac-collection).
 
 Each tool discovers its items by **content first** (magic bytes / signatures),
 extension as a fallback, so a mislabelled `.pcap` is still recognised. Every tool

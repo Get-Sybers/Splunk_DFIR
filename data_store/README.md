@@ -18,6 +18,7 @@ data_store/
    │   ├── logs/winevt/<host>/     # Windows event logs, one folder per host
    │   ├── logs/linux/<host>/      # Linux logs / staged root trees, one folder per host
    │   ├── logs/macOS/<host>/      # macOS logs (staged; no lane reads them yet)
+   │   ├── UAC/                    # UAC (Unix-like Artifacts Collector) collections: uac-<host>-<os>-<ts>.tar.gz|.zip + the .log sidecar
    │   ├── disk_images/            # Disk images (.E01, .raw/.dd, .vmdk, …)
    │   ├── VM_files/               # VMware VM exports (one folder per VM)
    │   ├── memory/                 # Memory captures
@@ -74,7 +75,7 @@ dx process all case-a                # run every lane over just this collection
 ```bash
 dx process zeek            # pcaps
 dx process gowindowlicker  # Windows hosts: event logs + the disk-image artefacts (aliases: evtx, windowlicker)
-dx process godaemonhunter  # Linux hosts: logs + the disk-image artefacts (alias: daemonhunter)
+dx process godaemonhunter  # Linux hosts: logs, the disk-image artefacts, UAC collections (alias: daemonhunter)
 dx process anamnesis       # memory (alias: memory)
 dx process plaso           # disk images / VM exports
 dx process signatures      # yara / suricata / hayabusa

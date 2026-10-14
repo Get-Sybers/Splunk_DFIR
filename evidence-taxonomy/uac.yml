@@ -1,0 +1,26 @@
+# UAC (Unix-like Artifacts Collector) collections. Lane subdir: UAC/
+#
+# Read by the godaemonhunter lane: gomount reads the archive as the image
+# and its [root]/ tree as the host's root volume, so a collection is hunted
+# ON like a disk image. UAC writes one archive per host —
+# uac-<hostname>-<os>-<timestamp>.tar.gz (a plain .tar where the host has no
+# gzip) or .zip — containers far too generic to claim by extension, so the
+# lane is content-led: the special probe opens the archive and looks for
+# UAC's own layout (uac.log among the first members, the [root]/ members),
+# never at the name. The acquisition log UAC writes beside the archive
+# (uac-<hostname>-<os>-<timestamp>.log, "Created by UAC …": case details,
+# acquisition times, the archive's hashes) is claimed too, so it stays with
+# its archive. This lane precedes mobile (a plain-tar collection would
+# otherwise match the ustar signature there) and the documents lane (a zip).
+name: uac
+subdir: UAC
+ext: []
+signatures:
+  - {hex: "50 4B 03 04", offset: 0, kind: "special:uac-archive", ext: zip, desc: "UAC collection, zip (uac.log + [root]/ members)"}
+  - {hex: "1F 8B", offset: 0, kind: "special:uac-archive", ext: tar.gz, desc: "UAC collection, gzip'd tar"}
+  - {hex: "75 73 74 61 72", offset: 257, kind: "special:uac-archive", ext: tar, desc: "UAC collection, plain tar (ustar)"}
+  - hex: "43 72 65 61 74 65 64 20 62 79 20 55 41 43"
+    offset: 0
+    kind: "special:uac-acquisition-log"
+    ext: log
+    desc: "UAC acquisition log (Created by UAC (Unix-like Artifacts Collector) …)"

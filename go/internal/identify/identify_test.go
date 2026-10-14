@@ -1,6 +1,11 @@
 package identify
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -206,5 +211,114 @@ func TestSetLaneForDir(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(plain, "a.pcap"), []byte("x"), 0o644)
 	if lane := tax.SetLaneForDir(plain); lane != nil {
 		t.Errorf("SetLaneForDir(plain) = %v, want nil", lane)
+	}
+}
+
+// writeUACArchive builds a UAC-shaped archive (uac.log first, the host's
+// files under [root]/) in the given container, or a plain archive of
+// something else when uac is false.
+func writeUACArchive(t *testing.T, name string, kind string, uac bool) string {
+	t.Helper()
+	members := [][2]string{{"notes/readme.txt", "hello"}, {"etc/passwd", "root:x:0:0"}}
+	if uac {
+		members = [][2]string{
+			{"uac.log", "2026-10-14 11:39:03 +0000 INF Unix-like Artifacts Collector 3.4.0\n"},
+			{"bodyfile/bodyfile.txt", "0|/etc/passwd|1|-rw-r--r--|0|0|1|1|2|3|0\n"},
+			{"[root]/etc/hostname", "web01\n"},
+		}
+	}
+	var buf bytes.Buffer
+	switch kind {
+	case "zip":
+		zw := zip.NewWriter(&buf)
+		for _, m := range members {
+			w, err := zw.Create(m[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			w.Write([]byte(m[1]))
+		}
+		zw.Close()
+	default:
+		var w io.Writer = &buf
+		var zw *gzip.Writer
+		if kind == "tar.gz" {
+			zw = gzip.NewWriter(&buf)
+			w = zw
+		}
+		tw := tar.NewWriter(w)
+		for _, m := range members {
+			if err := tw.WriteHeader(&tar.Header{Name: m[0], Mode: 0o644, Size: int64(len(m[1]))}); err != nil {
+				t.Fatal(err)
+			}
+			tw.Write([]byte(m[1]))
+		}
+		tw.Close()
+		if zw != nil {
+			zw.Close()
+		}
+	}
+	// a tar is padded to a 10 KiB record by tar.Writer; a zip is small — pad
+	// the file past the 512-byte floor the probe needs either way
+	data := buf.Bytes()
+	if len(data) < 512 {
+		data = append(data, make([]byte, 512-len(data))...)
+	}
+	return mk(t, name, data)
+}
+
+// TestUACProbes: a UAC collection is claimed by its layout in every
+// container UAC writes, ahead of the lanes that claim the bare containers
+// (mobile's ustar, the documents' zip); archives of anything else are not,
+// and the acquisition-log sidecar follows its archive into the lane.
+func TestUACProbes(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "evidence-taxonomy")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"_index.yml": "catch_all_subdir: other_raw_data\norder: [uac, filesystem_documents, mobile]\n",
+		"uac.yml": "name: uac\nsubdir: UAC\next: []\nsignatures:\n" +
+			"  - {hex: \"50 4B 03 04\", offset: 0, kind: \"special:uac-archive\"}\n" +
+			"  - {hex: \"1F 8B\", offset: 0, kind: \"special:uac-archive\"}\n" +
+			"  - {hex: \"75 73 74 61 72\", offset: 257, kind: \"special:uac-archive\"}\n" +
+			"  - {hex: \"43 72 65 61 74 65 64\", offset: 0, kind: \"special:uac-acquisition-log\"}\n",
+		"filesystem_documents.yml": "name: filesystem_documents\nsubdir: filesystem/documents\next: [.pdf]\n" +
+			"signatures:\n  - {hex: \"50 4B 03 04\", offset: 0, kind: \"special:ooxml\"}\n",
+		"mobile.yml": "name: mobile\nsubdir: mobile\next: [.tar]\n" +
+			"signatures:\n  - {hex: \"75 73 74 61 72\", offset: 257}\n",
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tax, err := LoadFromDir(dir)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	cases := []struct {
+		name       string
+		path       string
+		wantSubdir string
+		wantBy     string
+	}{
+		{"uac tar.gz", writeUACArchive(t, "uac-web01-linux-20261014113903.tar.gz", "tar.gz", true), "UAC", "magic"},
+		{"uac zip", writeUACArchive(t, "uac-web01-linux-20261014113903.zip", "zip", true), "UAC", "magic"},
+		{"uac plain tar", writeUACArchive(t, "uac-web01-linux-20261014113903.tar", "tar", true), "UAC", "magic"},
+		{"renamed uac zip", writeUACArchive(t, "case.bin", "zip", true), "UAC", "magic"}, // content decides
+		{"plain tar", writeUACArchive(t, "dump.tar", "tar", false), "mobile", "magic"},
+		{"plain zip", writeUACArchive(t, "stuff.zip", "zip", false), "other_raw_data", "catch-all"},
+		{"plain tar.gz", writeUACArchive(t, "stuff.tar.gz", "tar.gz", false), "other_raw_data", "catch-all"},
+		{"acquisition log", mk(t, "uac-web01-linux-20261014113903.log", []byte("Created by UAC (Unix-like Artifacts Collector) 3.4.0\n\n[Case Information]\n")), "UAC", "magic"},
+		{"other log", mk(t, "run.log", []byte("Created by someone else\n")), "other_raw_data", "catch-all"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			sub, by := tax.Classify(c.path)
+			if sub != c.wantSubdir || by != c.wantBy {
+				t.Errorf("Classify = (%q, %q), want (%q, %q)", sub, by, c.wantSubdir, c.wantBy)
+			}
+		})
 	}
 }

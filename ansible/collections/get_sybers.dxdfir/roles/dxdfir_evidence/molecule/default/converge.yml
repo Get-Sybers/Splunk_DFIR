@@ -11,6 +11,7 @@
       vars:
         dxdfir_evidence_trees: ["{{ fx }}/disk_images"]
         dxdfir_evidence_host_dir: "{{ fx }}/winevt"
+        dxdfir_evidence_archive_trees: ["{{ fx }}/UAC"]
 
     - name: "converge | the disk image is found, its extent excluded"
       ansible.builtin.assert:
@@ -29,4 +30,14 @@
           - (dxdfir_evidence_hosts | map(attribute='name') | sort) == ['HOST1', 'HOST2']
           - dxdfir_evidence_hosts | map(attribute='export') | select('search', '/winevt/HOST1$') | list | length == 1
         fail_msg: "hosts: {{ dxdfir_evidence_hosts }}"
+        quiet: true
+
+    - name: "converge | the UAC collection archive is found, its log sidecar is not"
+      ansible.builtin.assert:
+        that:
+          - dxdfir_evidence_archives | length == 1
+          - dxdfir_evidence_archives[0].rel == 'uac-web01-linux-20260101000000.tar'
+          - dxdfir_evidence_archives[0].name == 'uac-web01-linux-20260101000000.tar'
+          - dxdfir_evidence_archives[0].tree == fx ~ '/UAC'
+        fail_msg: "archives: {{ dxdfir_evidence_archives }}"
         quiet: true

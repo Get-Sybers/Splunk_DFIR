@@ -76,8 +76,10 @@ dx process godaemonhunter   # alias: daemonhunter
   **goevtx** and runs every Windows artefact parser (registry, MFT, Prefetch, SRUM, …)
   over the disk images' export; output lands in
   `processed/windowlicker/[<collection>/]<subtool>/<host>/<item>/`.
-- `godaemonhunter` does the same for Linux hosts (`raw/logs/linux/<host>/` and the
-  images' export) into `processed/daemonhunter/[<collection>/]<subtool>/<host>/<item>/`.
+- `godaemonhunter` does the same for Linux hosts (`raw/logs/linux/<host>/`, the
+  images' export, and the UAC collections in `raw/UAC/` — the
+  `uac-<host>-<os>-<ts>.tar.gz|.zip` the Unix-like Artifacts Collector writes,
+  hunted like an image) into `processed/daemonhunter/[<collection>/]<subtool>/<host>/<item>/`.
 - Both ride `get-sybers/*` images built by `dx build images`; nothing operator-supplied.
 - See [Scripts-Overview](scripts/Scripts-Overview.md) for the pipeline layers.
 

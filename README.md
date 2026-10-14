@@ -9,7 +9,7 @@
 > live). Runs on the author's corpus; interfaces may still change. Release notes:
 > [CHANGELOG.md](CHANGELOG.md).
 
-**DX_DFIR turns a pile of raw evidence into normalised, searchable forensic leads. Hand it packet captures, disk images, memory dumps, or Windows event logs.**
+**DX_DFIR turns a pile of raw evidence into normalised, searchable forensic leads. Hand it packet captures, disk images, memory dumps, Windows event logs, or UAC triage collections.**
 
 1. **Processes** each kind of evidence with the right specialist tool, in a hardened
    container: Zeek for PCAPs, goevtx for Windows logs, anamnesis (MemProcFS) for memory,

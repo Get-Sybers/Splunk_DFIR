@@ -33,6 +33,7 @@ tool's contract; no host python).
         │   └── logs/winevt/<host>/                   # Windows event logs (.evtx), one folder per host
         │   └── logs/linux/<host>/                    # Linux logs / staged root trees, one folder per host
         │   └── logs/macOS/<host>/                    # macOS logs (staged; no lane reads them yet)
+        │   └── UAC/                                  # UAC (Unix-like Artifacts Collector) collections: uac-<host>-<os>-<ts>.tar.gz|.zip + the .log sidecar (the godaemonhunter lane)
         │   └── disk_images/                          # Forensic disk images (E01, QCOW, AFF, raw)
         │   └── VM_files/                             # VM disk exports (one folder per VM)
         │   └── memory/                               # Memory captures (raw dumps, crash/minidumps)

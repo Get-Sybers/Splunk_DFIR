@@ -1,13 +1,15 @@
 ---
 argument_specs:
   main:
-    short_description: "Discover disk images and loose hosts under the raw evidence trees."
+    short_description: "Discover disk images, loose hosts and UAC collection archives under the raw evidence trees."
     description:
       - >-
         Registers dxdfir_evidence_images ([{tree, rel, name}], one per disk image
-        found by recursing dxdfir_evidence_trees, image extents/segments excluded)
-        and dxdfir_evidence_hosts ([{name, export}], one per immediate subfolder of
-        dxdfir_evidence_host_dir). Read-only; unset inputs yield empty lists.
+        found by recursing dxdfir_evidence_trees, image extents/segments excluded),
+        dxdfir_evidence_hosts ([{name, export}], one per immediate subfolder of
+        dxdfir_evidence_host_dir) and dxdfir_evidence_archives ([{tree, rel, name}],
+        one per UAC collection archive found by recursing
+        dxdfir_evidence_archive_trees). Read-only; unset inputs yield empty lists.
     options:
       dxdfir_evidence_trees:
         type: list
@@ -27,3 +29,13 @@ argument_specs:
         type: str
         required: false
         description: "Regex for parts that belong to another item (VMDK extents, EWF segments)."
+      dxdfir_evidence_archive_trees:
+        type: list
+        elements: str
+        required: false
+        default: []
+        description: "Raw trees to recurse for UAC collection archives (the UAC lane); empty = no archive discovery."
+      dxdfir_evidence_archive_regex:
+        type: str
+        required: false
+        description: "Regex for what counts as a collection archive by name (default: .tar.gz, .tgz, .tar, .zip); the tool confirms the content."

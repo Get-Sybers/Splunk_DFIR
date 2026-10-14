@@ -13,3 +13,12 @@ dxdfir_evidence_exclude_regex: '(?i).*(-flat\.vmdk|-s[0-9]{3,}\.vmdk|\.e(0[2-9]|
 # loose-host discovery: the directory whose immediate subfolders are hosts
 # (logs/winevt/<host>/, logs/linux/<host>/); empty = skip
 dxdfir_evidence_host_dir: ""
+
+# collection-archive discovery: the trees to search (each recursed) for UAC
+# collections — uac-<host>-<os>-<ts>.tar.gz|.tar|.zip, hunted ON like a disk
+# image; empty = skip
+dxdfir_evidence_archive_trees: []
+# what counts as a collection archive inside a tree, by name; the tool confirms
+# the content (gomount identify) and skips a zip or tar of anything else, and
+# UAC's acquisition-log sidecar (uac-<…>.log) never matches
+dxdfir_evidence_archive_regex: '(?i).*\.(tar\.gz|tgz|tar|zip)$'

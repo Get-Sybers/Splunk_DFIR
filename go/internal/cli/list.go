@@ -45,7 +45,7 @@ var evidenceLanes = func() []evidenceLane {
 
 // rawSubdirs are the top-level data_store/raw/ subdirs shown by `list evidence --raw`.
 var rawSubdirs = []string{
-	"pcaps", "memory", "disk_images", "VM_files", "logs", "filesystem",
+	"pcaps", "memory", "disk_images", "VM_files", "logs", "UAC", "filesystem",
 	"mobile", "other_raw_data", "collections", "sort",
 }
 

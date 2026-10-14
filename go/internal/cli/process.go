@@ -17,7 +17,7 @@ import (
 // Naming one scopes a run to the tools that read that kind of evidence.
 var evidenceTypes = []string{
 	"disk_images", "filesystem", "logs", "memory",
-	"mobile", "other_raw_data", "pcaps", "VM_files",
+	"mobile", "other_raw_data", "pcaps", "UAC", "VM_files",
 }
 
 // isEvidenceType reports whether w names a raw-evidence area.

@@ -1,11 +1,14 @@
 ---
 # Registers dxdfir_evidence_images ([{tree, rel, name}], one per disk image found
-# under dxdfir_evidence_trees) and dxdfir_evidence_hosts ([{name, export}], one per
-# immediate subfolder of dxdfir_evidence_host_dir). Read-only; both default to [].
+# under dxdfir_evidence_trees), dxdfir_evidence_hosts ([{name, export}], one per
+# immediate subfolder of dxdfir_evidence_host_dir) and dxdfir_evidence_archives
+# ([{tree, rel, name}], one per UAC collection archive found under
+# dxdfir_evidence_archive_trees). Read-only; all three default to [].
 - name: "evidence | start from empty result lists"
   ansible.builtin.set_fact:
     dxdfir_evidence_images: []
     dxdfir_evidence_hosts: []
+    dxdfir_evidence_archives: []
   tags: [always]
 
 # ---- disk images ------------------------------------------------------------
@@ -75,4 +78,42 @@
       {%- endfor -%}
       {{ h }}
   when: dxdfir_evidence_host_find is not skipped
+  tags: [always]
+
+# ---- collection archives ----------------------------------------------------
+- name: "evidence | which of the archive trees exist"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ dxdfir_evidence_archive_trees | reject('equalto', '') | list }}"
+  register: dxdfir_evidence_archive_tree_stats
+  tags: [always]
+
+- name: "evidence | find collection archives in each present tree"
+  ansible.builtin.find:
+    paths: "{{ item.item }}"
+    use_regex: true
+    patterns: ["{{ dxdfir_evidence_archive_regex }}"]
+    recurse: true
+    file_type: file
+  loop: "{{ dxdfir_evidence_archive_tree_stats.results | selectattr('stat.isdir', 'defined') | selectattr('stat.isdir') | list }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: dxdfir_evidence_tree_archives
+  tags: [always]
+
+# the same {tree, rel, name} shape as a disk image: the godaemonhunter lane
+# hunts ON an archive exactly as on an image (GODAEMONHUNTER_IMAGE=<rel>)
+- name: "evidence | one item per collection archive ({tree, rel, name})"
+  ansible.builtin.set_fact:
+    dxdfir_evidence_archives: >-
+      {{ dxdfir_evidence_archives + [{
+           'tree': item.0.item.item,
+           'rel': item.1.path | relpath(item.0.item.item),
+           'name': (item.1.path | relpath(item.0.item.item)) | regex_replace('[/\\:\s]+', '_'),
+         }] }}
+  loop: >-
+    {{ dxdfir_evidence_tree_archives.results | default([])
+       | selectattr('files', 'defined') | subelements('files') }}
+  loop_control:
+    label: "{{ item.1.path }}"
   tags: [always]
