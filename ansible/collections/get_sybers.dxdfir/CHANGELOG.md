@@ -5,6 +5,20 @@ root [CHANGELOG.md](../../../CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- **`dxdfir_evidence` discovers UAC collection archives.** Two new inputs,
+  `dxdfir_evidence_archive_trees` (the trees to recurse — the inventory wires
+  the `UAC` lane, `dxdfir_uac_dir`, taxonomy-driven like the other lanes) and
+  `dxdfir_evidence_archive_regex` (by name: `.tar.gz`, `.tgz`, `.tar`, `.zip`;
+  the tool confirms the content), register `dxdfir_evidence_archives` —
+  `[{tree, rel, name}]`, the shape of a disk image, because the
+  `godfir_godaemonhunter` lane hunts ON an archive exactly as on an image.
+  `group_vars` appends them to `godfir_godaemonhunter_images`; the Windows
+  lane never reads them. The role's molecule scenario gains a collection (+
+  its acquisition-log sidecar, which must not match) and asserts the third
+  list. The `dxdfir-process-godaemonhunter` playbook's wording says so.
+
 ### Fixed
 
 - **`dxdfir_stack`'s engine gate misread a stale docker-group membership as a

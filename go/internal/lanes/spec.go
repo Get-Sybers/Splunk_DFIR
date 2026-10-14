@@ -53,9 +53,9 @@ var Specs = []Spec{
 		Summary:      "Windows hosts (event logs, disk images/VMs) -> goevtx + the Windows artefact parsers"},
 	{Name: "godaemonhunter", Title: "godaemonhunter", Kind: model.KindGauge, OutLeaf: "daemonhunter",
 		Aliases:      []string{"daemonhunter", "hunt"},
-		InputSubdirs: []string{"logs/linux", "disk_images", "VM_files"},
+		InputSubdirs: []string{"logs/linux", "disk_images", "VM_files", "UAC"},
 		Exts:         nil, // a Linux host is a folder of anything; images by extension are counted through the export
-		Summary:      "Linux hosts (logs, disk images/VMs) -> the daemon parsers, knowledge-enriched"},
+		Summary:      "Linux hosts (logs, disk images/VMs, UAC collections) -> the daemon parsers, knowledge-enriched"},
 	{Name: "anamnesis", Title: "anamnesis", Kind: model.KindGauge, OutLeaf: "anamnesis",
 		Aliases:      []string{"memory"},
 		InputSubdirs: []string{"memory"}, PluginsPerImage: 17,

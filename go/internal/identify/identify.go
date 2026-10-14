@@ -10,8 +10,13 @@
 package identify
 
 import (
+	"archive/tar"
+	"archive/zip"
 	"bytes"
+	"compress/gzip"
+	"io"
 	"os"
+	"strings"
 )
 
 // readAt reads exactly n bytes at byte offset off; ok=false on a short/failed read.
@@ -83,6 +88,10 @@ func matchSpecial(kind, path string) bool {
 		return isAPK(path)
 	case "special:dmg-footer":
 		return isDMGFooter(path)
+	case "special:uac-archive":
+		return isUACArchive(path)
+	case "special:uac-acquisition-log":
+		return isUACAcquisitionLog(path)
 	}
 	return false
 }
@@ -139,4 +148,91 @@ func isDMGFooter(path string) bool {
 	}
 	buf, ok := readAt(path, int(fi.Size()-512), 4)
 	return ok && string(buf) == "koly"
+}
+
+// uacMembers bounds the layout scan of a UAC archive: the collector writes
+// uac.log first, so a collection declares itself within a few members.
+const uacMembers = 16
+
+// isUACArchive confirms a zip, gzip or tar is a UAC (Unix-like Artifacts
+// Collector) collection by UAC's own layout — uac.log among the first
+// members, or a member under [root]/ (the host's files) — the rule
+// gomount's uac package reads the archive by. A zip or tar of anything else
+// fails it. The container is decided by magic, never by name.
+func isUACArchive(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil || st.Size() < 512 {
+		return false
+	}
+	head := make([]byte, 512)
+	if _, err := io.ReadFull(f, head); err != nil {
+		return false
+	}
+	switch {
+	case bytes.Equal(head[:4], []byte{'P', 'K', 3, 4}):
+		zr, err := zip.NewReader(f, st.Size())
+		if err != nil {
+			return false
+		}
+		for i, m := range zr.File {
+			if i >= uacMembers {
+				break
+			}
+			if isUACMember(m.Name) {
+				return true
+			}
+		}
+		return false
+	case head[0] == 0x1f && head[1] == 0x8b:
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return false
+		}
+		zr, err := gzip.NewReader(f)
+		if err != nil {
+			return false
+		}
+		defer zr.Close()
+		return uacTarLayout(io.LimitReader(zr, maxScan*64))
+	case string(head[257:262]) == "ustar":
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return false
+		}
+		return uacTarLayout(io.LimitReader(f, maxScan*64))
+	}
+	return false
+}
+
+// uacTarLayout scans the first members of a tar stream for UAC's layout.
+func uacTarLayout(r io.Reader) bool {
+	tr := tar.NewReader(r)
+	for i := 0; i < uacMembers; i++ {
+		hdr, err := tr.Next()
+		if err != nil {
+			return false
+		}
+		if isUACMember(hdr.Name) {
+			return true
+		}
+	}
+	return false
+}
+
+// isUACMember reports whether an archive member name is UAC's run log or a
+// file of the collected host.
+func isUACMember(name string) bool {
+	clean := strings.TrimLeft(strings.TrimPrefix(strings.ReplaceAll(name, "\\", "/"), "./"), "/")
+	return clean == "uac.log" || clean == "[root]" || strings.HasPrefix(clean, "[root]/")
+}
+
+// isUACAcquisitionLog matches the acquisition log UAC writes beside its
+// archive: a text file opening with the collector's banner.
+func isUACAcquisitionLog(path string) bool {
+	const banner = "Created by UAC (Unix-like Artifacts Collector)"
+	buf, ok := readAt(path, 0, len(banner))
+	return ok && string(buf) == banner
 }

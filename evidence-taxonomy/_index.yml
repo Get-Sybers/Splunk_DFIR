@@ -8,6 +8,7 @@ order:
   - logs_winevt
   - logs_linux
   - logs_macos
+  - uac
   - disk_images
   - vm_files
   - memory

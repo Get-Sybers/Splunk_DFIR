@@ -44,6 +44,35 @@ is `0`, anything may change without notice.
   added `python3-jsonschema` to the image and #113 recorded the rebuilt digest.
 
 ### Added
+- **The `UAC` lane: UAC collections are hosts.** `data_store/raw/UAC/` (and
+  `collections/<name>/UAC/`) holds the archives the
+  [Unix-like Artifacts Collector](https://github.com/tclahr/uac) writes —
+  `uac-<hostname>-<os>-<timestamp>.tar.gz`, `.tar` or `.zip`, the host's
+  files under `[root]/` plus the collector's own output — and the
+  acquisition log it writes beside them. The lane is content-led
+  (`evidence-taxonomy/uac.yml`): `dx sort` claims an archive by UAC's own
+  layout inside the zip/gzip/tar (`uac.log` among the first members, the
+  `[root]/` members — a zip or tar of anything else is left where its
+  content puts it) and the sidecar by its `Created by UAC` banner, never by
+  name. The lane feeds **godaemonhunter** alone: `dxdfir_evidence` now also
+  discovers collection archives (`dxdfir_evidence_archive_trees` →
+  `dxdfir_evidence_archives`, the same `{tree, rel, name}` shape as a disk
+  image), the lane hunts one ON like an image — gomount (≥ 0.3.0) reads the
+  archive as an image whose root volume is the `[root]/` tree, godaemonhunter
+  (≥ 0.3.0) runs the layered pipeline over it, records under
+  `daemonhunter/[<collection>/]<subtool>/<archive>/` with `Origin` naming the
+  archive and `[root]` — and `dx process … UAC` scopes to it. On the Locked
+  Shields 24 Ubuntu hosts the collection path reproduces the disk-image path
+  record for record (gojournal 1 250 591, gosyslog 849 320, goauditd 90 818,
+  gousers 232, …). The dev helper
+  [`scripts/dev/make-uac-collection.sh`](scripts/dev/make-uac-collection.sh)
+  builds a collection from a Linux disk image in a case (gomount `stream
+  --all` stages the root tree in a throwaway container, UAC v3.4.0 collects
+  over it offline). The pins to the gomount/godaemonhunter releases that
+  carry this land through GoDFIR-toolz (`requirements.yml`) once they are
+  tagged; until then the lane's containers hunt the archives as the
+  `_extracted`-free image path does today and report a collection as
+  unreadable.
 - **The Elastic config tree: `elastic/` at the repo root.** What the analysis
   stack ingests and shows is now configuration as data, in one
   operator-editable place — the Filebeat config, per-evidence-type **ingest

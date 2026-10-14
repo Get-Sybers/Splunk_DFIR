@@ -101,6 +101,8 @@
 !/raw/logs/linux/.gitkeep
 !/raw/logs/macOS/
 !/raw/logs/macOS/.gitkeep
+!/raw/UAC/
+!/raw/UAC/.gitkeep
 !/raw/filesystem/
 !/raw/filesystem/.gitkeep
 !/raw/filesystem/documents/
