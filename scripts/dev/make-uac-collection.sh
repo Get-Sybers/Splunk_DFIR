@@ -54,7 +54,8 @@ UAC_REF="v3.4.0"
 KEEP_RUNNER=false
 IMAGE=""
 
-usage() { sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
+# the help is the comment header: everything from line 2 to the first blank line
+usage() { sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
