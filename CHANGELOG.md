@@ -70,9 +70,10 @@ is `0`, anything may change without notice.
   --all` stages the root tree in a throwaway container, UAC v3.4.0 collects
   over it offline). The pins to the gomount/godaemonhunter releases that
   carry this land through GoDFIR-toolz (`requirements.yml`) once they are
-  tagged; until then the lane's containers hunt the archives as the
-  `_extracted`-free image path does today and report a collection as
-  unreadable.
+  tagged. Until that pin lands, a case holding a UAC archive **fails** the
+  godaemonhunter lane: the 0.2.1 image rejects an archive `IMAGE` by name
+  with exit 2 (`config_error`), which `godfir_run` treats as a hard failure
+  of the play — keep archives out of `UAC/` or pin first.
 - **The Elastic config tree: `elastic/` at the repo root.** What the analysis
   stack ingests and shows is now configuration as data, in one
   operator-editable place — the Filebeat config, per-evidence-type **ingest
@@ -104,6 +105,21 @@ is `0`, anything may change without notice.
   `event.dataset` is its EVE `event_type`.
 
 ### Fixed
+- **The UAC probe folds member names exactly as gomount does.** `dx sort`'s
+  `special:uac-archive` probe trimmed a leading `./` or `/` where gomount's
+  `uac.cleanName` resolves the whole name (`path.Clean`: `..`, `//`, a
+  trailing slash), so a crafted archive could be filed into `UAC/` yet refused
+  by gomount (`[root]/../x`), or read by gomount yet sorted elsewhere
+  (`x/../uac.log`, `uac.log/`). The two now agree letter for letter; no real
+  UAC archive was affected.
+- **`scripts/dev/make-uac-collection.sh`** passed `--case-number ""` when the
+  image sat outside a collection (UAC 3.4.0 refuses an empty argument, so the
+  documented loose-image default failed after staging the whole root), masked
+  UAC's exit status behind `| tail -6` (a failed collection printed `done:`
+  and re-chowned a previous run's files), and left the throwaway runner image
+  behind whenever `docker run` failed. The case number is passed only when
+  there is one, UAC's own exit status ends the run with its log tail, and the
+  runner image is removed on every exit unless `--keep-runner`.
 - **`dx byakugan load` reaches the engine container again.** `dxdfir_car_load`
   derived its repo root from `role_path`, but its `/input` and `/output` mount
   hosts are rendered lazily inside the `godfir_run` role — where `role_path`
