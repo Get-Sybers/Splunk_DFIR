@@ -5,6 +5,8 @@ All notable changes are documented here, following
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the major version
 is `0`, anything may change without notice.
 
+## [Unreleased]
+
 ### Changed
 - **The UAC lane is live end to end: `godfir_run` advances to godaemonhunter
   v0.3.1 and gomount v0.3.1.** `requirements.yml` moves the
