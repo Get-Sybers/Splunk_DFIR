@@ -16,6 +16,7 @@ import (
 	"compress/gzip"
 	"io"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -223,9 +224,13 @@ func uacTarLayout(r io.Reader) bool {
 }
 
 // isUACMember reports whether an archive member name is UAC's run log or a
-// file of the collected host.
+// file of the collected host. The name is folded exactly as gomount's
+// uac.cleanName folds it — backslashes to slashes, then path.Clean under a
+// root, so "./", "//", ".." and a trailing slash all resolve — so that sort
+// and read never disagree on an archive: what lands in UAC/ is what gomount
+// opens as a collection, and nothing else does.
 func isUACMember(name string) bool {
-	clean := strings.TrimLeft(strings.TrimPrefix(strings.ReplaceAll(name, "\\", "/"), "./"), "/")
+	clean := strings.TrimPrefix(path.Clean("/"+strings.ReplaceAll(name, "\\", "/")), "/")
 	return clean == "uac.log" || clean == "[root]" || strings.HasPrefix(clean, "[root]/")
 }
 

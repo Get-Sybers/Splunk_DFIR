@@ -115,8 +115,13 @@ UAC_HAVE="$(git -C "$UAC_DIR" describe --tags --always 2>/dev/null || echo unkno
 [[ "$UAC_HAVE" == "$UAC_REF" ]] || echo "note: $UAC_DIR is at $UAC_HAVE, not $UAC_REF (remove it to re-fetch)"
 UAC_DIR="$(readlink -f "$UAC_DIR")"
 
-# the runner: alpine + the GNU userland UAC's collectors call, built once
+# the runner: alpine + the GNU userland UAC's collectors call, built once,
+# removed on the way out — a failed run too — unless --keep-runner
 RUNNER="dxdfir-uac-runner:3.22"
+cleanup_runner() {
+    [[ "$KEEP_RUNNER" == true ]] || docker image rm -f "$RUNNER" >/dev/null 2>&1 || true
+}
+trap cleanup_runner EXIT
 if ! docker image inspect "$RUNNER" >/dev/null 2>&1; then
     echo "building the runner image $RUNNER"
     docker build -q -t "$RUNNER" - <<'DOCKERFILE' >/dev/null
@@ -146,17 +151,26 @@ cd /uac
 for fmt in $FORMATS; do
   echo "== uac -p $PROFILE -f $fmt --mount-point /mnt/image"
   start=$(date +%s)
-  ./uac -p "$PROFILE" --mount-point /mnt/image --operating-system linux -f "$fmt" --temp-dir /tmp \
-    --case-number "$CASE" --evidence-number "$IMAGE_BASE" --examiner dx_dfir \
-    --description "UAC offline collection of $IMAGE_BASE, root volume staged by gomount stream --all" /out \
-    2>&1 | tail -6
+  # UAC refuses an empty --case-number: pass it only when there is a case
+  set --
+  [ -n "$CASE" ] && set -- --case-number "$CASE"
+  # the exit status of uac itself decides (a pipe into tail would hide it);
+  # the tail of its output is shown either way
+  if ./uac -p "$PROFILE" --mount-point /mnt/image --operating-system linux -f "$fmt" --temp-dir /tmp \
+       "$@" --evidence-number "$IMAGE_BASE" --examiner dx_dfir \
+       --description "UAC offline collection of $IMAGE_BASE, root volume staged by gomount stream --all" /out \
+       >"/tmp/uac-$fmt.log" 2>&1; then
+    tail -6 "/tmp/uac-$fmt.log"
+  else
+    rc=$?
+    tail -20 "/tmp/uac-$fmt.log"
+    echo "== uac $fmt FAILED (exit $rc)" >&2
+    exit "$rc"
+  fi
   echo "== uac $fmt done in $(( $(date +%s) - start ))s"
 done
 chown "$OWNER" /out/uac-*
 chmod 0640 /out/uac-*
 ls -la /out
 '
-if [[ "$KEEP_RUNNER" != true ]]; then
-    docker image rm -f "$RUNNER" >/dev/null 2>&1 || true
-fi
 echo "done: $OUT"
