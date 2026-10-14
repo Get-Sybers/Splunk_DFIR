@@ -9,17 +9,22 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #115 merge: byakugan pinned at v0.2.5 — the
-    # car-relationships lookup index, a native-Elastic ES|QL LOOKUP JOIN layer
-    # over the CAR relationship graph that `byakugan load` populates
-    # (car-relationships-<namespace>) alongside the logs-car.rel-* edge stream
-    # (engine Byakugan #132). Released by GoDFIR-toolz #114 and its content
-    # digest recorded in images.yml by #115
-    # (sha256:0988d9b68f6ecec98b0d925949acf642f9c5f13ce973e608a2a70a19aede5b0e).
-    # Pull every tool image by its :<release> tag, then verify it against the
-    # content digest images.yml records. A commit SHA, not a release tag — the
-    # collection v0.2.5 is not tagged yet; move to the tag once it is cut.
-    version: d5be13e2c7018e8a01f5198de4a67744dc12cadc
+    # GoDFIR-toolz main @ the #119 merge: the UAC lane goes live. godaemonhunter
+    # advances to v0.3.1 and gomount to v0.3.1 — gomount's `uac` package reads the
+    # archive the Unix-like Artifacts Collector writes
+    # (uac-<host>-<os>-<ts>.tar.gz|.tar|.zip, the host's files under `[root]/`) as an
+    # image whose root volume is that tree, and godaemonhunter hunts it ON like a
+    # disk image, so `dx process <case> godaemonhunter` hunts the collections under
+    # data_store/raw/<case>/UAC/ beside the disk images and loose logs. gomount 0.3.1
+    # also reads a hard link to a symlink as that symlink (the merged-usr systemd
+    # units a real collection carries). Image releases v0.3.1, recorded in images.yml
+    # by GoDFIR-toolz #118/#119:
+    #   godaemonhunter sha256:99d82f3935c96d5cb2c249f29be92b72b731cce7bc15bb2e8430500df931e2cb
+    #   gomount        sha256:1f3f8fee5d9f81605740d3caf71347d9f9676f34eb0328b644d17dd2dac2a041
+    # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then verify
+    # it against the content digest images.yml records. A commit SHA, not a release
+    # tag — the collection is not tagged; move to the tag once it is cut.
+    version: dae27b2dfc1e8eb446508fc1545d53e8cf5ab3ee
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
