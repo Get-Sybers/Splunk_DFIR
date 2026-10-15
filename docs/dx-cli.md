@@ -75,8 +75,8 @@ See [the stack](architecture/the-stack.md).
 | Command | What it does |
 |---|---|
 | `dx purge stack [--volumes] [-y]` | Remove the stack's containers/networks; `--volumes` also wipes ingested data. |
-| `dx purge evidence [--dry-run] [-y]` | Wipe `data_store/processed/` (all lanes + CAR). |
-| `dx purge car [--dry-run] [-y]` | Wipe the materialised CAR tree only. |
+| `dx purge evidence [--dry-run] [-y]` | Wipe `data_store/processed/` (all lanes + CAR). The lanes write their output as a different uid (the tool containers run as uid 2000), so the removal escalates like `deploy stack`: it prompts once for the sudo password when not already root (no prompt under `--dry-run` or when run as root). |
+| `dx purge car [--dry-run] [-y]` | Wipe the materialised CAR tree only. Escalates for removal exactly as `purge evidence` does. |
 | `dx purge images [--dangling] [--all-dxdfir] [-y]` | Remove the hardened `get-sybers/*` tool images. |
 | `dx validate` | Run the repository [check harness](reference/build-and-test.md) (`.github/tests/run-checks.sh`). |
 

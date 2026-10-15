@@ -119,6 +119,18 @@ is `0`, anything may change without notice.
   `event.dataset` is its EVE `event_type`.
 
 ### Fixed
+- **`dx purge evidence` and `dx purge car` remove lane output written as
+  another uid.** The processing lanes run their tools inside containers as a
+  different uid (the GoDFIR-toolz images run as uid 2000), so the hunt output
+  they leave under `data_store/processed/` is owned by that uid. The wipe ran as
+  the connection user, which could not remove it, so `dx purge evidence` died on
+  `rmtree … [Errno 13] Permission denied` partway through and left a
+  half-cleared tree. The two wipe targets now escalate the removal exactly as
+  `dx deploy stack` escalates its privileged tasks: the CLI opts the
+  `dxdfir_cleanup` role into per-task `become` (new `dxdfir_cleanup_become`) and
+  prompts once for the sudo password when not already root — no prompt under
+  `--dry-run`, which only previews, nor when run as root. `dx purge images` is
+  unaffected: it removes images through the daemon and never touches the tree.
 - **The UAC probe folds member names exactly as gomount does.** `dx sort`'s
   `special:uac-archive` probe trimmed a leading `./` or `/` where gomount's
   `uac.cleanName` resolves the whole name (`path.Clean`: `..`, `//`, a

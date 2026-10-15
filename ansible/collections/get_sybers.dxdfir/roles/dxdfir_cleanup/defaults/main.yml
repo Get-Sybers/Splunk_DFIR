@@ -16,3 +16,11 @@ dxdfir_cleanup_car_dir: "{{ dxdfir_cleanup_repo_root }}/data_store/processed/bya
 # com.get-sybers.hardened=true label the build stamps on each tool image).
 dxdfir_cleanup_dangling: false
 dxdfir_cleanup_all_dxdfir: false
+
+# Escalate the destructive filesystem removal (the processed/car wipes): the
+# lanes' containerised goTools write their output as a different uid (the tool
+# images run as uid 2000), so the connection user cannot remove that tree and a
+# wipe dies on EACCES. Opt-in, set true by the CLI for the wipe actions only;
+# the docker action removes images through the daemon and never escalates.
+# Mirrors dxdfir_stack_become — see dxdfir_stack's privilege decision.
+dxdfir_cleanup_become: false

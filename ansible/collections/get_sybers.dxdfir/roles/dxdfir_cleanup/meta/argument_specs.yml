@@ -35,3 +35,14 @@ argument_specs:
         required: false
         default: false
         description: "docker: remove EVERY get-sybers/* image, not only the hardened tool set."
+      dxdfir_cleanup_become:
+        type: bool
+        required: false
+        default: false
+        description: >-
+          Escalate the destructive filesystem removal (the processed/car wipes)
+          via per-task become: those trees hold lane output the containerised
+          goTools wrote as a different uid (uid 2000), which the connection user
+          cannot remove. The CLI sets this for the wipe actions and prompts once
+          for the sudo password when not already root; the docker action never
+          escalates. Mirrors dxdfir_stack_become.
