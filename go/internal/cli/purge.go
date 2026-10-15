@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -35,10 +36,10 @@ func newPurgeCmd(env *Env) *cobra.Command {
 		newPurgeStackCmd(env),
 		newCleanupActionCmd(env, "evidence", "processed",
 			"Wipe everything under data_store/processed/ (all lanes + CAR).",
-			"Wipe everything under data_store/processed/? [y/N]: ", nil),
+			"Wipe everything under data_store/processed/? [y/N]: ", true, nil),
 		newCleanupActionCmd(env, "car", "car",
 			"Wipe the materialised CAR (data_store/processed/byakugan/).",
-			"Wipe the CAR tree under data_store/processed/byakugan/? [y/N]: ", nil),
+			"Wipe the CAR tree under data_store/processed/byakugan/? [y/N]: ", true, nil),
 		newPurgeImagesCmd(env),
 	)
 	return parent
@@ -76,9 +77,15 @@ func newPurgeStackCmd(env *Env) *cobra.Command {
 
 // newCleanupActionCmd builds a purge subcommand that runs one dxdfir_cleanup
 // action. use is the noun the user types; action is the role action it maps to.
-// extraVars (may be nil) contributes action-specific -e vars, evaluated at run
-// time so it can read the subcommand's own flags.
-func newCleanupActionCmd(env *Env, use, action, short, promptMsg string, extraVars func() []string) *cobra.Command {
+// escalate marks a wipe action (evidence/car) whose removal must run as root —
+// the lanes' containerised goTools write their output as a different uid, so the
+// connection user cannot remove it. Escalation is AUTOMATIC, not flag-gated,
+// exactly as the stack converge verbs do it (see stackEscalate): the role is
+// opted into per-task become and the sudo password is prompted only when not
+// already root and not a --dry-run. extraVars (may be nil) contributes
+// action-specific -e vars, evaluated at run time so it can read the
+// subcommand's own flags.
+func newCleanupActionCmd(env *Env, use, action, short, promptMsg string, escalate bool, extraVars func() []string) *cobra.Command {
 	var dryRun, yes bool
 	cmd := &cobra.Command{
 		Use:   use,
@@ -98,7 +105,13 @@ func newCleanupActionCmd(env *Env, use, action, short, promptMsg string, extraVa
 			if extraVars != nil {
 				vars = append(vars, extraVars()...)
 			}
-			plan, err := ansiblePlan(r, ap, "dxdfir-cleanup.yml", vars, dryRun)
+			askBecomePass := false
+			if escalate {
+				ev, ask := cleanupEscalate(os.Geteuid(), dryRun)
+				vars = append(vars, ev...)
+				askBecomePass = ask
+			}
+			plan, err := ansiblePlanOpts(r, ap, "dxdfir-cleanup.yml", vars, dryRun, askBecomePass)
 			if err != nil {
 				return err
 			}
@@ -110,12 +123,26 @@ func newCleanupActionCmd(env *Env, use, action, short, promptMsg string, extraVa
 	return cmd
 }
 
+// cleanupEscalate returns, for a wipe action (purge evidence/car), the extra
+// Ansible vars that opt the dxdfir_cleanup role into per-task escalation and
+// whether the sudo password must be prompted. The processed and CAR trees hold
+// lane output the containerised goTools wrote as a different uid (the tool
+// images run as uid 2000), so removing it needs root. Pure (euid and dryRun
+// passed in) so the decision is unit-testable. Already root (euid 0) → the role
+// no-ops the become, so no prompt; a --dry-run previews the removals by stat
+// alone (the role also skips the become under --check), so no prompt there
+// either. Mirrors stackEscalate.
+func cleanupEscalate(euid int, dryRun bool) (vars []string, askBecomePass bool) {
+	return []string{"dxdfir_cleanup_become=true"}, euid != 0 && !dryRun
+}
+
 // newPurgeImagesCmd builds `dx purge images` with its extra flags/vars.
 func newPurgeImagesCmd(env *Env) *cobra.Command {
 	var dangling, allDxdfir bool
 	cmd := newCleanupActionCmd(env, "images", "docker",
 		"Remove built get-sybers/* tool images so the next build is clean.",
 		"Remove the get-sybers/* tool images? [y/N]: ",
+		false,
 		func() []string {
 			var v []string
 			if dangling {

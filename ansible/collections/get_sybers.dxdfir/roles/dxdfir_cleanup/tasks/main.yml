@@ -8,5 +8,23 @@
     quiet: true
   tags: [always]
 
+# Privilege posture, decided here (the role's single entry) so the wipe's
+# removal can escalate: the processed/CAR trees hold lane output the
+# containerised goTools wrote as a different uid (uid 2000), which the
+# connection user cannot remove. Escalate per-task only when the CLI asked
+# (dxdfir_cleanup_become, set for the wipe actions) AND we are not already root
+# (no double sudo) AND this is not a --check dry run (a preview only stats the
+# world-readable tree as the operator, so it needs no sudo password). The
+# removal task in wipe.yml is the one place that keys off this. gather_facts ran
+# as the connection user, so effective_user_id stays that user even under an
+# escalating task — the posture keys off the REQUEST, exactly as dxdfir_stack.
+- name: "cleanup | privilege decision"
+  ansible.builtin.set_fact:
+    __dxdfir_cleanup_escalate: >-
+      {{ (dxdfir_cleanup_become | bool)
+         and not ((ansible_facts['effective_user_id'] | default(-1)) | int == 0)
+         and not ansible_check_mode }}
+  tags: [always]
+
 - name: "cleanup | run the cleanup action | {{ dxdfir_cleanup_action }}"
   ansible.builtin.include_tasks: "{{ dxdfir_cleanup_action }}.yml"

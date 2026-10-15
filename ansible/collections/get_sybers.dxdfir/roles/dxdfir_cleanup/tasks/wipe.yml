@@ -69,10 +69,17 @@
   register: dxdfir_cleanup_wipe_found
   when: dxdfir_cleanup_wipe_present
 
+# This is the one task that can hit a file the connection user may not own: the
+# lanes' containerised goTools write their output as uid 2000, so removing it
+# needs root. become escalates it (only this task — the find/stat above read a
+# world-readable tree fine as the operator) when the role was asked and we are
+# not already root; __dxdfir_cleanup_escalate is false under --check, so a dry
+# run still previews the removals with no sudo prompt. See tasks/main.yml.
 - name: "cleanup-wipe | remove everything that is not skeleton"
   ansible.builtin.file:
     path: "{{ item }}"
     state: absent
+  become: "{{ __dxdfir_cleanup_escalate | default(false) }}"
   loop: >-
     {{ dxdfir_cleanup_wipe_found.results | default([])
        | selectattr('files', 'defined') | map(attribute='files') | flatten
