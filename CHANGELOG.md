@@ -11,7 +11,7 @@ is `0`, anything may change without notice.
 - **The UAC lane is live end to end: `godfir_run` advances to godaemonhunter
   v0.3.1 and gomount v0.3.1.** `requirements.yml` moves the
   `get_sybers.godfir_run` pin from the byakugan v0.2.5 commit to the
-  GoDFIR-toolz #119 merge (`dae27b2`), where both tool images ship at release
+  GoDFIR-toolz #121 merge (`87cc3e01`), where both tool images ship at release
   `v0.3.1` with their content digests recorded in `images.yml`. gomount's
   `uac` package reads a UAC collection
   (`uac-<host>-<os>-<ts>.tar.gz`/`.tar`/`.zip`, the host's files under
@@ -22,6 +22,13 @@ is `0`, anything may change without notice.
   v0.2.1 image, which rejected an archive by name). gomount 0.3.1 also reads a
   hard link to a symlink as that symlink, the merged-usr systemd units a real
   collection carries. byakugan stays v0.2.5.
+- **`godfir_images` re-verifies already-present tool images against the manifest
+  digest.** At the pinned `godfir_run` (0.2.7, the #121 merge above), a tool
+  image already present locally as `get-sybers/<tool>:latest` is re-pulled and
+  re-verified when its content digest no longer matches `images.yml` — not only
+  freshly pulled ones — so a stale or dev-built `:latest` can no longer bypass
+  the pull-by-tag / verify-by-digest gate that `dxdfir_images` delegates to
+  (closes GoDFIR-toolz#120).
 - **The default Kibana space is DX DFIR, and spaces can carry an avatar.** `dx
   deploy stack` renames Kibana's reserved "Default" space to **DX DFIR** from
   [`elastic/dashboards/default.space.json`](elastic/dashboards/default.space.json)
