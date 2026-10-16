@@ -8,6 +8,17 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **Evidence discovery de-duplicates disk images and UAC collections.** When the
+  same image or collection is found more than once under the raw trees — e.g. a
+  second copy nested in a wrapper folder (`disk_images/X/X/image.E01` beside
+  `disk_images/image.E01`) — `dxdfir_evidence` now keeps a single work item for
+  it: finds that share byte size + basename are taken to be the same evidence,
+  and the shallowest (cleanest) path wins. This stops the `process` lanes from
+  parsing the same evidence twice and keeps two copies from colliding on the
+  per-item processed-output filename. Groundwork for the flattened lane output
+  `data_store/processed/<proc>/<case>/<subtool>/<raw-item>.jsonl` tracked in
+  Get-Sybers/gowindowlicker#10, Get-Sybers/godaemonhunter#17 and
+  Get-Sybers/GoDFIR-toolz#122.
 - **The UAC lane is live end to end: `godfir_run` advances to godaemonhunter
   v0.3.1 and gomount v0.3.1.** `requirements.yml` moves the
   `get_sybers.godfir_run` pin from the byakugan v0.2.5 commit to the

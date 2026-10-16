@@ -1,9 +1,10 @@
 ---
-# Registers dxdfir_evidence_images ([{tree, rel, name}], one per disk image found
-# under dxdfir_evidence_trees), dxdfir_evidence_hosts ([{name, export}], one per
-# immediate subfolder of dxdfir_evidence_host_dir) and dxdfir_evidence_archives
-# ([{tree, rel, name}], one per UAC collection archive found under
-# dxdfir_evidence_archive_trees). Read-only; all three default to [].
+# Registers dxdfir_evidence_images ([{tree, rel, name}], one per DISTINCT disk
+# image found under dxdfir_evidence_trees), dxdfir_evidence_hosts ([{name,
+# export}], one per immediate subfolder of dxdfir_evidence_host_dir) and
+# dxdfir_evidence_archives ([{tree, rel, name}], one per DISTINCT UAC collection
+# archive found under dxdfir_evidence_archive_trees). Read-only; all three
+# default to [].
 - name: "evidence | start from empty result lists"
   ansible.builtin.set_fact:
     dxdfir_evidence_images: []
@@ -33,21 +34,37 @@
   register: dxdfir_evidence_tree_images
   tags: [always]
 
-# the item name is the image's path relative to its tree, separators and
-# whitespace folded to _ (the batch runtime's own item-naming rule)
-- name: "evidence | one item per disk image ({tree, rel, name})"
+# One item per disk image ({tree, rel, name}), DE-DUPLICATED. The same image can
+# be discovered more than once under the trees — e.g. a second copy nested in a
+# wrapper folder — and each copy would otherwise become its own work item and
+# collide on the processed-output filename (<subtool>/<item-name>.jsonl). Two
+# finds with the same byte size AND basename are taken to be the same image; the
+# shallowest path wins (then lexical), so the clean top-level name is kept over a
+# nested duplicate. The item name is the image's path relative to its tree,
+# separators and whitespace folded to _ (the batch runtime's own item-naming
+# rule).
+- name: "evidence | one item per disk image, de-duplicated ({tree, rel, name})"
   ansible.builtin.set_fact:
     dxdfir_evidence_images: >-
-      {{ dxdfir_evidence_images + [{
-           'tree': item.0.item.item,
-           'rel': item.1.path | relpath(item.0.item.item),
-           'name': (item.1.path | relpath(item.0.item.item)) | regex_replace('[/\\:\s]+', '_'),
-         }] }}
-  loop: >-
-    {{ dxdfir_evidence_tree_images.results | default([])
-       | selectattr('files', 'defined') | subelements('files') }}
-  loop_control:
-    label: "{{ item.1.path }}"
+      {%- set cands = [] -%}
+      {%- for pair in (dxdfir_evidence_tree_images.results | default([])
+                       | selectattr('files', 'defined') | subelements('files')) -%}
+        {%- set rel = pair.1.path | relpath(pair.0.item.item) -%}
+        {%- set _ = cands.append({
+              'tree': pair.0.item.item, 'rel': rel,
+              'name': rel | regex_replace('[/\\:\s]+', '_'),
+              'key': (pair.1.size | string) ~ ':' ~ (pair.1.path | basename),
+              'depth': rel.split('/') | length}) -%}
+      {%- endfor -%}
+      {%- set seen = [] -%}
+      {%- set out = [] -%}
+      {%- for c in cands | sort(attribute='rel') | sort(attribute='depth') -%}
+        {%- if c.key not in seen -%}
+          {%- set _ = seen.append(c.key) -%}
+          {%- set _ = out.append({'tree': c.tree, 'rel': c.rel, 'name': c.name}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
   tags: [always]
 
 # ---- loose hosts ------------------------------------------------------------
@@ -102,18 +119,28 @@
   tags: [always]
 
 # the same {tree, rel, name} shape as a disk image: the godaemonhunter lane
-# hunts ON an archive exactly as on an image (GODAEMONHUNTER_IMAGE=<rel>)
-- name: "evidence | one item per collection archive ({tree, rel, name})"
+# hunts ON an archive exactly as on an image (GODAEMONHUNTER_IMAGE=<rel>), and it
+# is de-duplicated the same way (size + basename, shallowest path wins).
+- name: "evidence | one item per collection archive, de-duplicated ({tree, rel, name})"
   ansible.builtin.set_fact:
     dxdfir_evidence_archives: >-
-      {{ dxdfir_evidence_archives + [{
-           'tree': item.0.item.item,
-           'rel': item.1.path | relpath(item.0.item.item),
-           'name': (item.1.path | relpath(item.0.item.item)) | regex_replace('[/\\:\s]+', '_'),
-         }] }}
-  loop: >-
-    {{ dxdfir_evidence_tree_archives.results | default([])
-       | selectattr('files', 'defined') | subelements('files') }}
-  loop_control:
-    label: "{{ item.1.path }}"
+      {%- set cands = [] -%}
+      {%- for pair in (dxdfir_evidence_tree_archives.results | default([])
+                       | selectattr('files', 'defined') | subelements('files')) -%}
+        {%- set rel = pair.1.path | relpath(pair.0.item.item) -%}
+        {%- set _ = cands.append({
+              'tree': pair.0.item.item, 'rel': rel,
+              'name': rel | regex_replace('[/\\:\s]+', '_'),
+              'key': (pair.1.size | string) ~ ':' ~ (pair.1.path | basename),
+              'depth': rel.split('/') | length}) -%}
+      {%- endfor -%}
+      {%- set seen = [] -%}
+      {%- set out = [] -%}
+      {%- for c in cands | sort(attribute='rel') | sort(attribute='depth') -%}
+        {%- if c.key not in seen -%}
+          {%- set _ = seen.append(c.key) -%}
+          {%- set _ = out.append({'tree': c.tree, 'rel': c.rel, 'name': c.name}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ out }}
   tags: [always]

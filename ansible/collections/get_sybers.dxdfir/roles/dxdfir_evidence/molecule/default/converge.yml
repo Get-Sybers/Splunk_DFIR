@@ -13,7 +13,10 @@
         dxdfir_evidence_host_dir: "{{ fx }}/winevt"
         dxdfir_evidence_archive_trees: ["{{ fx }}/UAC"]
 
-    - name: "converge | the disk image is found, its extent excluded"
+    # the fixture holds case.e01 at the tree root AND a byte-identical nested
+    # copy at disk_images/copy/case.e01; discovery must exclude the .e02+ extents
+    # and collapse the nested duplicate down to the one shallow item
+    - name: "converge | the disk image is found once (extent excluded, nested duplicate de-duped)"
       ansible.builtin.assert:
         that:
           - dxdfir_evidence_images | length == 1
