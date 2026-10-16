@@ -9,7 +9,10 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #119 merge: the UAC lane goes live. godaemonhunter
+    # GoDFIR-toolz main @ the #121 merge: godfir_images now re-verifies a PRESENT
+    # image against the manifest digest, not only freshly-pulled ones — a stale
+    # local get-sybers/<tool>:latest can no longer slip the supply-chain gate
+    # (godfir_run 0.2.7, closes toolz#120). Carries the #119 UAC lane: godaemonhunter
     # advances to v0.3.1 and gomount to v0.3.1 — gomount's `uac` package reads the
     # archive the Unix-like Artifacts Collector writes
     # (uac-<host>-<os>-<ts>.tar.gz|.tar|.zip, the host's files under `[root]/`) as an
@@ -24,7 +27,7 @@ collections:
     # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then verify
     # it against the content digest images.yml records. A commit SHA, not a release
     # tag — the collection is not tagged; move to the tag once it is cut.
-    version: dae27b2dfc1e8eb446508fc1545d53e8cf5ab3ee
+    version: 87cc3e01b496caa370eb7560cd7b6f24ea35a1b9
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
