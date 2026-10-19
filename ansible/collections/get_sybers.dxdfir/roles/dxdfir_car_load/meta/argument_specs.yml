@@ -36,12 +36,14 @@ argument_specs:
         type: str
         required: false
         description: "The materialised CAR tree to load (default data_store/processed/byakugan)."
-      dxdfir_car_load_out_dir:
+      dxdfir_car_load_volume:
         type: str
         required: false
         description: >-
-          Where this run's elastic/*.ndjson bundles, manifest.json and
-          load.txt land (default data_store/processed/byakugan-load).
+          Named docker volume holding this run's elastic/*.ndjson bundles,
+          manifest.json and load.txt (a transient working set; the CAR is pushed
+          into Elasticsearch). Default byakugan_carload; dx purge stack --volumes
+          removes it.
       dxdfir_car_load_contract:
         type: str
         required: false

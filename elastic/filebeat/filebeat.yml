@@ -16,7 +16,6 @@ filebeat.inputs:
     # scanner option, not the removed log-input exclude_files.)
     prospector.scanner.exclude_files:
       - '^/ingest/byakugan/.*'
-      - '^/ingest/byakugan-load/.*'
       # a lane's staging (the raw image exports the tools parse) is evidence,
       # not output: `_`-prefixed — processed/_extracted, and the older
       # windows_logs/_extracted_evtx and godfir-toolz/_extracted

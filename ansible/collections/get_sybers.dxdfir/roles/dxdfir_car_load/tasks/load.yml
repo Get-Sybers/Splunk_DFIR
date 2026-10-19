@@ -53,9 +53,11 @@
           BYAKUGAN_LOAD_ES_PASSWORD: "{{ dxdfir_car_load_es_password_resolved }}"
         mounts:
           - {host: "{{ dxdfir_car_load_dir }}", path: /input, mode: ro}
-          - {host: "{{ dxdfir_car_load_out_dir }}", path: /output, mode: rw}
+          - {source: "{{ dxdfir_car_load_volume }}", path: /output, mode: rw, volume: true}
           - {host: "{{ dxdfir_car_load_certs_dir }}", path: /certs, mode: ro}
         network: "{{ dxdfir_car_load_network }}"
-    godfir_run_verify_dir: "{{ dxdfir_car_load_out_dir }}"
-    godfir_run_verify_glob: "manifest.json"
+    # /output is a docker volume, not a host path: the gate is the run's exit code
+    # and summary (the load manifest lives in the volume), not an on-disk glob.
+    godfir_run_verify_dir: "{{ dxdfir_car_load_dir }}"
+    godfir_run_verify_glob: ""
     godfir_run_require_no_failures: false

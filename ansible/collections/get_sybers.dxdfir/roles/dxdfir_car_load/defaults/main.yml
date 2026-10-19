@@ -13,9 +13,13 @@ dxdfir_car_load_action: load
 dxdfir_car_load_repo_root: >-
   {{ dxdfir_repo_root | default((playbook_dir ~ '/../../../..') | realpath, true) }}
 
-# output is a SIBLING of byakugan/, never inside it (gitignore + filebeat exclusion chains)
+# input: the materialised CAR tree byakugan build wrote (read-only)
 dxdfir_car_load_dir: "{{ dxdfir_car_load_repo_root }}/data_store/processed/byakugan"
-dxdfir_car_load_out_dir: "{{ dxdfir_car_load_repo_root }}/data_store/processed/byakugan-load"
+# output: the load's _bulk bundles + manifest are a transient working set — the CAR
+# itself is pushed into Elasticsearch (esdata) — so they ride a NAMED docker volume,
+# never a path under processed/. `dx purge stack --volumes` drops it (dxdfir_stack
+# destroy), mirroring the esdata it reflects.
+dxdfir_car_load_volume: byakugan_carload
 
 # the same contract as godfir_byakugan, a different declared sub-tool
 dxdfir_car_load_contract: >-

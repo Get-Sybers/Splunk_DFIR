@@ -112,7 +112,6 @@ func TestTheHostPythonPackageStaysRetired(t *testing.T) {
 // lands engine output must join this list and stay under data_store/processed/.
 var engineWriteRoots = []string{
 	"data_store/processed/byakugan",
-	"data_store/processed/byakugan-load",
 	"data_store/processed/exchange",
 }
 
@@ -161,7 +160,6 @@ func TestEngineOutDirDefaultsStayUnderTheIgnoredStore(t *testing.T) {
 		"dxdfir_processed_dir":    "ansible/collections/get_sybers.dxdfir/playbooks/group_vars/all.yml",
 		"godfir_byakugan_dir":     "ansible/collections/get_sybers.dxdfir/playbooks/group_vars/all.yml",
 		"dxdfir_car_load_dir":     "ansible/collections/get_sybers.dxdfir/roles/dxdfir_car_load/defaults/main.yml",
-		"dxdfir_car_load_out_dir": "ansible/collections/get_sybers.dxdfir/roles/dxdfir_car_load/defaults/main.yml",
 		"dxdfir_exchange_out_dir": "ansible/collections/get_sybers.dxdfir/roles/dxdfir_exchange/defaults/main.yml",
 	}
 	for varName, rel := range defaults {
