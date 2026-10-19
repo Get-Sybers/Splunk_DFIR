@@ -9,25 +9,24 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #121 merge: godfir_images now re-verifies a PRESENT
-    # image against the manifest digest, not only freshly-pulled ones — a stale
-    # local get-sybers/<tool>:latest can no longer slip the supply-chain gate
-    # (godfir_run 0.2.7, closes toolz#120). Carries the #119 UAC lane: godaemonhunter
-    # advances to v0.3.1 and gomount to v0.3.1 — gomount's `uac` package reads the
-    # archive the Unix-like Artifacts Collector writes
-    # (uac-<host>-<os>-<ts>.tar.gz|.tar|.zip, the host's files under `[root]/`) as an
-    # image whose root volume is that tree, and godaemonhunter hunts it ON like a
-    # disk image, so `dx process <case> godaemonhunter` hunts the collections under
-    # data_store/raw/<case>/UAC/ beside the disk images and loose logs. gomount 0.3.1
-    # also reads a hard link to a symlink as that symlink (the merged-usr systemd
-    # units a real collection carries). Image releases v0.3.1, recorded in images.yml
-    # by GoDFIR-toolz #118/#119:
-    #   godaemonhunter sha256:99d82f3935c96d5cb2c249f29be92b72b731cce7bc15bb2e8430500df931e2cb
-    #   gomount        sha256:1f3f8fee5d9f81605740d3caf71347d9f9676f34eb0328b644d17dd2dac2a041
-    # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then verify
-    # it against the content digest images.yml records. A commit SHA, not a release
-    # tag — the collection is not tagged; move to the tag once it is cut.
-    version: 87cc3e01b496caa370eb7560cd7b6f24ea35a1b9
+    # GoDFIR-toolz main @ the #125 merge: the evidence-identity capture. Every
+    # processing-lane JSONL row now carries evidence-asset identity — gopinfo
+    # v0.3.0 adds the Origin carrier fields + a framework stamp hook; gomount
+    # v0.4.0 surfaces the identifiers it reads (EWF serial, GPT/MBR disk and
+    # partition GUIDs, NTFS serial, opt-in image sha256) into its materialise
+    # manifest + identify; godaemonhunter v0.4.0 and gowindowlicker v0.3.0 stamp
+    # host.id (via Host.MachineID) and Origin.{DiskSerial,VolumeGUID,ImageSHA256,
+    # DiskID,PartGUID,PartOffset} on every row. godfir_run galaxy 0.2.8; images.yml
+    # records the new releases + content digests (signatures also raised to the
+    # v0.4.0 gomount, release v0.2.2):
+    #   gomount        v0.4.0  sha256:0619ddef7ec63d558d249044d88fcf0c1699e2b3c3906490513082ff4d1b1871
+    #   godaemonhunter v0.4.0  sha256:07948b27fc4399360eb87590402ed39ba536797199c82f4de50d5f0eb647d891
+    #   gowindowlicker v0.3.0  sha256:9db30b29be20f77772310e2d6b143dc446e6873b9c49620fda27a07f282733eb
+    #   signatures     v0.2.2  sha256:04e7209204a0aa936425c24261fc841ba2b631bd66a7a8152abcfb71c5e2bdd0
+    # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then
+    # verify it against the content digest images.yml records. A commit SHA, not a
+    # release tag — the collection is not tagged; move to the tag once it is cut.
+    version: 94ead9b938560b0f823e48be840f07d50fdd065e
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency

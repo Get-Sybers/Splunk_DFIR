@@ -8,6 +8,17 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **Evidence-asset identity on every processing-lane row.** `requirements.yml`
+  moves the `get_sybers.godfir_run` pin to the GoDFIR-toolz #125 merge
+  (`94ead9b`): gopinfo v0.3.0 (the `Origin` carrier + a framework stamp hook),
+  gomount v0.4.0 (surfaces the disk/volume/image identifiers it reads), and
+  godaemonhunter v0.4.0 + gowindowlicker v0.3.0 now stamp `host.id` (via
+  `Host.MachineID`) and
+  `Origin.{DiskSerial,VolumeGUID,ImageSHA256,DiskID,PartGUID,PartOffset}` onto
+  every JSONL row, so lane output can be keyed by a resolved asset id.
+  `images.yml` records the new releases + content digests
+  (gomount/godaemonhunter v0.4.0, gowindowlicker v0.3.0, signatures v0.2.2);
+  `godfir_run` galaxy 0.2.8. byakugan stays v0.2.5.
 - **The UAC lane is live end to end: `godfir_run` advances to godaemonhunter
   v0.3.1 and gomount v0.3.1.** `requirements.yml` moves the
   `get_sybers.godfir_run` pin from the byakugan v0.2.5 commit to the
