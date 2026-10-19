@@ -1,7 +1,7 @@
 ---
 # Deploy-side image provisioning is a REGISTRY PULL now: delegate to
 # get_sybers.godfir_run.godfir_images (imported by URL), which pulls
-# ghcr.io/get-sybers/GoDFIR-toolz/<tool>:<tag> for every requested ref and tags it to the
+# ghcr.io/get-sybers/godfir-toolz/<tool>:<tag> for every requested ref and tags it to the
 # local get-sybers/<tool>:latest name. Building lives in get_sybers.godfir_build.
 # the pull runs as the connection user: a docker-group membership this shell
 # does not carry yet is answered with its remedy, not a PermissionError
