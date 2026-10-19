@@ -69,7 +69,7 @@ tool's contract; no host python).
             └── byakugan/
             │   └── <source>/                         # the materialised CAR: car_<object>.jsonl (+ car_relationships.jsonl)
             │
-            └── byakugan-load/  exchange/             # `byakugan load` state; the STIX/CTI exchange's bundles
+            └── exchange/                             # the STIX/CTI exchange's bundles (`byakugan load` state rides a named docker volume, not here)
 ```
 
 The CAR engine lives **outside** this tree entirely: the Byakugan engine is

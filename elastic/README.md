@@ -40,8 +40,9 @@ elastic/
    parses each line as NDJSON, and dissects the first path segment into
    `labels.type` — `zeek`, `windowlicker`, `daemonhunter`, `anamnesis`,
    `log2timeline`, `detections`, … Every JSON/JSONL file under `processed/`
-   ships, except the CAR stores (`byakugan/`, `byakugan-load/` — those land
-   ECS-projected in `logs-car.*` via `dx byakugan load`), the `_`-prefixed
+   ships, except the CAR store (`byakugan/` — it lands ECS-projected in
+   `logs-car.*` via `dx byakugan load`; that load's own bundles ride a named
+   docker volume, not `processed/`), the `_`-prefixed
    staging trees and the lanes' run summaries. Files are identified by
    inode, not by a content fingerprint (two Plaso timelines of different
    images open with the same event). Zeek's `http.log` and `websocket.log`

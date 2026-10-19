@@ -22,11 +22,12 @@ sub-tool). Variables: `meta/argument_specs.yml`.
    loading with empty credentials. Credentials never reach the docker run
    argv: they go through `dxdfir_lane`'s `secret_env` (a 0600 `--env-file`).
 3. **The lane skeleton drives the container.** `/input` is the CAR tree
-   `byakugan build` wrote (ro), `/output` this run's bundles + manifest +
-   report (rw) — a **sibling** of `byakugan/`, not inside it, so each gets
-   its own chain in `data_store/.gitignore` and Filebeat's raw-evidence
-   exclusion can name each one — and `/certs` the stack's host-side TLS tree
-   (ro). `BYAKUGAN_LOAD_ES_CA_FILE` defaults to `/certs/ca/ca.crt` in the
+   `byakugan build` wrote (ro), `/output` a **named docker volume**
+   (`byakugan_carload`) holding this run's bundles + manifest + report (rw) —
+   never a path under `processed/`, since the CAR itself is pushed into
+   Elasticsearch and these are just the load's transient working set — and
+   `/certs` the stack's host-side TLS tree (ro). `BYAKUGAN_LOAD_ES_CA_FILE`
+   defaults to `/certs/ca/ca.crt` in the
    contract and `_INPUT_DIR`/`_OUT_DIR` to `/input`/`/output`, all matching
    the mounts, so none is restated. Push mode always (`BYAKUGAN_LOAD_ES_URL`
    set): this role's whole job is delivering the CAR into the live stack,

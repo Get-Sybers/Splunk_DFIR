@@ -124,8 +124,9 @@ dx deploy stack             # installs docker if missing, generates secrets + TL
   and writes each line into the `logs-dxdfir.<type>-<namespace>` data stream.
   Point `ELASTIC_INGEST_DIR` at `data_store/processed` (or mount your own curated
   `<type>/` tree). Filebeat's own registry keeps re-runs idempotent. It excludes
-  `processed/byakugan/` and `processed/byakugan-load/`: the CAR is delivered
-  ECS-projected instead (next bullet), not as raw evidence.
+  `processed/byakugan/`: the CAR is delivered ECS-projected instead (next
+  bullet), not as raw evidence. (`byakugan load`'s own bundles ride a named
+  docker volume, not `processed/`.)
 - `dx byakugan load` bulk-loads the materialised CAR (`processed/byakugan/`) into
   the `logs-car.<object>-<namespace>` x13, `logs-car.rel-<namespace>`,
   `logs-car.inferred-<namespace>` and `logs-car.content-<namespace>` data

@@ -21,3 +21,13 @@
     state: absent
   loop: "{{ dxdfir_stack_volumes.values() | unique | list }}"
   when: dxdfir_stack_remove_volumes | bool
+
+# the byakugan CAR-load working volume (dxdfir_car_load_volume) mirrors the esdata
+# it pushes into, so it is wiped with the stack's data. Kept here, not in
+# dxdfir_stack_volumes, because it is not a stack SERVICE volume: nothing mounts it
+# at deploy — the load run auto-creates it.
+- name: "stack-destroy | remove the byakugan CAR-load volume (WIPES load state)"
+  community.docker.docker_volume:
+    name: "{{ dxdfir_car_load_volume | default('byakugan_carload') }}"
+    state: absent
+  when: dxdfir_stack_remove_volumes | bool

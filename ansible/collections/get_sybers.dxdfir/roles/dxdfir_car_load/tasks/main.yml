@@ -12,10 +12,10 @@
     that:
       - dxdfir_car_load_action in ['load']
       - dxdfir_car_load_dir | length > 0
-      - dxdfir_car_load_out_dir | length > 0
+      - dxdfir_car_load_volume | length > 0
     fail_msg: >-
       dxdfir_car_load needs dxdfir_car_load_action (load) and a non-empty
-      dxdfir_car_load_dir / dxdfir_car_load_out_dir.
+      dxdfir_car_load_dir / dxdfir_car_load_volume.
     quiet: true
   tags: [always]
 

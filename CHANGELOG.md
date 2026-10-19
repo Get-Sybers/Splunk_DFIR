@@ -8,6 +8,7 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **`byakugan-load` no longer touches the processing filesystem.** `dxdfir_car_load` mounts `/output` as a named docker volume (`byakugan_carload`) instead of `data_store/processed/byakugan-load`: the CAR is pushed into Elasticsearch (`esdata`) and the load's transient `_bulk` bundles + manifest ride the volume, which `dx purge stack --volumes` removes. Drops the `processed/byakugan-load` skeleton and its `.gitignore`/filebeat/boundary-test references, and gates the run on its exit/summary rather than an on-disk manifest.
 - **`host.id` in the Elastic ingest pipelines.** The `logs-dxdfir-daemonhunter` and `logs-dxdfir-windowlicker` parent pipelines now set ECS `host.id` from the record envelope's `Host.MachineID` (Linux `machine-id` / Windows MachineGuid), alongside the existing `host.name` mapping; the other new `Origin.*` identity fields (`DiskSerial`, `VolumeGUID`, `ImageSHA256`, `DiskID`, `PartGUID`, `PartOffset`) index dynamically and are already queryable.
 - **Evidence-asset identity on every processing-lane row.** `requirements.yml`
   moves the `get_sybers.godfir_run` pin to the GoDFIR-toolz #125 merge
