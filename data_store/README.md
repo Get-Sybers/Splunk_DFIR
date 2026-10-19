@@ -41,7 +41,6 @@ data_store/
        ├── _extracted/[<collection>/]<image>/export/             # the disk-image artefact export (a utility; staging, never shipped)
        ├── _scratch/<lane>/[<collection>/]<host>/                # the host lanes' /work while they run ON an image (emptied after each)
        ├── byakugan/<source>/                                    # the materialised CAR: car_<object>.jsonl (+ car_relationships.jsonl)
-       ├── byakugan-load/                                        # `byakugan load` state
        └── exchange/                                             # the STIX/CTI exchange's bundles
 ```
 
