@@ -1,5 +1,5 @@
 {
-  "description": "The windowlicker lane parent (GoDFIR gowindowlicker; <lane>/<case>/<tool>/<image>/<artefact>/<tool>.jsonl). Does the GoDFIR-common work every submodule shares — event.module, labels.case/labels.item and the tool from the path, event.dataset from the Tool field (else the tool directory, else the output filename), evidence time from the first set of the tool's own time columns (an epoch-zero or 0001 value is a sentinel, not a time), and host.name from the envelope's Host.Hostname (else goevtx's Computer, else the image the artefact came from) — then dispatches to the submodule pipeline for the dataset. Each submodule owns its tool's field shaping (goevtx -> the shared winlog model, gomft -> file.*, goese -> goese.table, gojle -> jumplist.app); a dataset with no submodule just carries its native fields, typed by logs-dxdfir@windowlicker.",
+  "description": "The windowlicker lane parent (GoDFIR gowindowlicker; <lane>/<case>/<tool>/<image>/<artefact>/<tool>.jsonl). Does the GoDFIR-common work every submodule shares — event.module, labels.case/labels.item and the tool from the path, event.dataset from the Tool field (else the tool directory, else the output filename), evidence time from the first set of the tool's own time columns (an epoch-zero or 0001 value is a sentinel, not a time), and host.name from the envelope's Host.Hostname (else goevtx's Computer, else the image the artefact came from), and host.id from the envelope's Host.MachineID (Windows MachineGuid) — then dispatches to the submodule pipeline for the dataset. Each submodule owns its tool's field shaping (goevtx -> the shared winlog model, gomft -> file.*, goese -> goese.table, gojle -> jumplist.app); a dataset with no submodule just carries its native fields, typed by logs-dxdfir@windowlicker.",
   "_meta": {
     "managed_by": "dxdfir_stack",
     "source": "elastic/pipelines/logs-dxdfir-windowlicker.json"
@@ -102,6 +102,15 @@
         "copy_from": "labels.item",
         "if": "ctx.host?.name == null && ctx.labels?.item instanceof String",
         "override": false
+      }
+    },
+    {
+      "set": {
+        "description": "host.id from the envelope's Host.MachineID (Windows MachineGuid)",
+        "field": "host.id",
+        "copy_from": "Host.MachineID",
+        "if": "ctx.Host instanceof Map && ctx.Host.MachineID instanceof String",
+        "override": true
       }
     },
     {

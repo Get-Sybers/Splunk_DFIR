@@ -8,6 +8,7 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **`host.id` in the Elastic ingest pipelines.** The `logs-dxdfir-daemonhunter` and `logs-dxdfir-windowlicker` parent pipelines now set ECS `host.id` from the record envelope's `Host.MachineID` (Linux `machine-id` / Windows MachineGuid), alongside the existing `host.name` mapping; the other new `Origin.*` identity fields (`DiskSerial`, `VolumeGUID`, `ImageSHA256`, `DiskID`, `PartGUID`, `PartOffset`) index dynamically and are already queryable.
 - **Evidence-asset identity on every processing-lane row.** `requirements.yml`
   moves the `get_sybers.godfir_run` pin to the GoDFIR-toolz #125 merge
   (`94ead9b`): gopinfo v0.3.0 (the `Origin` carrier + a framework stamp hook),
