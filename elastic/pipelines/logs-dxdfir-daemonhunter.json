@@ -1,5 +1,5 @@
 {
-  "description": "The daemonhunter lane parent (GoDFIR godaemonhunter, the Linux sweep; same <lane>/<case>/<tool>/<image>/<artefact>/<tool>.jsonl layout as windowlicker). Does the GoDFIR-common work — event.module, labels.case/labels.item and the tool from the path, event.dataset from the Tool field (else the tool directory, else the output filename), evidence time from the first set of the tool's own time columns, and host.name from the envelope's Host.Hostname (else the image) — then copies the parser's Message (a syslog/journal line) into ECS message. Submodule pipelines (logs-dxdfir-daemonhunter-<tool>) can be added and dispatched here as individual Linux parsers need their own shaping; none is required today.",
+  "description": "The daemonhunter lane parent (GoDFIR godaemonhunter, the Linux sweep; same <lane>/<case>/<tool>/<image>/<artefact>/<tool>.jsonl layout as windowlicker). Does the GoDFIR-common work — event.module, labels.case/labels.item and the tool from the path, event.dataset from the Tool field (else the tool directory, else the output filename), evidence time from the first set of the tool's own time columns, and host.name from the envelope's Host.Hostname (else the image), host.id from the envelope's Host.MachineID (Linux machine-id) — then copies the parser's Message (a syslog/journal line) into ECS message. Submodule pipelines (logs-dxdfir-daemonhunter-<tool>) can be added and dispatched here as individual Linux parsers need their own shaping; none is required today.",
   "_meta": {
     "managed_by": "dxdfir_stack",
     "source": "elastic/pipelines/logs-dxdfir-daemonhunter.json"
@@ -94,6 +94,15 @@
         "copy_from": "labels.item",
         "if": "ctx.host?.name == null && ctx.labels?.item instanceof String",
         "override": false
+      }
+    },
+    {
+      "set": {
+        "description": "host.id from the envelope's Host.MachineID (Linux machine-id)",
+        "field": "host.id",
+        "copy_from": "Host.MachineID",
+        "if": "ctx.Host instanceof Map && ctx.Host.MachineID instanceof String",
+        "override": true
       }
     },
     {
