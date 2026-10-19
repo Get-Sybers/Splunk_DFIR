@@ -3,7 +3,7 @@ name: smoke
 # The real pipeline, asserted for CORRECTNESS (what `checks` deliberately
 # does not cover) — docs/reference/build-and-test.md "Smoke".
 #
-# The tool images are PULLED from the registry (ghcr.io/get-sybers/<tool>) via
+# The tool images are PULLED from the registry (ghcr.io/get-sybers/godfir-toolz/<tool>) via
 # get_sybers.godfir_run.godfir_images; they must be published there for this to
 # pass. Building + publishing images is the GoDFIR-toolz repo's concern.
 

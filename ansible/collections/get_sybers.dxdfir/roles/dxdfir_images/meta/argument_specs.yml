@@ -6,7 +6,7 @@ argument_specs:
       - >-
         The deploy galaxy's face of the tool images. Provisioning is a REGISTRY
         PULL, delegated to get_sybers.godfir_run.godfir_images (imported by URL):
-        it pulls ghcr.io/get-sybers/GoDFIR-toolz/<tool>:<tag> for every requested ref and tags
+        it pulls ghcr.io/get-sybers/godfir-toolz/<tool>:<tag> for every requested ref and tags
         it to the local get-sybers/<tool>:latest name the contracts use. Building
         is not here — that is get_sybers.godfir_build. This role keeps the
         deploy-shaped decisions: the set to pull, the run-as uid/gid, the

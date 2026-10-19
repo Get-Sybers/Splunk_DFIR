@@ -217,7 +217,7 @@ detail "get_sybers.godfir_run is imported by URL into .ansible/collections from"
 detail "requirements.yml (no submodule)"
 step "4. Ensure the Docker engine, daemon and group via ansible (dxdfir-bootstrap.yml)"
 detail "the Byakugan CAR engine and every tool image are pulled from the registry"
-detail "(ghcr.io/get-sybers/GoDFIR-toolz/<tool>) by 'dx build images'"
+detail "(ghcr.io/get-sybers/godfir-toolz/<tool>) by 'dx build images'"
 echo
 
 confirm "Do you wish to proceed?" || { info "Setup cancelled."; exit 1; }

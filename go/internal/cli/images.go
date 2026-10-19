@@ -16,7 +16,7 @@ import (
 // imagesLong is the shared description of what the image verbs act on.
 const imagesLong = "The hardened get-sybers/* tool images. Building images lives upstream in\n" +
 	"get_sybers.godfir_build; here they are PULLED from the registry\n" +
-	"(ghcr.io/get-sybers/<tool>:<tag> -> get-sybers/<tool>:latest) and the hardening\n" +
+	"(ghcr.io/get-sybers/godfir-toolz/<tool>:<tag> -> get-sybers/<tool>:latest) and the hardening\n" +
 	"contract (non-root USER, com.get-sybers.hardened) is verified on the result."
 
 // newBuildCmd — `dx build images` → dxdfir-build-images.yml (dxdfir_images role).
@@ -43,7 +43,7 @@ func buildImagesLeaf(env *Env) *cobra.Command {
 		Long: "Provision the get-sybers/* tool images by REGISTRY PULL.\n\n" +
 			"Fronts playbooks/dxdfir-build-images.yml: the images role delegates to the\n" +
 			"get_sybers.godfir_run.godfir_images role (imported by URL), which pulls\n" +
-			"ghcr.io/get-sybers/<tool>:<tag> and tags it to the local get-sybers/<tool>:latest\n" +
+			"ghcr.io/get-sybers/godfir-toolz/<tool>:<tag> and tags it to the local get-sybers/<tool>:latest\n" +
 			"name. Building images lives upstream in get_sybers.godfir_build; the hardening\n" +
 			"contract (non-root USER, com.get-sybers.hardened) is verified by godfir_images.",
 		Args: cobra.NoArgs,
