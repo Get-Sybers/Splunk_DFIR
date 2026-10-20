@@ -95,7 +95,7 @@ The full documentation set:
 - **Pipeline internals:** [Tool containers](docs/Containers.md) · [Signature rules](docs/Signature-Rules.md) · [Risk gate](docs/riskgate.md) · [Scripts overview](docs/scripts/Scripts-Overview.md) · [Setup-environment script](docs/scripts/Setup_Environment.md)
 - **Elastic stack:** [Config tree](elastic/README.md) · [Spaces](elastic/spaces.md) · [malcolm space](elastic/dashboards/malcolm/README.md) · [malcolm dashboards](elastic/dashboards/malcolm/DASHBOARDS.md) · Filebeat fields: [Zeek](elastic/filebeat/Zeek.md) · [Suricata](elastic/filebeat/Suricata.md) · [Winlog](elastic/filebeat/Winlog.md)
 - **Contributing:** [Go standards](docs/reference/go-standards.md) · [Ansible standards](docs/reference/ansible-standards.md) · [Build & test](docs/reference/build-and-test.md) · [Contributing](.github/CONTRIBUTING.md) · [Security](.github/SECURITY.md)
-- **Research:** [Research notes](docs/research/README.md) · [Evidence spine](docs/research/evidence-spine.md)
+- **Research:** [Research notes](docs/research/README.md) · [Evidence spine](https://github.com/Get-Sybers/Byakugan/blob/main/docs/research/evidence-spine.md) (owned by [Byakugan](https://github.com/Get-Sybers/Byakugan))
 - **CAR engine reference** (owned by [Byakugan](https://github.com/Get-Sybers/Byakugan)): [CAR pipeline](https://github.com/Get-Sybers/Byakugan/blob/main/docs/CAR-Pipeline.md) · [extraction rules](https://github.com/Get-Sybers/Byakugan/blob/main/docs/CAR-Extraction-Rules.md) · [relations](https://github.com/Get-Sybers/Byakugan/blob/main/docs/CAR-Relations.md) · [detection rules-as-code](https://github.com/Get-Sybers/Byakugan/blob/main/rules/README.md)
 
 

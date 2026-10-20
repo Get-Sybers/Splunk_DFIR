@@ -12,7 +12,7 @@ Forward-looking design: a course of action, not yet built.
 
 | Note | What it covers |
 |------|----------------|
-| [Evidence Spine: a raw-evidence ownership graph (CASE/UCO)](evidence-spine.md) | how raw evidence is tracked and passed to processing (host → disk → volume → file → extraction), before and decoupled from the CAR engine |
+| [Evidence Spine: a raw-evidence ownership graph (CASE/UCO)](https://github.com/Get-Sybers/Byakugan/blob/main/docs/research/evidence-spine.md) | how raw evidence is tracked and passed to processing (host → disk → volume → file → extraction), before and decoupled from the CAR engine — now owned by [Byakugan](https://github.com/Get-Sybers/Byakugan) |
 
 ## Research journeys
 
