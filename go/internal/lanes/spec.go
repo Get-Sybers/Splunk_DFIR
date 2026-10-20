@@ -213,10 +213,12 @@ func (s Spec) countDone(outDir, collection string) int {
 		// one output folder per capture; zeek.jsonl is the index that marks it done
 		return countFilesNamed(outDir, "zeek.jsonl")
 	case "gowindowlicker", "godaemonhunter":
-		// one <item>/<subtool>.jsonl per parsed artefact (goese's per-table
-		// files ride under its goese.jsonl index; the knowledge store counts too)
+		// flat <subtool>/<asset-id>.jsonl, one per (parser, evidence asset) — the
+		// leaf is the asset id now, not go*.jsonl, so match any .jsonl; the
+		// godaemonhunter Layer-1 knowledge store (knowledge/<host>/<item>/<subtool>.jsonl)
+		// still counts too
 		return countFilesMatching(outDir, func(name string) bool {
-			return strings.HasPrefix(name, "go") && strings.HasSuffix(name, ".jsonl")
+			return strings.HasSuffix(name, ".jsonl")
 		})
 	case "anamnesis":
 		// per (image,plugin) .jsonl; the finest gauge

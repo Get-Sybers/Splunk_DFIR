@@ -8,6 +8,14 @@ is `0`, anything may change without notice.
 ## [Unreleased]
 
 ### Changed
+- **Flat processing-lane output (`<subtool>/<asset-id>.jsonl`).** The parser lanes
+  now write one record file per (sub-tool, evidence asset) instead of the old
+  `<subtool>/<image>/<item>/<subtool>.jsonl` tree. `internal/lanes/spec.go`
+  `countDone` matches the flat `.jsonl` leaf (the gowindowlicker/godaemonhunter
+  progress gauge), and `requirements.yml` moves the `get_sybers.godfir_run` pin to
+  the GoDFIR-toolz #128 merge (`969e743`): the flattened engines (gowindowlicker
+  v0.3.1, godaemonhunter v0.4.1), their loose-host `/output` mount realign, and the
+  recorded image digests. godaemonhunter's Layer-1 knowledge store stays per-item.
 - **Corrected the tool-image registry path in docs/help** to `ghcr.io/get-sybers/godfir-toolz/<tool>` — the actual `godfir_images_registry`. The `dx build images` help (`images.go`), the smoke-test comment, the `setup-environment.sh` setup-plan detail and the `dxdfir_images` role docs had dropped or mis-cased the `godfir-toolz/` path segment. No behaviour change: the pull path and the no-tarballs-unless-`save-docker-images.sh` behaviour were already correct.
 - **`byakugan-load` no longer touches the processing filesystem.** `dxdfir_car_load` mounts `/output` as a named docker volume (`byakugan_carload`) instead of `data_store/processed/byakugan-load`: the CAR is pushed into Elasticsearch (`esdata`) and the load's transient `_bulk` bundles + manifest ride the volume, which `dx purge stack --volumes` removes. Drops the `processed/byakugan-load` skeleton and its `.gitignore`/filebeat/boundary-test references, and gates the run on its exit/summary rather than an on-disk manifest.
 - **`host.id` in the Elastic ingest pipelines.** The `logs-dxdfir-daemonhunter` and `logs-dxdfir-windowlicker` parent pipelines now set ECS `host.id` from the record envelope's `Host.MachineID` (Linux `machine-id` / Windows MachineGuid), alongside the existing `host.name` mapping; the other new `Origin.*` identity fields (`DiskSerial`, `VolumeGUID`, `ImageSHA256`, `DiskID`, `PartGUID`, `PartOffset`) index dynamically and are already queryable.
