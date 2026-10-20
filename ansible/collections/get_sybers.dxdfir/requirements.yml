@@ -9,13 +9,15 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #128 merge: the flat lane output, on top of the
+    # GoDFIR-toolz main @ the #129 merge: the flat lane output, on top of the
     # evidence-identity capture. Lane records now land flat at
     # <subtool>/<asset-id>.jsonl — one file per (parser, evidence asset), the
     # per-artefact path carried in each row's Origin.Path. gowindowlicker v0.3.1
     # and godaemonhunter v0.4.1 do the collapse engine-side (gopinfo untouched),
     # and the godfir_run loose-host lanes mount /input/<host> so the flat leaf is
-    # named by the host; godaemonhunter's Layer-1 knowledge store stays per-item.
+    # named by the host (#129: gowindowlicker's contract now declares its input
+    # mount optional, matching godaemonhunter, so godfir_run's argv gate accepts
+    # that mount); godaemonhunter's Layer-1 knowledge store stays per-item.
     # The evidence-asset identity it builds on (gopinfo v0.3.0 Origin fields +
     # stamp hook, gomount v0.4.0 surfacing the disk/volume/image ids, host.id +
     # Origin.{DiskSerial,VolumeGUID,ImageSHA256,DiskID,PartGUID,PartOffset} on
@@ -28,7 +30,7 @@ collections:
     # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then
     # verify it against the content digest images.yml records. A commit SHA, not a
     # release tag — the collection is not tagged; move to the tag once it is cut.
-    version: 969e7436b4115c28551f0975b18cd0307c822343
+    version: 5c6e6692fa5e266bc239564af294a38cd7615866
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
