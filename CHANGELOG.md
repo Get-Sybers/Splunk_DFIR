@@ -13,12 +13,14 @@ is `0`, anything may change without notice.
   `<subtool>/<image>/<item>/<subtool>.jsonl` tree. `internal/lanes/spec.go`
   `countDone` matches the flat `.jsonl` leaf (the gowindowlicker/godaemonhunter
   progress gauge), and `requirements.yml` moves the `get_sybers.godfir_run` pin to
-  the GoDFIR-toolz #129 merge (`5c6e669`): the flattened engines (gowindowlicker
+  the GoDFIR-toolz #131 merge (`979d46b`): the flattened engines (gowindowlicker
   v0.3.1, godaemonhunter v0.4.1) with recorded image digests, their loose-host
-  `/input/<host>` mount (so the flat leaf is named for the host), and
+  `/input/<host>` mount (so the flat leaf is named for the host),
   gowindowlicker's contract declaring its input mount optional — matching
-  godaemonhunter — so `godfir_run`'s argv gate accepts that mount. The smoke test
-  asserts the flat `windowlicker/goevtx/<host>.jsonl` leaf. godaemonhunter's
+  godaemonhunter — so `godfir_run`'s argv gate accepts that mount, and **byakugan
+  v0.2.6**, whose CAR build now reads the flat layout (its source route/discovery
+  keys on the `<subtool>/` dir, not the old `<subtool>.jsonl` filename). The smoke
+  test asserts the flat `windowlicker/goevtx/<host>.jsonl` leaf. godaemonhunter's
   Layer-1 knowledge store stays per-item.
 - **Corrected the tool-image registry path in docs/help** to `ghcr.io/get-sybers/godfir-toolz/<tool>` — the actual `godfir_images_registry`. The `dx build images` help (`images.go`), the smoke-test comment, the `setup-environment.sh` setup-plan detail and the `dxdfir_images` role docs had dropped or mis-cased the `godfir-toolz/` path segment. No behaviour change: the pull path and the no-tarballs-unless-`save-docker-images.sh` behaviour were already correct.
 - **`byakugan-load` no longer touches the processing filesystem.** `dxdfir_car_load` mounts `/output` as a named docker volume (`byakugan_carload`) instead of `data_store/processed/byakugan-load`: the CAR is pushed into Elasticsearch (`esdata`) and the load's transient `_bulk` bundles + manifest ride the volume, which `dx purge stack --volumes` removes. Drops the `processed/byakugan-load` skeleton and its `.gitignore`/filebeat/boundary-test references, and gates the run on its exit/summary rather than an on-disk manifest.

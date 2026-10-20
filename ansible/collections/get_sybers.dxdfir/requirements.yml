@@ -9,7 +9,7 @@ collections:
   # the per-image lanes; the pipeline + evidence roles delegate to it.
   - name: https://github.com/Get-Sybers/GoDFIR-toolz.git#/ansible_collections/get_sybers/godfir_run
     type: git
-    # GoDFIR-toolz main @ the #129 merge: the flat lane output, on top of the
+    # GoDFIR-toolz main @ the #131 merge: the flat lane output, on top of the
     # evidence-identity capture. Lane records now land flat at
     # <subtool>/<asset-id>.jsonl — one file per (parser, evidence asset), the
     # per-artefact path carried in each row's Origin.Path. gowindowlicker v0.3.1
@@ -27,10 +27,12 @@ collections:
     #   godaemonhunter v0.4.1  sha256:7a1afdd751050ad105223db557fd49fe03dd912005801c62c8187da0e51f788f
     #   gomount        v0.4.0  sha256:0619ddef7ec63d558d249044d88fcf0c1699e2b3c3906490513082ff4d1b1871
     #   signatures     v0.2.2  sha256:04e7209204a0aa936425c24261fc841ba2b631bd66a7a8152abcfb71c5e2bdd0
-    # byakugan stays v0.2.5. Pull every tool image by its :<release> tag, then
+    #   byakugan       v0.2.6  sha256:870377124f9e995971a5924dcfaca638f9dd665e7f0955458618bb4edfabac03
+    # byakugan is now v0.2.6 — its CAR build reads the flat lane layout (#131). Pull
+    # every tool image by its :<release> tag, then
     # verify it against the content digest images.yml records. A commit SHA, not a
     # release tag — the collection is not tagged; move to the tag once it is cut.
-    version: 5c6e6692fa5e266bc239564af294a38cd7615866
+    version: 979d46b1475052d90ba307d5d0e7c817769f0312
   - name: community.docker
     version: "3.13.10"
   # ansible.cfg enables its profile_tasks callback — a runtime dependency
