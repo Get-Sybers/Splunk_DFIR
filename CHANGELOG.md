@@ -64,9 +64,9 @@ identity, and flat per-asset output.
 ### Removed
 - **The host Python package** (`python/`, ~4,000 lines) — byakugan owns the engine,
   GoDFIR-toolz owns the detections.
-- SOF-ELK, the Kusto/ADX layer, the Python Typer front-end, the Velociraptor-era
-  Python/shell container wrappers, the repo-root `images.yml`, the committed man page,
-  and the setup-environment symlink shims.
+- SOF-ELK, the Kusto/ADX layer, the Python Typer front-end, the Python/shell
+  container wrappers, the repo-root `images.yml`, the committed man page, and the
+  setup-environment symlink shims.
 
 ## [0.6.0] - 2026-08-30
 
