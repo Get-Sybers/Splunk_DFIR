@@ -24,8 +24,8 @@ identity, and flat per-asset output.
   the evidence taxonomy gains `logs/linux` and `logs/macOS`.
 - **The UAC lane** — UAC collections are hosts (`data_store/raw/UAC/`), carried
   through godaemonhunter end to end.
-- **The STIX / OpenCTI exchange lane** — `dx stix` (and `behaviour-sightings`) drives
-  the engine's exchange through ansible.
+- **The STIX / OpenCTI exchange lane** — `dx byakugan export-stix` / `behaviour` /
+  `pull` / `sightings` drive the engine's STIX 2.1 / OpenCTI exchange through ansible.
 - **The Elastic config tree** (`elastic/` at the repo root) is the single source of
   truth, with Kibana spaces **DX DFIR** (the default; avatars supported), **Byakugan**
   (`dx byakugan load --kibana`) and **malcolm**.
