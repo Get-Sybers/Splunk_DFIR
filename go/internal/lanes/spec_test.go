@@ -85,14 +85,15 @@ func TestCountDoneReadsTheToolLeafLayout(t *testing.T) {
 	touch(t, p("zeek", "case-a", "cap1", "zeek.jsonl"), 3)
 	touch(t, p("zeek", "case-a", "cap2", "conn.json"), 3) // still running: no index yet
 
-	touch(t, p("windowlicker", "case-a", "goevtx", "HOST01", "Security.evtx", "goevtx.jsonl"), 3)
-	touch(t, p("windowlicker", "case-a", "gore", "img.E01", "Windows_System32_config_SYSTEM", "gore.jsonl"), 3)
-	touch(t, p("windowlicker", "case-a", "goese", "img.E01", "SRUDB.dat", "NetworkDataUsage.jsonl"), 3) // a table, not an item
-	touch(t, p("windowlicker", "case-a", "goese", "img.E01", "SRUDB.dat", "goese.jsonl"), 3)
-	touch(t, p("windowlicker", "case-a", "gomft", "img.E01", "MFT", "gomft.jsonl.part"), 3) // being written
+	// flat: one <subtool>/<asset-id>.jsonl per (parser, evidence asset)
+	touch(t, p("windowlicker", "case-a", "goevtx", "HOST01.jsonl"), 3)
+	touch(t, p("windowlicker", "case-a", "gore", "img.E01.jsonl"), 3)
+	touch(t, p("windowlicker", "case-a", "goese", "img.E01.jsonl"), 3)      // one flat file per asset, not per table
+	touch(t, p("windowlicker", "case-a", "gomft", "img.E01.jsonl.part"), 3) // being written — not counted
 
+	// daemonhunter: Layer-2 records flat; the Layer-1 knowledge store stays per-item
 	touch(t, p("daemonhunter", "case-a", "knowledge", "srv.E01", "etc_os-release", "gohost.jsonl"), 3)
-	touch(t, p("daemonhunter", "case-a", "gojournal", "srv.E01", "var_log_journal_x", "gojournal.jsonl"), 3)
+	touch(t, p("daemonhunter", "case-a", "gojournal", "srv.E01.jsonl"), 3)
 
 	touch(t, p("anamnesis", "case-a", "dump.raw", "plugins", "processes.jsonl"), 3)
 	touch(t, p("anamnesis", "case-a", "dump.raw", "plugins", "net.jsonl"), 3)

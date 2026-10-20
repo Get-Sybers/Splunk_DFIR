@@ -17,7 +17,7 @@ PLAYBOOKS="ansible/collections/get_sybers.dxdfir/playbooks"
 # <host> level (logs/winevt/<host>/*.evtx): the tree is the lane's input
 WINEVT_DIR="$REPO_ROOT/data_store/raw/logs/winevt"
 FIXTURE_DIR="$WINEVT_DIR/sysmon-attack-samples"
-OUT_DIR="$(mktemp -d)"     # the processed tree: windowlicker/goevtx/<host>/ from the gowindowlicker lane
+OUT_DIR="$(mktemp -d)"     # the processed tree: windowlicker/goevtx/<host>.jsonl from the gowindowlicker lane
 CAR_DIR="$(mktemp -d)"     # the materialised CAR built from it
 LOG_DIR="$(mktemp -d)"
 # mktemp defaults to 0700, which would block the containers' uid 2000 — open the tree like the real data_store
@@ -130,9 +130,12 @@ if ! ansible-playbook "$PLAYBOOKS/dxdfir-process-gowindowlicker.yml" \
     tail -40 "$LOG_DIR/gowindowlicker.out" >&2
     die "the gowindowlicker lane failed (see the play output above)"
 fi
-n_logs=$(find "$OUT_DIR/windowlicker/goevtx/sysmon-attack-samples" -name goevtx.jsonl -size +0 2>/dev/null | wc -l)
-(( n_logs > 0 )) || die "the gowindowlicker lane produced no goevtx.jsonl under $OUT_DIR/windowlicker/goevtx/sysmon-attack-samples (the host level)"
-pass "goevtx parsed $n_logs log(s) into windowlicker/goevtx/<host>/<log>/goevtx.jsonl"
+# the flatten collapses the host's logs into one flat <host>.jsonl directly under
+# the goevtx/ sub-tool dir (named for the loose host) — no per-log nesting, so the
+# marker is a .jsonl at depth 1, not a nested goevtx.jsonl
+n_logs=$(find "$OUT_DIR/windowlicker/goevtx" -maxdepth 1 -type f -name '*.jsonl' -size +0 2>/dev/null | wc -l)
+(( n_logs > 0 )) || die "the gowindowlicker lane produced no flat <host>.jsonl under $OUT_DIR/windowlicker/goevtx (expected windowlicker/goevtx/sysmon-attack-samples.jsonl)"
+pass "goevtx flattened the host's logs into windowlicker/goevtx/<host>.jsonl ($n_logs file)"
 
 # =============================================================================
 # Normalise the processed evtx into finished CAR (Byakugan engine): one
